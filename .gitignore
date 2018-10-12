@@ -1,0 +1,5 @@
+*.pyc
+
+.idea/
+docs/_build/doctrees/
+docs/_build/html/.buildinfo
