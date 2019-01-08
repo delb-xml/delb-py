@@ -26,9 +26,13 @@ docs: ## generate Sphinx HTML documentation, including API docs
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
+.PHONY: mypy
+mypy: ## run static type checks with mypy
+	mypy lxml_domesque
+
 .PHONY: pytest
 pytest: ## run the test suite
 	python -m pytest tests
 
 .PHONY: tests ## run all tests on normalized code
-tests: black pytest
+tests: black mypy pytest
