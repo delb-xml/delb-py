@@ -10,6 +10,7 @@ The name may be changed.
 Slug lines
 ----------
 
+A DOM API inspired wrapper around lxml.
 XML documents for Kenny and all other kids too.
 …
 
@@ -17,8 +18,59 @@ XML documents for Kenny and all other kids too.
 tl;dr
 -----
 
-lxml resp. libxml2 are powerful tools, but have an unergonomic data model, to
+lxml resp. libxml2 are powerful tools, but have an unergonomic data model to
 work with encoded text. Let's build a DOM API inspired wrapper around it.
+
+
+Development status
+------------------
+
+This project is currently developed as proof-of-concept. If you happen to
+depend on it, please notify me to consider this in future.
+
+You're invited to submit tests that reflect desired use cases or are merely of
+theoretical nature. Of course, any kind of proposals for or implementations of
+improvements are welcome as well.
+
+
+Installation
+------------
+
+TODO
+
+
+Usage
+-----
+
+TODO
+
+
+Design aspects & caveats
+------------------------
+
+The code is intended to be a thin wrapper with as few states as possible and
+caching where safely applicable.
+
+The library is partly opinionated to encourage good practices and its behaviour
+deviates from lxml and ignores stuff:
+
+- All serializations are UTF-8 encoded by default and always start with an XML
+  declaration.
+- Comment, CDATA and Processing Instruction nodes are not accessible (for now),
+  but are retained and appear in serializations; in particular
+  - The position of these nodes may be shifted in the resulting document,
+  - Processing instructions that appear before the root node in the stream
+    don't persist their order (that's lxml's behaviour).
+
+If you need to apply bad practices anyway, you can fall back to tinker with the
+lxml's objects that are bound to :attr:`Document._etree_obj` and
+:attr:`TagNode._etree_obj`.
+
+
+API
+---
+
+TODO
 
 
 Reasoning
@@ -268,19 +320,6 @@ powers accessible.
 .. _open document format: http://opendocumentformat.org/
 .. _xml-tei: http://tei-c.org
 
-Design aspects
---------------
-
-- The proxy pattern, vulgo implementing the structure's properties as
-  transitives and lazy evaluated derivatives, should be suited as general
-  approach as it reduces the risk of side effects and simplifies refactoring
-  in the beginning phase.
-- Comment nodes shall not be made available. They may end up in weird positions
-  of the serialized document as a consequence.
-- Is access to CDATA needed?
-- Support for XPath and CSS selector expressions to query :class:`TagNode` s is
-  sufficent in a high-level language as querying context.
-
 
 An API draft
 ------------
@@ -293,13 +332,13 @@ An API draft
     class Document:
        """ This class represents a complete XML document. """
 
-        def __init__(source: Union[str, path.Pathlib, io.IOBase, TagNode]):
+        def __init__(self, source: Union[str, pathlib.Path, io.IOBase, TagNode]):
             """ If ``source`` is a string that matches an URI with a supported
                 scheme (or prefix?), the document is read by a loader plugin.
             """
             ...
 
-        def __contains__(node: NodeBase) -> bool:
+        def __contains__(self, node: NodeBase) -> bool:
             """ Tests whether a node is part of a document instance. """
             ...
 
@@ -332,13 +371,13 @@ An API draft
         ) -> TagNode:
             ...
 
-        def new_text_node(content: str = '') -> TextNode:
+        def new_text_node(self, content: str = '') -> TextNode:
             ...
 
-        def save(path: pathlib.Path) -> None:
+        def save(self, path: pathlib.Path) -> None:
             ...
 
-        def write(buffer: io.IOBase) -> None:
+        def write(self, buffer: io.IOBase) -> None:
             ...
 
         def xpath(self, expression: str) -> Iterable[TagNode]:
@@ -399,7 +438,7 @@ An API draft
             ...
 
         @abstractmethod
-        def new_text_node(content: str = '') -> TextNode:
+        def new_text_node(self, content: str = '') -> TextNode:
             ...
 
         @abstractproperty
@@ -407,7 +446,7 @@ An API draft
             ...
 
         @abstractmethod
-        def next_node_in_stream(name: str) -> Optional[TagNode]:
+        def next_node_in_stream(name: Optional[str]) -> Optional[TagNode]:
             """ Returns the next node in stream order that matches the given
                 name. """
             ...
@@ -417,7 +456,7 @@ An API draft
             ...
 
         @abstractmethod
-        def previous_node_in_stream(name: str) -> Optional[TagNode]:
+        def previous_node_in_stream(name: Optional[str]) -> Optional[TagNode]:
             """ Returns the previous node in stream order that matches the given
                 name. """
             ...
@@ -437,7 +476,7 @@ An API draft
             ...
 
         def __getitem__(self, item: str) -> str:
-            return self._etree_object-attrib[item]
+            return self._etree_object.attrib[item]
 
         def __len__(self) -> int:
             ...
@@ -452,7 +491,6 @@ An API draft
                 -> Iterable[NodeBase]:
             ...
 
-        @property
         def css_select(self, expression: str) -> Iterable[TagNode]:
             ...
 
@@ -500,7 +538,6 @@ An API draft
         def replace_with(self, node: NodeBase, clone: bool = False) -> None:
             ...
 
-        @property
         def xpath(self, expression: str) -> Iterable[TagNode]:
             ...
 
