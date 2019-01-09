@@ -4,6 +4,8 @@ cache: pip
 
 matrix:
   include:
+    - env: TARGET=check-style
+      python: "3.7"
     - env: TARGET=mypy
       python: "3.7"
     - env: TARGET=pytest

@@ -10,6 +10,7 @@ lxml = "*"
 
 [tool.poetry.dev-dependencies]
 black = "^18.9b0"
+flake8 = "*"
 mypy = "*"
 pytest = "*"
 pytest-datafiles = "*"
