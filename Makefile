@@ -39,7 +39,7 @@ help:
 
 .PHONY: mypy
 mypy: ## run static type checks with mypy
-	mypy lxml_domesque
+	MYPYPATH=./lxml-stubs mypy lxml_domesque
 
 .PHONY: pytest
 pytest: ## run the test suite

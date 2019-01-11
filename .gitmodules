@@ -1,0 +1,3 @@
+[submodule "lxml-stubs"]
+	path = lxml-stubs
+	url = git@github.com:funkyfuture/lxml-stubs.git

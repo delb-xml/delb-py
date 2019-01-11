@@ -1,13 +1,18 @@
 from abc import abstractmethod, ABC
-from io import IOBase
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import IO as IOType
 
 from lxml import etree
 
 
+# types
+
+_DictAnyStr = Union[Dict[str, str], Dict[bytes, bytes]]
 Filter = Callable[["NodeBase"], bool]
 
+
+# constants
 
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
@@ -16,23 +21,30 @@ Filter = Callable[["NodeBase"], bool]
 DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
+# api
+
 class Document:
     """ This class represents a complete XML document. """
 
     def __init__(
         self,
-        source: Union[str, Path, IOBase, "TagNode"],
+        source: Union[str, Path, IOType, "TagNode"],
         parser: etree.XMLParser = DEFAULT_PARSER,
     ):
         """ If ``source`` is a string that matches an URI with a supported
             scheme (or prefix?), the document is read by a loader plugin.
         """
-        if isinstance(source, str):
-            self._etree_obj = etree.fromstring(source, parser=parser)
+        self._etree_obj: etree._ElementTree
+
+        if isinstance(source, str):  # TODO no URLs
+            # TODO test this
+            self._etree_obj = etree.ElementTree(
+                element=etree.fromstring(source, parser=parser)
+            )
         elif isinstance(source, TagNode):
             raise NotImplementedError
         else:
-            assert isinstance(source, (IOBase, Path))
+            assert isinstance(source, (IOType, Path))
             if isinstance(source, Path):
                 source = str(source.resolve())
             self._etree_obj = etree.parse(source, parser=parser)
@@ -58,8 +70,8 @@ class Document:
         raise NotImplementedError
 
     @property
-    def namespaces_map(self) -> Dict[str, str]:
-        return self.root._etree_object.nsmap
+    def namespaces_map(self) -> _DictAnyStr:
+        return self.root._etree_obj.nsmap
 
     def new_tag_node(
         self,
@@ -78,7 +90,7 @@ class Document:
             str(path.resolve()), encoding="utf-8", pretty_print=pretty
         )
 
-    def write(self, buffer: IOBase) -> None:
+    def write(self, buffer: IOType) -> None:
         raise NotImplementedError
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
@@ -102,7 +114,6 @@ class NodeBase(ABC):
     def add_previous(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
         raise NotImplementedError
 
-    @property
     @abstractmethod
     def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
         """ Yields the ancestor nodes from bottom to top. """
@@ -141,7 +152,6 @@ class NodeBase(ABC):
     def new_text_node(self, content: str = "") -> "TextNode":
         raise NotImplementedError
 
-    @property
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         raise NotImplementedError
@@ -152,7 +162,6 @@ class NodeBase(ABC):
             name. """
         raise NotImplementedError
 
-    @property
     @abstractmethod
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         raise NotImplementedError
@@ -169,16 +178,19 @@ class NodeBase(ABC):
 
 
 class TagNode(NodeBase):
+    def __init__(self):
+        self._etree_obj: etree._Element
+
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         """ Tests whether the node has an attribute with given string or
             a given node is a descendant. """
         raise NotImplementedError
 
-    def __eq__(self, other: "TagNode") -> bool:
+    def __eq__(self, other: Any) -> bool:
         raise NotImplementedError
 
     def __getitem__(self, item: str) -> str:
-        return self._etree_object.attrib[item]
+        return self._etree_obj.attrib[item]
 
     def __len__(self) -> int:
         raise NotImplementedError
