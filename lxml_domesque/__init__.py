@@ -23,6 +23,7 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 # api
 
+
 class Document:
     """ This class represents a complete XML document. """
 
