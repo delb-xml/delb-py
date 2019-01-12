@@ -1,6 +1,5 @@
 __pycache__/
 .idea/
-docs/_build/doctrees/
-docs/_build/html/.buildinfo
+docs/_build/
 .mypy_cache/
 .pytest_cache/
