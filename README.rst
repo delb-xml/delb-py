@@ -11,6 +11,7 @@ Slug lines
 ----------
 
 A DOM API inspired wrapper around lxml.
+
 XML documents for Kenny and all other kids too.
 …
 
@@ -58,9 +59,9 @@ deviates from lxml and ignores stuff:
   declaration.
 - Comment, CDATA and Processing Instruction nodes are not accessible (for now),
   but are retained and appear in serializations; in particular
-  - The position of these nodes may be shifted in the resulting document,
-  - Processing instructions that appear before the root node in the stream
-    don't persist their order (that's lxml's behaviour).
+    - The position of these nodes may be shifted in the resulting document,
+    - Processing instructions that appear before the root node in the stream
+      don't persist their order (that's lxml's behaviour).
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
 lxml's objects that are bound to :attr:`Document._etree_obj` and
@@ -105,7 +106,7 @@ documents with known issues and known workarounds that represents the full glory
 of what a full-fledged specification implies - of which a lot is not of concern
 for the problems at hand and occasionally make solutions complicated. The one
 aspect that's very wrong in the context of text processing is unfortunately its
-central model of elements and text. In particular the notion of an element
+central model of elements and data/text. In particular the notion of an element
 *tail* makes the whole enchilada tricky to traverse / navigate. The existence
 of this attribute is due to the insignificance of these fragments of an XML
 stream in the aforementioned, common uses of XML. Now it is time for an example,
