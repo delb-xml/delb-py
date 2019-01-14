@@ -56,7 +56,7 @@ click = ">=6.5"
 toml = ">=0.9.4"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
@@ -64,7 +64,7 @@ python-versions = "*"
 version = "2018.11.29"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Universal encoding detector for Python 2 and 3"
 name = "chardet"
 optional = false
@@ -111,7 +111,7 @@ pyflakes = ">=2.0.0,<2.1.0"
 setuptools = ">=30"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
 optional = false
@@ -291,7 +291,7 @@ python-versions = "*"
 version = "2018.9"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Python HTTP for Humans."
 name = "requests"
 optional = false
@@ -368,7 +368,7 @@ python-versions = "*"
 version = "1.1.1"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
 optional = false
@@ -388,8 +388,11 @@ lxml = ">=3.1.0"
 setuptools = "*"
 six = "*"
 
+[extras]
+https-loader = ["requests"]
+
 [metadata]
-content-hash = "b6b0d1163a74895ea136f1be03430d552051d21230a7c7eb42af50d64179e71e"
+content-hash = "2fe61bd9f75ee6670537c4701859b0eac7684184439470dd8bbb6fa02d292480"
 python-versions = ">=3.6"
 
 [metadata.hashes]

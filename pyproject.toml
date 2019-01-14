@@ -7,6 +7,10 @@ authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
 [tool.poetry.dependencies]
 python = ">=3.6"
 lxml = "*"
+requests = {version = "^2.21",optional = true}
+
+[tool.poetry.extras]
+https-loader = ["requests"]
 
 [tool.poetry.dev-dependencies]
 black = "^18.9b0"

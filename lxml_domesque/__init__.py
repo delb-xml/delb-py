@@ -5,6 +5,8 @@ from typing import IO as IOType
 
 from lxml import etree
 
+from lxml_domesque.loaders import configured_loaders
+
 
 # types
 
@@ -25,30 +27,30 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
 class Document:
-    """ This class represents a complete XML document. """
+    """ This class represents a complete XML document.
+        TODO
+    """
 
     def __init__(
         self,
-        source: Union[str, Path, IOType, "TagNode"],
+        source: Union[str, Path, IOType, "TagNode", etree._ElementTree, etree._Element],
         parser: etree.XMLParser = DEFAULT_PARSER,
     ):
-        """ If ``source`` is a string that matches an URI with a supported
-            scheme (or prefix?), the document is read by a loader plugin.
-        """
+        # instance properties' types
         self._etree_obj: etree._ElementTree
 
-        if isinstance(source, str):  # TODO no URLs
-            # TODO test this
-            self._etree_obj = etree.ElementTree(
-                element=etree.fromstring(source, parser=parser)
+        # document loading
+        loaded_tree: Optional[etree._ElementTree] = None
+        for loader in configured_loaders:
+            loaded_tree = loader(source, parser)
+            if loaded_tree:
+                break
+        if loaded_tree is None:
+            raise ValueError(
+                f"Couldn't load {source!r} with these currently configured loaders: "
+                + ", ".join(x.__name__ for x in configured_loaders)
             )
-        elif isinstance(source, TagNode):
-            raise NotImplementedError
-        else:
-            assert isinstance(source, (IOType, Path))
-            if isinstance(source, Path):
-                source = str(source.resolve())
-            self._etree_obj = etree.parse(source, parser=parser)
+        self._etree_obj = loaded_tree
 
     def __contains__(self, node: "NodeBase") -> bool:
         """ Tests whether a node is part of a document instance. """
