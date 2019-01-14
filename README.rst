@@ -52,8 +52,8 @@ Design aspects & caveats
 The code is intended to be a thin wrapper with as few states as possible and
 caching where safely applicable.
 
-The library is partly opinionated to encourage good practices and its behaviour
-deviates from lxml and ignores stuff:
+The library is partly opinionated to encourage good practices and to be more
+pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 
 - All serializations are UTF-8 encoded by default and always start with an XML
   declaration.
@@ -64,8 +64,11 @@ deviates from lxml and ignores stuff:
       don't persist their order (that's lxml's behaviour).
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
-lxml's objects that are bound to :attr:`Document._etree_obj` and
+lxml objects that are bound to :attr:`Document._etree_obj` and
 :attr:`TagNode._etree_obj`.
+
+
+.. _pythonic: https://zen-of-python.info/there-should-be-one-and-preferably-only-one-obvious-way-to-do-it.html#13
 
 
 API
