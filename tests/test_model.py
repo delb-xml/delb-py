@@ -1,4 +1,4 @@
-from lxml_domesque import Document, TagNode
+from lxml_domesque import is_text_node, Document, TagNode, TextNode
 
 from lxml import etree
 
@@ -9,7 +9,10 @@ document = Document(
     <header/>
     <text>
         <milestone unit="page"/>
-        <p>Lorem ipsum</p>
+        <p>Lorem ipsum
+            <milestone unit="line"/>
+            dolor sit amet
+        </p>
     </text>
 </doc>
 """
@@ -73,3 +76,17 @@ def test_caching():
     assert x._bound_to is y._bound_to
     assert x.parent is y.parent
     assert x is y
+
+
+def test_text_nodes():
+    p = document.root[1][1]
+
+    text_nodes = tuple(x for x in p.child_nodes(is_text_node))
+
+    assert len(text_nodes) == 2
+    assert text_nodes[0] is p[0]
+
+    assert text_nodes[1] is p[2]
+    assert all(isinstance(x, TextNode) for x in text_nodes)
+    assert text_nodes[0].content.strip() == "Lorem ipsum"
+    assert text_nodes[1].content.strip() == "dolor sit amet"

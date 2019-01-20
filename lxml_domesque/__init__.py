@@ -566,7 +566,33 @@ class TextNode(NodeBase):
         return TextNode(content, position=DETATCHED)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+        if self._position is DETATCHED:
+            return None
+
+        candidate: NodeBase
+
+        if self.__appended_text_node:
+            candidate = self.__appended_text_node
+        elif self._position is DATA:
+            assert isinstance(self._bound_to, etree._Element)
+            if len(self._bound_to):
+                candidate = TagNode(self._bound_to[0], self.__cache)
+            else:
+                return None
+        elif self._position is TAIL:
+            next_etree_node = cast(etree._Element, self._bound_to).getnext()
+            if next_etree_node is None:
+                return None
+            candidate = TagNode(next_etree_node, self.__cache)
+        elif self._position is APPENDED:
+            raise NotImplementedError
+
+        if all(f(candidate) for f in filter):
+            if isinstance(candidate, TextNode):
+                assert candidate._exists
+            return candidate
+        else:
+            return candidate.next_node(*filter)
 
     def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the next node in stream order that matches the given
