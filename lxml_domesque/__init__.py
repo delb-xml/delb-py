@@ -1,7 +1,9 @@
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import cast, overload, Any, Callable, Dict, Iterable, Optional, Union
 from typing import IO as IOType
+from weakref import ReferenceType  # noqa: F401
+from weakref import WeakValueDictionary
 
 from lxml import etree
 
@@ -10,12 +12,12 @@ from lxml_domesque.loaders import configured_loaders
 
 # types
 
-_DictAnyStr = Union[Dict[str, str], Dict[bytes, bytes]]
 Filter = Callable[["NodeBase"], bool]
 
 
 # constants
 
+DETATCHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Default_Whitespace_Processing
@@ -27,7 +29,7 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
 class Document:
-    """ This class represents a complete XML document.
+    """ This class represents an XML document.
         TODO
     """
 
@@ -36,6 +38,7 @@ class Document:
         source: Union[str, Path, IOType, "TagNode", etree._ElementTree, etree._Element],
         parser: etree.XMLParser = DEFAULT_PARSER,
     ):
+        # TODO __slots__
         # instance properties' types
         self._etree_obj: etree._ElementTree
 
@@ -132,6 +135,8 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def document(self) -> Optional[Document]:
+        # TODO wasn't there a bug where a node may return a root though it has been
+        #      detached from a tree?
         raise NotImplementedError
 
     @property
@@ -178,8 +183,36 @@ class NodeBase(ABC):
 
 
 class TagNode(NodeBase):
-    def __init__(self):
+    # this is the cache that keeps wrapper objects mapped to the id of the wrapped
+    # etree element. unfortunately, these cannot be weak referenced, thus we can't bind
+    # the wrapper to an etree node for its lifetime.
+    # future enhancements that keep this cache could disable garbage collection during
+    # some operations to keep TagNodes in the cache.
+    # other caching mechanics may provide a reasonable solution as well
+    _instantiated_wrappers = (
+        WeakValueDictionary()
+    )  # type: WeakValueDictionary[int, ReferenceType["TagNode"]]
+
+    # TODO __slots__
+
+    def __new__(cls, etree_element: etree._Element) -> "TagNode":
+        obj = cls._instantiated_wrappers.get(id(etree_element))
+
+        if obj is None:
+            cls._instantiated_wrappers[id(etree_element)] = obj = object.__new__(cls)
+
+            # __init__
+            obj._etree_obj = etree_element  # type: ignore
+            obj._data_node = TextNode(etree_element, DATA)  # type: ignore
+            obj._tail_node = TextNode(etree_element, TAIL)  # type: ignore
+
+        return obj  # type: ignore
+
+    # this only serves to declare properties' types
+    def __init__(self, etree_element: etree._Element):
         self._etree_obj: etree._Element
+        self._data_node: TextNode
+        self._tail_node: TextNode
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         """ Tests whether the node has an attribute with given string or
@@ -189,10 +222,37 @@ class TagNode(NodeBase):
     def __eq__(self, other: Any) -> bool:
         raise NotImplementedError
 
+    # TODO remove flake8 exception soon; the issue is fixed in pyflakes
+    @overload
     def __getitem__(self, item: str) -> str:
-        return self._etree_obj.attrib[item]
+        ...
+
+    @overload  # noqa: F811
+    def __getitem__(self, item: int) -> NodeBase:
+        ...
+
+    def __getitem__(self, item):  # noqa: F811
+
+        if isinstance(item, str):
+            return self._etree_obj.attrib[item]
+
+        elif isinstance(item, int):
+            if item < 0:
+                raise ValueError("An index must be a non-negative number.")
+
+            index = -1
+            for child_node in self.child_nodes():
+                index += 1
+                if index == item:
+                    return child_node
+
+            raise IndexError
+
+        raise TypeError
 
     def __len__(self) -> int:
+        return len([x for x in self.child_nodes(recurse=False)])
+
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
         raise NotImplementedError
 
@@ -219,8 +279,14 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     @property
-    def first_child(self) -> NodeBase:
+    def document(self) -> Optional[Document]:
         raise NotImplementedError
+
+    @property
+    def first_child(self) -> Optional[NodeBase]:
+        for result in self.child_nodes(recurse=False):
+            return result
+        return None
 
     @property
     def full_text(self) -> str:
@@ -320,6 +386,35 @@ class TextNode(NodeBase):
     """ This class also proxies all (?) methods that :class:`py:str`
         objects provide, including dunder-methods. """
 
+    def __init__(
+        self,
+        reference_or_text: Union[etree._Element, str, "TextNode"],
+        position: int = DETATCHED,
+    ):
+        # TODO __slots__
+        # TODO protect all?
+        self._bound_to: Union[None, etree._Element, "TextNode"]
+        self.__content: Optional[str]
+        self._position: int = position
+
+        if position is DETATCHED:
+            assert isinstance(reference_or_text, str)
+            self._bound_to = None
+            self.__content = reference_or_text
+
+        elif position in (DATA, TAIL):
+            assert isinstance(reference_or_text, etree._Element)
+            self._bound_to = reference_or_text
+            self.__content = None
+
+        elif position is APPENDED:
+            assert isinstance(reference_or_text, TextNode)
+            self._bound_to = reference_or_text
+            self.__content = ""
+
+        else:
+            raise ValueError
+
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
         raise NotImplementedError
 
@@ -335,10 +430,94 @@ class TextNode(NodeBase):
 
     @property
     def content(self) -> str:
+        if self._position is DATA:
+            assert isinstance(self._bound_to, etree._Element)
+            return cast(str, cast(etree._Element, self._bound_to).text) or ""
+
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, etree._Element)
+            return cast(str, cast(etree._Element, self._bound_to).tail) or ""
+
+        elif self._position in (APPENDED, DETATCHED):
+            assert self._bound_to is None or isinstance(self._bound_to, TextNode)
+            return cast(str, self.__content)
+
+        else:
+            raise RuntimeError
+
+    @content.setter
+    def content(self, text: str):
+        if self._position is DATA:
+            assert isinstance(self._bound_to, etree._Element)
+            cast(etree._Element, self._bound_to).text = text or None
+
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, etree._Element)
+            cast(etree._Element, self._bound_to).tail = text or None
+
+        elif self._position in (APPENDED, DETATCHED):
+            assert self._bound_to is None or isinstance(self._bound_to, TextNode)
+            self.__content = text
+
+    @property
+    def document(self) -> Optional[Document]:
+        # TODO wasn't there a bug where a node may return a root though it has been
+        #      detached from a tree?
         raise NotImplementedError
 
     @property
-    def parent(self) -> TagNode:
+    def index(self) -> int:
+        pass
+
+    def new_tag_node(
+        self,
+        local_name: str,
+        attributes: Optional[Dict[str, str]] = None,
+        prefix: Optional[str] = None,
+        namespace: Optional[str] = None,
+    ) -> "TagNode":
+        raise NotImplementedError
+
+    def new_text_node(self, content: str = "") -> "TextNode":
+        # also implemented in NodeBase
+        return TextNode(content, position=DETATCHED)
+
+    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        raise NotImplementedError
+
+    def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
+        """ Returns the next node in stream order that matches the given
+            name. """
+        raise NotImplementedError
+
+    @property
+    def parent(self) -> Optional[TagNode]:
+        if self._position is DATA:
+            assert isinstance(self._bound_to, etree._Element)
+            return TagNode(cast(etree._Element, self._bound_to))
+
+        elif self._position is TAIL:
+            raise NotImplementedError
+
+        elif self._position is APPENDED:
+            assert isinstance(self._bound_to, TextNode)
+            return cast(TextNode, self._bound_to).parent
+
+        elif self._position is DETATCHED:
+            assert self._bound_to is None
+            return None
+
+        raise RuntimeError
+
+    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        raise NotImplementedError
+
+    def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
+        """ Returns the previous node in stream order that matches the given
+            name. """
+        raise NotImplementedError
+
+    def remove(self) -> None:
         raise NotImplementedError
 
 
