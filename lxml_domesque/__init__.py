@@ -136,12 +136,6 @@ class NodeBase(ABC):
     def index(self) -> int:
         pass
 
-    @property
-    @abstractmethod
-    def namespaces_map(self) -> Dict[str, str]:
-        raise NotImplementedError
-
-    @abstractmethod
     def new_tag_node(
         self,
         local_name: str,
@@ -160,7 +154,7 @@ class NodeBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
+    def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
         """ Returns the next node in stream order that matches the given
             name. """
         raise NotImplementedError
@@ -196,15 +190,22 @@ class TagNode(NodeBase):
         return self._etree_obj.attrib[item]
 
     def __len__(self) -> int:
+    def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
+        raise NotImplementedError
+
+    def add_previous(self, *node: Union["NodeBase", str], clone: bool = False):
+        raise NotImplementedError
+
+    def ancestors(self, *filter: Filter):
         raise NotImplementedError
 
     def append_child(self, *node: NodeBase) -> None:
         raise NotImplementedError
 
-    def attributes(self) -> Dict[str, str]:
+    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
         raise NotImplementedError
 
-    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
+    def clone(self, deep: bool = False) -> "TagNode":
         raise NotImplementedError
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
@@ -221,6 +222,10 @@ class TagNode(NodeBase):
     @property
     def fully_qualified_name(self) -> str:
         return f"{{{self.namespace}}}{self.local_name}"
+
+    @property
+    def index(self):
+        raise NotImplementedError
 
     def insert_child(self, *node: NodeBase, index: int = 0) -> None:
         raise NotImplementedError
@@ -261,6 +266,19 @@ class TagNode(NodeBase):
 class TextNode(NodeBase):
     """ This class also proxies all (?) methods that :class:`py:str`
         objects provide, including dunder-methods. """
+
+    def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
+        raise NotImplementedError
+
+    def add_previous(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
+        raise NotImplementedError
+
+    def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
+        """ Yields the ancestor nodes from bottom to top. """
+        raise NotImplementedError
+
+    def clone(self, deep: bool = False) -> "NodeBase":
+        raise NotImplementedError
 
     @property
     def content(self) -> str:
