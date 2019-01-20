@@ -444,25 +444,26 @@ class TextNode(NodeBase):
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
-        # TODO protect all?
-        self._bound_to: Union[None, etree._Element, "TextNode"]
+        self.__appended_text_node: Optional[TextNode] = None
+        self._bound_to: Union[None, etree._Element, TextNode]
         self.__cache = cache or {}
         self.__content: Optional[str]
         self._position: int = position
 
         if position is DETATCHED:
-            assert isinstance(reference_or_text, str)
+            self.__appended_text_node = None
             self._bound_to = None
-            self.__content = reference_or_text
+            self.__content = cast(str, reference_or_text)
 
         elif position in (DATA, TAIL):
             assert isinstance(reference_or_text, etree._Element)
             self._bound_to = reference_or_text
             self.__content = None
 
+        # REMOVE?!
         elif position is APPENDED:
             assert isinstance(reference_or_text, TextNode)
-            self._bound_to = reference_or_text
+            reference_or_text._append_text_node(self)
             self.__content = ""
 
         else:
@@ -486,6 +487,15 @@ class TextNode(NodeBase):
     def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
         """ Yields the ancestor nodes from bottom to top. """
         raise NotImplementedError
+
+    def _append_text_node(self, node: "TextNode"):
+        # TODO leverage that both objects are gc-safe due to the mutual binding?
+        #      and hence discard TextNode.__cache
+        old = self.__appended_text_node
+        node._bound_to = self
+        self.__appended_text_node = node
+        if old:
+            node._append_text_node(old)
 
     def clone(self, deep: bool = False) -> "NodeBase":
         raise NotImplementedError
