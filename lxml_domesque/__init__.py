@@ -2,8 +2,6 @@ from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import cast, overload, Any, Callable, Dict, Iterable, Optional, Union
 from typing import IO as IOType
-from weakref import ReferenceType  # noqa: F401
-from weakref import WeakValueDictionary
 
 from lxml import etree
 
@@ -13,6 +11,7 @@ from lxml_domesque.loaders import configured_loaders
 # types
 
 Filter = Callable[["NodeBase"], bool]
+_WrapperCache = Dict[int, "TagNode"]
 
 
 # constants
@@ -39,7 +38,8 @@ class Document:
         parser: etree.XMLParser = DEFAULT_PARSER,
     ):
         # TODO __slots__
-        # instance properties' types
+        # instance properties
+        self.__wrapper_cache: Dict[int, "TagNode"] = {}
         self._etree_obj: etree._ElementTree
 
         # document loading
@@ -67,7 +67,7 @@ class Document:
 
     @property
     def root(self) -> "TagNode":
-        return TagNode(self._etree_obj.getroot())
+        return TagNode(self._etree_obj.getroot(), self.__wrapper_cache)
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
@@ -90,7 +90,12 @@ class Document:
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in NodeBase
-        return TextNode(content, position=DETATCHED)
+        return TextNode(content, position=DETATCHED, cache=self.__wrapper_cache)
+
+    def _prune_cache(self):
+        cache = self.__wrapper_cache
+        for key in set(cache) - {id(x) for x in self.root._etree_obj.iter()}:
+            cache.pop(key)
 
     def save(self, path: Path, pretty=False):
         self._etree_obj.write(
@@ -154,7 +159,7 @@ class NodeBase(ABC):
         raise NotImplementedError
 
     def new_text_node(self, content: str = "") -> "TextNode":
-        # also implemented in NodeBase
+        # also implemented in Document
         return TextNode(content, position=DETATCHED)
 
     @abstractmethod
@@ -183,36 +188,37 @@ class NodeBase(ABC):
 
 
 class TagNode(NodeBase):
-    # this is the cache that keeps wrapper objects mapped to the id of the wrapped
-    # etree element. unfortunately, these cannot be weak referenced, thus we can't bind
-    # the wrapper to an etree node for its lifetime.
-    # future enhancements that keep this cache could disable garbage collection during
-    # some operations to keep TagNodes in the cache.
-    # other caching mechanics may provide a reasonable solution as well
-    _instantiated_wrappers = (
-        WeakValueDictionary()
-    )  # type: WeakValueDictionary[int, ReferenceType["TagNode"]]
-
     # TODO __slots__
 
-    def __new__(cls, etree_element: etree._Element) -> "TagNode":
-        obj = cls._instantiated_wrappers.get(id(etree_element))
+    def __new__(
+        cls, etree_element: etree._Element, cache: Optional[_WrapperCache] = None
+    ) -> "TagNode":
+        if cache is None:
+            obj, cache = None, {}
+        else:
+            obj = cache.get(id(etree_element))
 
         if obj is None:
-            cls._instantiated_wrappers[id(etree_element)] = obj = object.__new__(cls)
+            cache[id(etree_element)] = obj = object.__new__(cls)
 
             # __init__
             obj._etree_obj = etree_element  # type: ignore
-            obj._data_node = TextNode(etree_element, DATA)  # type: ignore
-            obj._tail_node = TextNode(etree_element, TAIL)  # type: ignore
+            obj._data_node = TextNode(
+                etree_element, position=DATA, cache=cache
+            )  # type: ignore
+            obj._tail_node = TextNode(
+                etree_element, position=TAIL, cache=cache
+            )  # type: ignore
+            obj.__cache = cache
 
         return obj  # type: ignore
 
     # this only serves to declare properties' types
-    def __init__(self, etree_element: etree._Element):
+    def __init__(self, etree_element: etree._Element, _):
         self._etree_obj: etree._Element
         self._data_node: TextNode
         self._tail_node: TextNode
+        self.__cache: _WrapperCache
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         """ Tests whether the node has an attribute with given string or
@@ -277,7 +283,7 @@ class TagNode(NodeBase):
         if self._data_node._exists:
             current_node = self._data_node
         elif len(self._etree_obj):
-            current_node = TagNode(self._etree_obj[0])
+            current_node = TagNode(self._etree_obj[0], self.__cache)
         else:
             current_node = None
 
@@ -323,6 +329,7 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     def insert_child(self, *node: NodeBase, index: int = 0) -> None:
+        # TODO merge caches if applicable
         raise NotImplementedError
 
     @property
@@ -365,7 +372,7 @@ class TagNode(NodeBase):
             next_etree_obj = self._etree_obj.getnext()
             if next_etree_obj is None:
                 return None
-            candidate = TagNode(next_etree_obj)
+            candidate = TagNode(next_etree_obj, self.__cache)
 
         if all(f(candidate) for f in filter):
             return candidate
@@ -380,7 +387,7 @@ class TagNode(NodeBase):
         etree_parent = self._etree_obj.getparent()
         if etree_parent is None:
             return None
-        return TagNode(etree_parent)
+        return TagNode(etree_parent, self.__cache)
 
     @property
     def prefix(self) -> Optional[str]:
@@ -423,10 +430,12 @@ class TextNode(NodeBase):
         self,
         reference_or_text: Union[etree._Element, str, "TextNode"],
         position: int = DETATCHED,
+        cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
         # TODO protect all?
         self._bound_to: Union[None, etree._Element, "TextNode"]
+        self.__cache = cache or {}
         self.__content: Optional[str]
         self._position: int = position
 
@@ -538,7 +547,7 @@ class TextNode(NodeBase):
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            return TagNode(cast(etree._Element, self._bound_to))
+            return TagNode(cast(etree._Element, self._bound_to), self.__cache)
 
         elif self._position is TAIL:
             raise NotImplementedError
