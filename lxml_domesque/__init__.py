@@ -60,11 +60,11 @@ class Document:
         raise NotImplementedError
 
     def clone(self) -> "Document":
-        raise NotImplementedError
+        return self.__class__(self.root.clone(deep=True))
 
     @property
     def root(self) -> "TagNode":
-        raise NotImplementedError
+        return TagNode(self._etree_obj.getroot())
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
@@ -73,8 +73,8 @@ class Document:
         raise NotImplementedError
 
     @property
-    def namespaces_map(self) -> _DictAnyStr:
-        return self.root._etree_obj.nsmap
+    def namespaces(self) -> "etree._NSMap":
+        return self._etree_obj.getroot().nsmap
 
     def new_tag_node(
         self,
@@ -86,14 +86,15 @@ class Document:
         raise NotImplementedError
 
     def new_text_node(self, content: str = "") -> "TextNode":
-        raise NotImplementedError
+        # also implemented in NodeBase
+        return TextNode(content, position=DETATCHED)
 
-    def save(self, path: Path, pretty=False) -> None:
+    def save(self, path: Path, pretty=False):
         self._etree_obj.write(
             str(path.resolve()), encoding="utf-8", pretty_print=pretty
         )
 
-    def write(self, buffer: IOType) -> None:
+    def write(self, buffer: IOType):
         raise NotImplementedError
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
@@ -104,8 +105,10 @@ class Document:
             .. this lxml issue: https://github.com/lxml/lxml/pull/236 """
         raise NotImplementedError
 
-    def xslt(self, transformation: etree.XSLT) -> None:
-        raise NotImplementedError
+    def xslt(self, transformation: etree.XSLT) -> "Document":
+        # TODO cache xslt object and use it directly
+        result = self._etree_obj.xslt(transformation)
+        return Document(result.getroot())
 
 
 class NodeBase(ABC):
@@ -145,9 +148,9 @@ class NodeBase(ABC):
     ) -> "TagNode":
         raise NotImplementedError
 
-    @abstractmethod
     def new_text_node(self, content: str = "") -> "TextNode":
-        raise NotImplementedError
+        # also implemented in NodeBase
+        return TextNode(content, position=DETATCHED)
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -202,6 +205,10 @@ class TagNode(NodeBase):
     def append_child(self, *node: NodeBase) -> None:
         raise NotImplementedError
 
+    @property
+    def attributes(self) -> etree._Attrib:
+        return self._etree_obj.attrib
+
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
         raise NotImplementedError
 
@@ -217,11 +224,14 @@ class TagNode(NodeBase):
 
     @property
     def full_text(self) -> str:
-        raise NotImplementedError
+        return "".join(
+            cast(TextNode, x).content
+            for x in self.child_nodes(is_text_node, recurse=True)
+        )
 
     @property
     def fully_qualified_name(self) -> str:
-        return f"{{{self.namespace}}}{self.local_name}"
+        return cast(str, etree.QName(self._etree_obj).text)
 
     @property
     def index(self):
@@ -231,29 +241,72 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     @property
-    def last_child(self) -> NodeBase:
-        raise NotImplementedError
+    def last_child(self) -> Optional[NodeBase]:
+        result = None
+        for result in self.child_nodes(recurse=False):
+            pass
+        return result
 
     @property
     def local_name(self) -> str:
-        raise NotImplementedError
+        return cast(str, etree.QName(self._etree_obj).localname)
+
+    @local_name.setter
+    def local_name(self, value: str) -> None:
+        self._etree_obj.tag = etree.QName(self.namespace, value)
 
     def merge_text_nodes(self):
         raise NotImplementedError
 
     @property
     def namespace(self) -> str:
+        return cast(str, etree.QName(self._etree_obj).namespace)
+
+    @namespace.setter
+    def namespace(self, value: str) -> None:
+        self._etree_obj.tag = etree.QName(value, self.local_name)
+
+    @property
+    def namespaces(self) -> Dict[str, str]:
+        return cast(Dict[str, str], self._etree_obj.nsmap)
+
+    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        raise NotImplementedError
+
+    def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
         raise NotImplementedError
 
     @property
     def parent(self) -> Optional["TagNode"]:
-        raise NotImplementedError
+        etree_parent = self._etree_obj.getparent()
+        if etree_parent is None:
+            return None
+        return TagNode(etree_parent)
 
     @property
-    def prefix(self) -> str:
-        raise NotImplementedError
+    def prefix(self) -> Optional[str]:
+        # mypy 0.650 throws weird errors here
+        target = etree.QName(self._etree_obj).namespace
+        assert isinstance(target, str)
+        for prefix, namespace in self._etree_obj.nsmap:  # type: ignore
+            assert isinstance(prefix, str) or prefix is None
+            assert isinstance(namespace, str)
+            if namespace == target:
+                return prefix
+        raise RuntimeError("Reached unreachable code.")
 
     def prepend_child(self, *node: NodeBase) -> None:
+        self.insert_child(*node, index=0)
+
+    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        raise NotImplementedError
+
+    def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
+        """ Returns the previous node in stream order that matches the given
+            name. """
+        raise NotImplementedError
+
+    def remove(self) -> None:
         raise NotImplementedError
 
     def replace_with(self, node: NodeBase, clone: bool = False) -> None:
