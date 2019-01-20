@@ -259,6 +259,17 @@ class TagNode(NodeBase):
     def __len__(self) -> int:
         return len([x for x in self.child_nodes(recurse=False)])
 
+    def __str__(self) -> str:
+        attributes = " ".join(f"{k}={v}" for k, v in self._etree_obj.attrib.items())
+        result = f"<{self.fully_qualified_name}"
+        if attributes:
+            result += " " + attributes
+        return result + ">"
+
+    def __repr__(self) -> str:
+        return (f"<{self.__class__.__name__}({self.fully_qualified_name}, "
+                f" {self.attributes}) [{hex(id(self))}]>")
+
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
         raise NotImplementedError
 
@@ -456,6 +467,15 @@ class TextNode(NodeBase):
 
         else:
             raise ValueError
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__}(text='{self.content}', "
+            f"pos={self._position}) [{hex(id(self))}]>"
+        )
+
+    def __str__(self):
+        return self.content
 
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
         raise NotImplementedError
