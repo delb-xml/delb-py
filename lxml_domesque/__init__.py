@@ -270,7 +270,26 @@ class TagNode(NodeBase):
         return self._etree_obj.attrib
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
-        raise NotImplementedError
+
+        current_node: Optional[NodeBase]
+
+        assert isinstance(self._data_node, TextNode)
+        if self._data_node._exists:
+            current_node = self._data_node
+        elif len(self._etree_obj):
+            current_node = TagNode(self._etree_obj[0])
+        else:
+            current_node = None
+
+        while current_node is not None:
+
+            if all(f(current_node) for f in filter):
+                yield current_node
+
+            if recurse and isinstance(current_node, TagNode):
+                yield from current_node.child_nodes(*filter, recurse=recurse)
+
+            current_node = current_node.next_node()
 
     def clone(self, deep: bool = False) -> "TagNode":
         raise NotImplementedError
@@ -337,7 +356,21 @@ class TagNode(NodeBase):
         return cast(Dict[str, str], self._etree_obj.nsmap)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+
+        candidate: NodeBase
+
+        if self._tail_node._exists:
+            candidate = self._tail_node
+        else:
+            next_etree_obj = self._etree_obj.getnext()
+            if next_etree_obj is None:
+                return None
+            candidate = TagNode(next_etree_obj)
+
+        if all(f(candidate) for f in filter):
+            return candidate
+        else:
+            return candidate.next_node(*filter)
 
     def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
         raise NotImplementedError
@@ -464,6 +497,17 @@ class TextNode(NodeBase):
         # TODO wasn't there a bug where a node may return a root though it has been
         #      detached from a tree?
         raise NotImplementedError
+
+    @property
+    def _exists(self) -> bool:
+        if self._position is DATA:
+            assert isinstance(self._bound_to, etree._Element)
+            return cast(etree._Element, self._bound_to).text is not None
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, etree._Element)
+            return cast(etree._Element, self._bound_to).tail is not None
+        else:
+            return True
 
     @property
     def index(self) -> int:
