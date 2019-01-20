@@ -66,6 +66,11 @@ def test_tag_nodes():
     assert text.parent is root
 
 
+def test_attributes():
+    milestone = document.root[1][0]
+    assert milestone.attributes == {"unit": "page"}
+
+
 def test_caching():
     p = document.root[1][1]
     text_nodes = tuple(x for x in p.child_nodes(is_text_node))

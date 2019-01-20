@@ -550,7 +550,7 @@ class TextNode(NodeBase):
 
     @property
     def index(self) -> int:
-        pass
+        raise NotImplementedError
 
     def new_tag_node(
         self,
@@ -606,7 +606,7 @@ class TextNode(NodeBase):
             return TagNode(cast(etree._Element, self._bound_to), self.__cache)
 
         elif self._position is TAIL:
-            raise NotImplementedError
+            return TagNode(cast(etree._Element, self._bound_to), self.__cache).parent
 
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
