@@ -284,8 +284,10 @@ class TagNode(NodeBase):
         return result + ">"
 
     def __repr__(self) -> str:
-        return (f"<{self.__class__.__name__}({self.fully_qualified_name}, "
-                f" {self.attributes}) [{hex(id(self))}]>")
+        return (
+            f"<{self.__class__.__name__}('{self.fully_qualified_name}', "
+            f" {self.attributes}) [{hex(id(self))}]>"
+        )
 
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
         raise NotImplementedError
