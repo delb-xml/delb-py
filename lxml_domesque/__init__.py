@@ -132,6 +132,9 @@ class Document:
 
 
 class NodeBase(ABC):
+    def __init__(self, cache: _WrapperCache):
+        self._cache = cache
+
     @abstractmethod
     def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
         raise NotImplementedError
@@ -226,7 +229,7 @@ class TagNode(NodeBase):
             obj._tail_node = TextNode(
                 etree_element, position=TAIL, cache=cache
             )  # type: ignore
-            obj.__cache = cache
+            obj._cache = cache
 
         return obj  # type: ignore
 
@@ -235,7 +238,7 @@ class TagNode(NodeBase):
         self._etree_obj: etree._Element
         self._data_node: TextNode
         self._tail_node: TextNode
-        self.__cache: _WrapperCache
+        self._cache: _WrapperCache
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         """ Tests whether the node has an attribute with given string or
@@ -313,7 +316,7 @@ class TagNode(NodeBase):
         if self._data_node._exists:
             current_node = self._data_node
         elif len(self._etree_obj):
-            current_node = TagNode(self._etree_obj[0], self.__cache)
+            current_node = TagNode(self._etree_obj[0], self._cache)
         else:
             current_node = None
 
@@ -406,7 +409,7 @@ class TagNode(NodeBase):
             next_etree_obj = self._etree_obj.getnext()
             if next_etree_obj is None:
                 return None
-            candidate = TagNode(next_etree_obj, self.__cache)
+            candidate = TagNode(next_etree_obj, self._cache)
 
         if all(f(candidate) for f in filter):
             return candidate
@@ -421,7 +424,7 @@ class TagNode(NodeBase):
         etree_parent = self._etree_obj.getparent()
         if etree_parent is None:
             return None
-        return TagNode(etree_parent, self.__cache)
+        return TagNode(etree_parent, self._cache)
 
     @property
     def prefix(self) -> Optional[str]:
@@ -466,7 +469,7 @@ class TextNode(NodeBase):
         # TODO __slots__
         self._appended_text_node: Optional[TextNode] = None
         self._bound_to: Union[None, etree._Element, TextNode]
-        self.__cache = cache or {}
+        self._cache = cache or {}  # REMOVE?!
         self.__content: Optional[str]
         self._position: int = position
 
@@ -636,7 +639,7 @@ class TextNode(NodeBase):
         elif self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
             if len(self._bound_to):
-                candidate = TagNode(self._bound_to[0], self.__cache)
+                candidate = TagNode(self._bound_to[0], self._cache)
             else:
                 return None
         elif self._position is TAIL:
@@ -663,10 +666,10 @@ class TextNode(NodeBase):
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            return TagNode(cast(etree._Element, self._bound_to), self.__cache)
+            return TagNode(cast(etree._Element, self._bound_to), self._cache)
 
         elif self._position is TAIL:
-            return TagNode(cast(etree._Element, self._bound_to), self.__cache).parent
+            return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
 
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
