@@ -188,6 +188,11 @@ class NodeBase(ABC):
             name. """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def parent(self):
+        pass
+
     @abstractmethod
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         raise NotImplementedError
