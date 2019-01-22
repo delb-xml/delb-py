@@ -524,6 +524,24 @@ class TextNode(NodeBase):
 
     def clone(self, deep: bool = False) -> "NodeBase":
         raise NotImplementedError
+    def _bind_to_data(self, target: TagNode):
+        target._etree_obj.text = self.content
+        target._data_node = self
+        self._bound_to = target._etree_obj
+        self._position = DATA
+        self._cache = target._cache
+
+    def _bind_to_tail(self, target: TagNode):
+        assert isinstance(target, TagNode)
+
+        target._etree_obj.tail = self.content
+        target._tail_node = self
+
+        self._bound_to = target._etree_obj
+        self._position = TAIL
+        self._cache = target._cache
+        self.__content = None
+
 
     @property
     def content(self) -> str:
