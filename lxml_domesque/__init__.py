@@ -42,6 +42,12 @@ class Document:
         self.__wrapper_cache: Dict[int, "TagNode"] = {}
         self._etree_obj: etree._ElementTree
 
+        # as practicality beats purity, for now
+        if isinstance(source, TagNode):
+            self._etree_obj = etree.ElementTree(parser=parser)
+            self.root = source.clone(deep=True)
+            return
+
         # document loading
         loaded_tree: Optional[etree._ElementTree] = None
         for loader in configured_loaders:
@@ -68,6 +74,12 @@ class Document:
     @property
     def root(self) -> "TagNode":
         return TagNode(self._etree_obj.getroot(), self.__wrapper_cache)
+
+    @root.setter
+    def root(self, root: "TagNode"):
+        self._etree_obj._setroot(root._etree_obj)
+        root._etree_obj.tail = None
+        self.__wrapper_cache = root._cache
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
