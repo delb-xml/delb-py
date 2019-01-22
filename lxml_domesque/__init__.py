@@ -540,7 +540,10 @@ class TextNode(NodeBase):
             raise RuntimeError
 
     @content.setter
-    def content(self, text: str):
+    def content(self, text: Any):
+        if not isinstance(text, str):
+            text = str(text)
+
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
             cast(etree._Element, self._bound_to).text = text or None
