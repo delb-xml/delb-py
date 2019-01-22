@@ -632,23 +632,27 @@ class TextNode(NodeBase):
         if self._position is DETATCHED:
             return None
 
-        candidate: NodeBase
+        candidate: Optional[NodeBase]
+
         if self._appended_text_node:
             candidate = self._appended_text_node
 
         elif self._position is DATA:
+
             assert isinstance(self._bound_to, etree._Element)
             if len(self._bound_to):
                 candidate = TagNode(self._bound_to[0], self._cache)
             else:
                 return None
+
         elif self._position is TAIL:
-            next_etree_node = cast(etree._Element, self._bound_to).getnext()
-            if next_etree_node is None:
-                return None
-            candidate = TagNode(next_etree_node, self.__cache)
-        elif self._position is APPENDED:
-            raise NotImplementedError
+            candidate = self.__next_candidate_of_tail()
+
+        elif self._position is APPENDED:  # and last in tail sequence
+            candidate = self.__next_candidate_of_last_appended()
+
+        if candidate is None:
+            return None
 
         if all(f(candidate) for f in filter):
             if isinstance(candidate, TextNode):
@@ -656,6 +660,28 @@ class TextNode(NodeBase):
             return candidate
         else:
             return candidate.next_node(*filter)
+
+    def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
+        head = self._tail_sequence_head
+        if head._position is DATA:
+            if len(head.parent._etree_obj):
+                return TagNode(head.parent._etree_obj[0], self._cache)
+            else:
+                return None
+        elif head._position is TAIL:
+            next_etree_tag = head._bound_to.getnext()
+            if next_etree_tag is None:
+                return None
+            else:
+                return TagNode(next_etree_tag, self._cache)
+
+        raise RuntimeError
+
+    def __next_candidate_of_tail(self) -> Optional[NodeBase]:
+        next_etree_node = cast(etree._Element, self._bound_to).getnext()
+        if next_etree_node is None:
+            return None
+        return TagNode(next_etree_node, self._cache)
 
     def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the next node in stream order that matches the given
@@ -689,6 +715,14 @@ class TextNode(NodeBase):
             name. """
         raise NotImplementedError
 
+    @property
+    def _tail_sequence_head(self):
+        if self._position in (DATA, TAIL):
+            return self
+        elif self._position is APPENDED:
+            return self._bound_to._tail_sequence_head
+        else:
+            raise RuntimeError
 
 
 # contributed filters and filter wrappers
