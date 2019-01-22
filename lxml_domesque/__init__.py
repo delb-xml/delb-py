@@ -85,7 +85,7 @@ class Document:
         raise NotImplementedError
 
     def merge_text_nodes(self):
-        raise NotImplementedError
+        self.root.merge_text_nodes()
 
     @property
     def namespaces(self) -> "etree._NSMap":
@@ -371,7 +371,8 @@ class TagNode(NodeBase):
         self._etree_obj.tag = etree.QName(self.namespace, value)
 
     def merge_text_nodes(self):
-        raise NotImplementedError
+        for node in self.child_nodes(is_text_node, recurse=True):
+            node._merge_appended_text_nodes()
 
     @property
     def namespace(self) -> str:
@@ -456,14 +457,14 @@ class TextNode(NodeBase):
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
-        self.__appended_text_node: Optional[TextNode] = None
+        self._appended_text_node: Optional[TextNode] = None
         self._bound_to: Union[None, etree._Element, TextNode]
         self.__cache = cache or {}
         self.__content: Optional[str]
         self._position: int = position
 
         if position is DETATCHED:
-            self.__appended_text_node = None
+            self._appended_text_node = None
             self._bound_to = None
             self.__content = cast(str, reference_or_text)
 
@@ -502,10 +503,12 @@ class TextNode(NodeBase):
 
     def _append_text_node(self, node: "TextNode"):
         # TODO leverage that both objects are gc-safe due to the mutual binding?
-        #      and hence discard TextNode.__cache
-        old = self.__appended_text_node
+        #      and hence discard TextNode._cache
+        assert node.parent is None
+        old = self._appended_text_node
         node._bound_to = self
-        self.__appended_text_node = node
+        node._position = APPENDED
+        self._appended_text_node = node
         if old:
             node._append_text_node(old)
 
@@ -564,6 +567,20 @@ class TextNode(NodeBase):
     def index(self) -> int:
         raise NotImplementedError
 
+    def _merge_appended_text_nodes(self):
+        sibling = self._appended_text_node
+        if sibling is None:
+            return
+
+        current_node, appendix = sibling, ""
+        while current_node is not None:
+            appendix += current_node.content
+            current_node = current_node._appended_text_node
+
+        self.content += appendix
+        self._appended_text_node = None
+        sibling._bound_to = None
+
     def new_tag_node(
         self,
         local_name: str,
@@ -582,9 +599,9 @@ class TextNode(NodeBase):
             return None
 
         candidate: NodeBase
+        if self._appended_text_node:
+            candidate = self._appended_text_node
 
-        if self.__appended_text_node:
-            candidate = self.__appended_text_node
         elif self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
             if len(self._bound_to):
