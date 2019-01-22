@@ -149,6 +149,10 @@ class NodeBase(ABC):
     def clone(self, deep: bool = False) -> "NodeBase":
         raise NotImplementedError
 
+    @abstractmethod
+    def detach(self) -> "NodeBase":
+        pass
+
     @property
     @abstractmethod
     def document(self) -> Optional[Document]:
@@ -192,10 +196,6 @@ class NodeBase(ABC):
     def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the previous node in stream order that matches the given
             name. """
-        raise NotImplementedError
-
-    @abstractmethod
-    def remove(self) -> None:
         raise NotImplementedError
 
 
@@ -326,6 +326,9 @@ class TagNode(NodeBase):
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
 
+    def detach(self) -> "TagNode":
+        raise NotImplementedError
+
     @property
     def document(self) -> Optional[Document]:
         raise NotImplementedError
@@ -436,9 +439,6 @@ class TagNode(NodeBase):
             name. """
         raise NotImplementedError
 
-    def remove(self) -> None:
-        raise NotImplementedError
-
     def replace_with(self, node: NodeBase, clone: bool = False) -> None:
         raise NotImplementedError
 
@@ -545,6 +545,27 @@ class TextNode(NodeBase):
         elif self._position in (APPENDED, DETATCHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             self.__content = text
+
+    def detach(self) -> "TextNode":
+        if self._position is DETATCHED:
+            return self
+        elif self._position is DATA:
+            raise NotImplementedError
+        elif self._position is TAIL:
+            raise NotImplementedError
+        elif self._position is APPENDED:
+            text_sibling = self._appended_text_node
+
+            cast(TextNode, self._bound_to)._appended_text_node = text_sibling
+            if text_sibling:
+                text_sibling._bound_to = self._bound_to
+            self._bound_to = None
+
+            self._position = DETATCHED
+        else:
+            raise ValueError
+
+        return self
 
     @property
     def document(self) -> Optional[Document]:
@@ -655,8 +676,6 @@ class TextNode(NodeBase):
             name. """
         raise NotImplementedError
 
-    def remove(self) -> None:
-        raise NotImplementedError
 
 
 # contributed filters and filter wrappers
