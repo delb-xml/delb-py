@@ -135,9 +135,28 @@ class NodeBase(ABC):
     def __init__(self, cache: _WrapperCache):
         self._cache = cache
 
+    def add_next(self, *node: Any, clone: bool = False):
+        if not node:
+            return
+
+        head, *tail = node
+        if not isinstance(head, NodeBase):
+            head = TextNode(str(head))
+        elif clone:
+            head = head.clone(deep=True, __cache__=self._cache)
+
+        # TODO? head.detach()
+        assert head.parent is None
+        assert head.next_node() is None
+        # assert head.previous_node() is None
+
+        self._add_next_node(head)
+        if tail:
+            head.add_next(*tail, clone=clone)
+
     @abstractmethod
-    def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
-        raise NotImplementedError
+    def _add_next_node(self, node: "NodeBase"):
+        pass
 
     @abstractmethod
     def add_previous(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
@@ -292,8 +311,40 @@ class TagNode(NodeBase):
             f" {self.attributes}) [{hex(id(self))}]>"
         )
 
-    def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
-        raise NotImplementedError
+    def __add_first_child(self, node: NodeBase):
+        assert not len(self)
+        if isinstance(node, TagNode):
+            self._etree_obj.append(node._etree_obj)
+            self._cache.update(node._cache)
+            node._cache = self._cache
+            # cache
+        elif isinstance(node, TextNode):
+            node._bind_to_data(self)
+        else:
+            raise RuntimeError
+
+    def add_next(self, *node: Any, clone: bool = False):
+        if self.parent is None:
+            # TODO proper Exception
+            raise RuntimeError
+
+        super().add_next(*node, clone=clone)
+
+    def _add_next_node(self, node: "NodeBase"):
+        if isinstance(node, TagNode):
+            raise NotImplementedError
+
+        elif isinstance(node, TextNode):
+            assert node._position is DETATCHED
+            assert node._appended_text_node is None
+
+            if self._tail_node._exists:
+                raise NotImplementedError
+            else:
+                node._bind_to_tail(self)
+
+        else:
+            raise TypeError
 
     def add_previous(self, *node: Union["NodeBase", str], clone: bool = False):
         raise NotImplementedError
@@ -501,8 +552,34 @@ class TextNode(NodeBase):
     def __str__(self):
         return self.content
 
-    def add_next(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
-        raise NotImplementedError
+    def _add_next_node(self, node: NodeBase):
+        if isinstance(node, TextNode):
+            self._append_text_node(node)
+
+        elif isinstance(node, TagNode):
+
+            if self._position is DATA:
+                raise NotImplementedError
+
+            elif self._position is TAIL:
+                text_sibling = self._appended_text_node
+
+                self._appended_text_node = None
+                cast(etree._Element, self._bound_to).addnext(node._etree_obj)
+
+                assert node._etree_obj.tail is None
+
+                if text_sibling is not None:
+                    node._etree_obj.tail = text_sibling.content
+                    node._tail_node._appended_text_node = (
+                        text_sibling._appended_text_node
+                    )
+
+            elif self._position is APPENDED:
+                raise NotImplementedError
+
+            elif self._position is DETATCHED:
+                raise RuntimeError
 
     def add_previous(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
         raise NotImplementedError
