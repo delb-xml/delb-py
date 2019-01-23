@@ -387,7 +387,7 @@ class TagNode(NodeBase):
     def append_child(self, *node: Any, clone: bool = False):
         last_child = self.last_child
 
-        tail: Sequence
+        tail: Sequence[Any]
 
         if last_child is None:
             head, *tail = node

@@ -31,7 +31,6 @@ class HttpsStreamWrapper:
             return next(self._iterator)
         except StopIteration:
             return b""
-        raise RuntimeError
 
 
 # loaders
@@ -43,12 +42,11 @@ def buffer_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._Element
     return None
 
 
-def etree_loader(data: Any, _) -> Optional[etree._ElementTree]:
+def etree_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
     if isinstance(data, etree._ElementTree):
         return deepcopy(data)
     if isinstance(data, etree._Element):
-        root = deepcopy(data)
-        return etree.ElementTree(element=root)
+        return etree.ElementTree(element=deepcopy(data), parser=parser)
     return None
 
 
