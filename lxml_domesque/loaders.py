@@ -7,6 +7,7 @@ from typing import cast, Any, Callable, IO, List, Optional, Tuple
 
 from lxml import etree
 
+from lxml_domesque import utils
 from lxml_domesque.nodes import TagNode
 from lxml_domesque.typing import _WrapperCache
 
@@ -77,7 +78,14 @@ def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     return None, {}
 
 
-# TODO tag_node_loader
+def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    if isinstance(data, TagNode):
+        tree = etree.ElementTree(parser=parser)
+        root = data.clone(deep=True)
+        tree._setroot(root._etree_obj)
+        utils.copy_heading_pis(data._etree_obj, root._etree_obj)
+        return tree, root._cache
+    return None, {}
 
 
 def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:

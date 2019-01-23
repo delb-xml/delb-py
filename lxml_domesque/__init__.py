@@ -1,11 +1,12 @@
 from pathlib import Path
+from itertools import chain
 from typing import Dict, Iterable, Optional, Union
 from typing import IO as IOType
 
 from lxml import etree
 
 from lxml_domesque import utils
-from lxml_domesque.loaders import configured_loaders
+from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import any_of, is_tag_node, is_text_node, not_
 from lxml_domesque.nodes import DETACHED, NodeBase, TagNode, TextNode
 from lxml_domesque.typing import _WrapperCache
@@ -35,17 +36,10 @@ class Document:
     ):
         # TODO __slots__
 
-        # as practicality beats purity, for now
-        if isinstance(source, TagNode):
-            self._etree_obj = etree.ElementTree(parser=parser)
-            self.root = source.clone(deep=True)
-            utils.copy_heading_pis(source._etree_obj, self.root._etree_obj)
-            return
-
         # document loading
         loaded_tree: Optional[etree._ElementTree] = None
         cache: Optional[_WrapperCache] = None
-        for loader in configured_loaders:
+        for loader in chain((tag_node_loader,), configured_loaders):
             loaded_tree, cache = loader(source, parser)
             if loaded_tree:
                 break
