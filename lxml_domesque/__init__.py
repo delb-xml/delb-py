@@ -77,7 +77,9 @@ class Document:
         raise NotImplementedError
 
     def __str__(self):
-        raise NotImplementedError
+        clone = self.clone()
+        clone.merge_text_nodes()
+        return etree.tounicode(clone._etree_obj)
 
     def clone(self) -> "Document":
         return self.__class__(self.root.clone(deep=True), parser=self._etree_obj.parser)
