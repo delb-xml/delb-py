@@ -96,5 +96,17 @@ def test_construction():
     one = node[0]
 
     one.add_next(TextNode("threehalfs "))
-
     assert str(document) == "<root><node>one threehalfs </node>two </root>"
+
+    three = TextNode("three ")
+    two.add_next(three)
+    assert str(document) == "<root><node>one threehalfs </node>two three </root>"
+
+    three.add_next("four ")
+    assert str(document) == "<root><node>one threehalfs </node>two three four </root>"
+
+    node.append_child("sevenquarters ")
+    assert (
+        str(document)
+        == "<root><node>one threehalfs sevenquarters </node>two three four </root>"
+    )
