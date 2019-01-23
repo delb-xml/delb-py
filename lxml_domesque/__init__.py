@@ -16,6 +16,7 @@ from typing import IO as IOType
 
 from lxml import etree
 
+from lxml_domesque import utils
 from lxml_domesque.loaders import configured_loaders
 
 
@@ -57,6 +58,7 @@ class Document:
         if isinstance(source, TagNode):
             self._etree_obj = etree.ElementTree(parser=parser)
             self.root = source.clone(deep=True)
+            utils.copy_heading_pis(source._etree_obj, self.root._etree_obj)
             return
 
         # document loading
@@ -82,17 +84,7 @@ class Document:
         return etree.tounicode(clone._etree_obj)
 
     def clone(self) -> "Document":
-        return self.__class__(self.root.clone(deep=True), parser=self._etree_obj.parser)
-
-    @property
-    def root(self) -> "TagNode":
-        return TagNode(self._etree_obj.getroot(), self.__wrapper_cache)
-
-    @root.setter
-    def root(self, root: "TagNode"):
-        self._etree_obj._setroot(root._etree_obj)
-        root._etree_obj.tail = None
-        self.__wrapper_cache = root._cache
+        return self.__class__(self.root, parser=self._etree_obj.parser)
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
@@ -121,6 +113,24 @@ class Document:
         cache = self.__wrapper_cache
         for key in set(cache) - {id(x) for x in self.root._etree_obj.iter()}:
             cache.pop(key)
+
+    @property
+    def root(self) -> "TagNode":
+        return TagNode(self._etree_obj.getroot(), self.__wrapper_cache)
+
+    @root.setter
+    def root(self, root: "TagNode"):
+        old_etree_root = self._etree_obj.getroot()
+        new_etree_root = root._etree_obj
+
+        assert new_etree_root.getprevious() is None
+
+        new_etree_root.tail = None
+        if old_etree_root is not None:
+            utils.copy_heading_pis(self._etree_obj.getroot(), new_etree_root)
+
+        self._etree_obj._setroot(new_etree_root)
+        self.__wrapper_cache = root._cache
 
     def save(self, path: Path, pretty=False):
         self._etree_obj.write(

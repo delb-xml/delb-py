@@ -58,10 +58,14 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 - All serializations are UTF-8 encoded by default and always start with an XML
   declaration.
 - Comment, CDATA and Processing Instruction nodes are not accessible (for now),
-  but are retained and appear in serializations; in particular
-    - The position of these nodes may be shifted in the resulting document,
-    - Processing instructions that appear before the root node in the stream
-      don't persist their order (that's lxml's behaviour).
+  but are retained and appear in serializations; unless you [DANGER ZONE]
+  manipulate the tree (and you want that often). Depending on your actions you
+  might encounter no alterations or a complete loss of these nodes within the
+  root node.
+  As the implementation will evolve for a while, there are no recommendations
+  to last. [/DANGER ZONE] It is *guaranteed*, however, that processing
+  instructions and comments that appear before the root node in the stream are
+  always persist for a :class:`Document` instance and its clones.
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
 lxml objects that are bound to :attr:`Document._etree_obj` and
@@ -578,7 +582,9 @@ An API draft
         return wrapper
 
 
-Long term ideas
----------------
+ROADMAPish
+----------
 
+- behaviour regarding comments, cdata and processing instructions must be fixed before
+  optimizations
 - maybe cythonize it
