@@ -41,7 +41,7 @@ def test_tag_nodes():
     # TODO assert_has_attrs
     assert root.namespace == "https://name.space"
     assert root.local_name == "doc"
-    assert root.fully_qualified_name == "{https://name.space}doc"
+    assert root.qualified_name == "{https://name.space}doc"
     assert root.namespaces == {None: "https://name.space"}, root.namespaces
     assert root.parent is None
 

@@ -319,14 +319,14 @@ class TagNode(NodeBase):
 
     def __str__(self) -> str:
         attributes = " ".join(f"{k}={v}" for k, v in self._etree_obj.attrib.items())
-        result = f"<{self.fully_qualified_name}"
+        result = f"<{self.qualified_name}"
         if attributes:
             result += " " + attributes
         return result + ">"
 
     def __repr__(self) -> str:
         return (
-            f"<{self.__class__.__name__}('{self.fully_qualified_name}', "
+            f"<{self.__class__.__name__}('{self.qualified_name}', "
             f" {self.attributes}) [{hex(id(self))}]>"
         )
 
@@ -473,10 +473,6 @@ class TagNode(NodeBase):
         )
 
     @property
-    def fully_qualified_name(self) -> str:
-        return cast(str, etree.QName(self._etree_obj).text)
-
-    @property
     def index(self):
         raise NotImplementedError
 
@@ -564,6 +560,10 @@ class TagNode(NodeBase):
         """ Returns the previous node in stream order that matches the given
             name. """
         raise NotImplementedError
+
+    @property
+    def qualified_name(self) -> str:
+        return cast(str, etree.QName(self._etree_obj).text)
 
     def replace_with(self, node: NodeBase, clone: bool = False) -> None:
         raise NotImplementedError
