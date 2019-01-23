@@ -8,6 +8,7 @@ from lxml_domesque import utils
 from lxml_domesque.loaders import configured_loaders
 from lxml_domesque.nodes import any_of, is_tag_node, is_text_node, not_
 from lxml_domesque.nodes import DETACHED, NodeBase, TagNode, TextNode
+from lxml_domesque.typing import _WrapperCache
 
 
 # constants
@@ -33,9 +34,6 @@ class Document:
         parser: etree.XMLParser = DEFAULT_PARSER,
     ):
         # TODO __slots__
-        # instance properties
-        self.__wrapper_cache: Dict[int, "TagNode"] = {}
-        self._etree_obj: etree._ElementTree
 
         # as practicality beats purity, for now
         if isinstance(source, TagNode):
@@ -46,16 +44,21 @@ class Document:
 
         # document loading
         loaded_tree: Optional[etree._ElementTree] = None
+        cache: Optional[_WrapperCache] = None
         for loader in configured_loaders:
-            loaded_tree = loader(source, parser)
+            loaded_tree, cache = loader(source, parser)
             if loaded_tree:
                 break
-        if loaded_tree is None:
+
+        if loaded_tree is None or not isinstance(cache, dict):
             raise ValueError(
                 f"Couldn't load {source!r} with these currently configured loaders: "
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
-        self._etree_obj = loaded_tree
+
+        # instance properties
+        self._etree_obj: etree._ElementTree = loaded_tree
+        self.__wrapper_cache: _WrapperCache = cache
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """

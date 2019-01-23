@@ -3,9 +3,12 @@
 from copy import deepcopy
 from io import IOBase
 from pathlib import Path
-from typing import cast, Any, Callable, IO, List, Optional
+from typing import cast, Any, Callable, IO, List, Optional, Tuple
 
 from lxml import etree
+
+from lxml_domesque.nodes import TagNode
+from lxml_domesque.typing import _WrapperCache
 
 try:
     import requests
@@ -15,8 +18,8 @@ except ImportError:
 
 # types
 
-
-Loader = Callable[[Any, etree.XMLParser], Optional[etree._ElementTree]]
+LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
+Loader = Callable[[Any, etree.XMLParser], LoaderResult]
 
 
 # utils
@@ -36,53 +39,54 @@ class HttpsStreamWrapper:
 # loaders
 
 
-def buffer_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
+def buffer_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, IOBase):
-        return etree.parse(cast(IO, data), parser=parser)
-    return None
+        return etree.parse(cast(IO, data), parser=parser), {}
+    return None, {}
 
 
-def etree_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
+def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, etree._ElementTree):
-        return deepcopy(data)
+        return deepcopy(data), {}
     if isinstance(data, etree._Element):
-        return etree.ElementTree(element=deepcopy(data), parser=parser)
-    return None
+        return etree.ElementTree(element=deepcopy(data), parser=parser), {}
+    return None, {}
 
 
-def ftp_http_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
+def ftp_http_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
-        return etree.parse(data, parser=parser)
-    return None
+        return etree.parse(data, parser=parser), {}
+    return None, {}
 
 
 if requests:
 
-    def https_loader(
-        data: Any, parser: etree.XMLParser
-    ) -> Optional[etree._ElementTree]:
+    def https_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
         if isinstance(data, str) and data.lower().startswith("https://"):
             response = requests.get(data, stream=True)
-            return etree.parse(cast(IO, HttpsStreamWrapper(response)), parser=parser)
-        return None
+            return (
+                etree.parse(cast(IO, HttpsStreamWrapper(response)), parser=parser),
+                {},
+            )
+        return None, {}
 
 
-def path_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
+def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, Path):
-        return etree.parse(str(data.resolve()), parser=parser)
-    return None
+        return etree.parse(str(data.resolve()), parser=parser), {}
+    return None, {}
 
 
 # TODO tag_node_loader
 
 
-def text_loader(data: Any, parser: etree.XMLParser) -> Optional[etree._ElementTree]:
+def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, str):
         data = data.encode()
     if isinstance(data, bytes):
         root = etree.fromstring(data, parser)
-        return etree.ElementTree(element=root)
-    return None
+        return etree.ElementTree(element=root), {}
+    return None, {}
 
 
 configured_loaders: List[Loader] = [
