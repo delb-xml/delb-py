@@ -596,14 +596,8 @@ class TextNode(NodeBase):
 
         elif position in (DATA, TAIL):
             assert isinstance(reference_or_text, etree._Element)
-            self._bound_to = reference_or_text
+            self._bound_to = reference_or_text  # TODO rather bind to the wrapper?
             self.__content = None
-
-        # REMOVE?!
-        elif position is APPENDED:
-            assert isinstance(reference_or_text, TextNode)
-            reference_or_text._append_text_node(self)
-            self.__content = ""
 
         else:
             raise ValueError
