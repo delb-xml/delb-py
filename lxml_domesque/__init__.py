@@ -1,6 +1,16 @@
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import cast, overload, Any, Callable, Dict, Iterable, Optional, Union
+from typing import (
+    cast,
+    overload,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Optional,
+    Sequence,
+    Union,
+)
 from typing import IO as IOType
 
 from lxml import etree
@@ -352,8 +362,27 @@ class TagNode(NodeBase):
     def ancestors(self, *filter: Filter):
         raise NotImplementedError
 
-    def append_child(self, *node: NodeBase) -> None:
-        raise NotImplementedError
+    def append_child(self, *node: Any, clone: bool = False):
+        last_child = self.last_child
+
+        tail: Sequence
+
+        if last_child is None:
+            head, *tail = node
+
+            if not isinstance(head, NodeBase):
+                last_child = TextNode(str(head))
+            elif clone:
+                last_child = head.clone(deep=True)
+            else:
+                last_child = head
+
+            self.__add_first_child(last_child)
+
+        else:
+            tail = node
+
+        last_child.add_next(*tail, clone=clone)
 
     @property
     def attributes(self) -> etree._Attrib:
