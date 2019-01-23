@@ -27,7 +27,7 @@ _WrapperCache = Dict[int, "TagNode"]
 
 # constants
 
-DETATCHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
+DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Default_Whitespace_Processing
@@ -115,7 +115,7 @@ class Document:
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in NodeBase
-        return TextNode(content, position=DETATCHED, cache=self.__wrapper_cache)
+        return TextNode(content, position=DETACHED, cache=self.__wrapper_cache)
 
     def _prune_cache(self):
         cache = self.__wrapper_cache
@@ -211,7 +211,7 @@ class NodeBase(ABC):
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in Document
-        return TextNode(content, position=DETATCHED)
+        return TextNode(content, position=DETACHED)
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -354,7 +354,7 @@ class TagNode(NodeBase):
             raise NotImplementedError
 
         elif isinstance(node, TextNode):
-            assert node._position is DETATCHED
+            assert node._position is DETACHED
             assert node._appended_text_node is None
 
             if self._tail_node._exists:
@@ -441,7 +441,7 @@ class TagNode(NodeBase):
                 if isinstance(child_node, TagNode):
                     assert child_node._etree_obj.tail is None
                 elif isinstance(child_node, TextNode):
-                    assert child_node._position is DETATCHED
+                    assert child_node._position is DETACHED
                 else:
                     raise AssertionError
 
@@ -579,7 +579,7 @@ class TextNode(NodeBase):
     def __init__(
         self,
         reference_or_text: Union[etree._Element, str, "TextNode"],
-        position: int = DETATCHED,
+        position: int = DETACHED,
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
@@ -589,7 +589,7 @@ class TextNode(NodeBase):
         self.__content: Optional[str]
         self._position: int = position
 
-        if position is DETATCHED:
+        if position is DETACHED:
             self._appended_text_node = None
             self._bound_to = None
             self.__content = cast(str, reference_or_text)
@@ -637,7 +637,7 @@ class TextNode(NodeBase):
             elif self._position is APPENDED:
                 raise NotImplementedError
 
-            elif self._position is DETATCHED:
+            elif self._position is DETACHED:
                 raise RuntimeError
 
     def add_previous(self, *node: Union["NodeBase", str], clone: bool = False) -> None:
@@ -689,7 +689,7 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, etree._Element)
             return cast(str, cast(etree._Element, self._bound_to).tail) or ""
 
-        elif self._position in (APPENDED, DETATCHED):
+        elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             return cast(str, self.__content)
 
@@ -709,12 +709,12 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, etree._Element)
             cast(etree._Element, self._bound_to).tail = text or None
 
-        elif self._position in (APPENDED, DETATCHED):
+        elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             self.__content = text
 
     def detach(self) -> "TextNode":
-        if self._position is DETATCHED:
+        if self._position is DETACHED:
             return self
         elif self._position is DATA:
             raise NotImplementedError
@@ -728,7 +728,7 @@ class TextNode(NodeBase):
                 text_sibling._bound_to = self._bound_to
             self._bound_to = None
 
-            self._position = DETATCHED
+            self._position = DETACHED
         else:
             raise ValueError
 
@@ -780,10 +780,10 @@ class TextNode(NodeBase):
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in NodeBase
-        return TextNode(content, position=DETATCHED)
+        return TextNode(content, position=DETACHED)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        if self._position is DETATCHED:
+        if self._position is DETACHED:
             return None
 
         candidate: Optional[NodeBase]
@@ -855,7 +855,7 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, TextNode)
             return cast(TextNode, self._bound_to).parent
 
-        elif self._position is DETATCHED:
+        elif self._position is DETACHED:
             assert self._bound_to is None
             return None
 
