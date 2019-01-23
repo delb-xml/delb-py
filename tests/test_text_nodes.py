@@ -1,4 +1,5 @@
-from lxml_domesque import TAIL, APPENDED, Document, TextNode
+from lxml_domesque import Document, TextNode
+from lxml_domesque.nodes import TAIL, APPENDED
 
 
 def test_add_text_after_tag():
