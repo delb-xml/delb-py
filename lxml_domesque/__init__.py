@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC
+from copy import copy
 from pathlib import Path
 from typing import (
     cast,
@@ -79,7 +80,7 @@ class Document:
         raise NotImplementedError
 
     def clone(self) -> "Document":
-        return self.__class__(self.root.clone(deep=True))
+        return self.__class__(self.root.clone(deep=True), parser=self._etree_obj.parser)
 
     @property
     def root(self) -> "TagNode":
@@ -178,8 +179,8 @@ class NodeBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def clone(self, deep: bool = False) -> "NodeBase":
-        raise NotImplementedError
+    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
+        pass
 
     @abstractmethod
     def detach(self) -> "NodeBase":
@@ -273,6 +274,12 @@ class TagNode(NodeBase):
         """ Tests whether the node has an attribute with given string or
             a given node is a descendant. """
         raise NotImplementedError
+
+    def __copy__(self) -> "TagNode":
+        return self.clone(deep=False)
+
+    def __deepcopy__(self, memodict=None):
+        return self.clone(deep=True)
 
     def __eq__(self, other: Any) -> bool:
         raise NotImplementedError
@@ -410,8 +417,35 @@ class TagNode(NodeBase):
 
             current_node = current_node.next_node()
 
-    def clone(self, deep: bool = False) -> "TagNode":
-        raise NotImplementedError
+    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "TagNode":
+        # a faster implementation may be to not clear a cloned element's children and
+        # to clone appended text nodes afterwards
+
+        cache = __cache__ or {}
+
+        etree_clone = copy(self._etree_obj)
+        etree_clone.text = etree_clone.tail = None
+        del etree_clone[:]  # remove all subelements
+        result = self.__class__(etree_clone, cache)
+        assert not len(result)
+
+        if deep:
+            for child_node in (
+                x.clone(deep=True, __cache__=cache)
+                for x in self.child_nodes(recurse=False)
+            ):
+                assert isinstance(child_node, NodeBase)
+                assert child_node.parent is None
+                if isinstance(child_node, TagNode):
+                    assert child_node._etree_obj.tail is None
+                elif isinstance(child_node, TextNode):
+                    assert child_node._position is DETATCHED
+                else:
+                    raise AssertionError
+
+                result.append_child(child_node)
+
+        return result
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
@@ -628,8 +662,6 @@ class TextNode(NodeBase):
         if old:
             node._append_text_node(old)
 
-    def clone(self, deep: bool = False) -> "NodeBase":
-        raise NotImplementedError
     def _bind_to_data(self, target: TagNode):
         target._etree_obj.text = self.content
         target._data_node = self
@@ -648,6 +680,8 @@ class TextNode(NodeBase):
         self._cache = target._cache
         self.__content = None
 
+    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
+        return self.__class__(self.content, cache=__cache__)
 
     @property
     def content(self) -> str:
