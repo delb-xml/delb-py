@@ -134,7 +134,10 @@ class Document:
 
     def save(self, path: Path, pretty=False):
         self._etree_obj.write(
-            str(path.resolve()), encoding="utf-8", pretty_print=pretty
+            str(path.resolve()),
+            encoding="utf-8",
+            pretty_print=pretty,
+            xml_declaration=True,
         )
 
     def write(self, buffer: IOType):

@@ -34,3 +34,11 @@ def test_transparency(datafiles):
 
         assert_documents_are_semantical_equal(file, RESULTS_FILE)
         assert count_pis(_(file)) == count_pis(RESULTS_FILE)
+
+
+@pytest.mark.datafiles(FILES / "marx_manifestws_1848.TEI-P5.xml")
+def test_xml_declaration(datafiles):
+    Document(_(datafiles / "marx_manifestws_1848.TEI-P5.xml")).save(RESULTS_FILE)
+    with RESULTS_FILE.open("rt") as f:
+        first_line = f.readline()
+    assert first_line.startswith("<?xml version='1.0' encoding='UTF-8'?>")
