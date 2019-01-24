@@ -111,3 +111,25 @@ def test_construction():
         str(document)
         == "<root><node>one threehalfs sevenquarters </node>two three four </root>"
     )
+
+    twoandahalf = TextNode("twoandahalf ")
+    three.add_previous(twoandahalf)
+    assert (
+        str(document)
+        == "<root><node>one threehalfs sevenquarters </node>two twoandahalf three "
+        "four </root>"
+    )
+
+    twoandahalf.add_previous("2/3π ")
+    assert (
+        str(document)
+        == "<root><node>one threehalfs sevenquarters </node>two 2/3π twoandahalf three "
+        "four </root>"
+    )
+
+    two.add_previous("almosttwo ")
+    assert (
+        str(document)
+        == "<root><node>one threehalfs sevenquarters </node>almosttwo two 2/3π "
+        "twoandahalf three four </root>"
+    )
