@@ -253,24 +253,24 @@ class TagNode(NodeBase):
     def append_child(self, *node: Any, clone: bool = False):
         last_child = self.last_child
 
-        tail: Sequence[Any]
+        queue: Sequence[Any]
 
         if last_child is None:
-            head, *tail = node
+            this, *queue = node
 
-            if not isinstance(head, NodeBase):
-                last_child = TextNode(str(head))
+            if not isinstance(this, NodeBase):
+                last_child = TextNode(str(this))
             elif clone:
-                last_child = head.clone(deep=True)
+                last_child = this.clone(deep=True)
             else:
-                last_child = head
+                last_child = this
 
             self.__add_first_child(last_child)
 
         else:
-            tail = node
+            queue = node
 
-        last_child.add_next(*tail, clone=clone)
+        last_child.add_next(*queue, clone=clone)
 
     @property
     def attributes(self) -> etree._Attrib:
@@ -462,14 +462,14 @@ class TextNode(NodeBase):
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
-        self._appended_text_node: Optional[TextNode] = None
         self._bound_to: Union[None, etree._Element, TextNode]
-        self._cache = cache or {}  # REMOVE?!
         self.__content: Optional[str]
+
+        self._appended_text_node: Optional[TextNode] = None
+        self._cache = cache or {}  # REMOVE?! if bound to wrapper
         self._position: int = position
 
         if position is DETACHED:
-            self._appended_text_node = None
             self._bound_to = None
             self.__content = cast(str, reference_or_text)
 
