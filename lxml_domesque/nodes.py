@@ -76,14 +76,47 @@ class NodeBase(ABC):
     def index(self) -> int:
         pass
 
+    @abstractmethod
     def new_tag_node(
         self,
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
-        prefix: Optional[str] = None,
         namespace: Optional[str] = None,
+        prefix: Optional[str] = None,
     ) -> "TagNode":
-        raise NotImplementedError
+        pass
+
+    def _new_tag_node_from(
+        self,
+        context: etree._Element,
+        local_name: str,
+        attributes: Optional[Dict[str, str]],
+        namespace: Optional[str],
+        prefix: Optional[str],
+    ) -> "TagNode":
+
+        tag: etree.QName
+
+        context_namespace = etree.QName(context).namespace
+        nsmap = context.nsmap
+
+        if namespace:
+            tag = etree.QName(namespace, local_name)
+            if prefix:
+                raise NotImplementedError
+
+        elif prefix:
+            raise NotImplementedError
+
+        elif context_namespace:
+            tag = etree.QName(context_namespace, local_name)
+
+        else:
+            tag = etree.QName(local_name)
+
+        return TagNode(
+            context.makeelement(tag, attrib=attributes, nsmap=nsmap), self._cache
+        )
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in Document
@@ -428,6 +461,17 @@ class TagNode(NodeBase):
     def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
         raise NotImplementedError
 
+    def new_tag_node(
+        self,
+        local_name: str,
+        attributes: Optional[Dict[str, str]] = None,
+        namespace: Optional[str] = None,
+        prefix: Optional[str] = None,
+    ) -> "TagNode":
+        return self._new_tag_node_from(
+            self._etree_obj, local_name, attributes, namespace, prefix
+        )
+
     @property
     def parent(self) -> Optional["TagNode"]:
         etree_parent = self._etree_obj.getparent()
@@ -446,6 +490,10 @@ class TagNode(NodeBase):
             if namespace == target:
                 return prefix
         raise RuntimeError("Reached unreachable code.")
+
+    @prefix.setter
+    def prefix(self, prefix: str):
+        raise NotImplementedError
 
     def prepend_child(self, *node: NodeBase) -> None:
         self.insert_child(*node, index=0)
@@ -694,8 +742,8 @@ class TextNode(NodeBase):
         self,
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
-        prefix: Optional[str] = None,
         namespace: Optional[str] = None,
+        prefix: Optional[str] = None,
     ) -> "TagNode":
         raise NotImplementedError
 

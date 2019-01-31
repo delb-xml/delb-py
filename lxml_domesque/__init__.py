@@ -83,7 +83,12 @@ class Document:
         prefix: Optional[str] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
-        raise NotImplementedError
+        return self.root.new_tag_node(
+            local_name=local_name,
+            attributes=attributes,
+            namespace=namespace,
+            prefix=prefix,
+        )
 
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in NodeBase
