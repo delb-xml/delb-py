@@ -398,7 +398,7 @@ class TagNode(NodeBase):
     @property
     def full_text(self) -> str:
         return "".join(
-            cast(TextNode, x).content
+            x.content  # type: ignore
             for x in self.child_nodes(is_text_node, recurse=True)
         )
 
@@ -548,10 +548,15 @@ class TextNode(NodeBase):
             raise ValueError
 
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__}(text='{self.content}', "
-            f"pos={self._position}) [{hex(id(self))}]>"
-        )
+        if self._exists:
+            return (
+                f"<{self.__class__.__name__}(text='{self.content}', "
+                f"pos={self._position}) [{hex(id(self))}]>"
+            )
+        else:
+            return (
+                f"<{self.__class__.__name__}(pos={self._position}) [{hex(id(self))}]>"
+            )
 
     def __str__(self):
         return self.content
@@ -645,17 +650,18 @@ class TextNode(NodeBase):
         assert isinstance(self.content, str)
 
     def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
+        assert self.content is not None
         return self.__class__(self.content, cache=__cache__)
 
     @property
-    def content(self) -> str:
+    def content(self) -> Optional[str]:
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            return cast(str, cast(etree._Element, self._bound_to).text) or ""
+            return cast(str, cast(etree._Element, self._bound_to).text)
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, etree._Element)
-            return cast(str, cast(etree._Element, self._bound_to).tail) or ""
+            return cast(str, cast(etree._Element, self._bound_to).tail)
 
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
