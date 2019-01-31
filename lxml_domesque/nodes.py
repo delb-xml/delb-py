@@ -278,7 +278,10 @@ class TagNode(NodeBase):
 
     def _add_next_node(self, node: "NodeBase"):
         if isinstance(node, TagNode):
-            raise NotImplementedError
+            if self._tail_node._exists:
+                raise NotImplementedError
+            else:
+                self._etree_obj.addnext(node._etree_obj)
 
         elif isinstance(node, TextNode):
             assert node._position is DETACHED
@@ -292,11 +295,24 @@ class TagNode(NodeBase):
         else:
             raise TypeError
 
-    def add_previous(self, *node: Union["NodeBase", str], clone: bool = False):
-        raise NotImplementedError
-
     def _add_previous_node(self, node: NodeBase):
-        raise NotImplementedError
+        if isinstance(node, TagNode):
+            previous = self.previous_node()
+
+            if previous is None:
+                self._etree_obj.addprevious(node._etree_obj)
+
+            elif isinstance(previous, TagNode):
+                raise NotImplementedError
+
+            else:  # isinstance(node, TextNode)
+                raise NotImplementedError
+
+        elif isinstance(node, TextNode):
+            raise NotImplementedError
+
+        else:
+            raise TypeError
 
     def ancestors(self, *filter: Filter):
         raise NotImplementedError
@@ -499,7 +515,18 @@ class TagNode(NodeBase):
         self.insert_child(*node, index=0)
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+
+        candidate: NodeBase
+
+        previous_etree_obj = self._etree_obj.getprevious()
+
+        if previous_etree_obj is None:
+            return None
+
+        if TagNode(previous_etree_obj, self._cache)._tail_node:
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
 
     def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the previous node in stream order that matches the given
