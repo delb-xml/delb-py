@@ -361,7 +361,7 @@ class TagNode(NodeBase):
                 yield current_node
 
             if recurse and isinstance(current_node, TagNode):
-                yield from current_node.child_nodes(*filter, recurse=recurse)
+                yield from current_node.child_nodes(*filter, recurse=True)
 
             current_node = current_node.next_node()
 
@@ -640,9 +640,6 @@ class TextNode(NodeBase):
         raise NotImplementedError
 
     def _append_text_node(self, node: "TextNode"):
-        # TODO leverage that both objects are gc-safe due to the mutual binding?
-        #      and hence discard TextNode._cache
-
         old = self._appended_text_node
         content = node.content
         node._bound_to = self
@@ -851,11 +848,12 @@ class TextNode(NodeBase):
             return TagNode(cast(etree._Element, self._bound_to), self._cache)
 
         elif self._position is TAIL:
+            assert isinstance(self._bound_to, etree._Element)
             return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
 
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
-            return cast(TextNode, self._bound_to).parent
+            return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
 
         elif self._position is DETACHED:
             assert self._bound_to is None
