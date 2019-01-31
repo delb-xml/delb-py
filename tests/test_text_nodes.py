@@ -1,4 +1,6 @@
-from lxml_domesque import Document, TextNode
+import pytest
+
+from lxml_domesque import Document, TagNode, TextNode
 from lxml_domesque.nodes import TAIL, APPENDED
 
 
@@ -133,3 +135,16 @@ def test_construction():
         == "<root><node>one threehalfs sevenquarters </node>almosttwo two 2/3π "
         "twoandahalf three four </root>"
     )
+
+
+def test_none_content_wrapping():
+    document = Document("<root><e1/></root>")
+
+    with pytest.raises(IndexError):
+        document.root[1]
+
+    e1 = document.root[0]
+    assert e1.next_node() is None
+
+    e1.add_next(e1.new_tag_node("e1"))
+    assert isinstance(e1.next_node(), TagNode)
