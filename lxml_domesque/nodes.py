@@ -142,7 +142,7 @@ class NodeBase(ABC):
         elif clone:
             this = this.clone(deep=True, __cache__=self._cache)
         else:
-            cast(NodeBase, this)
+            assert isinstance(this, NodeBase)
 
         # TODO? head.detach()
         assert this.parent is None
@@ -530,8 +530,9 @@ class TagNode(NodeBase):
 
         if wrapper_of_previous._tail_node._exists:
             candidate = wrapper_of_previous._tail_node
-            while cast(TextNode, candidate)._appended_text_node:
-                candidate = cast(TextNode, candidate)._appended_text_node
+            assert isinstance(candidate, TextNode)
+            while candidate._appended_text_node:
+                candidate = candidate._appended_text_node
 
         else:
             raise NotImplementedError
@@ -579,8 +580,9 @@ class TextNode(NodeBase):
         self._position: int = position
 
         if position is DETACHED:
+            assert isinstance(reference_or_text, str)
             self._bound_to = None
-            self.__content = cast(str, reference_or_text)
+            self.__content = reference_or_text
 
         elif position in (DATA, TAIL):
             assert isinstance(reference_or_text, etree._Element)
@@ -700,11 +702,11 @@ class TextNode(NodeBase):
     def content(self) -> Optional[str]:
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            return cast(str, cast(etree._Element, self._bound_to).text)
+            return cast(str, self._bound_to.text)
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, etree._Element)
-            return cast(str, cast(etree._Element, self._bound_to).tail)
+            return cast(str, self._bound_to.tail)
 
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
@@ -720,11 +722,11 @@ class TextNode(NodeBase):
 
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            cast(etree._Element, self._bound_to).text = text or None
+            self._bound_to.text = text or None
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, etree._Element)
-            cast(etree._Element, self._bound_to).tail = text or None
+            self._bound_to.tail = text or None
 
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
@@ -740,7 +742,8 @@ class TextNode(NodeBase):
         elif self._position is APPENDED:
             text_sibling = self._appended_text_node
 
-            cast(TextNode, self._bound_to)._appended_text_node = text_sibling
+            assert isinstance(self._bound_to, TextNode)
+            self._bound_to._appended_text_node = text_sibling
             if text_sibling:
                 text_sibling._bound_to = self._bound_to
             self._bound_to = self._appended_text_node = None
@@ -851,7 +854,8 @@ class TextNode(NodeBase):
         raise RuntimeError
 
     def __next_candidate_of_tail(self) -> Optional[NodeBase]:
-        next_etree_node = cast(etree._Element, self._bound_to).getnext()
+        assert isinstance(self._bound_to, etree._Element)
+        next_etree_node = self._bound_to.getnext()
         if next_etree_node is None:
             return None
         return TagNode(next_etree_node, self._cache)
@@ -865,11 +869,11 @@ class TextNode(NodeBase):
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, etree._Element)
-            return TagNode(cast(etree._Element, self._bound_to), self._cache)
+            return TagNode(self._bound_to, self._cache)
 
         elif self._position in (APPENDED, TAIL):
             assert isinstance(self._bound_to, etree._Element)
-            return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
+            return TagNode(self._bound_to, self._cache).parent
 
         elif self._position is DETACHED:
             assert self._bound_to is None
@@ -880,7 +884,8 @@ class TextNode(NodeBase):
     def _prepend_text_node(self, node: "TextNode"):
         if self._position is DATA:
 
-            sibling = TagNode(cast(etree._Element, self._bound_to), self._cache)
+            assert isinstance(self._bound_to, etree._Element)
+            sibling = TagNode(self._bound_to, self._cache)
             content = self.content
             node._bind_to_data(sibling)
             node._append_text_node(self)
@@ -888,7 +893,8 @@ class TextNode(NodeBase):
 
         elif self._position is TAIL:
 
-            sibling = TagNode(cast(etree._Element, self._bound_to), self._cache)
+            assert isinstance(self._bound_to, etree._Element)
+            sibling = TagNode(self._bound_to, self._cache)
             content = self.content
             node._bind_to_tail(sibling)
             node._append_text_node(self)
