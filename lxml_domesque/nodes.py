@@ -576,7 +576,7 @@ class TextNode(NodeBase):
         self.__content: Optional[str]
 
         self._appended_text_node: Optional[TextNode] = None
-        self._cache = cache or {}  # REMOVE?! if bound to wrapper
+        self._cache = cache or {}
         self._position: int = position
 
         if position is DETACHED:
@@ -586,7 +586,7 @@ class TextNode(NodeBase):
 
         elif position in (DATA, TAIL):
             assert isinstance(reference_or_text, etree._Element)
-            self._bound_to = reference_or_text  # TODO rather bind to the wrapper?
+            self._bound_to = reference_or_text
             self.__content = None
 
         else:
