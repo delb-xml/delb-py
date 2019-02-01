@@ -27,6 +27,7 @@ DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
 
 class NodeBase(ABC):
+    # the method is here to trick mypy
     def __init__(self, cache: _WrapperCache):
         self._cache = cache
 
@@ -794,10 +795,6 @@ class TextNode(NodeBase):
     ) -> "TagNode":
         raise NotImplementedError
 
-    def new_text_node(self, content: str = "") -> "TextNode":
-        # also implemented in NodeBase
-        return TextNode(content, position=DETACHED)
-
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         if self._position is DETACHED:
             return None
@@ -829,6 +826,12 @@ class TextNode(NodeBase):
                 assert candidate._exists
             return candidate
         else:
+            # FIXME?
+            raise RuntimeError(
+                "I'm here to inform you that an expected code path has actually been "
+                "reached."
+            )
+            # eg in test_nodes::test_siblings_filter
             return candidate.next_node(*filter)
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
@@ -864,12 +867,8 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, etree._Element)
             return TagNode(cast(etree._Element, self._bound_to), self._cache)
 
-        elif self._position is TAIL:
+        elif self._position in (APPENDED, TAIL):
             assert isinstance(self._bound_to, etree._Element)
-            return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
-
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
             return TagNode(cast(etree._Element, self._bound_to), self._cache).parent
 
         elif self._position is DETACHED:
@@ -897,19 +896,11 @@ class TextNode(NodeBase):
 
         elif self._position is APPENDED:
 
-            if isinstance(self._bound_to, etree._Element):
-                assert 0
-                # TODO test this
-                sibling = TagNode(self._bound_to, self._cache)
-                sibling._tail_node = None
-                node._bind_to_tail(sibling)
-
-            elif isinstance(self._bound_to, TextNode):
-                assert node._appended_text_node is None
-                previous = self._bound_to
-                previous._appended_text_node = None
-                previous._append_text_node(node)
-
+            assert node._appended_text_node is None
+            previous = self._bound_to
+            assert isinstance(previous, TextNode)
+            previous._appended_text_node = None
+            previous._append_text_node(node)
             node._append_text_node(self)
 
         else:
