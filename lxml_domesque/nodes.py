@@ -742,11 +742,11 @@ class TextNode(NodeBase):
             cast(TextNode, self._bound_to)._appended_text_node = text_sibling
             if text_sibling:
                 text_sibling._bound_to = self._bound_to
-            self._bound_to = None
+            self._bound_to = self._appended_text_node = None
 
             self._position = DETACHED
         else:
-            raise ValueError
+            raise RuntimeError
 
         return self
 

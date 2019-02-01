@@ -145,6 +145,17 @@ def test_construction():
     )
 
 
+def test_detach_sandwiched_node():
+    document = Document("<root>data</root>")
+    node = document.root[0]
+    node.add_next(" tailing")
+    node.add_next(" more more more")
+
+    more = document.root[1].detach()
+    assert str(more) == " more more more"
+    assert str(document) == "<root>data tailing</root>"
+
+
 def test_none_content_wrapping():
     document = Document("<root><e1/></root>")
 
