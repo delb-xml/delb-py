@@ -146,7 +146,7 @@ class NodeBase(ABC):
         # TODO? head.detach()
         assert this.parent is None
         assert this.next_node() is None
-        # assert head.previous_node() is None
+        assert this.previous_node() is None
 
         return this, queue
 
@@ -518,17 +518,30 @@ class TagNode(NodeBase):
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
-        candidate: NodeBase
+        candidate: Optional[NodeBase]
 
         previous_etree_obj = self._etree_obj.getprevious()
 
         if previous_etree_obj is None:
             return None
 
-        if TagNode(previous_etree_obj, self._cache)._tail_node:
-            raise NotImplementedError
+        wrapper_of_previous = TagNode(previous_etree_obj, self._cache)
+
+        if wrapper_of_previous._tail_node._exists:
+            candidate = wrapper_of_previous._tail_node
+            while cast(TextNode, candidate)._appended_text_node:
+                candidate = cast(TextNode, candidate)._appended_text_node
+
         else:
             raise NotImplementedError
+
+        if candidate is None:
+            return None
+
+        if all(f(candidate) for f in filter):
+            return candidate
+        else:
+            return candidate.previous_node(*filter)
 
     def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the previous node in stream order that matches the given
@@ -900,7 +913,26 @@ class TextNode(NodeBase):
             raise RuntimeError
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+        candidate: Optional[NodeBase]
+
+        if self._position in (DATA, DETACHED):
+            return None
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, etree._Element)
+            candidate = TagNode(self._bound_to, self._cache)
+        elif self._position is APPENDED:
+            assert isinstance(self._bound_to, TextNode)
+            candidate = self._bound_to
+        else:
+            raise RuntimeError
+
+        if candidate is None:
+            return None
+
+        if all(f(candidate) for f in filter):
+            return candidate
+        else:
+            return candidate.previous_node(*filter)
 
     def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the previous node in stream order that matches the given
