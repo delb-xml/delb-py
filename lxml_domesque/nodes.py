@@ -82,7 +82,6 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
-        prefix: Optional[str] = None,
     ) -> "TagNode":
         pass
 
@@ -92,8 +91,8 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]],
         namespace: Optional[str],
-        prefix: Optional[str],
     ) -> "TagNode":
+        # TODO docs: hint on etree.register_namespace
 
         tag: etree.QName
 
@@ -102,11 +101,6 @@ class NodeBase(ABC):
 
         if namespace:
             tag = etree.QName(namespace, local_name)
-            if prefix:
-                raise NotImplementedError
-
-        elif prefix:
-            raise NotImplementedError
 
         elif context_namespace:
             tag = etree.QName(context_namespace, local_name)
@@ -482,10 +476,9 @@ class TagNode(NodeBase):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
-        prefix: Optional[str] = None,
     ) -> "TagNode":
         return self._new_tag_node_from(
-            self._etree_obj, local_name, attributes, namespace, prefix
+            self._etree_obj, local_name, attributes, namespace
         )
 
     @property
@@ -773,7 +766,6 @@ class TextNode(NodeBase):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
-        prefix: Optional[str] = None,
     ) -> "TagNode":
         raise NotImplementedError
 

@@ -63,6 +63,9 @@ class Document:
         clone.merge_text_nodes()
         return etree.tounicode(clone._etree_obj)
 
+    def cleanup_namespaces(self, namespaces: "etree._NSMap"):
+        raise NotImplementedError
+
     def clone(self) -> "Document":
         return self.__class__(self.root, parser=self._etree_obj.parser)
 
@@ -84,10 +87,7 @@ class Document:
         namespace: Optional[str] = None,
     ) -> "TagNode":
         return self.root.new_tag_node(
-            local_name=local_name,
-            attributes=attributes,
-            namespace=namespace,
-            prefix=prefix,
+            local_name=local_name, attributes=attributes, namespace=namespace
         )
 
     def new_text_node(self, content: str = "") -> "TextNode":
