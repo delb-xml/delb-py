@@ -20,6 +20,14 @@ def test_add_text_after_tag():
     assert foo._appended_text_node is None
 
 
+def test_add_tag_after_tail():
+    document = Document("<root><node/>tail</root>")
+    tail = document.root[1]
+
+    tail.add_next(document.new_tag_node("end"))
+    assert str(document) == "<root><node/>tail<end/></root>"
+
+
 def test_add_text_after_tail():
     document = Document("<root><tag/>foo</root>")
     root = document.root

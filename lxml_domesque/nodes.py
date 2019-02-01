@@ -613,18 +613,21 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
             elif self._position is TAIL:
+                assert isinstance(self._bound_to, etree._Element)
+                data = self._bound_to.tail
                 text_sibling = self._appended_text_node
-
                 self._appended_text_node = None
-                cast(etree._Element, self._bound_to).addnext(node._etree_obj)
 
-                assert node._etree_obj.tail is None
+                assert not node._tail_node._exists
+
+                self._bound_to.addnext(node._etree_obj)
+                self._bound_to.tail = data
+                node._etree_obj.tail = None
+
+                assert not node._tail_node._exists, repr(node._tail_node)
 
                 if text_sibling is not None:
-                    node._etree_obj.tail = text_sibling.content
-                    node._tail_node._appended_text_node = (
-                        text_sibling._appended_text_node
-                    )
+                    raise NotImplementedError
 
             elif self._position is APPENDED:
                 raise NotImplementedError
