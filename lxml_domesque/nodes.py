@@ -16,6 +16,7 @@ from typing import (
 
 from lxml import etree
 
+from lxml_domesque.exceptions import InvalidOperation
 from lxml_domesque.typing import _WrapperCache, Filter
 
 if TYPE_CHECKING:
@@ -265,8 +266,7 @@ class TagNode(NodeBase):
 
     def add_next(self, *node: Any, clone: bool = False):
         if self.parent is None:
-            # TODO proper Exception
-            raise RuntimeError
+            raise InvalidOperation("Can't add a sibling to a root node.")
 
         super().add_next(*node, clone=clone)
 
@@ -288,6 +288,12 @@ class TagNode(NodeBase):
 
         else:
             raise TypeError
+
+    def add_previous(self, *node: Any, clone: bool = False):
+        if self.parent is None:
+            raise InvalidOperation("Can't add a sibling to a root node.")
+
+        super().add_previous(*node, clone=clone)
 
     def _add_previous_node(self, node: NodeBase):
         if isinstance(node, TagNode):
