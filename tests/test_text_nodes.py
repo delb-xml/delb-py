@@ -82,6 +82,22 @@ def test_add_text_after_appended():
     assert root[0]._etree_obj.tail == "foobarpeng"
 
 
+def test_add_text_before_data():
+    document = Document("<root>data</root>")
+    document.root[0].add_previous("head ")
+    assert len(document.root) == 2
+    assert str(document) == "<root>head data</root>"
+
+
+def test_add_text_between_text():
+    document = Document("<root>data</root>")
+    node = document.root[0]
+    node.add_next(" tailing")
+    node.add_next(" more more more")
+    assert len(document.root) == 3
+    assert str(document) == "<root>data more more more tailing</root>"
+
+
 def test_appended_text_nodes():
     document = Document("<root/>")
     tokens = ("How ", "much ", "is ", "the ", "fish", "?")
