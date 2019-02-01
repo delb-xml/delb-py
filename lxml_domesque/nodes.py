@@ -438,8 +438,12 @@ class TagNode(NodeBase):
         return cast(str, etree.QName(self._etree_obj).localname)
 
     @local_name.setter
-    def local_name(self, value: str) -> None:
-        self._etree_obj.tag = etree.QName(self.namespace, value)
+    def local_name(self, value: str):
+        namespace = self.namespace
+        if namespace:
+            self._etree_obj.tag = etree.QName(self.namespace, value)
+        else:
+            self._etree_obj.tag = value
 
     def merge_text_nodes(self):
         for node in self.child_nodes(is_text_node, recurse=True):
@@ -496,10 +500,9 @@ class TagNode(NodeBase):
 
     @property
     def prefix(self) -> Optional[str]:
-        # mypy 0.650 throws weird errors here
         target = etree.QName(self._etree_obj).namespace
         assert isinstance(target, str)
-        for prefix, namespace in self._etree_obj.nsmap:  # type: ignore
+        for prefix, namespace in self._etree_obj.nsmap.items():
             assert isinstance(prefix, str) or prefix is None
             assert isinstance(namespace, str)
             if namespace == target:
