@@ -23,6 +23,11 @@ if TYPE_CHECKING:
     from lxml_domesque import Document  # noqa: F401
 
 
+_Element = etree._Element
+ElementAttributes = etree._Attrib
+QName = etree.QName
+
+
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
 
@@ -89,26 +94,26 @@ class NodeBase(ABC):
 
     def _new_tag_node_from(
         self,
-        context: etree._Element,
+        context: _Element,
         local_name: str,
         attributes: Optional[Dict[str, str]],
         namespace: Optional[str],
     ) -> "TagNode":
         # TODO docs: hint on etree.register_namespace
 
-        tag: etree.QName
+        tag: QName
 
-        context_namespace = etree.QName(context).namespace
+        context_namespace = QName(context).namespace
         nsmap = context.nsmap
 
         if namespace:
-            tag = etree.QName(namespace, local_name)
+            tag = QName(namespace, local_name)
 
         elif context_namespace:
-            tag = etree.QName(context_namespace, local_name)
+            tag = QName(context_namespace, local_name)
 
         else:
-            tag = etree.QName(local_name)
+            tag = QName(local_name)
 
         return TagNode(
             context.makeelement(tag, attrib=attributes, nsmap=nsmap), self._cache
@@ -166,7 +171,7 @@ class TagNode(NodeBase):
     # TODO __slots__
 
     def __new__(
-        cls, etree_element: etree._Element, cache: Optional[_WrapperCache] = None
+        cls, etree_element: _Element, cache: Optional[_WrapperCache] = None
     ) -> "TagNode":
         if cache is None:
             obj, cache = None, {}
@@ -189,8 +194,8 @@ class TagNode(NodeBase):
         return obj  # type: ignore
 
     # this only serves to declare properties' types
-    def __init__(self, etree_element: etree._Element, _):
-        self._etree_obj: etree._Element
+    def __init__(self, etree_element: _Element, _):
+        self._etree_obj: _Element
         self._data_node: TextNode
         self._tail_node: TextNode
         self._cache: _WrapperCache
@@ -341,7 +346,7 @@ class TagNode(NodeBase):
         last_child.add_next(*queue, clone=clone)
 
     @property
-    def attributes(self) -> etree._Attrib:
+    def attributes(self) -> ElementAttributes:
         return self._etree_obj.attrib
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
@@ -436,13 +441,13 @@ class TagNode(NodeBase):
 
     @property
     def local_name(self) -> str:
-        return cast(str, etree.QName(self._etree_obj).localname)
+        return cast(str, QName(self._etree_obj).localname)
 
     @local_name.setter
     def local_name(self, value: str):
         namespace = self.namespace
         if namespace:
-            self._etree_obj.tag = etree.QName(self.namespace, value)
+            self._etree_obj.tag = QName(self.namespace, value)
         else:
             self._etree_obj.tag = value
 
@@ -452,11 +457,11 @@ class TagNode(NodeBase):
 
     @property
     def namespace(self) -> str:
-        return cast(str, etree.QName(self._etree_obj).namespace)
+        return cast(str, QName(self._etree_obj).namespace)
 
     @namespace.setter
     def namespace(self, value: str) -> None:
-        self._etree_obj.tag = etree.QName(value, self.local_name)
+        self._etree_obj.tag = QName(value, self.local_name)
 
     @property
     def namespaces(self) -> Dict[str, str]:
@@ -501,7 +506,7 @@ class TagNode(NodeBase):
 
     @property
     def prefix(self) -> Optional[str]:
-        target = etree.QName(self._etree_obj).namespace
+        target = QName(self._etree_obj).namespace
         assert isinstance(target, str)
         for prefix, namespace in self._etree_obj.nsmap.items():
             assert isinstance(prefix, str) or prefix is None
@@ -552,7 +557,7 @@ class TagNode(NodeBase):
 
     @property
     def qualified_name(self) -> str:
-        return cast(str, etree.QName(self._etree_obj).text)
+        return cast(str, QName(self._etree_obj).text)
 
     def replace_with(self, node: NodeBase, clone: bool = False) -> None:
         raise NotImplementedError
@@ -567,12 +572,12 @@ class TextNode(NodeBase):
 
     def __init__(
         self,
-        reference_or_text: Union[etree._Element, str, "TextNode"],
+        reference_or_text: Union[_Element, str, "TextNode"],
         position: int = DETACHED,
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
-        self._bound_to: Union[None, etree._Element, TextNode]
+        self._bound_to: Union[None, _Element, TextNode]
         self.__content: Optional[str]
 
         self._appended_text_node: Optional[TextNode] = None
@@ -585,7 +590,7 @@ class TextNode(NodeBase):
             self.__content = reference_or_text
 
         elif position in (DATA, TAIL):
-            assert isinstance(reference_or_text, etree._Element)
+            assert isinstance(reference_or_text, _Element)
             self._bound_to = reference_or_text
             self.__content = None
 
@@ -616,7 +621,7 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
             elif self._position is TAIL:
-                assert isinstance(self._bound_to, etree._Element)
+                assert isinstance(self._bound_to, _Element)
                 data = self._bound_to.tail
                 text_sibling = self._appended_text_node
                 self._appended_text_node = None
@@ -701,11 +706,11 @@ class TextNode(NodeBase):
     @property
     def content(self) -> Optional[str]:
         if self._position is DATA:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             return cast(str, self._bound_to.text)
 
         elif self._position is TAIL:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             return cast(str, self._bound_to.tail)
 
         elif self._position in (APPENDED, DETACHED):
@@ -721,11 +726,11 @@ class TextNode(NodeBase):
             text = str(text)
 
         if self._position is DATA:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             self._bound_to.text = text or None
 
         elif self._position is TAIL:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             self._bound_to.tail = text or None
 
         elif self._position in (APPENDED, DETACHED):
@@ -763,11 +768,11 @@ class TextNode(NodeBase):
     @property
     def _exists(self) -> bool:
         if self._position is DATA:
-            assert isinstance(self._bound_to, etree._Element)
-            return cast(etree._Element, self._bound_to).text is not None
+            assert isinstance(self._bound_to, _Element)
+            return cast(_Element, self._bound_to).text is not None
         elif self._position is TAIL:
-            assert isinstance(self._bound_to, etree._Element)
-            return cast(etree._Element, self._bound_to).tail is not None
+            assert isinstance(self._bound_to, _Element)
+            return cast(_Element, self._bound_to).tail is not None
         else:
             return True
 
@@ -809,7 +814,7 @@ class TextNode(NodeBase):
 
         elif self._position is DATA:
 
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             if len(self._bound_to):
                 candidate = TagNode(self._bound_to[0], self._cache)
             else:
@@ -854,7 +859,7 @@ class TextNode(NodeBase):
         raise RuntimeError
 
     def __next_candidate_of_tail(self) -> Optional[NodeBase]:
-        assert isinstance(self._bound_to, etree._Element)
+        assert isinstance(self._bound_to, _Element)
         next_etree_node = self._bound_to.getnext()
         if next_etree_node is None:
             return None
@@ -868,11 +873,11 @@ class TextNode(NodeBase):
     @property
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             return TagNode(self._bound_to, self._cache)
 
         elif self._position in (APPENDED, TAIL):
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             return TagNode(self._bound_to, self._cache).parent
 
         elif self._position is DETACHED:
@@ -884,7 +889,7 @@ class TextNode(NodeBase):
     def _prepend_text_node(self, node: "TextNode"):
         if self._position is DATA:
 
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             sibling = TagNode(self._bound_to, self._cache)
             content = self.content
             node._bind_to_data(sibling)
@@ -893,7 +898,7 @@ class TextNode(NodeBase):
 
         elif self._position is TAIL:
 
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             sibling = TagNode(self._bound_to, self._cache)
             content = self.content
             node._bind_to_tail(sibling)
@@ -918,7 +923,7 @@ class TextNode(NodeBase):
         if self._position in (DATA, DETACHED):
             return None
         elif self._position is TAIL:
-            assert isinstance(self._bound_to, etree._Element)
+            assert isinstance(self._bound_to, _Element)
             candidate = TagNode(self._bound_to, self._cache)
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
