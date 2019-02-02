@@ -16,7 +16,7 @@ from typing import (
 
 from lxml import etree
 
-from lxml_domesque.exceptions import InvalidOperation
+from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
 from lxml_domesque.typing import _WrapperCache, Filter
 
 if TYPE_CHECKING:
@@ -268,7 +268,7 @@ class TagNode(NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
     def add_next(self, *node: Any, clone: bool = False):
         if self.parent is None:
@@ -318,7 +318,7 @@ class TagNode(NodeBase):
             raise NotImplementedError
 
         else:
-            raise TypeError
+            raise InvalidCodePath
 
     def ancestors(self, *filter: Filter):
         raise NotImplementedError
@@ -395,7 +395,7 @@ class TagNode(NodeBase):
                 elif isinstance(child_node, TextNode):
                     assert child_node._position is DETACHED
                 else:
-                    raise AssertionError
+                    raise InvalidCodePath
 
                 result.append_child(child_node)
 
@@ -513,7 +513,7 @@ class TagNode(NodeBase):
             assert isinstance(namespace, str)
             if namespace == target:
                 return prefix
-        raise RuntimeError("Reached unreachable code.")
+        raise InvalidCodePath
 
     @prefix.setter
     def prefix(self, prefix: str):
@@ -641,7 +641,7 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
             elif self._position is DETACHED:
-                raise RuntimeError
+                raise InvalidCodePath
 
     def _add_previous_node(self, node: NodeBase):
         if isinstance(node, TextNode):
@@ -659,7 +659,7 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
             else:
-                raise RuntimeError
+                raise InvalidCodePath
 
     def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
         """ Yields the ancestor nodes from bottom to top. """
@@ -718,7 +718,7 @@ class TextNode(NodeBase):
             return cast(str, self.__content)
 
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
     @content.setter
     def content(self, text: Any):
@@ -755,7 +755,7 @@ class TextNode(NodeBase):
 
             self._position = DETACHED
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
         return self
 
@@ -856,7 +856,7 @@ class TextNode(NodeBase):
             else:
                 return TagNode(next_etree_tag, self._cache)
 
-        raise RuntimeError
+        raise InvalidCodePath
 
     def __next_candidate_of_tail(self) -> Optional[NodeBase]:
         assert isinstance(self._bound_to, _Element)
@@ -884,7 +884,7 @@ class TextNode(NodeBase):
             assert self._bound_to is None
             return None
 
-        raise RuntimeError
+        raise InvalidCodePath
 
     def _prepend_text_node(self, node: "TextNode"):
         if self._position is DATA:
@@ -915,7 +915,7 @@ class TextNode(NodeBase):
             node._append_text_node(self)
 
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         candidate: Optional[NodeBase]
@@ -929,7 +929,7 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, TextNode)
             candidate = self._bound_to
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
         if candidate is None:
             return None
@@ -951,7 +951,7 @@ class TextNode(NodeBase):
         elif self._position is APPENDED:
             return self._bound_to._tail_sequence_head
         else:
-            raise RuntimeError
+            raise InvalidCodePath
 
 
 # contributed filters and filter wrappers
