@@ -27,6 +27,22 @@ def test_contains():
         0 in root
 
 
+def test_equality():
+    document = Document("<root/>")
+    a = document.new_tag_node("name", attributes={"x": "y"})
+    b = document.new_tag_node("name", attributes={"x": "y"})
+    c = document.new_tag_node("nome", attributes={"x": "y"})
+    d = document.new_tag_node("name", attributes={"y": "x"})
+
+    assert a == b
+    assert b == a
+    assert a != c
+    assert a != d
+
+    with pytest.raises(TypeError):
+        a == 0
+
+
 def test_first_and_last_child():
     document = Document("<root><e1/><e2/></root>")
     assert document.root.first_child.local_name == "e1"

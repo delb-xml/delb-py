@@ -223,7 +223,13 @@ class TagNode(NodeBase):
         return self.clone(deep=True)
 
     def __eq__(self, other: Any) -> bool:
-        raise NotImplementedError
+        # TODO docs
+        if not isinstance(other, TagNode):
+            raise TypeError
+
+        return (self.qualified_name == other.qualified_name) and (
+            set(self.attributes.items()) == set(other.attributes.items())
+        )
 
     # TODO remove flake8 exception soonish; the issue is fixed in pyflakes
     @overload
