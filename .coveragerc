@@ -1,0 +1,13 @@
+[run]
+source = lxml_domesque
+
+[report]
+exclude_lines =
+    def __repr__
+    if TYPE_CHECKING:
+    pass
+    pragma: no cover
+    raise InvalidCodePath
+    raise NotImplementedError
+# TODO increase
+fail_under = 90

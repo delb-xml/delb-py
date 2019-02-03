@@ -33,7 +33,7 @@ DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
 class NodeBase(ABC):
     # the method is here to trick mypy
-    def __init__(self, cache: _WrapperCache):
+    def __init__(self, cache: _WrapperCache):  # pragma: no cover
         self._cache = cache
 
     def add_next(self, *node: Any, clone: bool = False):
@@ -835,7 +835,7 @@ class TextNode(NodeBase):
             return candidate
         else:
             # FIXME?
-            raise RuntimeError(
+            raise RuntimeError(  # pragma: no cover
                 "I'm here to inform you that an expected code path has actually been "
                 "reached."
             )

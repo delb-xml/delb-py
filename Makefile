@@ -43,7 +43,7 @@ mypy: ## run static type checks with mypy
 
 .PHONY: pytest
 pytest: ## run the test suite
-	python -m pytest tests
+	python -m pytest --cov-config .coveragerc --cov=lxml_domesque tests
 
 .PHONY: tests ## run all tests on normalized code
 tests: black flake8 mypy pytest

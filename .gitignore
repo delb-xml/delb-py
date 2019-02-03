@@ -1,6 +1,7 @@
 __pycache__/
+.coverage
+docs/_build/
 *.egg-info/
 .idea/
-docs/_build/
 .mypy_cache/
 .pytest_cache/

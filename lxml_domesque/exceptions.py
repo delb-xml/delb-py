@@ -1,5 +1,5 @@
 class InvalidCodePath(RuntimeError):
-    def __init__(self):
+    def __init__(self):  # pragma: no cover
         super().__init__(
             "An unintended path was taken through the code. Please report this bug."
         )
