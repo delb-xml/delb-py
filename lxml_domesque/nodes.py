@@ -58,10 +58,13 @@ class NodeBase(ABC):
     def _add_previous_node(self, node: "NodeBase"):
         pass
 
-    @abstractmethod
     def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
         """ Yields the ancestor nodes from bottom to top. """
-        raise NotImplementedError
+        parent = self.parent
+        if parent:
+            if all(f(parent) for f in filter):
+                yield parent
+            yield from parent.ancestors(*filter)
 
     @abstractmethod
     def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
@@ -319,9 +322,6 @@ class TagNode(NodeBase):
 
         else:
             raise InvalidCodePath
-
-    def ancestors(self, *filter: Filter):
-        raise NotImplementedError
 
     def append_child(self, *node: Any, clone: bool = False):
         last_child = self.last_child
@@ -667,10 +667,6 @@ class TextNode(NodeBase):
 
             else:
                 raise InvalidCodePath
-
-    def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
-        """ Yields the ancestor nodes from bottom to top. """
-        raise NotImplementedError
 
     def _append_text_node(self, node: "TextNode"):
         old = self._appended_text_node

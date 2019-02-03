@@ -17,6 +17,22 @@ def test_add_next():
     assert str(document) == "<root><e1/><e2/><e3/></root>"
 
 
+def test_ancestors():
+    document = Document(
+        "<root><left/>abc<middle><node>0</node></middle><right>xyz<xyz"
+        "/></right></root>"
+    )
+    zero = document.root[2][0][0]
+    assert isinstance(zero, TextNode)
+    assert zero == "0"
+    assert tuple(str(x) for x in zero.ancestors()) == ("<node>", "<middle>", "<root>")
+
+
+def test_ancestors_of_detached_node():
+    node = TextNode("x")
+    assert tuple(node.ancestors()) == ()
+
+
 def test_siblings_filter():
     document = Document("<root><e1/>ham<e2/>spam<e3/></root>")
     e2 = document.root[2]
