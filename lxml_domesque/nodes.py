@@ -79,7 +79,7 @@ class NodeBase(ABC):
     def document(self) -> Optional["Document"]:
         # TODO wasn't there a bug where a node may return a root though it has been
         #      detached from a tree?
-        raise NotImplementedError
+        pass
 
     @property
     @abstractmethod
@@ -128,13 +128,13 @@ class NodeBase(ABC):
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
         """ Returns the next node in stream order that matches the given
             name. """
-        raise NotImplementedError
+        pass
 
     @property
     @abstractmethod
@@ -161,13 +161,13 @@ class NodeBase(ABC):
 
     @abstractmethod
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the previous node in stream order that matches the given
             name. """
-        raise NotImplementedError
+        pass
 
 
 class TagNode(NodeBase):
