@@ -205,8 +205,16 @@ class TagNode(NodeBase):
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         """ Tests whether the node has an attribute with given string or
-            a given node is a descendant. """
-        raise NotImplementedError
+            a given node is a within its child nodes. """
+        if isinstance(item, str):
+            return item in self.attributes
+        elif isinstance(item, NodeBase):
+            for child in self.child_nodes(recurse=False):
+                if child is item:
+                    return True
+            return False
+        else:
+            raise TypeError
 
     def __copy__(self) -> "TagNode":
         return self.clone(deep=False)

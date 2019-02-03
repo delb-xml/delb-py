@@ -9,6 +9,24 @@ def test_attribute_access():
     assert document.root["ham"] == "spam"
 
 
+def test_contains():
+    document = Document('<root foo="bar"><node><descendant/></node></root>')
+    root = document.root
+    node = root[0]
+    descendant = node[0]
+
+    assert "foo" in root
+    assert "bar" not in root
+
+    assert node in root
+    assert descendant not in root
+
+    assert descendant in node
+
+    with pytest.raises(TypeError):
+        0 in root
+
+
 def test_first_and_last_child():
     document = Document("<root><e1/><e2/></root>")
     assert document.root.first_child.local_name == "e1"
