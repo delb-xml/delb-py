@@ -597,6 +597,13 @@ class TextNode(NodeBase):
         else:
             raise ValueError
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, TextNode):
+            return self.content == other.content
+        elif isinstance(other, str):
+            return self.content == other
+        raise TypeError
+
     def __repr__(self):
         if self._exists:
             return (
