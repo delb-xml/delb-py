@@ -214,7 +214,7 @@ class TagNode(NodeBase):
     def __eq__(self, other: Any) -> bool:
         raise NotImplementedError
 
-    # TODO remove flake8 exception soon; the issue is fixed in pyflakes
+    # TODO remove flake8 exception soonish; the issue is fixed in pyflakes
     @overload
     def __getitem__(self, item: str) -> str:
         ...

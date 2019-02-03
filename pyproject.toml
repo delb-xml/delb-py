@@ -14,11 +14,11 @@ https-loader = ["requests"]
 
 [tool.poetry.dev-dependencies]
 black = "^18.9b0"
-flake8 = "*"
+flake8-black = "*"
 mypy = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-datafiles = "*"
 sphinx = "*"
 xmldiff = "^2.2"
-typing-extensions = "^3.7"
+typing-extensions = "*"

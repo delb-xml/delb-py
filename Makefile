@@ -16,13 +16,6 @@ export PRINT_HELP_PYSCRIPT
 black: ## normalize Python code
 	black lxml_domesque tests
 
-.PHONY: black-check
-black-check: ## check whether Python code is normalized
-	black --check --diff lxml_domesque tests
-
-.PHONY: check-style
-check-style: black-check flake8 ## checks the code style
-
 .PHONY: docs
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean

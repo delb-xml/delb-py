@@ -4,4 +4,5 @@ docs/_build/
 *.egg-info/
 .idea/
 .mypy_cache/
+pip-wheel-metadata/
 .pytest_cache/
