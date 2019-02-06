@@ -10,6 +10,5 @@ def test_invalid_document():
 
 def test_set_root():
     document = Document("<root><node/></root>")
-    node = document.root[0]
-    document.root = node
+    document.root = document.root[0].detach()
     assert str(document) == "<node/>"

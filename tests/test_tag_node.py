@@ -27,6 +27,20 @@ def test_contains():
         0 in root
 
 
+def test_detach_and_document():
+    document = Document("<root><node/></root>")
+    root = document.root
+
+    assert root.document is document
+
+    node = root[0].detach()
+
+    assert node.parent is None
+    assert node.document is None
+    assert root.document is document
+    assert str(document) == "<root/>"
+
+
 def test_equality():
     document = Document("<root/>")
     a = document.new_tag_node("name", attributes={"x": "y"})

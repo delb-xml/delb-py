@@ -16,6 +16,7 @@ from typing import (
 
 from lxml import etree
 
+from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
 from lxml_domesque.typing import _WrapperCache, Filter
 
@@ -421,11 +422,27 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     def detach(self) -> "TagNode":
-        raise NotImplementedError
+        if self.parent is None:
+            return self
+
+        if self._tail_node._exists:
+            raise NotImplementedError
+        else:
+            etree_obj = self._etree_obj
+            cast(_Element, etree_obj.getparent()).remove(etree_obj)
+
+        return self
 
     @property
     def document(self) -> Optional["Document"]:
-        raise NotImplementedError
+        if self.parent is None:
+            self_root = self
+        else:
+            self_root = next(self.ancestors(lambda x: x.parent is None))  # type: ignore
+        for document, root in roots_of_documents.items():
+            if root is self_root:
+                return document
+        return None
 
     @property
     def first_child(self) -> Optional[NodeBase]:

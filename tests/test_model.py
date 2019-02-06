@@ -1,3 +1,5 @@
+import gc
+
 from lxml_domesque import is_text_node, Document, TagNode, TextNode
 
 from lxml import etree
@@ -20,10 +22,15 @@ document = Document(
 
 
 def test_bindings():
+    document_b = Document("<b/>")
+    root = document_b.root
     assert isinstance(root, TagNode), type(root)
     assert isinstance(root._etree_obj, etree._Element), type(root._etree_obj)
 
     assert document.root is document.root
+    del document_b
+    gc.collect()
+    assert root.document is None
 
 
 def test_tag_nodes():
