@@ -207,6 +207,7 @@ class TagNode(NodeBase):
         self._cache: _WrapperCache
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
+        # TODO move docs
         """ Tests whether the node has an attribute with given string or
             a given node is a within its child nodes. """
         if isinstance(item, str):
@@ -244,6 +245,7 @@ class TagNode(NodeBase):
         ...
 
     def __getitem__(self, item):  # noqa: F811
+        # TODO docs
 
         if isinstance(item, str):
             return self._etree_obj.attrib[item]
@@ -263,6 +265,7 @@ class TagNode(NodeBase):
         raise TypeError
 
     def __len__(self) -> int:
+        # TODO docs
         return len([x for x in self.child_nodes(recurse=False)])
 
     def __str__(self) -> str:

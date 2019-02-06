@@ -33,11 +33,11 @@ def test_bindings():
     assert root.document is None
 
 
+# TODO move
 def test_tag_nodes():
     root = document.root
 
     assert isinstance(root, TagNode), type(root)
-    # TODO assert_has_attrs
     assert root.namespace == "https://name.space"
     assert root.local_name == "doc"
     assert root.qualified_name == "{https://name.space}doc"
@@ -65,6 +65,7 @@ def test_tag_nodes():
     assert text.parent is root
 
 
+# TODO move
 def test_attributes():
     milestone = document.root[1][0]
     assert milestone.attributes == {"unit": "page"}
@@ -82,6 +83,7 @@ def test_caching():
     assert x is y
 
 
+# TODO move
 def test_text_nodes():
     p = document.root[1][1]
 

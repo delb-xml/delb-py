@@ -94,7 +94,6 @@ class Document:
         self,
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
-        prefix: Optional[str] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
         return self.root.new_tag_node(
