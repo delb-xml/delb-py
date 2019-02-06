@@ -41,7 +41,7 @@ class NodeBase(ABC):
 
     def add_next(self, *node: Any, clone: bool = False):
         if node:
-            this, queue = self._prepare_new_sibling(node, clone)
+            this, queue = self._prepare_new_relative(node, clone)
             self._add_next_node(this)
             if queue:
                 this.add_next(*queue, clone=clone)
@@ -52,7 +52,7 @@ class NodeBase(ABC):
 
     def add_previous(self, *node: Any, clone: bool = False):
         if node:
-            this, queue = self._prepare_new_sibling(node, clone)
+            this, queue = self._prepare_new_relative(node, clone)
             self._add_previous_node(this)
             if queue:
                 this.add_previous(*queue, clone=clone)
@@ -142,7 +142,7 @@ class NodeBase(ABC):
     def parent(self):
         pass
 
-    def _prepare_new_sibling(
+    def _prepare_new_relative(
         self, nodes: Tuple[Any, ...], clone: bool
     ) -> Tuple["NodeBase", List[Any]]:
         this, *queue = nodes
@@ -153,10 +153,14 @@ class NodeBase(ABC):
         else:
             assert isinstance(this, NodeBase)
 
-        # TODO? head.detach()
-        assert this.parent is None
-        assert this.next_node() is None
-        assert this.previous_node() is None
+        if not all(
+            x is None for x in (this.parent, this.next_node(), this.previous_node())
+        ):
+            raise InvalidOperation(
+                "A node that shall be added to a tree must have neither a parent nor "
+                "any sibling node. Use :meth:`NodeBase.detach` or a `clone` argument "
+                "to move a node within or between trees."
+            )
 
         return this, queue
 
@@ -347,21 +351,14 @@ class TagNode(NodeBase):
         queue: Sequence[Any]
 
         if last_child is None:
-            this, *queue = node
-
-            if not isinstance(this, NodeBase):
-                last_child = TextNode(str(this))
-            elif clone:
-                last_child = this.clone(deep=True)
-            else:
-                last_child = this
-
+            last_child, queue = self._prepare_new_relative(node, clone=clone)
             self.__add_first_child(last_child)
 
         else:
             queue = node
 
-        last_child.add_next(*queue, clone=clone)
+        if queue:
+            last_child.add_next(*queue, clone=clone)
 
     @property
     def attributes(self) -> ElementAttributes:
@@ -462,7 +459,7 @@ class TagNode(NodeBase):
     def index(self):
         raise NotImplementedError
 
-    def insert_child(self, *node: NodeBase, index: int = 0) -> None:
+    def insert_child(self, *node: NodeBase, index: int = 0, clone: bool = False) -> None:
         # TODO merge caches if applicable
         raise NotImplementedError
 

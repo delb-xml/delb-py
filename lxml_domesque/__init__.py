@@ -118,8 +118,9 @@ class Document:
         if not all(
             x is None for x in (root.parent, root.previous_node(), root.next_node())
         ):
-            raise RuntimeError(
-                "Can only set a detached node as root. Use " "`TagNode.detach()`."
+            raise InvalidOperation(
+                "Only a detached node can be set as root. Use :meth:`TagNode.clone` or "
+                ":meth:`TagNode.detach` on the designated root node."
             )
 
         utils.copy_heading_pis(self.root._etree_obj, root._etree_obj)
