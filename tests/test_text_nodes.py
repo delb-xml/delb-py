@@ -172,6 +172,18 @@ def test_detach_sandwiched_node():
     assert str(document) == "<root>data tailing</root>"
 
 
+def test_document():
+    document = Document("<root>data<node/>tail</root>")
+    root = document.root
+    root.append_child("more")
+    assert root[0].document is document
+    assert root[2].document is document
+    assert root[3].document is document
+
+    detached = TextNode("detached")
+    assert detached.document is None
+
+
 def test_none_content_wrapping():
     document = Document("<root><e1/></root>")
 

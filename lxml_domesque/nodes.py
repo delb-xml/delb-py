@@ -80,8 +80,6 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def document(self) -> Optional["Document"]:
-        # TODO wasn't there a bug where a node may return a root though it has been
-        #      detached from a tree?
         pass
 
     @property
@@ -821,18 +819,19 @@ class TextNode(NodeBase):
 
     @property
     def document(self) -> Optional["Document"]:
-        # TODO wasn't there a bug where a node may return a root though it has been
-        #      detached from a tree?
-        raise NotImplementedError
+        parent = self.parent
+        if parent is None:
+            return None
+        return parent.document
 
     @property
     def _exists(self) -> bool:
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
-            return cast(_Element, self._bound_to).text is not None
+            return self._bound_to.text is not None
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            return cast(_Element, self._bound_to).tail is not None
+            return self._bound_to.tail is not None
         else:
             return True
 
@@ -936,9 +935,13 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, _Element)
             return TagNode(self._bound_to, self._cache)
 
-        elif self._position in (APPENDED, TAIL):
+        elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
             return TagNode(self._bound_to, self._cache).parent
+
+        elif self._position is APPENDED:
+            assert isinstance(self._bound_to, TextNode)
+            return self._tail_sequence_head.parent
 
         elif self._position is DETACHED:
             assert self._bound_to is None
