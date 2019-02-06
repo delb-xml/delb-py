@@ -597,7 +597,7 @@ class TagNode(NodeBase):
                 candidate = candidate._appended_text_node
 
         else:
-            raise NotImplementedError
+            candidate = wrapper_of_previous
 
         if candidate is None:
             return None
