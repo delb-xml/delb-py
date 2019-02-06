@@ -83,9 +83,11 @@ class NodeBase(ABC):
         pass
 
     @property
-    @abstractmethod
-    def index(self) -> int:
-        pass
+    def index(self) -> Optional[int]:
+        for index, node in enumerate(self.parent.child_nodes(recurse=False)):
+            if node is self:
+                return index
+        raise InvalidCodePath
 
     @abstractmethod
     def new_tag_node(
@@ -456,10 +458,14 @@ class TagNode(NodeBase):
         )
 
     @property
-    def index(self):
-        raise NotImplementedError
+    def index(self) -> Optional[int]:
+        if self.parent is None:
+            return None  # TODO meditate over 0 as alternative
+        return super().index
 
-    def insert_child(self, *node: NodeBase, index: int = 0, clone: bool = False) -> None:
+    def insert_child(
+        self, *node: NodeBase, index: int = 0, clone: bool = False
+    ) -> None:
         # TODO merge caches if applicable
         raise NotImplementedError
 
@@ -831,10 +837,6 @@ class TextNode(NodeBase):
             return self._bound_to.tail is not None
         else:
             return True
-
-    @property
-    def index(self) -> int:
-        raise NotImplementedError
 
     def _merge_appended_text_nodes(self):
         sibling = self._appended_text_node

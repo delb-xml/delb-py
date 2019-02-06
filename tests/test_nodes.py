@@ -35,6 +35,13 @@ def test_ancestors_of_detached_node():
     assert tuple(node.ancestors()) == ()
 
 
+def test_index():
+    root = Document("<root><zero/>is<my/>country</root>").root
+    assert root.index is None
+    for index in range(4):
+        assert root[index].index == index
+
+
 def test_invalid_operations():
     document = Document("<root/>")
     document_2 = Document("<root><replacement/>parts</root>")
