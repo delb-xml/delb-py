@@ -19,11 +19,8 @@ def test_etree_loader():
     tree = etree.parse(str(TEST_FILE))
     root = tree.getroot()
 
-    doc = Document(tree)
-    assert doc._etree_obj is not tree
-
-    doc = Document(root)
-    assert doc._etree_obj.getroot() is not root
+    document = Document(root)
+    assert document.root._etree_obj is not root
 
 
 def test_ftp_http_loader():

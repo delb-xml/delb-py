@@ -20,17 +20,9 @@ document = Document(
 
 
 def test_bindings():
-    tree = document._etree_obj
-    assert isinstance(tree, etree._ElementTree), type(tree)
-
-    root = document.root
     assert isinstance(root, TagNode), type(root)
     assert isinstance(root._etree_obj, etree._Element), type(root._etree_obj)
 
-    assert document.root._etree_obj is tree.getroot()
-
-
-def test_instance_caching():
     assert document.root is document.root
 
 

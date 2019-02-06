@@ -6,10 +6,19 @@ from typing import IO as IOType
 from lxml import etree
 
 from lxml_domesque import utils
+from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidOperation
 from lxml_domesque.loaders import configured_loaders, tag_node_loader
-from lxml_domesque.nodes import any_of, is_tag_node, is_text_node, not_
-from lxml_domesque.nodes import DETACHED, NodeBase, TagNode, TextNode
+from lxml_domesque.nodes import (
+    DETACHED,
+    any_of,
+    is_tag_node,
+    is_text_node,
+    not_,
+    NodeBase,
+    TagNode,
+    TextNode,
+)
 from lxml_domesque.typing import _WrapperCache
 
 
@@ -51,9 +60,8 @@ class Document:
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
 
-        # instance properties
-        self._etree_obj: etree._ElementTree = loaded_tree
         self.__wrapper_cache: _WrapperCache = cache
+        roots_of_documents[self] = TagNode(loaded_tree.getroot(), cache)
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """
@@ -62,13 +70,15 @@ class Document:
     def __str__(self):
         clone = self.clone()
         clone.merge_text_nodes()
-        return etree.tounicode(clone._etree_obj)
+        return etree.tounicode(clone.root._etree_obj.getroottree())
 
     def cleanup_namespaces(self, namespaces: "etree._NSMap"):
         raise NotImplementedError
 
     def clone(self) -> "Document":
-        return self.__class__(self.root, parser=self._etree_obj.parser)
+        return self.__class__(
+            self.root, parser=self.root._etree_obj.getroottree().parser
+        )
 
     def css_select(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
@@ -77,8 +87,8 @@ class Document:
         self.root.merge_text_nodes()
 
     @property
-    def namespaces(self) -> "etree._NSMap":
-        return self._etree_obj.getroot().nsmap
+    def namespaces(self) -> Dict[str, str]:
+        return self.root.namespaces
 
     def new_tag_node(
         self,
@@ -102,24 +112,25 @@ class Document:
 
     @property
     def root(self) -> "TagNode":
-        return TagNode(self._etree_obj.getroot(), self.__wrapper_cache)
+        return roots_of_documents[self]
 
     @root.setter
     def root(self, root: "TagNode"):
-        old_etree_root = self._etree_obj.getroot()
-        new_etree_root = root._etree_obj
+        if not all(
+            x is None for x in (root.parent, root.previous_node(), root.next_node())
+        ):
+            raise RuntimeError(
+                "Can only set a detached node as root. Use " "`TagNode.detach()`."
+            )
 
-        assert new_etree_root.getprevious() is None
-
-        new_etree_root.tail = None
-        if old_etree_root is not None:
-            utils.copy_heading_pis(self._etree_obj.getroot(), new_etree_root)
-
-        self._etree_obj._setroot(new_etree_root)
-        self.__wrapper_cache = root._cache
+        utils.copy_heading_pis(self.root._etree_obj, root._etree_obj)
+        # preserve cache of possibly detached subtrees
+        # can be tidied with self._prune_cache()
+        self.__wrapper_cache.update(root._cache)
+        roots_of_documents[self] = root
 
     def save(self, path: Path, pretty=False):
-        self._etree_obj.write(
+        self.root._etree_obj.getroottree().write(
             str(path.resolve()),
             encoding="utf-8",
             pretty_print=pretty,
@@ -139,7 +150,7 @@ class Document:
 
     def xslt(self, transformation: etree.XSLT) -> "Document":
         # TODO cache xslt object and use it directly
-        result = self._etree_obj.xslt(transformation)
+        result = self.root._etree_obj.getroottree().xslt(transformation)
         return Document(result.getroot())
 
 
