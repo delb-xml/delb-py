@@ -23,8 +23,10 @@ if TYPE_CHECKING:
     from lxml_domesque import Document  # noqa: F401
 
 
+Comment = etree.Comment
 _Element = etree._Element
 ElementAttributes = etree._Attrib
+PI = etree.PI
 QName = etree.QName
 
 
@@ -489,6 +491,17 @@ class TagNode(NodeBase):
             candidate = self._tail_node
         else:
             next_etree_obj = self._etree_obj.getnext()
+
+            # TODO handle Comments' and PIs' tails properly
+            if next_etree_obj is not None and next_etree_obj.tag in (PI, Comment):
+                while True:
+                    next_etree_obj = next_etree_obj.getprevious()
+                    if next_etree_obj is None or next_etree_obj.tag not in (
+                        PI,
+                        Comment,
+                    ):
+                        break
+
             if next_etree_obj is None:
                 return None
             candidate = TagNode(next_etree_obj, self._cache)
@@ -541,6 +554,16 @@ class TagNode(NodeBase):
         candidate: Optional[NodeBase]
 
         previous_etree_obj = self._etree_obj.getprevious()
+
+        # TODO handle Comments' and PIs' tails properly
+        if previous_etree_obj is not None and previous_etree_obj.tag in (PI, Comment):
+            while True:
+                previous_etree_obj = previous_etree_obj.getprevious()
+                if previous_etree_obj is None or previous_etree_obj.tag not in (
+                    PI,
+                    Comment,
+                ):
+                    break
 
         if previous_etree_obj is None:
             return None
