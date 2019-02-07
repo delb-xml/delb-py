@@ -1,5 +1,6 @@
 from abc import abstractmethod, ABC
 from copy import copy
+from random import randrange
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -175,6 +176,28 @@ class NodeBase(ABC):
         """ Returns the previous node in stream order that matches the given
             name. """
         pass
+
+    def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
+        what_a_silly_fuzz = randrange(0, 4)  # FUN FUN FUN
+
+        if what_a_silly_fuzz is 0:
+            # TODO use this variant only when all code paths seem implemented
+            self.add_next(node, clone=clone)
+            return self.detach()
+        elif what_a_silly_fuzz is 1:
+            self.add_previous(node, clone=clone)
+            return self.detach()
+
+        parent, index = self.parent, self.index
+        assert parent is not None
+
+        if what_a_silly_fuzz is 2:
+            parent.insert_child(node, clone=clone)
+            return self.detach()
+        if what_a_silly_fuzz is 3:
+            self.detach()
+            parent.insert_child(node, clone=clone)
+            return self
 
 
 class TagNode(NodeBase):
@@ -616,9 +639,6 @@ class TagNode(NodeBase):
     @property
     def qualified_name(self) -> str:
         return cast(str, QName(self._etree_obj).text)
-
-    def replace_with(self, node: NodeBase, clone: bool = False) -> None:
-        raise NotImplementedError
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
         raise NotImplementedError
