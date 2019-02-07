@@ -180,24 +180,26 @@ class NodeBase(ABC):
     def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
         what_a_silly_fuzz = randrange(0, 4)  # FUN FUN FUN
 
-        if what_a_silly_fuzz is 0:
+        if what_a_silly_fuzz == 0:
             # TODO use this variant only when all code paths seem implemented
             self.add_next(node, clone=clone)
             return self.detach()
-        elif what_a_silly_fuzz is 1:
+        elif what_a_silly_fuzz == 1:
             self.add_previous(node, clone=clone)
             return self.detach()
 
         parent, index = self.parent, self.index
         assert parent is not None
 
-        if what_a_silly_fuzz is 2:
-            parent.insert_child(node, clone=clone)
+        if what_a_silly_fuzz == 2:
+            parent.insert_child(node, index=index, clone=clone)
             return self.detach()
-        if what_a_silly_fuzz is 3:
+        if what_a_silly_fuzz == 3:
             self.detach()
-            parent.insert_child(node, clone=clone)
+            parent.insert_child(node, index=index, clone=clone)
             return self
+
+        raise InvalidCodePath
 
 
 class TagNode(NodeBase):
