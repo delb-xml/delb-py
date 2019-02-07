@@ -12,6 +12,7 @@ from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import (
     DETACHED,
     any_of,
+    _get_or_create_element_wrapper,
     is_tag_node,
     is_text_node,
     not_,
@@ -61,7 +62,9 @@ class Document:
             )
 
         self.__wrapper_cache: _WrapperCache = cache
-        roots_of_documents[self] = TagNode(loaded_tree.getroot(), cache)
+        roots_of_documents[self] = _get_or_create_element_wrapper(
+            loaded_tree.getroot(), cache
+        )
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """
@@ -103,11 +106,6 @@ class Document:
     def new_text_node(self, content: str = "") -> "TextNode":
         # also implemented in NodeBase
         return TextNode(content, position=DETACHED, cache=self.__wrapper_cache)
-
-    def _prune_cache(self):
-        cache = self.__wrapper_cache
-        for key in set(cache) - {id(x) for x in self.root._etree_obj.iter()}:
-            cache.pop(key)
 
     @property
     def root(self) -> "TagNode":

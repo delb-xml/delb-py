@@ -35,9 +35,30 @@ QName = etree.QName
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
 
+def _get_or_create_element_wrapper(
+    element: _Element, cache: _WrapperCache
+) -> "TagNode":
+    result = cache.get(id(element))
+    if result is None:
+        result = TagNode(element, cache)
+        cache[id(element)] = result
+    return result
+
+
+def _prune_wrapper_cache(node: "TagNode"):
+    if node.parent is None:
+        root = node
+    else:
+        assert node.document is not None
+        root = node.document.root
+    cache = root._cache
+    for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
+        cache.pop(key)
+
+
 class NodeBase(ABC):
     # the method is here to trick mypy
-    def __init__(self, cache: _WrapperCache):  # pragma: no cover
+    def __init__(self, cache: _WrapperCache):
         self._cache = cache
 
     def add_next(self, *node: Any, clone: bool = False):
@@ -71,7 +92,7 @@ class NodeBase(ABC):
             yield from parent.ancestors(*filter)
 
     @abstractmethod
-    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
+    def clone(self, deep: bool = False) -> "NodeBase":
         pass
 
     @abstractmethod
@@ -122,7 +143,7 @@ class NodeBase(ABC):
         else:
             tag = QName(local_name)
 
-        return TagNode(
+        return _get_or_create_element_wrapper(
             context.makeelement(tag, attrib=attributes, nsmap=nsmap), self._cache
         )
 
@@ -152,7 +173,7 @@ class NodeBase(ABC):
         if not isinstance(this, NodeBase):
             this = TextNode(str(this))
         elif clone:
-            this = this.clone(deep=True, __cache__=self._cache)
+            this = this.clone(deep=True)
         else:
             assert isinstance(this, NodeBase)
 
@@ -164,6 +185,9 @@ class NodeBase(ABC):
                 "any sibling node. Use :meth:`NodeBase.detach` or a `clone` argument "
                 "to move a node within or between trees."
             )
+
+        self._cache.update(this._cache)
+        this._cache = self._cache
 
         return this, queue
 
@@ -205,35 +229,11 @@ class NodeBase(ABC):
 class TagNode(NodeBase):
     # TODO __slots__
 
-    def __new__(
-        cls, etree_element: _Element, cache: Optional[_WrapperCache] = None
-    ) -> "TagNode":
-        if cache is None:
-            obj, cache = None, {}
-        else:
-            obj = cache.get(id(etree_element))
-
-        if obj is None:
-            cache[id(etree_element)] = obj = object.__new__(cls)
-
-            # __init__
-            obj._etree_obj = etree_element  # type: ignore
-            obj._data_node = TextNode(
-                etree_element, position=DATA, cache=cache
-            )  # type: ignore
-            obj._tail_node = TextNode(
-                etree_element, position=TAIL, cache=cache
-            )  # type: ignore
-            obj._cache = cache
-
-        return obj  # type: ignore
-
-    # this only serves to declare properties' types
-    def __init__(self, etree_element: _Element, _):
-        self._etree_obj: _Element
-        self._data_node: TextNode
-        self._tail_node: TextNode
-        self._cache: _WrapperCache
+    def __init__(self, etree_element: _Element, cache: _WrapperCache):
+        super().__init__(cache=cache)
+        self._etree_obj = etree_element
+        self._data_node = TextNode(etree_element, position=DATA, cache=cache)
+        self._tail_node = TextNode(etree_element, position=TAIL, cache=cache)
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         # TODO move docs
@@ -314,9 +314,6 @@ class TagNode(NodeBase):
         assert not len(self)
         if isinstance(node, TagNode):
             self._etree_obj.append(node._etree_obj)
-            self._cache.update(node._cache)
-            node._cache = self._cache
-            # cache
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
         else:
@@ -373,9 +370,9 @@ class TagNode(NodeBase):
             raise InvalidCodePath
 
     def append_child(self, *node: Any, clone: bool = False):
-        last_child = self.last_child
-
         queue: Sequence[Any]
+
+        last_child = self.last_child
 
         if last_child is None:
             last_child, queue = self._prepare_new_relative(node, clone=clone)
@@ -399,7 +396,9 @@ class TagNode(NodeBase):
         if self._data_node._exists:
             current_node = self._data_node
         elif len(self._etree_obj):
-            current_node = TagNode(self._etree_obj[0], self._cache)
+            current_node = _get_or_create_element_wrapper(
+                self._etree_obj[0], self._cache
+            )
         else:
             current_node = None
 
@@ -413,22 +412,19 @@ class TagNode(NodeBase):
 
             current_node = current_node.next_node()
 
-    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "TagNode":
+    def clone(self, deep: bool = False) -> "TagNode":
         # a faster implementation may be to not clear a cloned element's children and
         # to clone appended text nodes afterwards
-
-        cache = __cache__ or {}
 
         etree_clone = copy(self._etree_obj)
         etree_clone.text = etree_clone.tail = None
         del etree_clone[:]  # remove all subelements
-        result = self.__class__(etree_clone, cache)
+        result = _get_or_create_element_wrapper(etree_clone, {})
         assert not len(result)
 
         if deep:
             for child_node in (
-                x.clone(deep=True, __cache__=cache)
-                for x in self.child_nodes(recurse=False)
+                x.clone(deep=True) for x in self.child_nodes(recurse=False)
             ):
                 assert isinstance(child_node, NodeBase)
                 assert child_node.parent is None
@@ -440,6 +436,7 @@ class TagNode(NodeBase):
                     raise InvalidCodePath
 
                 result.append_child(child_node)
+                assert child_node in result
 
         return result
 
@@ -447,7 +444,9 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     def detach(self) -> "TagNode":
-        if self.parent is None:
+        parent = self.parent
+
+        if parent is None:
             return self
 
         if self._tail_node._exists:
@@ -455,6 +454,14 @@ class TagNode(NodeBase):
         else:
             etree_obj = self._etree_obj
             cast(_Element, etree_obj.getparent()).remove(etree_obj)
+
+        child_nodes = tuple(self.child_nodes(recurse=True))
+        self._cache = cache = copy(self._cache)
+        for child_node in child_nodes:
+            child_node._cache = cache
+
+        _prune_wrapper_cache(parent)
+        _prune_wrapper_cache(self)
 
         return self
 
@@ -550,7 +557,7 @@ class TagNode(NodeBase):
 
             if next_etree_obj is None:
                 return None
-            candidate = TagNode(next_etree_obj, self._cache)
+            candidate = _get_or_create_element_wrapper(next_etree_obj, self._cache)
 
         if all(f(candidate) for f in filter):
             return candidate
@@ -575,7 +582,7 @@ class TagNode(NodeBase):
         etree_parent = self._etree_obj.getparent()
         if etree_parent is None:
             return None
-        return TagNode(etree_parent, self._cache)
+        return _get_or_create_element_wrapper(etree_parent, self._cache)
 
     @property
     def prefix(self) -> Optional[str]:
@@ -614,7 +621,9 @@ class TagNode(NodeBase):
         if previous_etree_obj is None:
             return None
 
-        wrapper_of_previous = TagNode(previous_etree_obj, self._cache)
+        wrapper_of_previous = _get_or_create_element_wrapper(
+            previous_etree_obj, self._cache
+        )
 
         if wrapper_of_previous._tail_node._exists:
             candidate = wrapper_of_previous._tail_node
@@ -657,11 +666,14 @@ class TextNode(NodeBase):
         cache: Optional[_WrapperCache] = None,
     ):
         # TODO __slots__
+        if cache is None:
+            cache = {}
+        super().__init__(cache)
+
         self._bound_to: Union[None, _Element, TextNode]
         self.__content: Optional[str]
 
         self._appended_text_node: Optional[TextNode] = None
-        self._cache = cache or {}
         self._position: int = position
 
         if position is DETACHED:
@@ -752,7 +764,6 @@ class TextNode(NodeBase):
         old = self._appended_text_node
         content = node.content
         node._bound_to = self
-        node._cache = self._cache
         node._position = APPENDED
         node.content = content
         self._appended_text_node = node
@@ -768,7 +779,6 @@ class TextNode(NodeBase):
         target._data_node = self
         self._bound_to = target._etree_obj
         self._position = DATA
-        self._cache = target._cache
         self.__content = None
         assert isinstance(self.content, str)
 
@@ -778,13 +788,12 @@ class TextNode(NodeBase):
         target._tail_node = self
         self._bound_to = target._etree_obj
         self._position = TAIL
-        self._cache = target._cache
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(self, deep: bool = False, __cache__: _WrapperCache = None) -> "NodeBase":
+    def clone(self, deep: bool = False) -> "NodeBase":
         assert self.content is not None
-        return self.__class__(self.content, cache=__cache__)
+        return self.__class__(self.content, cache={})
 
     @property
     def content(self) -> Optional[str]:
@@ -839,6 +848,8 @@ class TextNode(NodeBase):
             self._position = DETACHED
         else:
             raise InvalidCodePath
+
+        self._cache = {}
 
         return self
 
@@ -896,7 +907,9 @@ class TextNode(NodeBase):
 
             assert isinstance(self._bound_to, _Element)
             if len(self._bound_to):
-                candidate = TagNode(self._bound_to[0], self._cache)
+                candidate = _get_or_create_element_wrapper(
+                    self._bound_to[0], self._cache
+                )
             else:
                 return None
 
@@ -926,7 +939,9 @@ class TextNode(NodeBase):
         head = self._tail_sequence_head
         if head._position is DATA:
             if len(head.parent._etree_obj):
-                return TagNode(head.parent._etree_obj[0], self._cache)
+                return _get_or_create_element_wrapper(
+                    head.parent._etree_obj[0], self._cache
+                )
             else:
                 return None
         elif head._position is TAIL:
@@ -934,7 +949,7 @@ class TextNode(NodeBase):
             if next_etree_tag is None:
                 return None
             else:
-                return TagNode(next_etree_tag, self._cache)
+                return _get_or_create_element_wrapper(next_etree_tag, self._cache)
 
         raise InvalidCodePath
 
@@ -943,7 +958,7 @@ class TextNode(NodeBase):
         next_etree_node = self._bound_to.getnext()
         if next_etree_node is None:
             return None
-        return TagNode(next_etree_node, self._cache)
+        return _get_or_create_element_wrapper(next_etree_node, self._cache)
 
     def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
         """ Returns the next node in stream order that matches the given
@@ -954,11 +969,11 @@ class TextNode(NodeBase):
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
-            return TagNode(self._bound_to, self._cache)
+            return _get_or_create_element_wrapper(self._bound_to, self._cache)
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            return TagNode(self._bound_to, self._cache).parent
+            return _get_or_create_element_wrapper(self._bound_to, self._cache).parent
 
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
@@ -974,7 +989,7 @@ class TextNode(NodeBase):
         if self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = TagNode(self._bound_to, self._cache)
+            sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
             content = self.content
             node._bind_to_data(sibling)
             node._append_text_node(self)
@@ -983,7 +998,7 @@ class TextNode(NodeBase):
         elif self._position is TAIL:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = TagNode(self._bound_to, self._cache)
+            sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
             content = self.content
             node._bind_to_tail(sibling)
             node._append_text_node(self)
@@ -1008,7 +1023,7 @@ class TextNode(NodeBase):
             return None
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            candidate = TagNode(self._bound_to, self._cache)
+            candidate = _get_or_create_element_wrapper(self._bound_to, self._cache)
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
             candidate = self._bound_to
