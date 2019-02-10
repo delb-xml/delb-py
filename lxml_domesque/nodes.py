@@ -204,6 +204,12 @@ class NodeBase(ABC):
     def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
         what_a_silly_fuzz = randrange(0, 4)  # FUN FUN FUN
 
+        if self.parent is None:
+            raise InvalidOperation(
+                "Cannot replace a root node of a tree. Maybe you want to set the "
+                "`root` property of a Document instance?"
+            )
+
         if what_a_silly_fuzz == 0:
             # TODO use this variant only when all code paths seem implemented
             self.add_next(node, clone=clone)
@@ -216,11 +222,11 @@ class NodeBase(ABC):
         assert parent is not None
 
         if what_a_silly_fuzz == 2:
-            parent.insert_child(node, index=index, clone=clone)
+            parent.insert_child(index, node, clone=clone)
             return self.detach()
         if what_a_silly_fuzz == 3:
             self.detach()
-            parent.insert_child(node, index=index, clone=clone)
+            parent.insert_child(index, node, clone=clone)
             return self
 
         raise InvalidCodePath
@@ -230,6 +236,7 @@ class TagNode(NodeBase):
     # TODO __slots__
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
+        # TODO alternate signature
         super().__init__(cache=cache)
         self._etree_obj = etree_element
         self._data_node = TextNode(etree_element, position=DATA, cache=cache)
@@ -370,6 +377,9 @@ class TagNode(NodeBase):
             raise InvalidCodePath
 
     def append_child(self, *node: Any, clone: bool = False):
+        if not node:
+            return
+
         queue: Sequence[Any]
 
         last_child = self.last_child
@@ -495,11 +505,28 @@ class TagNode(NodeBase):
             return None  # TODO meditate over 0 as alternative
         return super().index
 
-    def insert_child(
-        self, *node: NodeBase, index: int = 0, clone: bool = False
-    ) -> None:
-        # TODO merge caches if applicable
-        raise NotImplementedError
+    def insert_child(self, index: int, *node: NodeBase, clone: bool = False):
+        if index < 0:
+            raise ValueError
+
+        if index > len(self):
+            raise InvalidOperation("The given index is beyond the target's size.")
+
+        this, *queue = node
+
+        if index == 0:
+            if len(self):
+                self[0].add_previous(this, clone=clone)
+                assert self[1].previous_node() is this
+                assert this.next_node() is self[1]
+            else:
+                self.__add_first_child(this)
+
+        else:
+            self[index - 1].add_next(this, clone=False)
+
+        if queue:
+            this.add_next(*queue, clone=clone)
 
     @property
     def last_child(self) -> Optional[NodeBase]:
@@ -600,7 +627,7 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     def prepend_child(self, *node: NodeBase) -> None:
-        self.insert_child(*node, index=0)
+        self.insert_child(0, *node)
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
@@ -717,7 +744,8 @@ class TextNode(NodeBase):
         elif isinstance(node, TagNode):
 
             if self._position is DATA:
-                raise NotImplementedError
+                assert isinstance(self._bound_to, _Element)
+                self._bound_to.insert(0, node._etree_obj)
 
             elif self._position is TAIL:
                 assert isinstance(self._bound_to, _Element)
@@ -748,8 +776,19 @@ class TextNode(NodeBase):
 
         elif isinstance(node, TagNode):
 
+            content = self.content
+
             if self._position is DATA:
-                raise NotImplementedError
+
+                current_bound = self._bound_to
+                assert isinstance(current_bound, _Element)
+                current_bound.insert(0, node._etree_obj)
+
+                _get_or_create_element_wrapper(
+                    current_bound, self._cache
+                )._data_node = TextNode(current_bound, DATA, self._cache)
+                self._bind_to_tail(node)
+                current_bound.text = None
 
             elif self._position is TAIL:
                 raise NotImplementedError
@@ -759,6 +798,8 @@ class TextNode(NodeBase):
 
             else:
                 raise InvalidCodePath
+
+            self.content = content
 
     def _append_text_node(self, node: "TextNode"):
         old = self._appended_text_node
@@ -830,26 +871,67 @@ class TextNode(NodeBase):
             self.__content = text
 
     def detach(self) -> "TextNode":
+
         if self._position is DETACHED:
             return self
-        elif self._position is DATA:
-            raise NotImplementedError
+
+        content = self.content
+        text_sibling = self._appended_text_node
+
+        if self._position is DATA:
+
+            current_parent = self.parent
+            assert current_parent is not None
+
+            assert isinstance(self._bound_to, _Element)
+            assert current_parent._etree_obj is self._bound_to
+
+            if text_sibling:
+                text_sibling._bind_to_data(current_parent)
+            else:
+
+                current_parent._data_node = TextNode(
+                    current_parent._etree_obj, DATA, current_parent._cache
+                )
+                assert self not in current_parent
+                self._bound_to.text = None
+                assert not current_parent._data_node._exists
+
         elif self._position is TAIL:
-            raise NotImplementedError
+
+            current_bound = self._bound_to
+            assert isinstance(current_bound, _Element)
+            current_previous = _get_or_create_element_wrapper(
+                current_bound, self._cache
+            )
+
+            if text_sibling:
+                text_sibling._bind_to_tail(current_previous)
+            else:
+                current_previous._tail_node = TextNode(
+                    current_previous._etree_obj, TAIL, current_previous._cache
+                )
+                current_bound.tail = None
+                assert not current_previous._tail_node._exists
+
         elif self._position is APPENDED:
-            text_sibling = self._appended_text_node
 
             assert isinstance(self._bound_to, TextNode)
             self._bound_to._appended_text_node = text_sibling
             if text_sibling:
                 text_sibling._bound_to = self._bound_to
-            self._bound_to = self._appended_text_node = None
+            self._appended_text_node = None
 
-            self._position = DETACHED
         else:
             raise InvalidCodePath
 
+        self._bound_to = None
         self._cache = {}
+        self._position = DETACHED
+        self.content = content
+
+        assert self.parent is None
+        assert self.next_node() is None
 
         return self
 

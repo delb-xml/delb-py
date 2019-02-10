@@ -42,6 +42,15 @@ def test_index():
         assert root[index].index == index
 
 
+def insert_child():
+    document = Document("<root><a>b</a></root>")
+    root = document.root
+
+    root[0].insert_child(root.new_tag_node("c"), index=1)
+
+    assert str(document) == "<root><a>b<c/></a></root>"
+
+
 def test_invalid_operations():
     document = Document("<root/>")
     document_2 = Document("<root><replacement/>parts</root>")
@@ -57,6 +66,23 @@ def test_invalid_operations():
 
     with pytest.raises(InvalidOperation):
         new_node.add_previous(document_2.root[0])
+
+
+def test_replace_with():
+    document = Document("<root><a>b</a>c<d>e</d></root>")
+    root = document.root
+
+    b_text = root[0][0]
+    b_text.replace_with(root.new_tag_node("b"))
+
+    assert b_text.parent is None
+
+    expected_new = root[0][0]
+    assert expected_new is not b_text, str(document)
+    assert isinstance(expected_new, TagNode)
+    assert expected_new.local_name == "b"
+
+    assert str(document) == "<root><a><b/></a>c<d>e</d></root>"
 
 
 def test_siblings_filter():

@@ -75,6 +75,16 @@ def test_full_text():
     assert document.root.full_text == "The quick red fox jumps over the fence."
 
 
+def test_insert():
+    document = Document("<root><a>c</a></root>")
+    root = document.root
+
+    a = root[0]
+    a.insert_child(0, root.new_tag_node("b"))
+
+    assert str(document) == "<root><a><b/>c</a></root>"
+
+
 def test_make_node_with_additional_namespace():
     document = Document("<root/>")
 

@@ -161,6 +161,25 @@ def test_construction():
     )
 
 
+def test_detach_data_node():
+    document = Document("<root><a>b</a></root>")
+    root = document.root
+
+    b = root[0][0].detach()
+    assert b.parent is None
+    assert b.content == "b"
+    assert str(document) == "<root><a/></root>"
+
+    document = Document("<root><a>b<c/></a></root>")
+    root = document.root
+
+    b = root[0][0].detach()
+    assert b.parent is None
+    assert b.content == "b"
+
+    assert str(document) == "<root><a><c/></a></root>"
+
+
 def test_detach_sandwiched_node():
     document = Document("<root>data</root>")
     node = document.root[0]
