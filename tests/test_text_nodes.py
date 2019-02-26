@@ -4,6 +4,15 @@ from lxml_domesque import Document, TagNode, TextNode
 from lxml_domesque.nodes import TAIL, APPENDED
 
 
+def test_add_tag_before_tail():
+    document = Document("<root><a/>b</root>")
+    root = document.root
+
+    root[1].add_previous(root.new_tag_node("c"))
+
+    assert str(document) == "<root><a/><c/>b</root>"
+
+
 def test_add_text_after_tag():
     document = Document("<root><tag/></root>")
     tag = document.root[0]
@@ -180,7 +189,18 @@ def test_detach_data_node():
     assert str(document) == "<root><a><c/></a></root>"
 
 
-def test_detach_sandwiched_node():
+def test_detach_tag_sandwiched_node():
+    document = Document("<root><a/>tail<b/></root>")
+    tail = document.root[1].detach()
+
+    assert tail.parent is None
+    assert isinstance(tail, TextNode)
+    assert tail.content == "tail"
+
+    assert str(document) == "<root><a/><b/></root>"
+
+
+def test_detach_text_sandwiched_node():
     document = Document("<root>data</root>")
     node = document.root[0]
     node.add_next(" tailing")

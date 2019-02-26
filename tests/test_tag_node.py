@@ -4,6 +4,15 @@ from lxml import etree
 from lxml_domesque import Document, InvalidOperation
 
 
+def test_add_tag_before_tail():
+    document = Document("<root><a/>b</root>")
+    root = document.root
+
+    root[0].add_next(root.new_tag_node("c"))
+
+    assert str(document) == "<root><a/><c/>b</root>"
+
+
 def test_attribute_access():
     document = Document('<root ham="spam"/>')
     assert document.root["ham"] == "spam"

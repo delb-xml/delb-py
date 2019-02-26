@@ -334,10 +334,21 @@ class TagNode(NodeBase):
 
     def _add_next_node(self, node: "NodeBase"):
         if isinstance(node, TagNode):
+            my_old_tail = self._tail_node
+
             if self._tail_node._exists:
-                raise NotImplementedError
+                my_old_tail._bind_to_tail(node)
+                self._etree_obj.tail = None
+                self._etree_obj.addnext(node._etree_obj)
+                self._tail_node = TextNode(self._etree_obj, TAIL, self._cache)
+
+                assert self._tail_node is not my_old_tail
+                assert node._tail_node is my_old_tail
             else:
                 self._etree_obj.addnext(node._etree_obj)
+
+                assert self._tail_node is my_old_tail
+                assert node._tail_node is not my_old_tail
 
         elif isinstance(node, TextNode):
             assert node._position is DETACHED
@@ -776,10 +787,9 @@ class TextNode(NodeBase):
 
         elif isinstance(node, TagNode):
 
-            content = self.content
-
             if self._position is DATA:
 
+                content = self.content
                 current_bound = self._bound_to
                 assert isinstance(current_bound, _Element)
                 current_bound.insert(0, node._etree_obj)
@@ -789,17 +799,20 @@ class TextNode(NodeBase):
                 )._data_node = TextNode(current_bound, DATA, self._cache)
                 self._bind_to_tail(node)
                 current_bound.text = None
+                self.content = content
 
             elif self._position is TAIL:
-                raise NotImplementedError
+
+                assert isinstance(self._bound_to, _Element)
+                _get_or_create_element_wrapper(
+                    self._bound_to, self._cache
+                )._add_next_node(node)
 
             elif self._position is APPENDED:
                 raise NotImplementedError
 
             else:
                 raise InvalidCodePath
-
-            self.content = content
 
     def _append_text_node(self, node: "TextNode"):
         old = self._appended_text_node

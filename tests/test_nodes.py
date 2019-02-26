@@ -74,15 +74,23 @@ def test_replace_with():
 
     b_text = root[0][0]
     b_text.replace_with(root.new_tag_node("b"))
+    expected_new = root[0][0]
 
     assert b_text.parent is None
-
-    expected_new = root[0][0]
-    assert expected_new is not b_text, str(document)
+    assert expected_new is not b_text
     assert isinstance(expected_new, TagNode)
     assert expected_new.local_name == "b"
-
     assert str(document) == "<root><a><b/></a>c<d>e</d></root>"
+
+    c_text = root[1]
+    c_text.replace_with(root.new_tag_node("c"))
+    expected_new = root[1]
+
+    assert c_text.parent is None
+    assert expected_new is not c_text
+    assert isinstance(expected_new, TagNode)
+    assert expected_new.local_name == "c"
+    assert str(document) == "<root><a><b/></a><c/><d>e</d></root>"
 
 
 def test_siblings_filter():
