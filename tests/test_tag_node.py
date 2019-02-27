@@ -87,11 +87,16 @@ def test_full_text():
 def test_insert():
     document = Document("<root><a>c</a></root>")
     root = document.root
-
     a = root[0]
-    a.insert_child(0, root.new_tag_node("b"))
 
+    a.insert_child(0, root.new_tag_node("b"))
     assert str(document) == "<root><a><b/>c</a></root>"
+
+    a.insert_child(0, "|aaa|")
+    assert str(document) == "<root><a>|aaa|<b/>c</a></root>"
+
+    a.insert_child(0, "|aa|")
+    assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
 
 
 def test_make_node_with_additional_namespace():

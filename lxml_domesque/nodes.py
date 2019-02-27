@@ -369,9 +369,9 @@ class TagNode(NodeBase):
         super().add_previous(*node, clone=clone)
 
     def _add_previous_node(self, node: NodeBase):
-        if isinstance(node, TagNode):
-            previous = self.previous_node()
+        previous = self.previous_node()
 
+        if isinstance(node, TagNode):
             if previous is None:
                 self._etree_obj.addprevious(node._etree_obj)
 
@@ -382,7 +382,19 @@ class TagNode(NodeBase):
                 raise NotImplementedError
 
         elif isinstance(node, TextNode):
-            raise NotImplementedError
+            if previous is None:
+                parent = self.parent
+                assert parent is not None
+                if parent._data_node._exists:
+                    raise NotImplementedError
+                else:
+                    node._bind_to_data(parent)
+
+            elif isinstance(previous, TagNode):
+                raise NotImplementedError
+
+            else:  # isinstance(node, TextNode)
+                raise NotImplementedError
 
         else:
             raise InvalidCodePath
@@ -528,8 +540,9 @@ class TagNode(NodeBase):
         if index == 0:
             if len(self):
                 self[0].add_previous(this, clone=clone)
-                assert self[1].previous_node() is this
-                assert this.next_node() is self[1]
+                if isinstance(this, TagNode):
+                    assert self[1].previous_node() is this
+                    assert this.next_node() is self[1]
             else:
                 self.__add_first_child(this)
 
@@ -753,33 +766,45 @@ class TextNode(NodeBase):
             self._insert_text_node_as_next_appended(node)
 
         elif isinstance(node, TagNode):
+            self._add_next_tag_node(node)
 
-            if self._position is DATA:
-                assert isinstance(self._bound_to, _Element)
-                self._bound_to.insert(0, node._etree_obj)
+    def _add_next_tag_node(self, node: TagNode):
+        if self._position is DATA:
+            assert isinstance(self._bound_to, _Element)
+            self._bound_to.insert(0, node._etree_obj)
 
-            elif self._position is TAIL:
-                assert isinstance(self._bound_to, _Element)
-                data = self._bound_to.tail
-                text_sibling = self._appended_text_node
-                self._appended_text_node = None
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, _Element)
+            data = self._bound_to.tail
+            text_sibling = self._appended_text_node
+            self._appended_text_node = None
 
-                assert not node._tail_node._exists
+            assert not node._tail_node._exists
 
-                self._bound_to.addnext(node._etree_obj)
-                self._bound_to.tail = data
-                node._etree_obj.tail = None
+            self._bound_to.addnext(node._etree_obj)
+            self._bound_to.tail = data
+            node._etree_obj.tail = None
 
-                assert not node._tail_node._exists, repr(node._tail_node)
+            assert not node._tail_node._exists, repr(node._tail_node)
 
-                if text_sibling is not None:
-                    raise NotImplementedError
-
-            elif self._position is APPENDED:
+            if text_sibling is not None:
                 raise NotImplementedError
 
-            elif self._position is DETACHED:
-                raise InvalidCodePath
+        elif self._position is APPENDED:
+            if self._appended_text_node is None:
+                head = self._tail_sequence_head
+                if head._position is DATA:
+                    head._bound_to.insert(0, node._etree_obj)
+                elif head._position is TAIL:
+                    head._bound_to.addnext(node._etree_obj)
+                else:
+                    raise InvalidCodePath
+
+            else:
+                raise NotImplementedError
+
+        elif self._position is DETACHED:
+            raise InvalidCodePath
 
     def _add_previous_node(self, node: NodeBase):
         if isinstance(node, TextNode):
