@@ -750,7 +750,7 @@ class TextNode(NodeBase):
 
     def _add_next_node(self, node: NodeBase):
         if isinstance(node, TextNode):
-            self._append_text_node(node)
+            self._insert_text_node_as_next_appended(node)
 
         elif isinstance(node, TagNode):
 
@@ -813,20 +813,6 @@ class TextNode(NodeBase):
 
             else:
                 raise InvalidCodePath
-
-    def _append_text_node(self, node: "TextNode"):
-        old = self._appended_text_node
-        content = node.content
-        node._bound_to = self
-        node._position = APPENDED
-        node.content = content
-        self._appended_text_node = node
-        if old:
-            assert old._position is APPENDED, old
-            node._append_text_node(old)
-
-        assert isinstance(self.content, str)
-        assert isinstance(node.content, str)
 
     def _bind_to_data(self, target: TagNode):
         target._etree_obj.text = self.content
@@ -981,6 +967,20 @@ class TextNode(NodeBase):
         self._appended_text_node = None
         sibling._bound_to = None
 
+    def _insert_text_node_as_next_appended(self, node: "TextNode"):
+        old = self._appended_text_node
+        content = node.content
+        node._bound_to = self
+        node._position = APPENDED
+        node.content = content
+        self._appended_text_node = node
+        if old:
+            assert old._position is APPENDED, old
+            node._insert_text_node_as_next_appended(old)
+
+        assert isinstance(self.content, str)
+        assert isinstance(node.content, str)
+
     def new_tag_node(
         self,
         local_name: str,
@@ -1087,7 +1087,7 @@ class TextNode(NodeBase):
             sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
             content = self.content
             node._bind_to_data(sibling)
-            node._append_text_node(self)
+            node._insert_text_node_as_next_appended(self)
             self.content = content
 
         elif self._position is TAIL:
@@ -1096,7 +1096,7 @@ class TextNode(NodeBase):
             sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
             content = self.content
             node._bind_to_tail(sibling)
-            node._append_text_node(self)
+            node._insert_text_node_as_next_appended(self)
             self.content = content
 
         elif self._position is APPENDED:
@@ -1105,8 +1105,8 @@ class TextNode(NodeBase):
             previous = self._bound_to
             assert isinstance(previous, TextNode)
             previous._appended_text_node = None
-            previous._append_text_node(node)
-            node._append_text_node(self)
+            previous._insert_text_node_as_next_appended(node)
+            node._insert_text_node_as_next_appended(self)
 
         else:
             raise InvalidCodePath
