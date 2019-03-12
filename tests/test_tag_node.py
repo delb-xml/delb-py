@@ -1,7 +1,9 @@
+from copy import copy, deepcopy
+
 import pytest
 from lxml import etree
 
-from lxml_domesque import Document, InvalidOperation
+from lxml_domesque import DETACHED, Document, InvalidOperation, TextNode
 
 
 def test_add_tag_before_tail():
@@ -34,6 +36,27 @@ def test_contains():
 
     with pytest.raises(TypeError):
         0 in root
+
+
+def test_copy():
+    node = Document("<x/>").root
+    clone = copy(node)
+
+    assert clone is not node
+    assert clone._etree_obj is not node._etree_obj
+    assert clone.qualified_name == clone.qualified_name
+    assert clone.attributes == clone.attributes
+
+
+def test_deepcopy():
+    node = Document("<x><y/></x>").root
+    clone = deepcopy(node)
+
+    assert clone is not node
+    assert clone._etree_obj is not node._etree_obj
+    assert clone.qualified_name == clone.qualified_name
+    assert clone.attributes == clone.attributes
+    assert clone[0] is not node[0]
 
 
 def test_detach_and_document():
@@ -95,7 +118,7 @@ def test_insert():
     a.insert_child(0, "|aaa|")
     assert str(document) == "<root><a>|aaa|<b/>c</a></root>"
 
-    a.insert_child(0, "|aa|")
+    a.insert_child(0, TextNode("|aa|"), clone=True)
     assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
 
 
@@ -114,6 +137,14 @@ def test_make_node_namespace_inheritance():
     assert node.prefix == "pfx"
 
 
+def test_new_text_node():
+    node = Document("<x/>").root
+    new_text_node = node.new_text_node("nju")
+    assert isinstance(new_text_node, TextNode)
+    assert new_text_node._position is DETACHED
+    assert new_text_node.content == "nju"
+
+
 def test_no_siblings_on_root():
     document = Document("<root/>")
 
@@ -122,6 +153,26 @@ def test_no_siblings_on_root():
 
     with pytest.raises(InvalidOperation):
         document.root.add_previous("sibling")
+
+
+def test_prepend_child():
+    document = Document("<root><b/></root>")
+    document.root.prepend_child(document.new_tag_node("a"))
+    assert str(document) == "<root><a/><b/></root>"
+
+
+def test_previous_node():
+    document = Document("<root><a/></root>")
+    assert document.root.previous_node() is None
+
+    #
+
+    document = Document("<root><a/><!-- bla --><b/></root>")
+
+    b = document.root[1]
+    a = b.previous_node()
+    assert a is not None
+    assert a.local_name == "a"
 
 
 def test_set_tag_components():

@@ -21,6 +21,14 @@ def test_add_tag_after_tail_appended_text():
     assert str(document) == "<root><a/>bc<d/></root>"
 
 
+def test_add_tag_after_tail():
+    document = Document("<root><node/>tail</root>")
+    tail = document.root[1]
+
+    tail.add_next(document.new_tag_node("end"))
+    assert str(document) == "<root><node/>tail<end/></root>"
+
+
 def test_add_text_after_tag():
     document = Document("<root><tag/></root>")
     tag = document.root[0]
@@ -35,14 +43,6 @@ def test_add_text_after_tag():
     assert foo._position == TAIL
     assert foo.content == "foo"
     assert foo._appended_text_node is None
-
-
-def test_add_tag_after_tail():
-    document = Document("<root><node/>tail</root>")
-    tail = document.root[1]
-
-    tail.add_next(document.new_tag_node("end"))
-    assert str(document) == "<root><node/>tail<end/></root>"
 
 
 def test_add_text_after_tail():
@@ -242,3 +242,17 @@ def test_none_content_wrapping():
 
     e1.add_next(e1.new_tag_node("e1"))
     assert isinstance(e1.next_node(), TagNode)
+
+
+def test_previous_node():
+    document = Document("<root><a/>b</root>")
+    root = document.root
+    root.append_child("c")
+
+    b = root[2].previous_node()
+    assert b == "b"
+
+    c = TextNode("c")
+    root[0].append_child(c)
+
+    assert c.previous_node() is None

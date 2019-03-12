@@ -1064,7 +1064,7 @@ class TextNode(NodeBase):
                 "reached."
             )
             # eg in test_nodes::test_siblings_filter
-            return candidate.next_node(*filter)
+            return candidate.next_node(*filter)  # pragma: no cover
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
