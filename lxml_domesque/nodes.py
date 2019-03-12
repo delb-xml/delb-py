@@ -800,7 +800,14 @@ class TextNode(NodeBase):
                 if head._position is DATA:
                     head._bound_to.insert(0, node._etree_obj)
                 elif head._position is TAIL:
-                    head._bound_to.addnext(node._etree_obj)
+                    head_anchor = head._bound_to
+                    head_content = head.content
+
+                    head_anchor.addnext(node._etree_obj)
+
+                    head_anchor.tail = head_content
+                    node._etree_obj.tail = None
+
                 else:
                     raise InvalidCodePath
 

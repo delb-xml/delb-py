@@ -13,6 +13,14 @@ def test_add_tag_before_tail():
     assert str(document) == "<root><a/><c/>b</root>"
 
 
+def test_add_tag_after_tail_appended_text():
+    document = Document("<root><a/>b</root>")
+    root = document.root
+    root.append_child("c")
+    root.append_child(root.new_tag_node("d"))
+    assert str(document) == "<root><a/>bc<d/></root>"
+
+
 def test_add_text_after_tag():
     document = Document("<root><tag/></root>")
     tag = document.root[0]
