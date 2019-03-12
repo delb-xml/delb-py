@@ -282,6 +282,7 @@ class TagNode(NodeBase):
 
     def __getitem__(self, item):  # noqa: F811
         # TODO docs
+        # TODO support reverse index lookup and slices
 
         if isinstance(item, str):
             return self._etree_obj.attrib[item]
@@ -650,8 +651,8 @@ class TagNode(NodeBase):
     def prefix(self, prefix: str):
         raise NotImplementedError
 
-    def prepend_child(self, *node: NodeBase) -> None:
-        self.insert_child(0, *node)
+    def prepend_child(self, *node: NodeBase, clone: bool = False) -> None:
+        self.insert_child(0, *node, clone=clone)
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
@@ -769,11 +770,13 @@ class TextNode(NodeBase):
             self._add_next_tag_node(node)
 
     def _add_next_tag_node(self, node: TagNode):
+
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
             self._bound_to.insert(0, node._etree_obj)
 
         elif self._position is TAIL:
+
             assert isinstance(self._bound_to, _Element)
             data = self._bound_to.tail
             text_sibling = self._appended_text_node
@@ -791,6 +794,7 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
         elif self._position is APPENDED:
+
             if self._appended_text_node is None:
                 head = self._tail_sequence_head
                 if head._position is DATA:
