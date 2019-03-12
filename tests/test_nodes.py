@@ -35,13 +35,6 @@ def test_ancestors_of_detached_node():
     assert tuple(node.ancestors()) == ()
 
 
-def test_index():
-    root = Document("<root><zero/>is<my/>country</root>").root
-    assert root.index is None
-    for index in range(4):
-        assert root[index].index == index
-
-
 def insert_child():
     document = Document("<root><a>b</a></root>")
     root = document.root
@@ -49,6 +42,37 @@ def insert_child():
     root[0].insert_child(root.new_tag_node("c"), index=1)
 
     assert str(document) == "<root><a>b<c/></a></root>"
+
+
+def test_comment_is_ignored():
+    root = Document("<root><a/><!-- bla --><b/></root>").root
+
+    a = root[0]
+    b = a.next_node()
+
+    assert isinstance(b, TagNode)
+    assert b.local_name == "b"
+
+
+def test_index():
+    root = Document("<root><zero/>is<my/>country</root>").root
+    assert root.index is None
+    for index in range(4):
+        assert root[index].index == index
+
+    #
+
+    root = Document("<root><a/><!-- bla --><b/></root>").root
+
+    a = root[0]
+    assert isinstance(a, TagNode)
+    assert a.local_name == "a"
+
+    b = root[1]
+    assert isinstance(b, TagNode)
+    assert b.local_name == "b"
+
+    assert len(root) == 2
 
 
 def test_invalid_operations():

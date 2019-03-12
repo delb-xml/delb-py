@@ -599,7 +599,7 @@ class TagNode(NodeBase):
             # TODO handle Comments' and PIs' tails properly
             if next_etree_obj is not None and next_etree_obj.tag in (PI, Comment):
                 while True:
-                    next_etree_obj = next_etree_obj.getprevious()
+                    next_etree_obj = next_etree_obj.getnext()
                     if next_etree_obj is None or next_etree_obj.tag not in (
                         PI,
                         Comment,
