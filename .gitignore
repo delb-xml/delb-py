@@ -1,6 +1,6 @@
 __pycache__/
 .coverage
-docs/_build/
+docs/build/
 *.egg-info/
 .idea/
 .mypy_cache/

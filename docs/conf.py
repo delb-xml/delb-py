@@ -17,16 +17,19 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+import sphinx_readable_theme
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'lxml-domesque'
-copyright = '2018, Frank Sachsenheim'
+copyright = '2018-2019, Frank Sachsenheim'
 author = 'Frank Sachsenheim'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = ''
+release = '0.1a1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -42,7 +45,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.githubpages',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -78,7 +81,10 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'haiku'
+
+html_theme = 'readable'
+
+html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -105,7 +111,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'lxml-domesquedoc'
+htmlhelp_basename = 'lxml-domeqsquedoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -132,7 +138,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'lxml-domesque.tex', 'lxml-domesque Documentation',
+    (master_doc, 'lxml-domeqsque.tex', 'lxml-domeqsque Documentation',
      'Frank Sachsenheim', 'manual'),
 ]
 
@@ -142,7 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'lxml-domesque', 'lxml-domesque Documentation',
+    (master_doc, 'lxml-domeqsque', 'lxml-domeqsque Documentation',
      [author], 1)
 ]
 
@@ -153,8 +159,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'lxml-domesque', 'lxml-domesque Documentation',
-     author, 'lxml-domesque', 'One line description of project.',
+    (master_doc, 'lxml-domeqsque', 'lxml-domeqsque Documentation',
+     author, 'lxml-domeqsque', 'One line description of project.',
      'Miscellaneous'),
 ]
 
@@ -179,7 +185,16 @@ epub_exclude_files = ['search.html']
 
 # -- Extension configuration -------------------------------------------------
 
+# -- Options for autodoc extension -------------------------------------------
+
+autodoc_default_options = {
+    'inherited-members': True,
+    'members': None,
+    'show-inheritance': True,
+    'undoc-members': True,
+}
+
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'py': ('https://docs.python.org/', None)}
+intersphinx_mapping = {'https://docs.python.org/': None}
