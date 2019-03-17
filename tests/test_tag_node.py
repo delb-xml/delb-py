@@ -6,13 +6,22 @@ from lxml import etree
 from lxml_domesque import DETACHED, Document, InvalidOperation, TextNode
 
 
-def test_add_tag_before_tail():
+def test_add_next_tag_before_tail():
     document = Document("<root><a/>b</root>")
     root = document.root
 
     root[0].add_next(root.new_tag_node("c"))
 
     assert str(document) == "<root><a/><c/>b</root>"
+
+
+def test_add_next_text_node_before_text_sibling():
+    document = Document("<root><a/>c</root>")
+
+    a = document.root[0]
+    a.add_next("b")
+
+    assert str(document) == "<root><a/>bc</root>"
 
 
 def test_attribute_access():

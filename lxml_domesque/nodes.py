@@ -356,7 +356,14 @@ class TagNode(NodeBase):
             assert node._appended_text_node is None
 
             if self._tail_node._exists:
-                raise NotImplementedError
+                my_old_tail = self._tail_node
+                my_old_tail_content = my_old_tail.content
+
+                node._bind_to_tail(self)
+                node._appended_text_node = my_old_tail
+                my_old_tail._bound_to = node
+                my_old_tail._position = APPENDED
+                my_old_tail.content = my_old_tail_content
             else:
                 node._bind_to_tail(self)
 
