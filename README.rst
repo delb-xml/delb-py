@@ -13,6 +13,7 @@ Slug lines
 A DOM API inspired wrapper around lxml.
 
 XML documents for Kenny and all other kids too.
+
 …
 
 
@@ -21,6 +22,12 @@ tl;dr
 
 lxml resp. libxml2 are powerful tools, but have an unergonomic data model to
 work with encoded text. Let's build a DOM API inspired wrapper around it.
+
+
+Full documentation
+------------------
+
+The complete documentation is available here: TODO
 
 
 Development status
@@ -329,257 +336,14 @@ powers accessible.
 .. _xml-tei: http://tei-c.org
 
 
-An API draft
+Testimonials
 ------------
 
-.. code-block:: python
-
-    Filter = Callable[[NodeBase], bool]
-
-
-    class Document:
-       """ This class represents a complete XML document. """
-
-        def __init__(self, source: Union[str, pathlib.Path, io.IOBase, TagNode]):
-            """ If ``source`` is a string that matches an URI with a supported
-                scheme (or prefix?), the document is read by a loader plugin.
-            """
-            ...
-
-        def __contains__(self, node: NodeBase) -> bool:
-            """ Tests whether a node is part of a document instance. """
-            ...
-
-        def __str__(self):
-            ...
-
-        def clone(self) -> Document:
-            ...
-
-        @property
-        def root(self) -> TagNode:
-            ...
-
-        def css_select(self, expression: str) -> Iterable[TagNode]:
-            ...
-
-        def merge_text_nodes(self):
-            ...
-
-        @property
-        def namespaces_map(self) -> Dict[str, str]:
-            return self.root._etree_object.nsmap
-
-        def new_tag_node(
-            self,
-            local_name: str,
-            attributes: Optional[Dict[str, str]] = None,
-            prefix: Optional[str] = None,
-            namespace: Optional[str] = None
-        ) -> TagNode:
-            ...
-
-        def new_text_node(self, content: str = '') -> TextNode:
-            ...
-
-        def save(self, path: pathlib.Path) -> None:
-            ...
-
-        def write(self, buffer: io.IOBase) -> None:
-            ...
-
-        def xpath(self, expression: str) -> Iterable[TagNode]:
-            """ This method includes a workaround for a bug in XPath 1.0 that
-                concerns default namespaces. It is extensively described in
-                `this lxml issue`_.
-
-                .. this lxml issue: https://github.com/lxml/lxml/pull/236 """
-            ...
-
-        def xslt(self, transformation: etree.XSLT) -> None:
-            ...
-
-
-    class NodeBase(abc.ABC):
-        @abstractmethod
-        def add_next(self, *node: Union[NodeBase, str], clone: bool = False) \
-                -> None:
-            ...
-
-        @abstractmethod
-        def add_previous(
-            self,
-            *node: Union[NodeBase, str],
-            clone: bool = False
-        ) -> None:
-            ...
-
-        @abstractproperty
-        def ancestors(self, *filter: Filter) -> Iterable[TagNode]:
-            """ Yields the ancestor nodes from bottom to top. """
-            ...
-
-        @abstractmethod
-        def clone(self, deep: bool = False) -> NodeBase:
-            ...
-
-        @abstractproperty
-        def document(self) -> Optional[Document]:
-            ...
-
-        @abstractproperty
-        def index(self) -> int:
-            pass
-
-        @abstractproperty
-        def namespaces_map(self) -> Dict[str, str]:
-            ...
-
-        @abstractmethod
-        def new_tag_node(
-            self,
-            local_name: str,
-            attributes: Optional[Dict[str, str]] = None,
-            prefix: Optional[str] = None,
-            namespace: Optional[str] = None
-        ) -> TagNode:
-            ...
-
-        @abstractmethod
-        def new_text_node(self, content: str = '') -> TextNode:
-            ...
-
-        @abstractproperty
-        def next_node(self, *filter: Filter) -> Optional[NodeBase]:
-            ...
-
-        @abstractmethod
-        def next_node_in_stream(name: Optional[str]) -> Optional[TagNode]:
-            """ Returns the next node in stream order that matches the given
-                name. """
-            ...
-
-        @abstractproperty
-        def previous_node(self, *filter: Filter) -> Optional[NodeBase]:
-            ...
-
-        @abstractmethod
-        def previous_node_in_stream(name: Optional[str]) -> Optional[TagNode]:
-            """ Returns the previous node in stream order that matches the given
-                name. """
-            ...
-
-        @abstractmethod
-        def remove(self) -> None:
-            ...
-
-
-    class TagNode(NodeBase):
-        def __contains__(self, item: Union[str, NodeBase]) -> bool:
-            """ Tests whether the node has an attribute with given string or
-                a given node is a descendant. """
-            ...
-
-        def __eq__(self, other: TagNode) -> bool:
-            ...
-
-        def __getitem__(self, item: str) -> str:
-            return self._etree_object.attrib[item]
-
-        def __len__(self) -> int:
-            ...
-
-        def append_child(self, *node: NodeBase) -> None:
-            ...
-
-        def attributes(self) -> Dict[str, str]:
-            ...
-
-        def child_nodes(self, *filter: Filter, recurse: bool = False) \
-                -> Iterable[NodeBase]:
-            ...
-
-        def css_select(self, expression: str) -> Iterable[TagNode]:
-            ...
-
-        @property
-        def first_child(self) -> NodeBase:
-            ...
-
-        @property
-        def full_text(self) -> str:
-            ...
-
-        @property
-        def fully_qualified_name(self) -> str:
-            return f'{{{self.namespace}}}{self.local_name}'
-
-        def insert_child(self, *node: NodeBase, index: int = 0) -> None:
-            ...
-
-        @property
-        def last_child(self) -> NodeBase:
-            ...
-
-        @property
-        def local_name(self) -> str:
-            ...
-
-        def merge_text_nodes(self):
-            ...
-
-        @property
-        def namespace(self) -> str:
-            ...
-
-        @property
-        def parent(self) -> Optional[TagNode]:
-            ...
-
-        @property
-        def prefix(self) -> str:
-            ...
-
-        def prepend_child(self, *node: NodeBase) -> None:
-            ...
-
-        def replace_with(self, node: NodeBase, clone: bool = False) -> None:
-            ...
-
-        def xpath(self, expression: str) -> Iterable[TagNode]:
-            ...
-
-
-    class TextNode(NodeBase):
-        """ This class also proxies all (?) methods that :class:`py:str`
-            objects provide, including dunder-methods. """
-
-        @property
-        def content(self) -> str:
-            ...
-
-        @property
-        def parent(self) -> TagNode:
-            ...
-
-
-    # contributed filters and filter wrappers
-
-    def any_of(filters: Iterable[Filter]) -> Filter:
-        def wrapper(node: NodeBase) -> bool:
-            return any(x(node) for x in filters)
-        return wrapper
-
-    def is_tag_node(node: NodeBase) -> bool:
-        return isinstance(node, TagNode)
-
-    def is_text_node(node: NodeBase) -> bool:
-        return isinstance(node, TextNode)
-
-    def not_(filter: Filter) -> Filter:
-        def wrapper(node: NodeBase) -> bool:
-            return not filter(node)
-        return wrapper
+Kurt Raschke `noted in 2010 <https://web.archive.org/web/20190316214219/https://kurtraschke.com/2010/09/lxml-inserting-elements-in-text/>`_::
+
+  In a DOM-based implementation, it would be relatively easy […]
+  But lxml doesn't use text nodes; instead it uses and properties to hold text
+  content.
 
 
 ROADMAPish
