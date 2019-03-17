@@ -379,33 +379,25 @@ class TagNode(NodeBase):
     def _add_previous_node(self, node: NodeBase):
         previous = self.previous_node()
 
-        if isinstance(node, TagNode):
-            if previous is None:
+        if previous is None:
+
+            if isinstance(node, TagNode):
                 self._etree_obj.addprevious(node._etree_obj)
 
-            elif isinstance(previous, TagNode):
-                raise NotImplementedError
-
-            else:  # isinstance(node, TextNode)
-                raise NotImplementedError
-
-        elif isinstance(node, TextNode):
-            if previous is None:
+            else:
+                assert isinstance(node, TextNode)
                 parent = self.parent
                 assert parent is not None
                 if parent._data_node._exists:
-                    raise NotImplementedError
+                    last_text_canidate = parent._data_node
+                    while last_text_canidate._appended_text_node is not None:
+                        last_text_canidate = last_text_canidate._appended_text_node
+                    last_text_canidate._add_next_node(node)
                 else:
                     node._bind_to_data(parent)
 
-            elif isinstance(previous, TagNode):
-                raise NotImplementedError
-
-            else:  # isinstance(node, TextNode)
-                raise NotImplementedError
-
         else:
-            raise InvalidCodePath
+            previous._add_next_node(node)
 
     def append_child(self, *node: Any, clone: bool = False):
         if not node:

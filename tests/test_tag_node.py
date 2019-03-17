@@ -24,6 +24,25 @@ def test_add_next_text_node_before_text_sibling():
     assert str(document) == "<root><a/>bc</root>"
 
 
+def test_add_previous_node():
+    document = Document("<root><a/></root>")
+    root = document.root
+
+    a = root[0]
+    a.add_previous(root.new_tag_node("z"))
+    assert str(document) == "<root><z/><a/></root>"
+
+    z = root[0]
+    z.add_previous("x")
+    assert str(document) == "<root>x<z/><a/></root>"
+
+    z.add_previous("y")
+    assert str(document) == "<root>xy<z/><a/></root>"
+
+    a.add_previous(a.new_tag_node("boundary"))
+    assert str(document) == "<root>xy<z/><boundary/><a/></root>"
+
+
 def test_attribute_access():
     document = Document('<root ham="spam"/>')
     assert document.root["ham"] == "spam"
