@@ -20,7 +20,7 @@ black: ## normalize Python code
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	xdg-open docs/_build/html/index.html
+	xdg-open docs/build/html/index.html
 
 .PHONY: flake8
 flake8: ## code linting with flake8
