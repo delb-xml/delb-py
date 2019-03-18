@@ -24,10 +24,13 @@ lxml resp. libxml2 are powerful tools, but have an unergonomic data model to
 work with encoded text. Let's build a DOM API inspired wrapper around it.
 
 
-Full documentation
-------------------
+Documentation
+-------------
 
-The complete documentation is available here: TODO
+- API_
+- Installation
+
+.. _API: https://lxml-domesque.readthedocs.io/en/latest/api.html
 
 
 Development status
@@ -41,18 +44,6 @@ theoretical nature. Of course, any kind of proposals for or implementations of
 improvements are welcome as well.
 
 
-Installation
-------------
-
-TODO
-
-
-Usage
------
-
-TODO
-
-
 Design aspects & caveats
 ------------------------
 
@@ -62,15 +53,15 @@ caching where safely applicable.
 The library is partly opinionated to encourage good practices and to be more
 pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 
-- All serializations are UTF-8 encoded by default and always start with an XML
-  declaration.
+- Serializations of documents are UTF-8 encoded by default and always start
+  with an XML declaration.
 - Comment, CDATA and Processing Instruction nodes are not accessible (for now),
-  but are retained and appear in serializations; unless you [DANGER ZONE]
+  but are retained and appear in serializations; unless you **[DANGER ZONE]**
   manipulate the tree (and you want that often). Depending on your actions you
   might encounter no alterations or a complete loss of these nodes within the
   root node.
   As the implementation will evolve for a while, there are no recommendations
-  to last. [/DANGER ZONE] It is *guaranteed*, however, that processing
+  to last. **[/DANGER ZONE]** It is *guaranteed*, however, that processing
   instructions and comments that appear before the root node in the stream are
   always persist for a :class:`Document` instance and its clones.
 
@@ -80,12 +71,6 @@ lxml objects that are bound to :attr:`Document._etree_obj` and
 
 
 .. _pythonic: https://zen-of-python.info/there-should-be-one-and-preferably-only-one-obvious-way-to-do-it.html#13
-
-
-API
----
-
-TODO
 
 
 Reasoning
@@ -349,6 +334,14 @@ Kurt Raschke `noted in 2010 <https://web.archive.org/web/20190316214219/https://
 ROADMAPish
 ----------
 
-- behaviour regarding comments, cdata and processing instructions must be fixed before
-  optimizations
-- maybe cythonize it
+- complete API implementation and documentation
+- visualize the etree and the dom model w/ vector graphics instead of using the
+  YAML-mockups above; the next Inkscape should contain capabilties to set
+  nodes' class properties (in order to style with CSS)
+- refactor ``inxs`` to use this lib
+- gain insights from usage experience
+- implement the API in Rust
+- provide bindings for Python and Javascript to the Rust implementation, while
+  nurturing the lxml-based implementation as reference for some time
+- be finished before the Digital Humanities community realizes how to foster a
+  viable software ecosystem and fund such efforts
