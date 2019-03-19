@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from lxml_domesque import Document
 
 from tests.utils import assert_documents_are_semantical_equal, count_pis
@@ -15,9 +13,8 @@ def _(datafiles_path):
     return Path(str(datafiles_path))
 
 
-@pytest.mark.datafiles(FILES / "initial_processing_instructions.xml")
-def test_initial_processing_instructions_are_retained(datafiles):
-    Document(_(datafiles / "initial_processing_instructions.xml")).clone().save(
+def test_initial_processing_instructions_are_retained(files_path):
+    Document(files_path / "initial_processing_instructions.xml").clone().save(
         RESULTS_FILE
     )
     assert count_pis(RESULTS_FILE) == {
@@ -26,9 +23,8 @@ def test_initial_processing_instructions_are_retained(datafiles):
     }
 
 
-@pytest.mark.datafiles(FILES / "marx_manifestws_1848.TEI-P5.xml")
-def test_transparency(datafiles):
-    for file in datafiles.listdir():
+def test_transparency(files_path):
+    for file in (x for x in files_path.iterdir() if x.suffix == ".xml"):
         doc = Document(_(file))
         doc.save(RESULTS_FILE)
 
@@ -36,9 +32,8 @@ def test_transparency(datafiles):
         assert count_pis(_(file)) == count_pis(RESULTS_FILE)
 
 
-@pytest.mark.datafiles(FILES / "marx_manifestws_1848.TEI-P5.xml")
-def test_xml_declaration(datafiles):
-    Document(_(datafiles / "marx_manifestws_1848.TEI-P5.xml")).save(RESULTS_FILE)
+def test_xml_declaration(files_path):
+    Document(files_path / "marx_manifestws_1848.TEI-P5.xml").save(RESULTS_FILE)
     with RESULTS_FILE.open("rt") as f:
         first_line = f.readline()
     assert first_line.startswith("<?xml version='1.0' encoding='UTF-8'?>")
