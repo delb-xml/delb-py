@@ -1,6 +1,6 @@
 from pathlib import Path
 from itertools import chain
-from typing import Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional
 from typing import IO as IOType
 
 from lxml import etree
@@ -40,11 +40,7 @@ class Document:
         TODO
     """
 
-    def __init__(
-        self,
-        source: Union[str, Path, IOType, "TagNode", etree._ElementTree, etree._Element],
-        parser: etree.XMLParser = DEFAULT_PARSER,
-    ):
+    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         # TODO __slots__
 
         # document loading
