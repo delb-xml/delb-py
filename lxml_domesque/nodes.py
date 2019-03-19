@@ -483,14 +483,13 @@ class TagNode(NodeBase):
             return self
 
         if self._tail_node._exists:
-            raise NotImplementedError
-        else:
-            etree_obj = self._etree_obj
-            cast(_Element, etree_obj.getparent()).remove(etree_obj)
+            self._tail_node._bind_to_data(parent)
 
-        child_nodes = tuple(self.child_nodes(recurse=True))
+        etree_obj = self._etree_obj
+        cast(_Element, etree_obj.getparent()).remove(etree_obj)
+
         self._cache = cache = copy(self._cache)
-        for child_node in child_nodes:
+        for child_node in self.child_nodes(recurse=True):
             child_node._cache = cache
 
         _prune_wrapper_cache(parent)
