@@ -20,6 +20,8 @@ from lxml import etree
 from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
 from lxml_domesque.typing import _WrapperCache, Filter
+from lxml_domesque.utils import random_unused_prefix
+from lxml_domesque.xpath import LocationPath
 
 if TYPE_CHECKING:
     from lxml_domesque import Document  # noqa: F401
@@ -702,7 +704,76 @@ class TagNode(NodeBase):
         return cast(str, QName(self._etree_obj).text)
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
-        raise NotImplementedError
+        """ Yields all :class:`TagNode` instances that match the evaluation of an XPath
+            expression.
+
+            Mind to start any the expression with a ``.`` when the node you call it on
+            is supposed to be the initial context node in the path evaluation.
+
+            As this API is for a real programming language, the full XPath
+            specification is not intended to be supported. For example, instead of
+            querying attributes with an XPath expression, one must use a comprehension
+            like:
+
+            >>> [ x.attributes["target"] for x in root.xpath(".//foo")
+            ...   if "target" in x.attributes ]
+
+            Instead of:
+
+            >>> root.xpath(".//foo/@target")
+
+            Having that said, implementing retrieval of attributes may actually happen
+            if there are convincing user stories. But other things like addressing
+            processing instructions and higher level operations are out of scope.
+
+            This method includes a workaround for a bug in XPath 1.0 that concerns
+            its lack of default namespace support. It is extensively described in this
+            lxml issue: https://github.com/lxml/lxml/pull/236
+
+            :param expression: An XPath 1.0 location path.
+        """
+
+        location_path = LocationPath(expression)
+        # TODO prepend self::node() if missing?
+
+        last_step = location_path.location_steps[-1]
+
+        if last_step.axis == "attribute":
+            raise InvalidOperation(
+                "XPath expressions that point to attributes are not supported. "
+                "You are advised to use a Python comprehension expression, e.g.: "
+                "[x['target'] for x in node.xpath('.//foo') if 'target' in "
+                "x.attributes]"
+            )
+        if last_step.node_test.type == "type_test":
+            raise InvalidOperation(
+                "Other node tests than names tests are not supported for now. "
+                "If you require to retrieve other nodes than tag nodes, please open "
+                "an issue with a description of your use-case."
+            )
+
+        etree_obj = self._etree_obj
+        namespaces = etree_obj.nsmap
+
+        if None in namespaces:
+            prefix = random_unused_prefix(namespaces)
+            namespaces = {  # type: ignore
+                **namespaces,  # type: ignore
+                prefix: namespaces[None],
+            }
+            namespaces.pop(None)
+
+            for location_step in location_path.location_steps:
+                node_test = location_step.node_test
+                if node_test.type != "name_test":
+                    continue
+                if ":" not in node_test.data:
+                    node_test.data = prefix + ":" + node_test.data
+
+        for element in etree_obj.xpath(  # type: ignore
+            str(location_path), namespaces=namespaces
+        ):
+            yield _get_or_create_element_wrapper(element, self._cache)
 
 
 class TextNode(NodeBase):

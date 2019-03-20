@@ -105,6 +105,7 @@ class Document:
 
     @property
     def root(self) -> "TagNode":
+        """ The root node of a document instance. """
         return roots_of_documents[self]
 
     @root.setter
@@ -135,12 +136,13 @@ class Document:
         raise NotImplementedError
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
-        """ This method includes a workaround for a bug in XPath 1.0 that
-            concerns default namespaces. It is extensively described in
-            `this lxml issue`_.
+        """ Yields the results of :meth:`TagNode.xpath` on the instances'
+            :attr:`Document.root`.
 
-            .. this lxml issue: https://github.com/lxml/lxml/pull/236 """
-        raise NotImplementedError
+            :param expression: An XPath 1.0 location path.
+        """
+
+        yield from self.root.xpath(expression)
 
     def xslt(self, transformation: etree.XSLT) -> "Document":
         # TODO cache xslt object and use it directly
