@@ -12,7 +12,7 @@ Slug lines
 
 A DOM API inspired wrapper around lxml.
 
-XML documents for Kenny and all other kids too.
+XML encoded text documents for Kenny and all other kids too.
 
 …
 
@@ -67,8 +67,7 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
   always persist for a :class:`Document` instance and its clones.
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
-lxml objects that are bound to :attr:`Document._etree_obj` and
-:attr:`TagNode._etree_obj`.
+lxml objects that are bound to :attr:`TagNode._etree_obj`.
 
 
 .. _pythonic: https://zen-of-python.info/there-should-be-one-and-preferably-only-one-obvious-way-to-do-it.html#13

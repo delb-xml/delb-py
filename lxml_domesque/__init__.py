@@ -136,7 +136,7 @@ class Document:
         raise NotImplementedError
 
     def xpath(self, expression: str) -> Iterable["TagNode"]:
-        """ Yields the results of :meth:`TagNode.xpath` on the instances'
+        """ Yields the results of :meth:`TagNode.xpath` call on the instances'
             :attr:`Document.root`.
 
             :param expression: An XPath 1.0 location path.
