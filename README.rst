@@ -28,9 +28,10 @@ Documentation
 -------------
 
 - API_
-- Installation
+- Installation_
 
 .. _API: https://lxml-domesque.readthedocs.io/en/latest/api.html
+.. _Installation: https://lxml-domesque.readthedocs.io/en/latest/installation.html
 
 
 Development status
