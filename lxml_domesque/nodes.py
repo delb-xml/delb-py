@@ -149,10 +149,6 @@ class NodeBase(ABC):
             context.makeelement(tag, attrib=attributes, nsmap=nsmap), self._cache
         )
 
-    def new_text_node(self, content: str = "") -> "TextNode":
-        # also implemented in Document
-        return TextNode(content, position=DETACHED)
-
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         pass
@@ -571,6 +567,10 @@ class TagNode(NodeBase):
             self._etree_obj.tag = QName(self.namespace, value)
         else:
             self._etree_obj.tag = value
+
+    @property
+    def location_path(self):
+        raise NotImplementedError
 
     def merge_text_nodes(self):
         for node in self.child_nodes(is_text_node, recurse=True):
