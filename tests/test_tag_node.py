@@ -6,6 +6,10 @@ from lxml import etree
 from lxml_domesque import DETACHED, Document, InvalidOperation, TextNode
 
 
+def is_pagebreak(node):
+    return isinstance(node, TagNode) and node.local_name == "pb"
+
+
 def test_add_next_tag_before_tail():
     document = Document("<root><a/>b</root>")
     root = document.root
@@ -160,6 +164,26 @@ def test_insert():
     assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
 
 
+def test_iter_stream_to_left():
+    document = Document(
+        "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
+    )
+    k = document.root[1][1][0][1]
+    chars = "abcdefghij"[::-1]
+    for i, element in enumerate(k.iterate_previous_nodes_in_stream()):
+        assert element.local_name == chars[i]
+
+
+def test_iter_stream_to_right():
+    document = Document(
+        "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
+    )
+    a = document.root
+    chars = "abcdefghij"
+    for i, element in enumerate(a.iterate_next_nodes_in_stream()):
+        assert element.local_name == chars[i]
+
+
 def test_make_node_with_additional_namespace():
     document = Document("<root/>")
 
@@ -181,6 +205,15 @@ def test_new_text_node():
     assert isinstance(new_text_node, TextNode)
     assert new_text_node._position is DETACHED
     assert new_text_node.content == "nju"
+def test_next_in_stream(files_path):
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    page_breaks = document.xpath(".//pb")
+
+    cursor = page_breaks.pop(0)
+    while len(page_breaks) > 1:
+        _next = page_breaks.pop(0)
+        assert cursor.next_node_in_stream(is_pagebreak) is _next
+        cursor = _next
 
 
 def test_no_siblings_on_root():
@@ -197,6 +230,17 @@ def test_prepend_child():
     document = Document("<root><b/></root>")
     document.root.prepend_child(document.new_tag_node("a"))
     assert str(document) == "<root><a/><b/></root>"
+
+
+def test_previous_in_stream(files_path):
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    page_breaks = document.xpath(".//pb")
+
+    cursor = page_breaks.pop()
+    while len(page_breaks) > 1:
+        prev = page_breaks.pop()
+        assert cursor.previous_node_in_stream(is_pagebreak) is prev
+        cursor = prev
 
 
 def test_previous_node():

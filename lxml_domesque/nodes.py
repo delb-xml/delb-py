@@ -118,6 +118,64 @@ class NodeBase(ABC):
                 return index
         raise InvalidCodePath
 
+    def iterate_next_nodes(self, *filters: Filter) -> Iterator["NodeBase"]:
+        raise NotImplementedError
+
+    def iterate_next_nodes_in_stream(self, *filters: Filter) -> Iterator["NodeBase"]:
+        for node in self._iterate_next_nodes_in_stream():
+            if all(f(node) for f in filters):
+                yield node
+
+    def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
+
+        next_node = self.next_node()
+
+        if next_node is None:
+            parent = self.parent
+            if parent is None:
+                return
+            yield from parent._iterate_next_nodes_in_stream()
+
+        else:
+            yield next_node
+            if isinstance(next_node, TagNode):
+                yield from next_node.child_nodes(recurse=True)
+            yield from next_node._iterate_next_nodes_in_stream()
+
+    def iterate_previous_nodes(self, *filters: Filter) -> Iterator["NodeBase"]:
+        raise NotImplementedError
+
+    def iterate_previous_nodes_in_stream(
+        self, *filters: Filter
+    ) -> Iterator["NodeBase"]:
+
+        for node in self._iterate_previous_nodes_in_stream():
+            if all(f(node) for f in filters):
+                yield node
+
+    def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
+        def iter_children(node: TagNode) -> Iterator[NodeBase]:
+            for child_node in reversed(tuple(node.child_nodes(recurse=False))):
+                if isinstance(child_node, TagNode):
+                    yield from iter_children(child_node)
+                yield child_node
+
+        previous_node = self.previous_node()
+
+        if previous_node is None:
+            parent = self.parent
+            if parent is None:
+                return
+            yield parent
+            yield from parent._iterate_previous_nodes_in_stream()
+
+        else:
+
+            if isinstance(previous_node, TagNode):
+                yield from iter_children(previous_node)
+            yield previous_node
+            yield from previous_node._iterate_previous_nodes_in_stream()
+
     @abstractmethod
     def new_tag_node(
         self,
@@ -158,11 +216,11 @@ class NodeBase(ABC):
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         pass
 
-    @abstractmethod
-    def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
-        """ Returns the next node in stream order that matches the given
-            name. """
-        pass
+    def next_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
+        try:
+            return next(self.iterate_next_nodes_in_stream(*filter))
+        except StopIteration:
+            return None
 
     @property
     @abstractmethod
@@ -198,11 +256,11 @@ class NodeBase(ABC):
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         pass
 
-    @abstractmethod
-    def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
-        """ Returns the previous node in stream order that matches the given
-            name. """
-        pass
+    def previous_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
+        try:
+            return next(self.iterate_previous_nodes_in_stream(*filter))
+        except StopIteration:
+            return None
 
     def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
         what_a_silly_fuzz = randrange(0, 4)  # FUN FUN FUN
@@ -622,9 +680,6 @@ class TagNode(NodeBase):
         else:
             return candidate.next_node(*filter)
 
-    def next_node_in_stream(self, name: Optional[str]) -> Optional["NodeBase"]:
-        raise NotImplementedError
-
     def new_tag_node(
         self,
         local_name: str,
@@ -699,11 +754,6 @@ class TagNode(NodeBase):
             return candidate
         else:
             return candidate.previous_node(*filter)
-
-    def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
-        """ Returns the previous node in stream order that matches the given
-            name. """
-        raise NotImplementedError
 
     @property
     def qualified_name(self) -> str:
@@ -1165,11 +1215,6 @@ class TextNode(NodeBase):
             return None
         return _get_or_create_element_wrapper(next_etree_node, self._cache)
 
-    def next_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
-        """ Returns the next node in stream order that matches the given
-            name. """
-        raise NotImplementedError
-
     @property
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
@@ -1242,11 +1287,6 @@ class TextNode(NodeBase):
             return candidate
         else:
             return candidate.previous_node(*filter)
-
-    def previous_node_in_stream(self, name: Optional[str]) -> Optional["TagNode"]:
-        """ Returns the previous node in stream order that matches the given
-            name. """
-        raise NotImplementedError
 
     @property
     def _tail_sequence_head(self):
