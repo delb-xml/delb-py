@@ -570,7 +570,8 @@ class TagNode(NodeBase):
 
     @property
     def location_path(self):
-        raise NotImplementedError
+        etree_obj = self._etree_obj
+        return etree_obj.getroottree().getpath(etree_obj)
 
     def merge_text_nodes(self):
         for node in self.child_nodes(is_text_node, recurse=True):
