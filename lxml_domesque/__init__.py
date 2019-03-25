@@ -10,7 +10,6 @@ from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidOperation
 from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import (
-    DETACHED,
     any_of,
     _get_or_create_element_wrapper,
     is_tag_node,
@@ -98,10 +97,6 @@ class Document:
         return self.root.new_tag_node(
             local_name=local_name, attributes=attributes, namespace=namespace
         )
-
-    def new_text_node(self, content: str = "") -> "TextNode":
-        # also implemented in NodeBase
-        return TextNode(content, position=DETACHED, cache=self.__wrapper_cache)
 
     @property
     def root(self) -> "TagNode":

@@ -60,7 +60,6 @@ def _prune_wrapper_cache(node: "TagNode"):
 
 
 class NodeBase(ABC):
-    # the method is here to trick mypy
     def __init__(self, cache: _WrapperCache):
         self._cache = cache
 

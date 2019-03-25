@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from lxml_domesque import DETACHED, Document, InvalidOperation, TextNode
+from lxml_domesque import Document, InvalidOperation, TagNode, TextNode
 
 
 def is_pagebreak(node):
@@ -199,12 +199,6 @@ def test_make_node_namespace_inheritance():
     assert node.prefix == "pfx"
 
 
-def test_new_text_node():
-    node = Document("<x/>").root
-    new_text_node = node.new_text_node("nju")
-    assert isinstance(new_text_node, TextNode)
-    assert new_text_node._position is DETACHED
-    assert new_text_node.content == "nju"
 def test_next_in_stream(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     page_breaks = document.xpath(".//pb")
