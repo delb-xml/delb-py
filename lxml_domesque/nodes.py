@@ -8,6 +8,7 @@ from typing import (
     Any,
     Dict,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -85,7 +86,7 @@ class NodeBase(ABC):
     def _add_previous_node(self, node: "NodeBase"):
         pass
 
-    def ancestors(self, *filter: Filter) -> Iterable["TagNode"]:
+    def ancestors(self, *filter: Filter) -> Iterator["TagNode"]:
         """ Yields the ancestor nodes from bottom to top. """
         parent = self.parent
         if parent:
@@ -419,7 +420,7 @@ class TagNode(NodeBase):
     def attributes(self) -> ElementAttributes:
         return self._etree_obj.attrib
 
-    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterable[NodeBase]:
+    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
 
         current_node: Optional[NodeBase]
 
