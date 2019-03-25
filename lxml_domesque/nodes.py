@@ -98,6 +98,10 @@ class NodeBase(ABC):
     def clone(self, deep: bool = False) -> "NodeBase":
         pass
 
+    @property
+    def depth(self) -> int:
+        raise NotImplementedError
+
     @abstractmethod
     def detach(self) -> "NodeBase":
         pass
@@ -472,7 +476,7 @@ class TagNode(NodeBase):
 
         return result
 
-    def css_select(self, expression: str) -> Iterable["TagNode"]:
+    def css_select(self, expression: str) -> List["TagNode"]:
         raise NotImplementedError
 
     def detach(self) -> "TagNode":
