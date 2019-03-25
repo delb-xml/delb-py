@@ -95,6 +95,12 @@ class NodeBase(ABC):
             yield from parent.ancestors(*filter)
 
     @abstractmethod
+    def child_nodes(
+        self, *filter: Filter, recurse: bool = False
+    ) -> Iterator["NodeBase"]:
+        pass
+
+    @abstractmethod
     def clone(self, deep: bool = False) -> "NodeBase":
         pass
 
@@ -109,6 +115,11 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def document(self) -> Optional["Document"]:
+        pass
+
+    @property
+    @abstractmethod
+    def first_child(self) -> Optional["NodeBase"]:
         pass
 
     @property
@@ -127,7 +138,6 @@ class NodeBase(ABC):
                 yield node
 
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
-
         next_node = self.next_node()
 
         if next_node is None:
@@ -138,8 +148,7 @@ class NodeBase(ABC):
 
         else:
             yield next_node
-            if isinstance(next_node, TagNode):
-                yield from next_node.child_nodes(recurse=True)
+            yield from next_node.child_nodes(recurse=True)
             yield from next_node._iterate_next_nodes_in_stream()
 
     def iterate_previous_nodes(self, *filters: Filter) -> Iterator["NodeBase"]:
@@ -148,16 +157,14 @@ class NodeBase(ABC):
     def iterate_previous_nodes_in_stream(
         self, *filters: Filter
     ) -> Iterator["NodeBase"]:
-
         for node in self._iterate_previous_nodes_in_stream():
             if all(f(node) for f in filters):
                 yield node
 
     def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
-        def iter_children(node: TagNode) -> Iterator[NodeBase]:
+        def iter_children(node: NodeBase) -> Iterator[NodeBase]:
             for child_node in reversed(tuple(node.child_nodes(recurse=False))):
-                if isinstance(child_node, TagNode):
-                    yield from iter_children(child_node)
+                yield from iter_children(child_node)
                 yield child_node
 
         previous_node = self.previous_node()
@@ -170,11 +177,14 @@ class NodeBase(ABC):
             yield from parent._iterate_previous_nodes_in_stream()
 
         else:
-
-            if isinstance(previous_node, TagNode):
-                yield from iter_children(previous_node)
+            yield from iter_children(previous_node)
             yield previous_node
             yield from previous_node._iterate_previous_nodes_in_stream()
+
+    @property
+    @abstractmethod
+    def last_child(self) -> Optional["NodeBase"]:
+        pass
 
     @abstractmethod
     def new_tag_node(
@@ -835,6 +845,8 @@ class TextNode(NodeBase):
     """ This class also proxies all (?) methods that :class:`py:str`
         objects provide, including dunder-methods. """
 
+    first_child = last_child = None
+
     def __init__(
         self,
         reference_or_text: Union[_Element, str, "TextNode"],
@@ -990,6 +1002,9 @@ class TextNode(NodeBase):
         self._position = TAIL
         self.__content = None
         assert isinstance(self.content, str)
+
+    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
+        yield from []
 
     def clone(self, deep: bool = False) -> "NodeBase":
         assert self.content is not None
