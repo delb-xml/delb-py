@@ -703,8 +703,8 @@ class TagNode(NodeBase):
     def qualified_name(self) -> str:
         return cast(str, QName(self._etree_obj).text)
 
-    def xpath(self, expression: str) -> Iterable["TagNode"]:
-        """ Yields all :class:`TagNode` instances that match the evaluation of an XPath
+    def xpath(self, expression: str) -> List["TagNode"]:
+        """ Returns all :class:`TagNode` instances that match the evaluation of an XPath
             expression.
 
             Mind to start any the expression with a ``.`` when the node you call it on
@@ -740,10 +740,7 @@ class TagNode(NodeBase):
 
         if last_step.axis == "attribute":
             raise InvalidOperation(
-                "XPath expressions that point to attributes are not supported. "
-                "You are advised to use a Python comprehension expression, e.g.: "
-                "[x['target'] for x in node.xpath('.//foo') if 'target' in "
-                "x.attributes]"
+                "XPath expressions that point to attributes are not supported."
             )
         if last_step.node_test.type == "type_test":
             raise InvalidOperation(
@@ -770,10 +767,12 @@ class TagNode(NodeBase):
                 if ":" not in node_test.data:
                     node_test.data = prefix + ":" + node_test.data
 
-        for element in etree_obj.xpath(  # type: ignore
-            str(location_path), namespaces=namespaces
-        ):
-            yield _get_or_create_element_wrapper(element, self._cache)
+        return [
+            _get_or_create_element_wrapper(element, self._cache)
+            for element in etree_obj.xpath(  # type: ignore
+                str(location_path), namespaces=namespaces
+            )
+        ]
 
 
 class TextNode(NodeBase):
