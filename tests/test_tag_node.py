@@ -241,6 +241,12 @@ def test_no_siblings_on_root():
         document.root.add_previous("sibling")
 
 
+def test_prefix():
+    document = Document('<root xmlns:x="ham"><x:a/></root>')
+
+    assert document.root[0].prefix == "x"
+
+
 def test_prepend_child():
     document = Document("<root><b/></root>")
     document.root.prepend_child(document.new_tag_node("a"))
