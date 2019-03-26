@@ -178,6 +178,17 @@ def test_construction():
     )
 
 
+def test_depth():
+    document = Document("<root>1<a><b/>2</a></root>")
+
+    root = document.root
+    one = root[0]
+    assert one.depth == 1
+
+    two = root[1][1]
+    assert two.depth == 2
+
+
 def test_detach_data_node():
     document = Document("<root><a>b</a></root>")
     root = document.root

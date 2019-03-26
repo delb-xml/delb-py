@@ -104,8 +104,9 @@ class NodeBase(ABC):
         pass
 
     @property
+    @abstractmethod
     def depth(self) -> int:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def detach(self) -> "NodeBase":
@@ -545,6 +546,11 @@ class TagNode(NodeBase):
 
     def css_select(self, expression: str) -> List["TagNode"]:
         raise NotImplementedError
+
+    @property
+    def depth(self) -> int:
+        print(self, self.location_path)
+        return self.location_path.count("/") - 1
 
     def detach(self) -> "TagNode":
         parent = self.parent
@@ -1042,6 +1048,12 @@ class TextNode(NodeBase):
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             self.__content = text
+
+    @property
+    def depth(self) -> int:
+        if self._position is DETACHED:
+            return 0
+        return cast(TagNode, self.parent).depth + 1
 
     def detach(self) -> "TextNode":
 

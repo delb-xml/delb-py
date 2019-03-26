@@ -91,6 +91,18 @@ def test_deepcopy():
     assert clone[0] is not node[0]
 
 
+def test_depth():
+    document = Document("<root><a><b/></a></root>")
+
+    root = document.root
+    assert root.depth == 0
+
+    a = root[0]
+    assert a.depth == 1
+
+    assert a[0].depth == 2
+
+
 def test_detach_and_document_property():
     document = Document("<root><node/></root>")
     root = document.root
