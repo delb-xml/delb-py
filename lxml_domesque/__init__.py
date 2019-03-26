@@ -138,8 +138,7 @@ class Document:
         return self.root.xpath(expression)
 
     def xslt(self, transformation: etree.XSLT) -> "Document":
-        # TODO cache xslt object and use it directly
-        result = self.root._etree_obj.getroottree().xslt(transformation)
+        result = transformation(self.root._etree_obj.getroottree())
         return Document(result.getroot())
 
 
