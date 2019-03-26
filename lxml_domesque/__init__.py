@@ -124,15 +124,14 @@ class Document:
         roots_of_documents[self] = root
 
     def save(self, path: Path, pretty=False):
-        self.root._etree_obj.getroottree().write(
-            str(path.resolve()),
-            encoding="utf-8",
-            pretty_print=pretty,
-            xml_declaration=True,
-        )
+        with path.open("bw") as file:
+            self.write(file, pretty=pretty)
 
-    def write(self, buffer: IOType):
-        raise NotImplementedError
+    def write(self, buffer: IOType, pretty: bool = False):
+        self.cleanup_namespaces()
+        self.root._etree_obj.getroottree().write(
+            file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
+        )
 
     def xpath(self, expression: str) -> List["TagNode"]:
         """ Returns the results of :meth:`TagNode.xpath` call on the instances'
