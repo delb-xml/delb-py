@@ -56,10 +56,7 @@ class Document:
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
 
-        self.__wrapper_cache: _WrapperCache = cache
-        roots_of_documents[self] = _get_or_create_element_wrapper(
-            loaded_tree.getroot(), cache
-        )
+        self.__set_root(_get_or_create_element_wrapper(loaded_tree.getroot(), cache))
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """
@@ -114,9 +111,10 @@ class Document:
             )
 
         utils.copy_heading_pis(self.root._etree_obj, root._etree_obj)
-        # preserve cache of possibly detached subtrees
-        # can be tidied with self._prune_cache()
-        self.__wrapper_cache.update(root._cache)
+        self.__set_root(root)
+
+    def __set_root(self, root: TagNode):
+        self.__wrapper_cache = root._cache
         roots_of_documents[self] = root
 
     def save(self, path: Path, pretty=False):
