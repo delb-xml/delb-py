@@ -155,8 +155,11 @@ class NodeBase(ABC):
                 return index
         raise InvalidCodePath
 
-    def iterate_next_nodes(self, *filters: Filter) -> Iterator["NodeBase"]:
-        raise NotImplementedError
+    def iterate_next_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
+        next_node = self.next_node(*filter)
+        while next_node is not None:
+            yield next_node
+            next_node = next_node.next_node(*filter)
 
     def iterate_next_nodes_in_stream(self, *filters: Filter) -> Iterator["NodeBase"]:
         for node in self._iterate_next_nodes_in_stream():
@@ -177,8 +180,11 @@ class NodeBase(ABC):
             yield from next_node.child_nodes(recurse=True)
             yield from next_node._iterate_next_nodes_in_stream()
 
-    def iterate_previous_nodes(self, *filters: Filter) -> Iterator["NodeBase"]:
-        raise NotImplementedError
+    def iterate_previous_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
+        previous_node = self.previous_node(*filter)
+        while previous_node is not None:
+            yield previous_node
+            previous_node = previous_node.previous_node(*filter)
 
     def iterate_previous_nodes_in_stream(
         self, *filters: Filter

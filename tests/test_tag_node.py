@@ -176,6 +176,30 @@ def test_insert():
     assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
 
 
+def test_iterate_next_nodes():
+    document = Document("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
+
+    expected = "bcdef"
+
+    for i, node in enumerate(document.root[0].iterate_next_nodes()):
+        if isinstance(node, TagNode):
+            assert node.local_name == expected[i]
+        else:
+            assert node.content == expected[i]
+
+
+def test_iterate_previous_nodes():
+    document = Document("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
+
+    expected = "abcde"[::-1]
+
+    for i, node in enumerate(document.root[5].iterate_previous_nodes()):
+        if isinstance(node, TagNode):
+            assert node.local_name == expected[i]
+        else:
+            assert node.content == expected[i]
+
+
 def test_iter_stream_to_left():
     document = Document(
         "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
