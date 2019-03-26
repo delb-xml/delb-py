@@ -1,7 +1,12 @@
 from copy import copy
 from string import ascii_lowercase
+from functools import lru_cache
 
+from cssselect import GenericTranslator  # type: ignore
 from lxml import etree
+
+
+css_translator = GenericTranslator()
 
 
 def copy_heading_pis(source: etree._Element, target: etree._Element):
@@ -12,6 +17,11 @@ def copy_heading_pis(source: etree._Element, target: etree._Element):
         current_element = current_element.getprevious()
     while heading_elements:
         target.addprevious(copy(heading_elements.pop()))
+
+
+@lru_cache(maxsize=64)
+def css_to_xpath(expression: str) -> str:
+    return css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
 
 
 def random_unused_prefix(namespaces: "etree._NSMap") -> str:

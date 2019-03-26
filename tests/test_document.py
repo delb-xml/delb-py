@@ -24,6 +24,24 @@ def test_contains():
     assert document_a.root[0] not in document_b
 
 
+def test_css_select():
+    document = Document("<root><a><b/><c/><b/></a></root>")
+
+    results = document.css_select("a b")
+    assert len(results) == 2
+    assert all(x.local_name == "b" for x in results)
+
+    document = Document('<root xmlns="x" xmlns:y="y"><a><b/><y:c/><b/></a></root>')
+
+    results = document.css_select("a b")
+    assert len(results) == 2
+    assert all(x.local_name == "b" for x in results)
+
+    results = document.css_select("a y|c")
+    assert len(results) == 1
+    assert results[0].qualified_name == "{y}c"
+
+
 def test_invalid_document():
     with pytest.raises(ValueError):
         Document(0)

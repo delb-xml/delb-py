@@ -21,7 +21,7 @@ from lxml import etree
 from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
 from lxml_domesque.typing import _WrapperCache, Filter
-from lxml_domesque.utils import random_unused_prefix
+from lxml_domesque.utils import css_to_xpath, random_unused_prefix
 from lxml_domesque.xpath import LocationPath
 
 if TYPE_CHECKING:
@@ -545,7 +545,7 @@ class TagNode(NodeBase):
         return result
 
     def css_select(self, expression: str) -> List["TagNode"]:
-        raise NotImplementedError
+        return self.xpath(css_to_xpath(expression))
 
     @property
     def depth(self) -> int:

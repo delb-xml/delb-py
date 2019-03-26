@@ -81,8 +81,8 @@ class Document:
             self.root, parser=self.root._etree_obj.getroottree().parser
         )
 
-    def css_select(self, expression: str) -> Iterable["TagNode"]:
-        raise NotImplementedError
+    def css_select(self, expression: str) -> List["TagNode"]:
+        return self.root.css_select(expression)
 
     def merge_text_nodes(self):
         self.root.merge_text_nodes()
