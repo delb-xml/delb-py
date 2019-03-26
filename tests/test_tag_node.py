@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from lxml_domesque import Document, InvalidOperation, TagNode, TextNode
+from lxml_domesque import Document, InvalidOperation, TagNode, TextNode, make_tag_node
 
 
 def is_pagebreak(node):
@@ -209,6 +209,15 @@ def test_make_node_namespace_inheritance():
     node = document.new_tag_node("node")
     assert node.namespace == "https://name.space"
     assert node.prefix == "pfx"
+
+
+def test_make_node_without_context():
+    document = Document('<root xmlns="ham" />')
+    node = make_tag_node("a", namespace="spam")
+
+    document.root.append_child(node)
+
+    assert str(document) == '<root xmlns="ham"><a xmlns="spam"/></root>'
 
 
 def test_next_in_stream(files_path):

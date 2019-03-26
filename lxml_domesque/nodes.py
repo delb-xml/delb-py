@@ -20,7 +20,7 @@ from lxml import etree
 
 from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
-from lxml_domesque.typing import _WrapperCache, Filter
+from lxml_domesque.typing import ElementAttributes, Filter, _WrapperCache
 from lxml_domesque.utils import css_to_xpath, random_unused_prefix
 from lxml_domesque.xpath import LocationPath
 
@@ -28,14 +28,22 @@ if TYPE_CHECKING:
     from lxml_domesque import Document  # noqa: F401
 
 
+# shortcuts
+
+
 Comment = etree.Comment
 _Element = etree._Element
-ElementAttributes = etree._Attrib
 PI = etree.PI
 QName = etree.QName
 
 
+# constants
+
+
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
+
+
+# functions
 
 
 def _get_or_create_element_wrapper(
@@ -48,6 +56,21 @@ def _get_or_create_element_wrapper(
     return result
 
 
+def make_tag_node(
+    local_name: str, attributes: Dict[str, str] = None, namespace: Optional[str] = None
+):
+    namespaces: Optional[etree._NSMap]
+
+    if namespace is None:
+        namespaces = None
+    else:
+        namespaces = cast("etree._NSMap", {None: namespace})
+
+    return _get_or_create_element_wrapper(
+        etree.Element(local_name, attrib=attributes, nsmap=namespaces), {}
+    )
+
+
 def _prune_wrapper_cache(node: "TagNode"):
     if node.parent is None:
         root = node
@@ -57,6 +80,9 @@ def _prune_wrapper_cache(node: "TagNode"):
     cache = root._cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
+
+
+# nodes
 
 
 class NodeBase(ABC):
@@ -1170,7 +1196,15 @@ class TextNode(NodeBase):
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
-        raise NotImplementedError
+        parent = self.parent
+        if parent is None:
+            return make_tag_node(
+                local_name=local_name, attributes=attributes, namespace=namespace
+            )
+        else:
+            return parent.new_tag_node(
+                local_name=local_name, attributes=attributes, namespace=namespace
+            )
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         if self._position is DETACHED:
@@ -1353,4 +1387,5 @@ __all__ = (
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
+    make_tag_node.__name__,
 )
