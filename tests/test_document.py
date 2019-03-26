@@ -3,6 +3,14 @@ import pytest
 from lxml_domesque import Document, InvalidOperation, TagNode
 
 
+def test_contains():
+    document_a = Document("<root><a/></root>")
+    document_b = Document("<root><a/></root>")
+
+    assert document_a.root[0] in document_a
+    assert document_a.root[0] not in document_b
+
+
 def test_invalid_document():
     with pytest.raises(ValueError):
         Document(0)

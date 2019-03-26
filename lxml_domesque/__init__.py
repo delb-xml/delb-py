@@ -60,7 +60,7 @@ class Document:
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """
-        raise NotImplementedError
+        return node.document is self
 
     def __str__(self):
         clone = self.clone()
