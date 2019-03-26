@@ -600,7 +600,7 @@ class TagNode(NodeBase):
     @property
     def index(self) -> Optional[int]:
         if self.parent is None:
-            return None  # TODO meditate over 0 as alternative
+            return None
         return super().index
 
     def insert_child(self, index: int, *node: NodeBase, clone: bool = False):
@@ -723,10 +723,6 @@ class TagNode(NodeBase):
                 return prefix
         raise InvalidCodePath
 
-    @prefix.setter
-    def prefix(self, prefix: str):
-        raise NotImplementedError
-
     def prepend_child(self, *node: NodeBase, clone: bool = False) -> None:
         self.insert_child(0, *node, clone=clone)
 
@@ -838,8 +834,9 @@ class TagNode(NodeBase):
                 if ":" not in node_test.data:
                     node_test.data = prefix + ":" + node_test.data
 
+        cache = self._cache
         return [
-            _get_or_create_element_wrapper(element, self._cache)
+            _get_or_create_element_wrapper(element, cache)
             for element in etree_obj.xpath(  # type: ignore
                 str(location_path), namespaces=namespaces
             )
