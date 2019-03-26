@@ -1,7 +1,14 @@
-from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+import pytest
+import sys
 
-from lxml_domesque import Document, NodeBase, TagNode
+if sys.version_info < (3, 7):
+    pytest.skip("Requires Python 3.7.", allow_module_level=True)
+
+
+from dataclasses import dataclass  # noqa: E402
+from typing import Optional, Tuple, Union  # noqa: E402
+
+from lxml_domesque import Document, NodeBase, TagNode  # noqa: E402
 
 
 def is_pagebreak(node: NodeBase) -> bool:
