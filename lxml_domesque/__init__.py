@@ -67,8 +67,14 @@ class Document:
         clone.merge_text_nodes()
         return etree.tounicode(clone.root._etree_obj.getroottree())
 
-    def cleanup_namespaces(self, namespaces: "etree._NSMap"):
-        raise NotImplementedError
+    def cleanup_namespaces(
+        self,
+        namespaces: Optional["etree._NSMap"] = None,
+        retain_prefixes: Optional[Iterable[str]] = None,
+    ):
+        etree.cleanup_namespaces(
+            self.root._etree_obj, top_nsmap=namespaces, keep_ns_prefixes=retain_prefixes
+        )
 
     def clone(self) -> "Document":
         return self.__class__(
