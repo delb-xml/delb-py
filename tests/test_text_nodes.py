@@ -126,6 +126,19 @@ def test_add_text_between_text_at_data_position():
     assert str(document) == "<root>data more more more tailing</root>"
 
 
+def test_add_text_between_two_appended():
+    document = Document("<root>data</root>")
+    root = document.root
+
+    root[0].add_next(" appended_1")
+    root[1].add_next(" appended_2")
+    root[2].add_next(" appended_3")
+    root[1].add_next(root.new_tag_node("tag"))
+
+    assert len(document.root) == 5
+    assert str(document) == "<root>data appended_1<tag/> appended_2 appended_3</root>"
+
+
 def test_appended_text_nodes():
     document = Document("<root/>")
     tokens = ("How ", "much ", "is ", "the ", "fish", "?")

@@ -966,24 +966,26 @@ class TextNode(NodeBase):
 
         elif self._position is APPENDED:
 
-            if self._appended_text_node is None:
-                head = self._tail_sequence_head
-                if head._position is DATA:
-                    head._bound_to.insert(0, node._etree_obj)
-                elif head._position is TAIL:
-                    head_anchor = head._bound_to
-                    head_content = head.content
+            appended_text_node = self._appended_text_node
+            self._appended_text_node = None
 
-                    head_anchor.addnext(node._etree_obj)
+            head = self._tail_sequence_head
+            if head._position is DATA:
+                head._bound_to.insert(0, node._etree_obj)
+            elif head._position is TAIL:
+                head_anchor = head._bound_to
+                head_content = head.content
 
-                    head_anchor.tail = head_content
-                    node._etree_obj.tail = None
+                head_anchor.addnext(node._etree_obj)
 
-                else:
-                    raise InvalidCodePath
+                head_anchor.tail = head_content
+                node._etree_obj.tail = None
 
             else:
-                raise NotImplementedError
+                raise InvalidCodePath
+
+            if appended_text_node is not None:
+                appended_text_node._bind_to_tail(node)
 
         elif self._position is DETACHED:
 
