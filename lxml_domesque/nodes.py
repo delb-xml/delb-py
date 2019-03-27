@@ -942,6 +942,7 @@ class TextNode(NodeBase):
     def _add_next_tag_node(self, node: TagNode):
 
         if self._position is DATA:
+
             assert isinstance(self._bound_to, _Element)
             self._bound_to.insert(0, node._etree_obj)
 
@@ -961,7 +962,7 @@ class TextNode(NodeBase):
             assert not node._tail_node._exists, repr(node._tail_node)
 
             if text_sibling is not None:
-                raise NotImplementedError
+                text_sibling._bind_to_tail(node)
 
         elif self._position is APPENDED:
 
@@ -985,6 +986,7 @@ class TextNode(NodeBase):
                 raise NotImplementedError
 
         elif self._position is DETACHED:
+
             raise InvalidCodePath
 
     def _add_previous_node(self, node: NodeBase):

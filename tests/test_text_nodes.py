@@ -99,6 +99,17 @@ def test_add_text_after_appended():
     assert root[0]._etree_obj.tail == "foobarpeng"
 
 
+def test_add_tag_between_text_nodes_at_tail_position():
+    document = Document("<root><a/>tail</root>")
+    root = document.root
+
+    root[1].add_next("the")
+    root[2].add_next(" end")
+    root[1].add_next(root.new_tag_node("node"))
+    assert len(document.root) == 5
+    assert str(document) == "<root><a/>tail<node/>the end</root>"
+
+
 def test_add_text_before_data():
     document = Document("<root>data</root>")
     document.root[0].add_previous("head ")
@@ -106,7 +117,7 @@ def test_add_text_before_data():
     assert str(document) == "<root>head data</root>"
 
 
-def test_add_text_between_text():
+def test_add_text_between_text_at_data_position():
     document = Document("<root>data</root>")
     node = document.root[0]
     node.add_next(" tailing")
