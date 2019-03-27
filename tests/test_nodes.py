@@ -117,6 +117,22 @@ def test_replace_with():
     assert str(document) == "<root><a><b/></a><c/><d>e</d></root>"
 
 
+def test_root_takes_no_siblings():
+    root = Document("<root/>").root
+
+    with pytest.raises(InvalidOperation):
+        root.add_next(root.new_tag_node("x"))
+
+    with pytest.raises(InvalidOperation):
+        root.add_next("x")
+
+    with pytest.raises(InvalidOperation):
+        root.add_previous(root.new_tag_node("x"))
+
+    with pytest.raises(InvalidOperation):
+        root.add_previous("x")
+
+
 def test_siblings_filter():
     document = Document("<root><e1/>ham<e2/>spam<e3/></root>")
     e2 = document.root[2]

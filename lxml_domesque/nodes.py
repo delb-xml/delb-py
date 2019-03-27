@@ -89,6 +89,9 @@ class NodeBase(ABC):
         self._cache = cache
 
     def add_next(self, *node: Any, clone: bool = False):
+        if self.depth == 0:
+            raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
+
         if node:
             this, queue = self._prepare_new_relative(node, clone)
             self._add_next_node(this)
@@ -100,6 +103,9 @@ class NodeBase(ABC):
         pass
 
     def add_previous(self, *node: Any, clone: bool = False):
+        if self.depth == 0:
+            raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
+
         if node:
             this, queue = self._prepare_new_relative(node, clone)
             self._add_previous_node(this)
