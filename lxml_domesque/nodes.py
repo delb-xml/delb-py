@@ -6,7 +6,6 @@ from typing import (
     overload,
     Any,
     Dict,
-    Iterable,
     Iterator,
     List,
     Optional,
@@ -374,24 +373,30 @@ class TagNode(NodeBase):
     def __getitem__(self, item: int) -> NodeBase:
         ...
 
+    @overload  # noqa: F811
+    def __getitem__(self, item: slice) -> List[NodeBase]:
+        ...
+
     def __getitem__(self, item):  # noqa: F811
         # TODO docs
-        # TODO support reverse index lookup and slices
 
         if isinstance(item, str):
             return self._etree_obj.attrib[item]
 
         elif isinstance(item, int):
             if item < 0:
-                raise ValueError("An index must be a non-negative number.")
+                raise NotImplementedError
 
-            index = -1
-            for child_node in self.child_nodes():
-                index += 1
+            index = 0
+            for child_node in self.child_nodes(recurse=False):
                 if index == item:
                     return child_node
+                index += 1
 
             raise IndexError
+
+        elif isinstance(item, slice):
+            raise NotImplementedError
 
         raise TypeError
 
