@@ -27,7 +27,7 @@ def test_ancestors():
     zero = document.root[2][0][0]
     assert isinstance(zero, TextNode)
     assert zero == "0"
-    assert tuple(str(x) for x in zero.ancestors()) == ("<node>", "<middle>", "<root>")
+    assert tuple(x.local_name for x in zero.ancestors()) == ("node", "middle", "root")
 
 
 def test_ancestors_of_detached_node():

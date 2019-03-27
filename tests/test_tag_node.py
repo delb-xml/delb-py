@@ -341,6 +341,13 @@ def test_previous_node():
     assert a.local_name == "a"
 
 
+def test_serialization():
+    root = Document("<root>a</root>").root
+    root.append_child("b")
+
+    assert str(root) == "<root>ab</root>"
+
+
 def test_set_tag_components():
     document = Document("<root/>")
     root = document.root

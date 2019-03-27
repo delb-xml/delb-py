@@ -405,11 +405,9 @@ class TagNode(NodeBase):
         return len([x for x in self.child_nodes(recurse=False)])
 
     def __str__(self) -> str:
-        attributes = " ".join(f"{k}={v}" for k, v in self._etree_obj.attrib.items())
-        result = f"<{self.qualified_name}"
-        if attributes:
-            result += " " + attributes
-        return result + ">"
+        clone = self.clone(deep=True)
+        clone.merge_text_nodes()
+        return etree.tounicode(clone._etree_obj)
 
     def __repr__(self) -> str:
         return (
