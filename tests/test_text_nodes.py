@@ -220,6 +220,12 @@ def test_construction():
     )
 
 
+def test_content_is_coerced():
+    node = TextNode("")
+    node.content = 0
+    assert node.content == "0"
+
+
 def test_depth():
     document = Document("<root>1<a><b/>2</a></root>")
 
@@ -237,6 +243,7 @@ def test_detach_data_node():
 
     b = root[0][0].detach()
     assert b.parent is None
+    assert b.depth == 0
     assert b.content == "b"
     assert str(document) == "<root><a/></root>"
 
@@ -245,6 +252,7 @@ def test_detach_data_node():
 
     b = root[0][0].detach()
     assert b.parent is None
+    assert b.depth == 0
     assert b.content == "b"
 
     assert str(document) == "<root><a><c/></a></root>"
@@ -255,6 +263,7 @@ def test_detach_tag_sandwiched_node():
     tail = document.root[1].detach()
 
     assert tail.parent is None
+    assert tail.depth == 0
     assert isinstance(tail, TextNode)
     assert tail.content == "tail"
 
@@ -263,13 +272,23 @@ def test_detach_tag_sandwiched_node():
 
 def test_detach_text_sandwiched_node():
     document = Document("<root>data</root>")
-    node = document.root[0]
-    node.add_next(" tailing")
-    node.add_next(" more more more")
+    root = document.root
+    data = root[0]
+
+    data.add_next(" tailing")
+    data.add_next(" more more more")
 
     more = document.root[1].detach()
     assert str(more) == " more more more"
     assert str(document) == "<root>data tailing</root>"
+
+    data.add_next(more)
+    data.detach()
+    assert str(document) == "<root> more more more tailing</root>"
+
+    root.insert_child(0, data.new_tag_node("tag"))
+    more.detach()
+    assert str(document) == "<root><tag/> tailing</root>"
 
 
 def test_document():
@@ -282,6 +301,10 @@ def test_document():
 
     detached = TextNode("detached")
     assert detached.document is None
+
+
+def test_equality():
+    assert not TextNode("1") == 1
 
 
 def test_none_content_wrapping():

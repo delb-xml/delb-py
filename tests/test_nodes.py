@@ -92,6 +92,16 @@ def test_invalid_operations():
         new_node.add_previous(document_2.root[0])
 
 
+def test_no_next_node_in_stream():
+    document = Document("<root><a/></root>")
+    assert document.root.next_node_in_stream() is None
+
+
+def test_no_previous_node_in_stream():
+    document = Document("<root><a/></root>")
+    assert document.root.previous_node_in_stream() is None
+
+
 def test_replace_with():
     document = Document("<root><a>b</a>c<d>e</d></root>")
     root = document.root
@@ -115,6 +125,9 @@ def test_replace_with():
     assert isinstance(expected_new, TagNode)
     assert expected_new.local_name == "c"
     assert str(document) == "<root><a><b/></a><c/><d>e</d></root>"
+
+    with pytest.raises(InvalidOperation):
+        root.replace_with(root.new_tag_node("new"))
 
 
 def test_root_takes_no_siblings():

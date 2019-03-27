@@ -47,6 +47,13 @@ def test_add_previous_node():
     assert str(document) == "<root>xy<z/><boundary/><a/></root>"
 
 
+def test_append_no_child():
+    document = Document("<root/>")
+
+    document.root.append_child()
+    assert str(document) == "<root/>"
+
+
 def test_attribute_access():
     document = Document('<root ham="spam"/>')
     assert document.root["ham"] == "spam"
@@ -118,13 +125,22 @@ def test_detach_and_document_property():
 
 
 def test_detach_node_with_tail():
-    document = Document("<root><a/>b<d/></root>")
+    document = Document("<root><a>c<c/></a>b<d/></root>")
     root = document.root
 
     root[1].add_next("c")
     root[0].detach()
 
     assert str(document) == "<root>bc<d/></root>"
+
+
+def test_detach_root():
+    unbound_node = make_tag_node("unbound")
+    assert unbound_node.detach() is unbound_node
+
+    document = Document("<root/>")
+    with pytest.raises(InvalidOperation):
+        document.root.detach()
 
 
 def test_equality():
@@ -144,6 +160,10 @@ def test_equality():
 
 
 def test_first_and_last_child():
+    document = Document("<root/>")
+    assert document.root.first_child is None
+    assert document.root.last_child is None
+
     document = Document("<root><e1/><e2/></root>")
     assert document.root.first_child.local_name == "e1"
     assert document.root.last_child.local_name == "e2"
@@ -174,6 +194,25 @@ def test_insert():
 
     a.insert_child(0, TextNode("|aa|"), clone=True)
     assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
+
+    a.insert_child(1, "-")
+    assert str(document) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
+
+
+def test_insert_first_child():
+    document = Document("<root/>")
+    document.root.insert_child(0, "a")
+    assert str(document) == "<root>a</root>"
+
+
+def test_insert_at_invalid_index():
+    root = Document("<root><a/><b/></root>").root
+
+    with pytest.raises(ValueError):
+        root.insert_child(-1, "x")
+
+    with pytest.raises(IndexError):
+        root.insert_child(3, "x")
 
 
 def test_iterate_next_nodes():
@@ -304,10 +343,16 @@ def test_previous_node():
 
 def test_set_tag_components():
     document = Document("<root/>")
-    document.root.local_name = "top"
+    root = document.root
+
+    root.local_name = "top"
     assert str(document) == "<top/>"
 
     ns = "https://name.space"
     etree.register_namespace("prfx", ns)
-    document.root.namespace = ns
+    root.namespace = ns
+    assert root.namespace == ns
     assert str(document) == '<prfx:top xmlns:prfx="https://name.space"/>'
+
+    root.local_name = "root"
+    assert str(document) == '<prfx:root xmlns:prfx="https://name.space"/>'

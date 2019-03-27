@@ -565,13 +565,16 @@ class TagNode(NodeBase):
 
     @property
     def depth(self) -> int:
-        print(self, self.location_path)
         return self.location_path.count("/") - 1
 
     def detach(self) -> "TagNode":
         parent = self.parent
 
         if parent is None:
+            if self.document is not None:
+                raise InvalidOperation(
+                    "The root node of a document cannot be " "detached."
+                )
             return self
 
         if self._tail_node._exists:
@@ -673,10 +676,12 @@ class TagNode(NodeBase):
 
     @property
     def namespace(self) -> str:
-        return cast(str, QName(self._etree_obj).namespace)
+        # weirdly QName fails in some cases when called with an etree._Element
+        # passing its tag attribute works, though not documented
+        return cast(str, QName(self._etree_obj.tag).namespace)  # type: ignore
 
     @namespace.setter
-    def namespace(self, value: str) -> None:
+    def namespace(self, value: Optional[str]) -> None:
         self._etree_obj.tag = QName(value, self.local_name)
 
     @property
@@ -900,7 +905,7 @@ class TextNode(NodeBase):
             return self.content == other.content
         elif isinstance(other, str):
             return self.content == other
-        raise TypeError
+        return False
 
     def __repr__(self):
         if self._exists:
@@ -1356,7 +1361,7 @@ class TextNode(NodeBase):
 # contributed filters and filter wrappers
 
 
-def any_of(filters: Iterable[Filter]) -> Filter:
+def any_of(*filters: Filter) -> Filter:
     def wrapper(node: NodeBase) -> bool:
         return any(x(node) for x in filters)
 
