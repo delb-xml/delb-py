@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from copy import copy
-from random import randrange
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -150,10 +149,16 @@ class NodeBase(ABC):
 
     @property
     def index(self) -> Optional[int]:
+        parent = self.parent
+
+        if parent is None:
+            return None
+
         for index, node in enumerate(self.parent.child_nodes(recurse=False)):
             if node is self:
-                return index
-        raise InvalidCodePath
+                break
+
+        return index
 
     def iterate_next_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
         next_node = self.next_node(*filter)
@@ -305,34 +310,14 @@ class NodeBase(ABC):
             return None
 
     def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
-        what_a_silly_fuzz = randrange(0, 4)  # FUN FUN FUN
-
         if self.parent is None:
-            raise InvalidOperation(
+            raise InvalidOperation(  # TODO test
                 "Cannot replace a root node of a tree. Maybe you want to set the "
                 "`root` property of a Document instance?"
             )
 
-        if what_a_silly_fuzz == 0:
-            # TODO use this variant only when all code paths seem implemented
-            self.add_next(node, clone=clone)
-            return self.detach()
-        elif what_a_silly_fuzz == 1:
-            self.add_previous(node, clone=clone)
-            return self.detach()
-
-        parent, index = self.parent, self.index
-        assert parent is not None
-
-        if what_a_silly_fuzz == 2:
-            parent.insert_child(index, node, clone=clone)
-            return self.detach()
-        if what_a_silly_fuzz == 3:
-            self.detach()
-            parent.insert_child(index, node, clone=clone)
-            return self
-
-        raise InvalidCodePath
+        self.add_next(node, clone=clone)
+        return self.detach()
 
 
 class TagNode(NodeBase):
@@ -427,8 +412,6 @@ class TagNode(NodeBase):
             self._etree_obj.append(node._etree_obj)
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
-        else:
-            raise InvalidCodePath
 
     def add_next(self, *node: Any, clone: bool = False):
         if self.parent is None:
@@ -470,9 +453,6 @@ class TagNode(NodeBase):
             else:
                 node._bind_to_tail(self)
 
-        else:
-            raise TypeError
-
     def add_previous(self, *node: Any, clone: bool = False):
         if self.parent is None:
             raise InvalidOperation("Can't add a sibling to a root node.")
@@ -492,10 +472,10 @@ class TagNode(NodeBase):
                 parent = self.parent
                 assert parent is not None
                 if parent._data_node._exists:
-                    last_text_canidate = parent._data_node
-                    while last_text_canidate._appended_text_node is not None:
-                        last_text_canidate = last_text_canidate._appended_text_node
-                    last_text_canidate._add_next_node(node)
+                    last_text_candidate = parent._data_node
+                    while last_text_candidate._appended_text_node is not None:
+                        last_text_candidate = last_text_candidate._appended_text_node
+                    last_text_candidate._add_next_node(node)
                 else:
                     node._bind_to_data(parent)
 
@@ -568,8 +548,6 @@ class TagNode(NodeBase):
                     assert child_node._etree_obj.tail is None
                 elif isinstance(child_node, TextNode):
                     assert child_node._position is DETACHED
-                else:
-                    raise InvalidCodePath
 
                 result.append_child(child_node)
                 assert child_node in result
@@ -640,7 +618,7 @@ class TagNode(NodeBase):
             raise ValueError
 
         if index > len(self):
-            raise InvalidOperation("The given index is beyond the target's size.")
+            raise IndexError("The given index is beyond the target's size.")
 
         this, *queue = node
 
@@ -974,6 +952,7 @@ class TextNode(NodeBase):
             self._appended_text_node = None
 
             head = self._tail_sequence_head
+            assert head._position in (DATA, TAIL)
             if head._position is DATA:
                 head._bound_to.insert(0, node._etree_obj)
             elif head._position is TAIL:
@@ -985,15 +964,8 @@ class TextNode(NodeBase):
                 head_anchor.tail = head_content
                 node._etree_obj.tail = None
 
-            else:
-                raise InvalidCodePath
-
             if appended_text_node is not None:
                 appended_text_node._bind_to_tail(node)
-
-        elif self._position is DETACHED:
-
-            raise InvalidCodePath
 
     def _add_previous_node(self, node: NodeBase):
         if isinstance(node, TextNode):
@@ -1025,9 +997,6 @@ class TextNode(NodeBase):
             elif self._position is APPENDED:
                 assert isinstance(self._bound_to, TextNode)
                 self._bound_to._add_next_node(node)
-
-            else:
-                raise InvalidCodePath
 
     def _bind_to_data(self, target: TagNode):
         target._etree_obj.text = self.content
@@ -1068,7 +1037,9 @@ class TextNode(NodeBase):
             return cast(str, self.__content)
 
         else:
-            raise InvalidCodePath
+            raise ValueError(
+                f"A TextNode._position must not be set to {self._position}"
+            )
 
     @content.setter
     def content(self, text: Any):
@@ -1146,7 +1117,9 @@ class TextNode(NodeBase):
             self._appended_text_node = None
 
         else:
-            raise InvalidCodePath
+            raise ValueError(
+                f"A TextNode._position must not be set to {self._position}"
+            )
 
         self._bound_to = None
         self._cache = {}
@@ -1305,7 +1278,7 @@ class TextNode(NodeBase):
             assert self._bound_to is None
             return None
 
-        raise InvalidCodePath
+        raise ValueError(f"A TextNode._position must not be set to {self._position}")
 
     def _prepend_text_node(self, node: "TextNode"):
         if self._position is DATA:
@@ -1336,7 +1309,9 @@ class TextNode(NodeBase):
             node._insert_text_node_as_next_appended(self)
 
         else:
-            raise InvalidCodePath
+            raise ValueError(
+                f"A TextNode._position must not be set to {self._position}"
+            )
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         candidate: Optional[NodeBase]
@@ -1350,7 +1325,9 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, TextNode)
             candidate = self._bound_to
         else:
-            raise InvalidCodePath
+            raise ValueError(
+                f"A TextNode._position must not be set to {self._position}"
+            )
 
         if candidate is None:
             return None
