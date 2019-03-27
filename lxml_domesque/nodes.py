@@ -944,7 +944,11 @@ class TextNode(NodeBase):
         if self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)
+            appended_text_node = self._appended_text_node
             self._bound_to.insert(0, node._etree_obj)
+            if appended_text_node is not None:
+                self._appended_text_node = None
+                appended_text_node._bind_to_tail(node)
 
         elif self._position is TAIL:
 
@@ -1019,7 +1023,8 @@ class TextNode(NodeBase):
                 )._add_next_node(node)
 
             elif self._position is APPENDED:
-                raise NotImplementedError
+                assert isinstance(self._bound_to, TextNode)
+                self._bound_to._add_next_node(node)
 
             else:
                 raise InvalidCodePath
