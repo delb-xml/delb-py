@@ -622,7 +622,7 @@ class TagNode(NodeBase):
             return None
         return super().index
 
-    def insert_child(self, index: int, *node: NodeBase, clone: bool = False):
+    def insert_child(self, index: int, *node: Any, clone: bool = False):
         if index < 0:
             raise ValueError
 
@@ -638,7 +638,7 @@ class TagNode(NodeBase):
                     assert self[1].previous_node() is this
                     assert this.next_node() is self[1]
             else:
-                self.__add_first_child(this)
+                self.__add_first_child(self._prepare_new_relative(this, clone=clone)[0])
 
         else:
             self[index - 1].add_next(this, clone=False)
