@@ -385,7 +385,7 @@ class TagNode(NodeBase):
 
         elif isinstance(item, int):
             if item < 0:
-                raise NotImplementedError
+                item = len(self) + item
 
             index = 0
             for child_node in self.child_nodes(recurse=False):
@@ -396,7 +396,7 @@ class TagNode(NodeBase):
             raise IndexError
 
         elif isinstance(item, slice):
-            raise NotImplementedError
+            return list(self.child_nodes(recurse=False))[item]
 
         raise TypeError
 

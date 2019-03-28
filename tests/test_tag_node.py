@@ -181,6 +181,23 @@ def test_full_text():
     assert document.root.full_text == "The quick red fox jumps over the fence."
 
 
+def test_getitem():
+    document = Document('<root ham="spam"><a/><b/><c/><d/></root>')
+    root = document.root
+
+    assert root["ham"] == "spam"
+    with pytest.raises(KeyError):
+        root["foo"]
+
+    assert root[-1].local_name == "d"
+
+    assert "".join(x.local_name for x in root[1:]) == "bcd"
+    assert "".join(x.local_name for x in root[1:3]) == "bc"
+    assert "".join(x.local_name for x in root[:3]) == "abc"
+
+    assert "".join(x.local_name for x in root[::-1]) == "dcba"
+
+
 def test_insert():
     document = Document("<root><a>c</a></root>")
     root = document.root
