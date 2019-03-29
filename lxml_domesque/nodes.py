@@ -260,18 +260,27 @@ class NodeBase(ABC):
                 yield node
 
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
-        next_node = self.next_node()
+        def next_sibling_of_an_ancestor(node: NodeBase) -> Optional[TagNode]:
+            parent = node.parent
+            if parent is None:
+                return None
+            parents_next = parent.next_node()
+            if parents_next is None:
+                return next_sibling_of_an_ancestor(parent)
+            return parents_next
+
+        next_node = self.first_child
+        if next_node is None:
+            next_node = self.next_node()
 
         if next_node is None:
-            parent = self.parent
-            if parent is None:
-                return
-            yield from parent._iterate_next_nodes_in_stream()
+            next_node = next_sibling_of_an_ancestor(self)
 
-        else:
-            yield next_node
-            yield from next_node.child_nodes(recurse=True)
-            yield from next_node._iterate_next_nodes_in_stream()
+        if next_node is None:
+            return
+
+        yield next_node
+        yield from next_node._iterate_next_nodes_in_stream()
 
     def iterate_previous_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
         """

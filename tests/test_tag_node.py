@@ -260,8 +260,8 @@ def test_iter_stream_to_left():
     )
     k = document.root[1][1][0][1]
     chars = "abcdefghij"[::-1]
-    for i, element in enumerate(k.iterate_previous_nodes_in_stream()):
-        assert element.local_name == chars[i]
+    for i, node in enumerate(k.iterate_previous_nodes_in_stream()):
+        assert node.local_name == chars[i]
 
 
 def test_iter_stream_to_right():
@@ -269,9 +269,10 @@ def test_iter_stream_to_right():
         "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
     )
     a = document.root
-    chars = "abcdefghij"
-    for i, element in enumerate(a.iterate_next_nodes_in_stream()):
-        assert element.local_name == chars[i]
+    chars = "bcdefghijk"
+    for i, node in enumerate(a.iterate_next_nodes_in_stream()):
+        print(node)
+        assert node.local_name == chars[i]
 
 
 def test_make_node_with_additional_namespace():
