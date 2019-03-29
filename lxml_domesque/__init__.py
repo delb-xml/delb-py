@@ -15,7 +15,7 @@ from lxml_domesque.nodes import (
     is_tag_node,
     is_text_node,
     not_,
-    make_tag_node,
+    new_tag_node,
     NodeBase,
     TagNode,
     TextNode,
@@ -157,5 +157,5 @@ __all__ = (
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
-    make_tag_node.__name__,
+    new_tag_node.__name__,
 )

@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from lxml_domesque import Document, InvalidOperation, TagNode, TextNode, make_tag_node
+from lxml_domesque import Document, InvalidOperation, TagNode, TextNode, new_tag_node
 
 
 def is_pagebreak(node):
@@ -135,7 +135,7 @@ def test_detach_node_with_tail():
 
 
 def test_detach_root():
-    unbound_node = make_tag_node("unbound")
+    unbound_node = new_tag_node("unbound")
     assert unbound_node.detach() is unbound_node
 
     document = Document("<root/>")
@@ -154,9 +154,7 @@ def test_equality():
     assert b == a
     assert a != c
     assert a != d
-
-    with pytest.raises(TypeError):
-        a == 0
+    assert a != 0
 
 
 def test_first_and_last_child():
@@ -293,7 +291,7 @@ def test_make_node_namespace_inheritance():
 
 def test_make_node_without_context():
     document = Document('<root xmlns="ham" />')
-    node = make_tag_node("a", namespace="spam")
+    node = new_tag_node("a", namespace="spam")
 
     document.root.append_child(node)
 

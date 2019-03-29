@@ -20,7 +20,10 @@ black: ## normalize Python code
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	xdg-open docs/build/html/index.html
+
+.PHONY: doctest
+doctest: ## test the code that is contained in the docs
+	$(MAKE) -C docs doctest
 
 .PHONY: flake8
 flake8: ## code linting with flake8
@@ -38,5 +41,9 @@ mypy: ## run static type checks with mypy
 pytest: ## run the test suite
 	python -m pytest --cov-config .coveragerc --cov=lxml_domesque tests
 
+.PHONY: showdocs
+showdocs: docs ## build and open HTML documentation
+	xdg-open docs/build/html/index.html
+
 .PHONY: tests ## run all tests on normalized code
-tests: black flake8 mypy pytest
+tests: black flake8 mypy pytest doctest

@@ -12,12 +12,14 @@ matrix:
       python: "3.6"
     - env: TARGET=pytest
       python: "3.7"
+    - env: TARGET=doctest
+      python: "3.7"
 
 git:
   submodules: false
 
 before_install:
-  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  # - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
   - git submodule update --init --recursive
 install:
   - travis_retry pip install poetry

@@ -1,17 +1,19 @@
 API Documentation
 =================
 
-The Document class
-------------------
+Documents
+---------
 
 .. autoclass:: lxml_domesque.Document
 
-Node classes
-------------
+Nodes
+-----
 
 .. autoclass:: lxml_domesque.TagNode
 
 .. autoclass:: lxml_domesque.TextNode
+
+.. autofunction:: lxml_domesque.new_tag_node
 
 Contributed document loaders
 ----------------------------

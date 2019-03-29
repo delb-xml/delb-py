@@ -194,7 +194,15 @@ autodoc_default_options = {
     'undoc-members': True,
 }
 
+
 # -- Options for intersphinx extension ---------------------------------------
 
-# Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+
+# -- Options for doctest extension -------------------------------------------
+
+
+doctest_global_setup = """
+from lxml_domesque import *
+"""

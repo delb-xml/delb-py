@@ -54,9 +54,21 @@ def _get_or_create_element_wrapper(
     return result
 
 
-def make_tag_node(
+def new_tag_node(
     local_name: str, attributes: Dict[str, str] = None, namespace: Optional[str] = None
-):
+) -> "TagNode":
+    """
+    Creates a new :class:`TagNode` instance outside any context. It is preferable to
+    use :meth:`Document.new_tag_node`, :meth:`TagNode.new_tag_node`,
+    :meth:`TextNode.new_tag_node` on instances where the instance is the creation
+    context.
+
+    :param local_name: The tag name.
+    :param attributes: Optional attributes that are assigned to the new node.
+    :param namespace: An optional tag namespace.
+    :return: The newly created tag node.
+    """
+
     namespaces: Optional[etree._NSMap]
 
     if namespace is None:
@@ -88,7 +100,16 @@ class NodeBase(ABC):
         self._cache = cache
 
     def add_next(self, *node: Any, clone: bool = False):
-        if self.depth == 0:
+        """
+        Adds one or more nodes to the right of the node this method is called on.
+
+        If a given object is not of a node type, a :class:`TextNode` bearing the
+        object's string representation.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the node before adding if ``True``.
+        """
+        if self.parent is None:
             raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
 
         if node:
@@ -102,7 +123,16 @@ class NodeBase(ABC):
         pass
 
     def add_previous(self, *node: Any, clone: bool = False):
-        if self.depth == 0:
+        """
+        Adds one or more nodes to the left of the node this method is called on.
+
+        If a given object is not of a node type, a :class:`TextNode` bearing the
+        object's string representation.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the node before adding if ``True``.
+        """
+        if self.parent is None:
             raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
 
         if node:
@@ -116,7 +146,12 @@ class NodeBase(ABC):
         pass
 
     def ancestors(self, *filter: Filter) -> Iterator["TagNode"]:
-        """ Yields the ancestor nodes from bottom to top. """
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
+                 to top.
+        """
         parent = self.parent
         if parent:
             if all(f(parent) for f in filter):
@@ -127,53 +162,101 @@ class NodeBase(ABC):
     def child_nodes(
         self, *filter: Filter, recurse: bool = False
     ) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :param recurse: Also returns the children's children and so on in document order
+                        if ``True``.
+        :return: A :term:`generator iterator` that yields the child nodes of the node.
+        """
         pass
 
     @abstractmethod
     def clone(self, deep: bool = False) -> "NodeBase":
+        """
+        :param deep: Clones the whole subtree if ``True``.
+        :return: A copy of the node.
+        """
         pass
 
     @property
     @abstractmethod
     def depth(self) -> int:
+        """
+        The depth (or level) of the node in its tree.
+        """
         pass
 
     @abstractmethod
     def detach(self) -> "NodeBase":
+        """
+        Removes the node, including its descendants, from its tree.
+        :return: The removed node.
+        """
         pass
 
     @property
     @abstractmethod
     def document(self) -> Optional["Document"]:
+        """
+        The :class:`Document` instances that the node is associated with or ``None``.
+        """
         pass
 
     @property
     @abstractmethod
     def first_child(self) -> Optional["NodeBase"]:
+        """
+        The node's first child node.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def full_text(self) -> str:
+        """
+        The concatenated contents of all text node descendants in document order.
+        """
         pass
 
     @property
     def index(self) -> Optional[int]:
+        """
+        The node's index within the parent's collection of child nodes or ``None`` when
+        the node has no parent.
+        """
         parent = self.parent
 
         if parent is None:
             return None
 
-        for index, node in enumerate(self.parent.child_nodes(recurse=False)):
+        for index, node in enumerate(parent.child_nodes(recurse=False)):
             if node is self:
                 break
 
         return index
 
     def iterate_next_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the siblings to the node's
+                 right.
+        """
         next_node = self.next_node(*filter)
         while next_node is not None:
             yield next_node
             next_node = next_node.next_node(*filter)
 
-    def iterate_next_nodes_in_stream(self, *filters: Filter) -> Iterator["NodeBase"]:
+    def iterate_next_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the following nodes in
+                 document order.
+        """
         for node in self._iterate_next_nodes_in_stream():
-            if all(f(node) for f in filters):
+            if all(f(node) for f in filter):
                 yield node
 
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
@@ -191,16 +274,26 @@ class NodeBase(ABC):
             yield from next_node._iterate_next_nodes_in_stream()
 
     def iterate_previous_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the siblings to the node's
+                 left.
+        """
         previous_node = self.previous_node(*filter)
         while previous_node is not None:
             yield previous_node
             previous_node = previous_node.previous_node(*filter)
 
-    def iterate_previous_nodes_in_stream(
-        self, *filters: Filter
-    ) -> Iterator["NodeBase"]:
+    def iterate_previous_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the previous nodes in document
+                 order.
+        """
         for node in self._iterate_previous_nodes_in_stream():
-            if all(f(node) for f in filters):
+            if all(f(node) for f in filter):
                 yield node
 
     def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
@@ -226,6 +319,9 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def last_child(self) -> Optional["NodeBase"]:
+        """
+        The node's last child node.
+        """
         pass
 
     @abstractmethod
@@ -235,6 +331,14 @@ class NodeBase(ABC):
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
+        """
+        Creates a new :class:`TagNode` instance in the node's context.
+
+        :param local_name: The tag name.
+        :param attributes: Optional attributes that are assigned to the new node.
+        :param namespace: An optional tag namespace.
+        :return: The newly created tag node.
+        """
         pass
 
     def _new_tag_node_from(
@@ -266,9 +370,17 @@ class NodeBase(ABC):
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter`.
+        :return: The next sibling to the right that matches all filters or ``None``.
+        """
         pass
 
     def next_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter`.
+        :return: The next node in document order that matches all filters or ``None``.
+        """
         try:
             return next(self.iterate_next_nodes_in_stream(*filter))
         except StopIteration:
@@ -277,6 +389,9 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def parent(self):
+        """
+        The node's parent or ``None``.
+        """
         pass
 
     def _prepare_new_relative(
@@ -306,17 +421,33 @@ class NodeBase(ABC):
 
     @abstractmethod
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter`.
+        :return: The next sibling to the left that matches all filters or ``None``.
+        """
         pass
 
     def previous_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter`.
+        :return: The previous node in document order that matches all filters or
+                 ``None``.
+        """
         try:
             return next(self.iterate_previous_nodes_in_stream(*filter))
         except StopIteration:
             return None
 
     def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
+        """
+        Removes the node and places the given one in its tree location.
+
+        :param node: The replacing node.
+        :param clone: The replacing node is cloned if ``True``.
+        :return: The removed node.
+        """
         if self.parent is None:
-            raise InvalidOperation(  # TODO test
+            raise InvalidOperation(
                 "Cannot replace a root node of a tree. Maybe you want to set the "
                 "`root` property of a Document instance?"
             )
@@ -326,19 +457,74 @@ class NodeBase(ABC):
 
 
 class TagNode(NodeBase):
+    """
+    The instances of this class represent :term:`tag node` s of a tree.
+
+    To instantiate new nodes use :class:`Document.new_tag_node`,
+    :class:`TagNode.new_tag_node`, :class:`TextNode.new_tag_node` or
+    :func:`new_tag_node`.
+
+    Some syntactic sugar is baked in:
+
+    Attributes can be tested for membership in a node.
+
+    >>> root = Document('<root ham="spam"><child/></root>').root
+    >>> child = root.first_child
+    >>> "ham" in root
+    True
+    >>> child in root
+    True
+
+    Nodes can be copied.
+
+    >>> from copy import copy, deepcopy
+    >>> root = Document("<root>Content</root>").root
+    >>> print(copy(root))
+    <root/>
+    >>> print(deepcopy(root))
+    <root>Content</root>
+
+    Nodes can be tested for equality regarding their qualified name and attributes.
+
+    >>> root = Document('<root><foo x="0"/><foo x="0"/><bar x="0"/></root>').root
+    >>> root[0] == root[1]
+    True
+    >>> root[0] == root[2]
+    False
+
+    Attribute values and child nodes can be obtained with the subscript notation.
+
+    >>> root = Document('<root x="0"><child_1/>child_2<child_3/></root>').root
+    >>> root["x"]
+    '0'
+    >>> print(root[0])
+    <child_1/>
+    >>> print(root[-1])
+    <child_3/>
+    >>> print([str(x) for x in root[1::-1]])
+    ['child_2', '<child_1/>']
+
+    How much child nodes has this node anyway?
+
+    >>> root = Document("<root><child_1/><child_2/></root>").root
+    >>> len(root)
+    2
+    >>> len(root[0])
+    0
+
+    As seen in the examples above, a tag nodes string representation yields a serialized
+    representation of a sub-/tree.
+    """
+
     # TODO __slots__
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
-        # TODO alternate signature
         super().__init__(cache=cache)
         self._etree_obj = etree_element
         self._data_node = TextNode(etree_element, position=DATA, cache=cache)
         self._tail_node = TextNode(etree_element, position=TAIL, cache=cache)
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
-        # TODO move docs
-        """ Tests whether the node has an attribute with given string or
-            a given node is a within its child nodes. """
         if isinstance(item, str):
             return item in self.attributes
         elif isinstance(item, NodeBase):
@@ -356,9 +542,8 @@ class TagNode(NodeBase):
         return self.clone(deep=True)
 
     def __eq__(self, other: Any) -> bool:
-        # TODO docs
         if not isinstance(other, TagNode):
-            raise TypeError
+            return False
 
         return (self.qualified_name == other.qualified_name) and (
             set(self.attributes.items()) == set(other.attributes.items())
@@ -378,8 +563,6 @@ class TagNode(NodeBase):
         ...
 
     def __getitem__(self, item):  # noqa: F811
-        # TODO docs
-
         if isinstance(item, str):
             return self._etree_obj.attrib[item]
 
@@ -401,7 +584,6 @@ class TagNode(NodeBase):
         raise TypeError
 
     def __len__(self) -> int:
-        # TODO docs
         return len([x for x in self.child_nodes(recurse=False)])
 
     def __str__(self) -> str:
@@ -492,6 +674,16 @@ class TagNode(NodeBase):
             previous._add_next_node(node)
 
     def append_child(self, *node: Any, clone: bool = False):
+        """
+        Adds one or more nodes as child nodes after any existing to the child nodes of
+        the node this method is called on.
+
+        If a given object is not of a node type, a :class:`TextNode` bearing the
+        object's string representation.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the node before adding if ``True``.
+        """
         if not node:
             return
 
@@ -511,6 +703,22 @@ class TagNode(NodeBase):
 
     @property
     def attributes(self) -> ElementAttributes:
+        """ A :term:`mapping` that can be used to query and alter the node's
+            attributes.
+
+            >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
+            >>> node.attributes
+            {'bar': '0', 'foo': '0'}
+            >>> node.attributes.pop("bar")
+            '0'
+            >>> node.attributes["foo"] = "1"
+            >>> node.attributes["peng"] = "1"
+            >>> print(node)
+            <node foo="1" peng="1"/>
+            >>> node.attributes.update({"bar": "2", "zong": "2"})
+            >>> print(node)
+            <node foo="1" peng="1" bar="2" zong="2"/>
+        """
         return self._etree_obj.attrib
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
@@ -564,6 +772,15 @@ class TagNode(NodeBase):
         return result
 
     def css_select(self, expression: str) -> List["TagNode"]:
+        """
+        Namespace prefixes are prefixed with a delimiting ``|`` before a name test,
+        for example ``div svg|metadata`` selects all descendants of ``div`` named nodes
+        that belong to the default namespace or have no namespace and whose name is
+        ``metadata`` and have a namespace that is mapped to the ``svg`` prefix.
+
+        :param expression: A CSS selector expression.
+        :return: A list of matching :term:`tag node` s.
+        """
         return self.xpath(css_to_xpath(expression))
 
     @property
@@ -626,6 +843,17 @@ class TagNode(NodeBase):
         return super().index
 
     def insert_child(self, index: int, *node: Any, clone: bool = False):
+        """
+        Inserts one or more child nodes.
+
+        If a given object is not of a node type, a :class:`TextNode` bearing the
+        object's string representation.
+
+        :param index: The index at which the first of the given nodes will be inserted,
+                      the remaining nodes are added afterwards in the given order.
+        :param node: The node(s) to be added.
+        :param clone: Clones the node before adding if ``True``.
+        """
         if index < 0:
             raise ValueError
 
@@ -658,6 +886,9 @@ class TagNode(NodeBase):
 
     @property
     def local_name(self) -> str:
+        """
+        The node's name.
+        """
         return cast(str, QName(self._etree_obj).localname)
 
     @local_name.setter
@@ -670,25 +901,37 @@ class TagNode(NodeBase):
 
     @property
     def location_path(self):
+        """
+        An unambiguous XPath location path that points to this node from its root.
+        """
         etree_obj = self._etree_obj
         return etree_obj.getroottree().getpath(etree_obj)
 
     def merge_text_nodes(self):
+        """
+        Merges all consecutive text nodes in the subtree into one.
+        """
         for node in self.child_nodes(is_text_node, recurse=True):
             node._merge_appended_text_nodes()
 
     @property
-    def namespace(self) -> str:
+    def namespace(self) -> Optional[str]:
+        """
+        The node's namespace
+        """
         # weirdly QName fails in some cases when called with an etree._Element
         # passing its tag attribute works, though not documented
-        return cast(str, QName(self._etree_obj.tag).namespace)  # type: ignore
+        return QName(self._etree_obj.tag).namespace  # type: ignore
 
     @namespace.setter
-    def namespace(self, value: Optional[str]) -> None:
+    def namespace(self, value: Optional[str]):
         self._etree_obj.tag = QName(value, self.local_name)
 
     @property
     def namespaces(self) -> Dict[str, str]:
+        """
+        The prefix to namespace :term:`mapping` of the node.
+        """
         return cast(Dict[str, str], self._etree_obj.nsmap)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -738,6 +981,9 @@ class TagNode(NodeBase):
 
     @property
     def prefix(self) -> Optional[str]:
+        """
+        The prefix that the node's namespace is currently mapped to.
+        """
         target = QName(self._etree_obj).namespace
         assert isinstance(target, str)
         for prefix, namespace in self._etree_obj.nsmap.items():
@@ -746,8 +992,19 @@ class TagNode(NodeBase):
             if namespace == target:
                 return prefix
         raise InvalidCodePath
+        # FIXME handle nodes w/o namespace
 
     def prepend_child(self, *node: NodeBase, clone: bool = False) -> None:
+        """
+        Adds one or more nodes as child nodes before any existing to the child nodes of
+        the node this method is called on.
+
+        If a given object is not of a node type, a :class:`TextNode` bearing the
+        object's string representation.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the node before adding if ``True``.
+        """
         self.insert_child(0, *node, clone=clone)
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -792,10 +1049,13 @@ class TagNode(NodeBase):
 
     @property
     def qualified_name(self) -> str:
+        """
+        The node's qualified name.
+        """
         return cast(str, QName(self._etree_obj).text)
 
     def xpath(self, expression: str) -> List["TagNode"]:
-        """ Returns all :class:`TagNode` instances that match the evaluation of an XPath
+        """ Returns all :term:`tag node` s that match the evaluation of an XPath
             expression.
 
             Mind to start any the expression with a ``.`` when the node you call it on
@@ -807,11 +1067,11 @@ class TagNode(NodeBase):
             like:
 
             >>> [ x.attributes["target"] for x in root.xpath(".//foo")
-            ...   if "target" in x.attributes ]
+            ...   if "target" in x.attributes ]  # doctest: +SKIP
 
             Instead of:
 
-            >>> root.xpath(".//foo/@target")
+            >>> root.xpath(".//foo/@target")  # doctest: +SKIP
 
             Having that said, implementing retrieval of attributes may actually happen
             if there are convincing user stories. But other things like addressing
@@ -1163,6 +1423,10 @@ class TextNode(NodeBase):
         else:
             return True
 
+    @property
+    def full_text(self) -> str:
+        return self.content or ""
+
     def _merge_appended_text_nodes(self):
         sibling = self._appended_text_node
         if sibling is None:
@@ -1200,7 +1464,7 @@ class TextNode(NodeBase):
     ) -> "TagNode":
         parent = self.parent
         if parent is None:
-            return make_tag_node(
+            return new_tag_node(
                 local_name=local_name, attributes=attributes, namespace=namespace
             )
         else:
@@ -1241,13 +1505,7 @@ class TextNode(NodeBase):
                 assert candidate._exists
             return candidate
         else:
-            # FIXME?
-            raise RuntimeError(  # pragma: no cover
-                "I'm here to inform you that an expected code path has actually been "
-                "reached."
-            )
-            # eg in test_nodes::test_siblings_filter
-            return candidate.next_node(*filter)  # pragma: no cover
+            return candidate.next_node(*filter)
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
@@ -1393,5 +1651,5 @@ __all__ = (
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
-    make_tag_node.__name__,
+    new_tag_node.__name__,
 )

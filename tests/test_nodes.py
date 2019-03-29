@@ -94,7 +94,7 @@ def test_invalid_operations():
 
 def test_no_next_node_in_stream():
     document = Document("<root><a/></root>")
-    assert document.root.next_node_in_stream() is None
+    assert document.root[0].next_node_in_stream() is None
 
 
 def test_no_previous_node_in_stream():
@@ -148,10 +148,17 @@ def test_root_takes_no_siblings():
 
 def test_siblings_filter():
     document = Document("<root><e1/>ham<e2/>spam<e3/></root>")
-    e2 = document.root[2]
+    root = document.root
+
+    e2 = root[2]
 
     assert isinstance(e2.previous_node(), TextNode)
     assert isinstance(e2.next_node(), TextNode)
 
     assert isinstance(e2.previous_node(is_tag_node), TagNode)
     assert isinstance(e2.next_node(is_tag_node), TagNode)
+
+    spam = root[3]
+    spam.add_next("plate")
+
+    assert isinstance(spam.next_node(is_tag_node), TagNode)
