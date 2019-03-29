@@ -11,5 +11,5 @@ setup(
     name='lxml-domesque',
     version=VERSION,
     packages=['lxml_domesque'],
-    install_requires=['lxml'],
+    install_requires=['cssselect', 'lxml'],
 )
