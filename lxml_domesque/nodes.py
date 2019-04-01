@@ -1674,11 +1674,11 @@ class TextNode(NodeBase):
 # contributed filters and filter wrappers
 
 
-def any_of(*filters: Filter) -> Filter:
-    def wrapper(node: NodeBase) -> bool:
-        return any(x(node) for x in filters)
+def any_of(*filter: Filter) -> Filter:
+    def any_of_wrapper(node: NodeBase) -> bool:
+        return any(x(node) for x in filter)
 
-    return wrapper
+    return any_of_wrapper
 
 
 def is_tag_node(node: NodeBase) -> bool:
@@ -1690,10 +1690,10 @@ def is_text_node(node: NodeBase) -> bool:
 
 
 def not_(filter: Filter) -> Filter:
-    def wrapper(node: NodeBase) -> bool:
+    def not_wrapper(node: NodeBase) -> bool:
         return not filter(node)
 
-    return wrapper
+    return not_wrapper
 
 
 __all__ = (
