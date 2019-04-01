@@ -129,6 +129,7 @@ class Document:
             self.write(file, pretty=pretty)
 
     def write(self, buffer: IOType, pretty: bool = False):
+        self.root.merge_text_nodes()
         self.cleanup_namespaces()
         self.root._etree_obj.getroottree().write(
             file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
