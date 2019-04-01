@@ -39,6 +39,11 @@ QName = etree.QName
 
 
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
+STRINGMETHODS = set(
+    name
+    for name, obj in vars(str).items()
+    if not name.startswith("_") and callable(obj)
+)
 
 
 # functions
@@ -1137,8 +1142,29 @@ class TagNode(NodeBase):
 
 
 class TextNode(NodeBase):
-    """ This class also proxies all (?) methods that :class:`py:str`
-        objects provide, including dunder-methods. """
+    """
+    TextNodes contain the textual data of a document.
+
+    Instances expose all methods of :class:`str`:
+
+    >>> node = TextNode("Show us the way to the next whisky bar.")
+    >>> node.split()
+    ['Show', 'us', 'the', 'way', 'to', 'the', 'next', 'whisky', 'bar.']
+
+    Instances can be tested for inequality with other text nodes and strings:
+
+    >>> TextNode("ham") == TextNode("spam")
+    False
+    >>> TextNode("Patsy") == "Patsy"
+    True
+
+    And they can be tested for substrings:
+
+    >>> "Sir" in TextNode("Sir Bedevere the Wise")
+    True
+
+    Attributes that rely to child nodes yield nothing respectively ``None``.
+    """
 
     first_child = last_child = None
 
@@ -1172,12 +1198,25 @@ class TextNode(NodeBase):
         else:
             raise ValueError
 
+    def __contains__(self, item) -> bool:
+        return item in self.content
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, TextNode):
             return self.content == other.content
         elif isinstance(other, str):
             return self.content == other
         return False
+
+    def __getattr__(self, item: str) -> Any:
+        if item in STRINGMETHODS:
+            return getattr(self.content, item)
+        raise AttributeError(
+            f"type object '{self.__class__.__name__}' has no " f"attribute '{item}'"
+        )
+
+    def __getitem__(self, item):
+        return self.content[item]
 
     def __repr__(self):
         if self._exists:
@@ -1306,7 +1345,10 @@ class TextNode(NodeBase):
         return self.__class__(self.content, cache={})
 
     @property
-    def content(self) -> Optional[str]:
+    def content(self) -> str:
+        """
+        The node's text content.
+        """
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
             return cast(str, self._bound_to.text)

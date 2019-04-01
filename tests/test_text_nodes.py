@@ -332,3 +332,13 @@ def test_previous_node():
     root[0].append_child(c)
 
     assert c.previous_node() is None
+
+
+def test_string_methods():
+    node = TextNode("Herrasmiehet Pitävät Laserista")
+    assert node.count("ä") == 2
+    assert node.split() == ["Herrasmiehet", "Pitävät", "Laserista"]
+    assert "Laser" in node
+    assert node[13:20] == "Pitävät"
+    with pytest.raises(AttributeError):
+        node.this_is_not_a_method()
