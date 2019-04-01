@@ -4,6 +4,7 @@
 
    installation
    api
+   glossary
 
 
 .. include:: ../README.rst

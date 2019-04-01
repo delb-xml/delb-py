@@ -6,14 +6,6 @@ Documents
 
 .. autoclass:: lxml_domesque.Document
 
-Nodes
------
-
-.. autoclass:: lxml_domesque.TagNode
-
-.. autoclass:: lxml_domesque.TextNode
-
-.. autofunction:: lxml_domesque.new_tag_node
 
 Contributed document loaders
 ----------------------------
@@ -32,6 +24,18 @@ Contributed document loaders
 
 .. autofunction:: lxml_domesque.loaders.text_loader
 
+
+Nodes
+-----
+
+.. autoclass:: lxml_domesque.TagNode
+
+.. autoclass:: lxml_domesque.TextNode
+
+.. autofunction:: lxml_domesque.new_tag_node
+
+
+.. _contributed-filters:
 
 Contributed filters
 -------------------

@@ -109,7 +109,7 @@ class NodeBase(ABC):
         Adds one or more nodes to the right of the node this method is called on.
 
         If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation.
+        object's string representation is added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -132,7 +132,7 @@ class NodeBase(ABC):
         Adds one or more nodes to the left of the node this method is called on.
 
         If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation.
+        object's string representation is added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -196,6 +196,7 @@ class NodeBase(ABC):
     def detach(self) -> "NodeBase":
         """
         Removes the node, including its descendants, from its tree.
+
         :return: The removed node.
         """
         pass
@@ -480,7 +481,7 @@ class TagNode(NodeBase):
 
     Some syntactic sugar is baked in:
 
-    Attributes can be tested for membership in a node.
+    Attributes and nodes can be tested for membership in a node.
 
     >>> root = Document('<root ham="spam"><child/></root>').root
     >>> child = root.first_child
@@ -489,7 +490,7 @@ class TagNode(NodeBase):
     >>> child in root
     True
 
-    Nodes can be copied.
+    Nodes can be copied. Note that this relies on :meth:`TagNode.clone`.
 
     >>> from copy import copy, deepcopy
     >>> root = Document("<root>Content</root>").root
@@ -527,7 +528,7 @@ class TagNode(NodeBase):
     0
 
     As seen in the examples above, a tag nodes string representation yields a serialized
-    representation of a sub-/tree.
+    XML representation of a sub-/tree.
     """
 
     # TODO __slots__
@@ -693,7 +694,7 @@ class TagNode(NodeBase):
         the node this method is called on.
 
         If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation.
+        object's string representation is added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -787,10 +788,10 @@ class TagNode(NodeBase):
 
     def css_select(self, expression: str) -> List["TagNode"]:
         """
-        Namespace prefixes are prefixed with a delimiting ``|`` before a name test,
-        for example ``div svg|metadata`` selects all descendants of ``div`` named nodes
-        that belong to the default namespace or have no namespace and whose name is
-        ``metadata`` and have a namespace that is mapped to the ``svg`` prefix.
+        Namespace prefixes are delimited with a ``|`` before a name test, for example
+        ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
+        to the default namespace or have no namespace and whose name is ``metadata``
+        and have a namespace that is mapped to the ``svg`` prefix.
 
         :param expression: A CSS selector expression.
         :return: A list of matching :term:`tag node` s.
@@ -861,7 +862,7 @@ class TagNode(NodeBase):
         Inserts one or more child nodes.
 
         If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation.
+        object's string representation is added.
 
         :param index: The index at which the first of the given nodes will be inserted,
                       the remaining nodes are added afterwards in the given order.
@@ -931,7 +932,7 @@ class TagNode(NodeBase):
     @property
     def namespace(self) -> Optional[str]:
         """
-        The node's namespace
+        The node's namespace.
         """
         # weirdly QName fails in some cases when called with an etree._Element
         # passing its tag attribute works, though not documented
@@ -1014,7 +1015,7 @@ class TagNode(NodeBase):
         the node this method is called on.
 
         If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation.
+        object's string representation is added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
