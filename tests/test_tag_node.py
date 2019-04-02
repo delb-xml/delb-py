@@ -54,7 +54,12 @@ def test_append_no_child():
     assert str(document) == "<root/>"
 
 
-def test_attribute_access():
+def test_attributes(sample_document):
+    milestone = sample_document.root[1][0]
+    assert milestone.attributes == {"unit": "page"}
+
+
+def test_attribute_access_via_getitem():
     document = Document('<root ham="spam"/>')
     assert document.root["ham"] == "spam"
 
@@ -271,7 +276,6 @@ def test_iter_stream_to_right():
     a = document.root
     chars = "bcdefghijk"
     for i, node in enumerate(a.iterate_next_nodes_in_stream()):
-        print(node)
         assert node.local_name == chars[i]
 
 
@@ -297,6 +301,26 @@ def test_make_node_without_context():
     document.root.append_child(node)
 
     assert str(document) == '<root xmlns="ham"><a xmlns="spam"/></root>'
+
+
+def test_names(sample_document):
+    root = sample_document.root
+
+    assert root.namespace == "https://name.space"
+    assert root.local_name == "doc"
+    assert root.qualified_name == "{https://name.space}doc"
+    assert root.namespaces == {None: "https://name.space"}
+
+    first_level_children = tuple(x for x in root.child_nodes())
+    header, text = first_level_children[0], first_level_children[1]
+
+    assert header.namespace == "https://name.space"
+    assert header.local_name == "header"
+    assert header.namespaces == {None: "https://name.space"}
+
+    assert text.namespace == "https://name.space"
+    assert text.local_name == "text"
+    assert text.namespaces == {None: "https://name.space"}, root.namespaces
 
 
 def test_next_in_stream(files_path):
@@ -355,6 +379,26 @@ def test_previous_node():
     a = b.previous_node()
     assert a is not None
     assert a.local_name == "a"
+
+
+def test_sample_document_structure(sample_document):
+    root = sample_document.root
+
+    assert root.parent is None
+
+    first_level_children = tuple(x for x in root.child_nodes())
+    assert len(first_level_children) == 2, first_level_children
+    assert len(first_level_children) == len(root)
+
+    header, text = first_level_children
+
+    assert root[0] is header
+    assert isinstance(header, TagNode), type(header)
+    assert header.parent is root
+
+    assert root[1] is text
+    assert isinstance(text, TagNode), type(text)
+    assert text.parent is root
 
 
 def test_serialization():

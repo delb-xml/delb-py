@@ -1,6 +1,6 @@
 import pytest
 
-from lxml_domesque import Document, TagNode, TextNode
+from lxml_domesque import Document, TagNode, TextNode, is_text_node
 from lxml_domesque.nodes import TAIL, APPENDED
 
 
@@ -175,6 +175,14 @@ def test_appended_text_nodes():
     assert root[0].content == "How much is the fish?"
 
 
+def test_bindings(sample_document):
+    p = sample_document.root[1][1]
+    text_nodes = tuple(x for x in p.child_nodes(is_text_node))
+
+    x, y = text_nodes[1], p[2]
+    assert x is y
+
+
 def test_construction():
     document = Document("<root><node>one </node>two </root>")
     root = document.root
@@ -303,6 +311,11 @@ def test_document():
     assert detached.document is None
 
 
+def test_entities():
+    document = Document("<root>&lt; spock &gt;</root>")
+    assert document.root[0].content == "< spock >"
+
+
 def test_equality():
     assert not TextNode("1") == 1
 
@@ -332,6 +345,21 @@ def test_previous_node():
     root[0].append_child(c)
 
     assert c.previous_node() is None
+
+
+def test_sample_document_structure_and_content(sample_document):
+    p = sample_document.root[1][1]
+
+    text_nodes = tuple(x for x in p.child_nodes(is_text_node))
+
+    assert all(isinstance(x, TextNode) for x in text_nodes)
+
+    assert len(text_nodes) == 2
+    assert text_nodes[0] is p[0]
+    assert text_nodes[1] is p[2]
+
+    assert text_nodes[0].content.strip() == "Lorem ipsum"
+    assert text_nodes[1].content.strip() == "dolor sit amet"
 
 
 def test_string_methods():
