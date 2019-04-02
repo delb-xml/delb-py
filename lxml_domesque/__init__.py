@@ -43,19 +43,19 @@ class Document:
 
     def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         loaded_tree: Optional[etree._ElementTree] = None
-        cache: Optional[_WrapperCache] = None
+        wrapper_cache: Optional[_WrapperCache] = None
         for loader in chain((tag_node_loader,), configured_loaders):
-            loaded_tree, cache = loader(source, parser)
+            loaded_tree, wrapper_cache = loader(source, parser)
             if loaded_tree:
                 break
 
-        if loaded_tree is None or not isinstance(cache, dict):
+        if loaded_tree is None or not isinstance(wrapper_cache, dict):
             raise ValueError(
                 f"Couldn't load {source!r} with these currently configured loaders: "
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
 
-        self.root = _get_or_create_element_wrapper(loaded_tree.getroot(), cache)
+        self.root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """

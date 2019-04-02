@@ -91,7 +91,7 @@ def _prune_wrapper_cache(node: "TagNode"):
     else:
         assert node.document is not None
         root = node.document.root
-    cache = root._cache
+    cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
 
@@ -100,10 +100,10 @@ def _prune_wrapper_cache(node: "TagNode"):
 
 
 class NodeBase(ABC):
-    __slots__ = ("_cache",)
+    __slots__ = ("_wrapper_cache",)
 
-    def __init__(self, cache: _WrapperCache):
-        self._cache = cache
+    def __init__(self, wrapper_cache: _WrapperCache):
+        self._wrapper_cache = wrapper_cache
 
     def add_next(self, *node: Any, clone: bool = False):
         """
@@ -381,7 +381,8 @@ class NodeBase(ABC):
             tag = QName(local_name)
 
         return _get_or_create_element_wrapper(
-            context.makeelement(tag, attrib=attributes, nsmap=nsmap), self._cache
+            context.makeelement(tag, attrib=attributes, nsmap=nsmap),
+            self._wrapper_cache,
         )
 
     @abstractmethod
@@ -430,8 +431,8 @@ class NodeBase(ABC):
                 "to move a node within or between trees."
             )
 
-        self._cache.update(this._cache)
-        this._cache = self._cache
+        self._wrapper_cache.update(this._wrapper_cache)
+        this._wrapper_cache = self._wrapper_cache
 
         return this, queue
 
@@ -535,7 +536,7 @@ class TagNode(NodeBase):
     __slots__ = ("_data_node", "__document__", "_etree_obj", "_tail_node")
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
-        super().__init__(cache=cache)
+        super().__init__(wrapper_cache=cache)
         self._etree_obj = etree_element
         self._data_node = TextNode(etree_element, position=DATA, cache=cache)
         self._tail_node = TextNode(etree_element, position=TAIL, cache=cache)
@@ -634,7 +635,7 @@ class TagNode(NodeBase):
                 my_old_tail._bind_to_tail(node)
                 self._etree_obj.tail = None
                 self._etree_obj.addnext(node._etree_obj)
-                self._tail_node = TextNode(self._etree_obj, TAIL, self._cache)
+                self._tail_node = TextNode(self._etree_obj, TAIL, self._wrapper_cache)
 
                 assert self._tail_node is not my_old_tail
                 assert node._tail_node is my_old_tail
@@ -746,7 +747,7 @@ class TagNode(NodeBase):
             current_node = self._data_node
         elif len(self._etree_obj):
             current_node = _get_or_create_element_wrapper(
-                self._etree_obj[0], self._cache
+                self._etree_obj[0], self._wrapper_cache
             )
         else:
             current_node = None
@@ -819,9 +820,9 @@ class TagNode(NodeBase):
         etree_obj = self._etree_obj
         cast(_Element, etree_obj.getparent()).remove(etree_obj)
 
-        self._cache = cache = copy(self._cache)
+        self._wrapper_cache = cache = copy(self._wrapper_cache)
         for child_node in self.child_nodes(recurse=True):
-            child_node._cache = cache
+            child_node._wrapper_cache = cache
 
         _prune_wrapper_cache(parent)
         _prune_wrapper_cache(self)
@@ -968,7 +969,9 @@ class TagNode(NodeBase):
 
             if next_etree_obj is None:
                 return None
-            candidate = _get_or_create_element_wrapper(next_etree_obj, self._cache)
+            candidate = _get_or_create_element_wrapper(
+                next_etree_obj, self._wrapper_cache
+            )
 
         if all(f(candidate) for f in filter):
             return candidate
@@ -990,7 +993,7 @@ class TagNode(NodeBase):
         etree_parent = self._etree_obj.getparent()
         if etree_parent is None:
             return None
-        return _get_or_create_element_wrapper(etree_parent, self._cache)
+        return _get_or_create_element_wrapper(etree_parent, self._wrapper_cache)
 
     @property
     def prefix(self) -> Optional[str]:
@@ -1040,7 +1043,7 @@ class TagNode(NodeBase):
             return None
 
         wrapper_of_previous = _get_or_create_element_wrapper(
-            previous_etree_obj, self._cache
+            previous_etree_obj, self._wrapper_cache
         )
 
         if wrapper_of_previous._tail_node._exists:
@@ -1131,7 +1134,7 @@ class TagNode(NodeBase):
                 if ":" not in node_test.data:
                     node_test.data = prefix + ":" + node_test.data
 
-        cache = self._cache
+        cache = self._wrapper_cache
         return [
             _get_or_create_element_wrapper(element, cache)
             for element in etree_obj.xpath(  # type: ignore
@@ -1303,8 +1306,8 @@ class TextNode(NodeBase):
                 current_bound.insert(0, node._etree_obj)
 
                 _get_or_create_element_wrapper(
-                    current_bound, self._cache
-                )._data_node = TextNode(current_bound, DATA, self._cache)
+                    current_bound, self._wrapper_cache
+                )._data_node = TextNode(current_bound, DATA, self._wrapper_cache)
                 self._bind_to_tail(node)
                 current_bound.text = None
                 self.content = content
@@ -1313,7 +1316,7 @@ class TextNode(NodeBase):
 
                 assert isinstance(self._bound_to, _Element)
                 _get_or_create_element_wrapper(
-                    self._bound_to, self._cache
+                    self._bound_to, self._wrapper_cache
                 )._add_next_node(node)
 
             elif self._position is APPENDED:
@@ -1410,7 +1413,7 @@ class TextNode(NodeBase):
             else:
 
                 current_parent._data_node = TextNode(
-                    current_parent._etree_obj, DATA, current_parent._cache
+                    current_parent._etree_obj, DATA, current_parent._wrapper_cache
                 )
                 assert self not in current_parent
                 self._bound_to.text = None
@@ -1421,14 +1424,14 @@ class TextNode(NodeBase):
             current_bound = self._bound_to
             assert isinstance(current_bound, _Element)
             current_previous = _get_or_create_element_wrapper(
-                current_bound, self._cache
+                current_bound, self._wrapper_cache
             )
 
             if text_sibling:
                 text_sibling._bind_to_tail(current_previous)
             else:
                 current_previous._tail_node = TextNode(
-                    current_previous._etree_obj, TAIL, current_previous._cache
+                    current_previous._etree_obj, TAIL, current_previous._wrapper_cache
                 )
                 current_bound.tail = None
                 assert not current_previous._tail_node._exists
@@ -1447,7 +1450,7 @@ class TextNode(NodeBase):
             )
 
         self._bound_to = None
-        self._cache = {}
+        self._wrapper_cache = {}
         self._position = DETACHED
         self.content = content
 
@@ -1537,7 +1540,7 @@ class TextNode(NodeBase):
             assert isinstance(self._bound_to, _Element)
             if len(self._bound_to):
                 candidate = _get_or_create_element_wrapper(
-                    self._bound_to[0], self._cache
+                    self._bound_to[0], self._wrapper_cache
                 )
             else:
                 return None
@@ -1563,7 +1566,7 @@ class TextNode(NodeBase):
         if head._position is DATA:
             if len(head.parent._etree_obj):
                 return _get_or_create_element_wrapper(
-                    head.parent._etree_obj[0], self._cache
+                    head.parent._etree_obj[0], self._wrapper_cache
                 )
             else:
                 return None
@@ -1572,7 +1575,9 @@ class TextNode(NodeBase):
             if next_etree_tag is None:
                 return None
             else:
-                return _get_or_create_element_wrapper(next_etree_tag, self._cache)
+                return _get_or_create_element_wrapper(
+                    next_etree_tag, self._wrapper_cache
+                )
 
         raise InvalidCodePath
 
@@ -1581,17 +1586,19 @@ class TextNode(NodeBase):
         next_etree_node = self._bound_to.getnext()
         if next_etree_node is None:
             return None
-        return _get_or_create_element_wrapper(next_etree_node, self._cache)
+        return _get_or_create_element_wrapper(next_etree_node, self._wrapper_cache)
 
     @property
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
-            return _get_or_create_element_wrapper(self._bound_to, self._cache)
+            return _get_or_create_element_wrapper(self._bound_to, self._wrapper_cache)
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            return _get_or_create_element_wrapper(self._bound_to, self._cache).parent
+            return _get_or_create_element_wrapper(
+                self._bound_to, self._wrapper_cache
+            ).parent
 
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
@@ -1607,7 +1614,9 @@ class TextNode(NodeBase):
         if self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
+            sibling = _get_or_create_element_wrapper(
+                self._bound_to, self._wrapper_cache
+            )
             content = self.content
             node._bind_to_data(sibling)
             node._insert_text_node_as_next_appended(self)
@@ -1616,7 +1625,9 @@ class TextNode(NodeBase):
         elif self._position is TAIL:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = _get_or_create_element_wrapper(self._bound_to, self._cache)
+            sibling = _get_or_create_element_wrapper(
+                self._bound_to, self._wrapper_cache
+            )
             content = self.content
             node._bind_to_tail(sibling)
             node._insert_text_node_as_next_appended(self)
@@ -1643,7 +1654,9 @@ class TextNode(NodeBase):
             return None
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            candidate = _get_or_create_element_wrapper(self._bound_to, self._cache)
+            candidate = _get_or_create_element_wrapper(
+                self._bound_to, self._wrapper_cache
+            )
         elif self._position is APPENDED:
             assert isinstance(self._bound_to, TextNode)
             candidate = self._bound_to
