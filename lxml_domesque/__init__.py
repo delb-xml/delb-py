@@ -39,10 +39,9 @@ class Document:
         TODO
     """
 
-    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
-        # TODO __slots__
+    __slots__ = ("__root_node__",)
 
-        # document loading
+    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         loaded_tree: Optional[etree._ElementTree] = None
         cache: Optional[_WrapperCache] = None
         for loader in chain((tag_node_loader,), configured_loaders):

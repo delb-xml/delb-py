@@ -100,6 +100,8 @@ def _prune_wrapper_cache(node: "TagNode"):
 
 
 class NodeBase(ABC):
+    __slots__ = ("_cache",)
+
     def __init__(self, cache: _WrapperCache):
         self._cache = cache
 
@@ -530,7 +532,7 @@ class TagNode(NodeBase):
     XML representation of a sub-/tree.
     """
 
-    # TODO __slots__
+    __slots__ = ("_data_node", "__document__", "_etree_obj", "_tail_node")
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
         super().__init__(cache=cache)
@@ -1163,6 +1165,8 @@ class TextNode(NodeBase):
     Attributes that rely to child nodes yield nothing respectively ``None``.
     """
 
+    __slots__ = ("_appended_text_node", "_bound_to", "__content", "_position")
+
     first_child = last_child = None
 
     def __init__(
@@ -1171,7 +1175,6 @@ class TextNode(NodeBase):
         position: int = DETACHED,
         cache: Optional[_WrapperCache] = None,
     ):
-        # TODO __slots__
         if cache is None:
             cache = {}
         super().__init__(cache)
