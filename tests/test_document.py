@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 
 from lxml_domesque import Document, InvalidOperation, TagNode
@@ -45,6 +47,27 @@ def test_css_select():
 def test_invalid_document():
     with pytest.raises(ValueError):
         Document(0)
+
+
+def test_object_persistance():
+    document = Document(
+        "<eegohchivahgahsheiyeelooreepiaphahvaikohdaecobeavepaeyoicuevasan/>"
+    )
+    document_id = id(document)
+    root = document.root
+
+    del document
+    gc.collect()
+    assert root.document is not None
+
+    del root
+    gc.collect()
+    for obj in gc.get_objects():
+        if id(obj) == document_id and isinstance(obj, Document):
+            assert (
+                obj.root.local_name
+                != "eegohchivahgahsheiyeelooreepiaphahvaikohdaecobeavepaeyoicuevasan"
+            )
 
 
 def test_set_root():

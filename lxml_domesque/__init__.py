@@ -6,7 +6,6 @@ from typing import IO as IOType
 from lxml import etree
 
 from lxml_domesque import utils
-from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidOperation
 from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import (
@@ -57,7 +56,7 @@ class Document:
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
 
-        self.__set_root(_get_or_create_element_wrapper(loaded_tree.getroot(), cache))
+        self.root = _get_or_create_element_wrapper(loaded_tree.getroot(), cache)
 
     def __contains__(self, node: NodeBase) -> bool:
         """ Tests whether a node is part of a document instance. """
@@ -105,10 +104,13 @@ class Document:
     @property
     def root(self) -> "TagNode":
         """ The root node of a document instance. """
-        return roots_of_documents[self]
+        return getattr(self, "__root_node__")
 
     @root.setter
     def root(self, root: "TagNode"):
+        if not isinstance(root, TagNode):
+            raise TypeError("The document root node must be of 'TagNode'.")
+
         if not all(
             x is None for x in (root.parent, root.previous_node(), root.next_node())
         ):
@@ -117,12 +119,13 @@ class Document:
                 ":meth:`TagNode.detach` on the designated root node."
             )
 
-        utils.copy_heading_pis(self.root._etree_obj, root._etree_obj)
-        self.__set_root(root)
+        current_root = getattr(self, "__root_node__", None)
+        if current_root is not None:
+            utils.copy_heading_pis(current_root._etree_obj, root._etree_obj)
+            delattr(current_root, "__document__")
 
-    def __set_root(self, root: TagNode):
-        self.__wrapper_cache = root._cache
-        roots_of_documents[self] = root
+        setattr(root, "__document__", self)
+        setattr(self, "__root_node__", root)
 
     def save(self, path: Path, pretty=False):
         with path.open("bw") as file:

@@ -16,7 +16,6 @@ from typing import (
 
 from lxml import etree
 
-from lxml_domesque.caches import roots_of_documents
 from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
 from lxml_domesque.typing import ElementAttributes, Filter, _WrapperCache
 from lxml_domesque.utils import css_to_xpath, random_unused_prefix
@@ -830,13 +829,10 @@ class TagNode(NodeBase):
     @property
     def document(self) -> Optional["Document"]:
         if self.parent is None:
-            self_root = self
+            root_node = self
         else:
-            self_root = next(self.ancestors(lambda x: x.parent is None))  # type: ignore
-        for document, root in roots_of_documents.items():
-            if root is self_root:
-                return document
-        return None
+            root_node = next(self.ancestors(is_root_node))
+        return getattr(root_node, "__document__", None)
 
     @property
     def first_child(self) -> Optional[NodeBase]:
@@ -1679,6 +1675,10 @@ def any_of(*filter: Filter) -> Filter:
         return any(x(node) for x in filter)
 
     return any_of_wrapper
+
+
+def is_root_node(node: NodeBase) -> bool:
+    return node.parent is None
 
 
 def is_tag_node(node: NodeBase) -> bool:
