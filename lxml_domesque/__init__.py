@@ -35,8 +35,34 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
 class Document:
-    """ This class represents an XML document.
-        TODO
+    """
+    This class is the entrypoint to obtain a representation of an XML encoded text
+    document. For instantiation, any object can be passed. There must be a loader
+    present in the :obj:`loaders.configured_loaders` list that is capable to return a
+    parsed tree from that object. See :ref:`contributed-loaders` for the default loaders
+    that come with this package. Have a look at the :mod:`loaders` module to figure out
+        how to implement and configure other loaders.
+
+    Nodes can be tested for membership in a document:
+
+    >>> document = Document("<root>text</root>")
+    >>> text_node = document.root[0]
+    >>> text_node in document
+    True
+    >>> text_node.clone() in document
+    False
+
+    The string coercion of a document yields an XML encoded stream, but unlike
+    :meth:`Document.save` and :meth:`Document.write` without an XML declaration:
+
+    >>> document = Document("<root/>")
+    >>> str(document)
+    '<root/>'
+
+    :param source: Anything that the configured loaders can make sense of to return a
+                   parsed document tree.
+    :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
+                   parse a document stream.
     """
 
     __slots__ = ("__root_node__",)
@@ -58,7 +84,6 @@ class Document:
         self.root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
 
     def __contains__(self, node: NodeBase) -> bool:
-        """ Tests whether a node is part of a document instance. """
         return node.document is self
 
     def __str__(self):
@@ -71,23 +96,47 @@ class Document:
         namespaces: Optional["etree._NSMap"] = None,
         retain_prefixes: Optional[Iterable[str]] = None,
     ):
+        """
+        Consolidates the namespace declarations in a document by removing unused and
+        redundant ones.
+
+        :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
+                           (values) that will be declared at the root element. Use
+                           ``None`` as key for a default namespace.
+        :param retain_prefixes: An optional iterable that contains prefixes whose
+                                declarations shall be kept despite not being used.
+        """
         etree.cleanup_namespaces(
             self.root._etree_obj, top_nsmap=namespaces, keep_ns_prefixes=retain_prefixes
         )
 
     def clone(self) -> "Document":
+        """
+        :return: Another instance w/ the duplicated contents.
+        """
         return self.__class__(
             self.root, parser=self.root._etree_obj.getroottree().parser
         )
 
     def css_select(self, expression: str) -> List["TagNode"]:
+        """
+        This method proxies to the :meth:`TagNode.css_select` method of the document's
+        root node.
+        """
         return self.root.css_select(expression)
 
     def merge_text_nodes(self):
+        """
+        This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
+        document's root node.
+        """
         self.root.merge_text_nodes()
 
     @property
     def namespaces(self) -> Dict[str, str]:
+        """
+        The namespace mapping of the document's root node.
+        """
         return self.root.namespaces
 
     def new_tag_node(
@@ -96,13 +145,17 @@ class Document:
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
+        """
+        This method proxies to the :meth:`TagNode.new_tag_node` method of the
+        document's root node.
+        """
         return self.root.new_tag_node(
             local_name=local_name, attributes=attributes, namespace=namespace
         )
 
     @property
     def root(self) -> "TagNode":
-        """ The root node of a document instance. """
+        """ The root node of a document tree. """
         return getattr(self, "__root_node__")
 
     @root.setter
@@ -126,27 +179,45 @@ class Document:
         setattr(root, "__document__", self)
         setattr(self, "__root_node__", root)
 
-    def save(self, path: Path, pretty=False):
+    def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
+        """
+        :param path: The path where the document shall be saved.
+        :param pretty: Adds indentation for human consumers when ``True``.
+        :param cleanup_namespaces_args: Arguments that are a passed to
+                                        :meth:`Document.cleanup_namespaces` before
+                                        saving.
+        """
         with path.open("bw") as file:
-            self.write(file, pretty=pretty)
+            self.write(file, pretty=pretty, **cleanup_namespaces_args)
 
-    def write(self, buffer: IOType, pretty: bool = False):
+    def write(self, buffer: IOType, pretty: bool = False, **cleanup_namespaces_args):
+        """
+        :param buffer: An :term:`file-like object` that the document is written to.
+        :param pretty: Adds indentation for human consumers when ``True``.
+        :param cleanup_namespaces_args: Arguments that are a passed to
+                                        :meth:`Document.cleanup_namespaces` before
+                                        writing.
+        """
         self.root.merge_text_nodes()
-        self.cleanup_namespaces()
+        self.cleanup_namespaces(**cleanup_namespaces_args)
         self.root._etree_obj.getroottree().write(
             file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
         )
 
     def xpath(self, expression: str) -> List["TagNode"]:
-        """ Returns the results of :meth:`TagNode.xpath` call on the instances'
-            :attr:`Document.root`.
-
-            :param expression: An XPath 1.0 location path.
+        """
+        This method proxies to the :meth:`TagNode.xpath` method of the document's root
+        node.
         """
 
         return self.root.xpath(expression)
 
     def xslt(self, transformation: etree.XSLT) -> "Document":
+        """
+        :param transformation: A :class:`lxml.etree.XSLT` instance that shall be
+                               applied to the document.
+        :return: A new instance with the transformation's result.
+        """
         result = transformation(self.root._etree_obj.getroottree())
         return Document(result.getroot())
 

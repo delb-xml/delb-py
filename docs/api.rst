@@ -7,6 +7,8 @@ Documents
 .. autoclass:: lxml_domesque.Document
 
 
+.. _contributed-loaders:
+
 Contributed document loaders
 ----------------------------
 
