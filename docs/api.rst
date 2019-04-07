@@ -7,10 +7,10 @@ Documents
 .. autoclass:: lxml_domesque.Document
 
 
-.. _contributed-loaders:
+.. _document-loaders:
 
-Contributed document loaders
-----------------------------
+Document loaders
+----------------
 
 .. automodule:: lxml_domesque.loaders
 

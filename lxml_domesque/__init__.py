@@ -11,6 +11,7 @@ from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import (
     any_of,
     _get_or_create_element_wrapper,
+    is_root_node,
     is_tag_node,
     is_text_node,
     not_,
@@ -39,9 +40,9 @@ class Document:
     This class is the entrypoint to obtain a representation of an XML encoded text
     document. For instantiation, any object can be passed. There must be a loader
     present in the :obj:`loaders.configured_loaders` list that is capable to return a
-    parsed tree from that object. See :ref:`contributed-loaders` for the default loaders
+    parsed tree from that object. See :ref:`document-loaders` for the default loaders
     that come with this package. Have a look at the :mod:`loaders` module to figure out
-        how to implement and configure other loaders.
+    how to implement and configure other loaders.
 
     Nodes can be tested for membership in a document:
 
@@ -228,6 +229,7 @@ __all__ = (
     TagNode.__name__,
     TextNode.__name__,
     any_of.__name__,
+    is_root_node.__name__,
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,

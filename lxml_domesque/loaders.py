@@ -1,3 +1,9 @@
+"""
+The ``loaders`` module provides a set loaders to retrieve documents from common kinds
+of storage and mechanics to register custom loaders and to alter the loaders
+configuration.
+"""
+
 from copy import deepcopy
 from io import IOBase
 from pathlib import Path
