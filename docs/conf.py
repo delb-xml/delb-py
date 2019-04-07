@@ -204,5 +204,6 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 
 doctest_global_setup = """
+from typing import Any
 from lxml_domesque import *
 """

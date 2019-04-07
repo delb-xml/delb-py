@@ -12,19 +12,7 @@ Documents
 Contributed document loaders
 ----------------------------
 
-.. autofunction:: lxml_domesque.loaders.buffer_loader
-
-.. autofunction:: lxml_domesque.loaders.etree_loader
-
-.. autofunction:: lxml_domesque.loaders.ftp_http_loader
-
-.. autofunction:: lxml_domesque.loaders.https_loader
-
-.. autofunction:: lxml_domesque.loaders.path_loader
-
-.. autofunction:: lxml_domesque.loaders.tag_node_loader
-
-.. autofunction:: lxml_domesque.loaders.text_loader
+.. automodule:: lxml_domesque.loaders
 
 
 Nodes

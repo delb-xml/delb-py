@@ -1,5 +1,3 @@
-# TODO docs
-
 from copy import deepcopy
 from io import IOBase
 from pathlib import Path
@@ -9,7 +7,7 @@ from lxml import etree
 
 from lxml_domesque import utils
 from lxml_domesque.nodes import TagNode
-from lxml_domesque.typing import _WrapperCache
+from lxml_domesque.typing import Loader, LoaderResult
 
 try:
     import requests
@@ -17,68 +15,85 @@ except ImportError:
     requests = None  # type: ignore
 
 
-# types
-
-LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
-Loader = Callable[[Any, etree.XMLParser], LoaderResult]
+# loader registration
 
 
-# utils
+configured_loaders: List[Loader] = []
+"""
+This list contains the loaders that are tried in order when a new
+:class:`lxml_domesque.Document` instance is created.
+"""
 
 
-class HttpsStreamWrapper:
-    def __init__(self, response: requests.Response) -> None:
-        self._iterator = response.iter_content(chunk_size=None, decode_unicode=False)
+def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader]:
+    """
+    This is a decorator that registers a document loader. E.g. to register a loader
+    that retrieves a document from IPFS:
 
-    def read(self, _) -> bytes:
-        try:
-            return next(self._iterator)
-        except StopIteration:
-            return b""
+    .. testcode::
+
+        from lxml import etree
+        from lxml_domesque.loaders import register_loader, text_loader
+        from lxml_domesque.typing import LoaderResult
+
+        @register_loader()
+        def ipfs_loader(source: Any, parser: etree.XMLParser) -> LoaderResult:
+            if isinstance(source, str) and source.startswith("ipfs://"):
+                data = "<root/>"  # let's assume the document is loaded here
+                return text_loader(data, parser)
+            return None, {}
+
+    You might want to specify the loader to be considered before another one. Let's
+    assume a loader shall figure out what to load from a remote resource that contains
+    a reference to the actual document.
+    That one would have to be considered before the one loads the data from an URL
+    into a :class:`lxml_domesque.Document`:
+
+    .. testcode::
+
+        from lxml import etree
+        from lxml_domesque.loaders import (
+            configured_loaders, https_loader, register_loader
+        )
+        from lxml_domesque.typing import LoaderResult
+
+        @register_loader(position=configured_loaders.index(https_loader))
+        def mets_loader(source: Any, parser: etree.XMLParser) -> LoaderResult:
+            # loading logic here
+            return None, {}
+
+    Admittedly it would be simpler to just specify the position as ``0``, but the point
+    is to show that the position can be figured out dynamically.
+
+    :param position: The index at which the loader is added to
+                     :obj:`configured_loaders`, it will be appended if omitted.
+    """
+
+    if position is None:
+
+        def register(loader: Loader) -> Loader:
+            configured_loaders.append(loader)
+            return loader
+
+    else:
+
+        def register(loader: Loader) -> Loader:
+            assert isinstance(position, int)
+            configured_loaders.insert(position, loader)
+            return loader
+
+    return register
 
 
 # loaders
 
 
-def buffer_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-    if isinstance(data, IOBase):
-        return etree.parse(cast(IO, data), parser=parser), {}
-    return None, {}
-
-
-def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-    if isinstance(data, etree._ElementTree):
-        return deepcopy(data), {}
-    if isinstance(data, etree._Element):
-        return etree.ElementTree(element=deepcopy(data), parser=parser), {}
-    return None, {}
-
-
-def ftp_http_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-    if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
-        return etree.parse(data, parser=parser), {}
-    return None, {}
-
-
-if requests:
-
-    def https_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-        if isinstance(data, str) and data.lower().startswith("https://"):
-            response = requests.get(data, stream=True)
-            return (
-                etree.parse(cast(IO, HttpsStreamWrapper(response)), parser=parser),
-                {},
-            )
-        return None, {}
-
-
-def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-    if isinstance(data, Path):
-        return etree.parse(str(data.resolve()), parser=parser), {}
-    return None, {}
-
-
+@register_loader()
 def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    This loader loads, or rather clones, a :class:`lxml_domesque.TagNode` instance and
+    its descendant nodes.
+    """
     if isinstance(data, TagNode):
         tree = etree.ElementTree(parser=parser)
         root = data.clone(deep=True)
@@ -88,26 +103,96 @@ def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     return None, {}
 
 
-def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
-    if isinstance(data, str):
-        data = data.encode()
-    if isinstance(data, bytes):
-        root = etree.fromstring(data, parser)
-        return etree.ElementTree(element=root), {}
+@register_loader()
+def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    This loader processes :class:`lxml.etree._Element` and
+    :class:`lxml.etree._ElementTree` instances.
+    """
+    if isinstance(data, etree._ElementTree):
+        return deepcopy(data), {}
+    if isinstance(data, etree._Element):
+        return etree.ElementTree(element=deepcopy(data), parser=parser), {}
     return None, {}
 
 
-configured_loaders: List[Loader] = [
-    path_loader,
-    buffer_loader,
-    ftp_http_loader,
-    text_loader,
-    etree_loader,
-]
+@register_loader()
+def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    This loader loads a document that is pointed at with a :class:`pathlib.Path`
+    instance.
+    """
+    if isinstance(data, Path):
+        with data.open("r") as file:
+            return buffer_loader(file, parser)
+    return None, {}
+
+
+@register_loader()
+def buffer_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    This loader loads a document from a :term:`file-like object`.
+    """
+    if isinstance(data, IOBase):
+        return etree.parse(cast(IO, data), parser=parser), {}
+    return None, {}
 
 
 if requests:
-    configured_loaders.insert(2, https_loader)
+
+    class HttpsStreamWrapper(IOBase):
+        def __init__(self, response: requests.Response):
+            self._iterator = response.iter_content(
+                chunk_size=None, decode_unicode=False
+            )
+
+        def read(self, _) -> bytes:
+            try:
+                return next(self._iterator)
+            except StopIteration:
+                return b""
+
+    @register_loader()
+    def https_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+        """
+        This loader loads a document from an URL with the ``https`` scheme and is only
+        available when requests_ is installed.
+
+        .. _requests: http://python-requests.org
+        """
+        if isinstance(data, str) and data.lower().startswith("https://"):
+            response = requests.get(data, stream=True)
+            return buffer_loader(HttpsStreamWrapper(response), parser)
+        return None, {}
 
 
-__all__ = ("Loader", "configured_loaders")
+@register_loader()
+def ftp_http_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    Loads a document from a URL with either the ``ftp`` or ``http`` schema.
+    """
+    if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
+        return etree.parse(data, parser=parser), {}
+    return None, {}
+
+
+# TODO test with xml declaration
+@register_loader()
+def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    """
+    Parses a string containing a full document.
+    """
+    if isinstance(data, str):
+        data = data.encode()
+    if isinstance(data, bytes):
+        try:
+            root = etree.fromstring(data, parser)
+        except etree.XMLSyntaxError:
+            pass
+        else:
+            return etree.ElementTree(element=root), {}
+    return None, {}
+
+
+__all__: Tuple[str, ...] = ("configured_loaders", register_loader.__name__)
+__all__ += tuple(x.__name__ for x in configured_loaders)
