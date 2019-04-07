@@ -5,6 +5,7 @@
    installation
    api
    glossary
+   license
 
 
 .. include:: ../README.rst

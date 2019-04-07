@@ -3,6 +3,18 @@ name = "lxml-domesque"
 version = "0.1a1"
 description = "A DOM API inspired wrapper around lxml."
 authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
+license = "AGPL-3.0"
+readme = "README.rst"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Natural Language :: English",
+    "Topic :: Text Processing :: Markup :: XML",
+]
+# TODO repository and documentation after rename
+# TODO keywords
 
 [tool.poetry.dependencies]
 python = ">=3.6"

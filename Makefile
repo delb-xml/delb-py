@@ -14,7 +14,7 @@ export PRINT_HELP_PYSCRIPT
 
 .PHONY: black
 black: ## normalize Python code
-	black lxml_domesque tests
+	black lxml_domesque setup.py tests
 
 .PHONY: docs
 docs: ## generate Sphinx HTML documentation, including API docs
