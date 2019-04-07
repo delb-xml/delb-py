@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?target some="processing" instructions="here"?>
 <?another-target ["it", "could", "be", "anything"]?>
-<!-- TODO the retainment of comments isn't tested yet -->
+<!-- a comment -->
 <?target some="processing" instructions="here"?>
 <root/>

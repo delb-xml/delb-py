@@ -3,7 +3,7 @@ from lxml_domesque import Document
 from tests.utils import assert_documents_are_semantical_equal, count_pis
 
 
-def test_initial_processing_instructions_are_retained(files_path, result_file):
+def test_initial_nodes(files_path, result_file):
     Document(files_path / "initial_processing_instructions.xml").clone().save(
         result_file
     )
@@ -11,6 +11,13 @@ def test_initial_processing_instructions_are_retained(files_path, result_file):
         '<?another-target ["it", "could", "be", "anything"]?>': 1,
         '<?target some="processing" instructions="here"?>': 2,
     }
+
+    with result_file.open("rt") as file:
+        for line in file.readlines():
+            if "<!-- a comment -->" in line:
+                break
+        else:
+            raise AssertionError
 
 
 def test_significant_whitespace_is_saved(result_file):
