@@ -14,7 +14,7 @@ requests = {version = "^2.21",optional = true}
 https-loader = ["requests"]
 
 [tool.poetry.dev-dependencies]
-black = "^18.9b0"
+black = "^19.3b0"
 flake8-black = "*"
 mypy = "*"
 pytest = "*"
