@@ -346,8 +346,10 @@ def test_no_siblings_on_root():
 
 def test_prefix():
     document = Document('<root xmlns:x="ham"><x:a/></root>')
-
     assert document.root[0].prefix == "x"
+
+    document = Document("<root><a/></root>")
+    assert document.root[0].prefix is None
 
 
 def test_prepend_child():

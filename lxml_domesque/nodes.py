@@ -1001,14 +1001,15 @@ class TagNode(NodeBase):
         The prefix that the node's namespace is currently mapped to.
         """
         target = QName(self._etree_obj).namespace
-        assert isinstance(target, str)
+
+        if target is None:
+            return None
+
         for prefix, namespace in self._etree_obj.nsmap.items():
             assert isinstance(prefix, str) or prefix is None
-            assert isinstance(namespace, str)
             if namespace == target:
                 return prefix
         raise InvalidCodePath
-        # FIXME handle nodes w/o namespace
 
     def prepend_child(self, *node: NodeBase, clone: bool = False) -> None:
         """
