@@ -1688,6 +1688,10 @@ class TextNode(NodeBase):
 
 
 def any_of(*filter: Filter) -> Filter:
+    """
+     A filter wrapper that matches when any of the given filters is matching, like a
+     boolean ``or``.
+    """
     def any_of_wrapper(node: NodeBase) -> bool:
         return any(x(node) for x in filter)
 
@@ -1695,18 +1699,31 @@ def any_of(*filter: Filter) -> Filter:
 
 
 def is_root_node(node: NodeBase) -> bool:
+    """
+    Matches root nodes.
+    """
     return node.parent is None
 
 
 def is_tag_node(node: NodeBase) -> bool:
+    """
+    Matches :class:`TagNode` instances.
+    """
     return isinstance(node, TagNode)
 
 
 def is_text_node(node: NodeBase) -> bool:
+    """
+    Matches :class:`TextNode` instances.
+    """
     return isinstance(node, TextNode)
 
 
 def not_(filter: Filter) -> Filter:
+    """
+    A filter wrapper that matches when given filter is not matching, like a boolean
+    ``not``.
+    """
     def not_wrapper(node: NodeBase) -> bool:
         return not filter(node)
 
