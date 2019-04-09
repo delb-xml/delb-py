@@ -68,7 +68,7 @@ def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader
     You might want to specify the loader to be considered before another one. Let's
     assume a loader shall figure out what to load from a remote resource that contains
     a reference to the actual document.
-    That one would have to be considered before the one loads the data from an URL
+    That one would have to be considered before the one loads the data from a URL
     into a :class:`lxml_domesque.Document`:
 
     .. testcode::
@@ -141,8 +141,8 @@ def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
 @register_loader()
 def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     """
-    This loader loads a document that is pointed at with a :class:`pathlib.Path`
-    instance.
+    This loader loads from a file that is pointed at with a
+    :class:`pathlib.Path` instance.
     """
     if isinstance(data, Path):
         with data.open("r") as file:
@@ -177,7 +177,7 @@ if requests:
     @register_loader()
     def https_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
         """
-        This loader loads a document from an URL with the ``https`` scheme and is only
+        This loader loads a document from a URL with the ``https`` scheme and is only
         available when requests_ is installed.
 
         .. _requests: http://python-requests.org

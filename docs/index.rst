@@ -4,6 +4,7 @@
 
    installation
    api
+   design
    glossary
    license
 

@@ -404,14 +404,14 @@ class NodeBase(ABC):
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         """
-        :param filter: Any number of :term:`filter`.
+        :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or ``None``.
         """
         pass
 
     def next_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
         """
-        :param filter: Any number of :term:`filter`.
+        :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or ``None``.
         """
         try:
@@ -455,14 +455,14 @@ class NodeBase(ABC):
     @abstractmethod
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
         """
-        :param filter: Any number of :term:`filter`.
+        :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or ``None``.
         """
         pass
 
     def previous_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
         """
-        :param filter: Any number of :term:`filter`.
+        :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
                  ``None``.
         """
@@ -1738,7 +1738,7 @@ def is_text_node(node: NodeBase) -> bool:
 
 def not_(filter: Filter) -> Filter:
     """
-    A filter wrapper that matches when given filter is not matching, like a boolean
+    A filter wrapper that matches when the given filter is not matching, like a boolean
     ``not``.
     """
 
@@ -1752,6 +1752,7 @@ __all__ = (
     TagNode.__name__,
     TextNode.__name__,
     any_of.__name__,
+    is_root_node.__name__,
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
