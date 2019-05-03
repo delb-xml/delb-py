@@ -33,8 +33,10 @@ Documentation
 
 - API_
 - Installation_
+- Design_
 
 .. _API: https://lxml-domesque.readthedocs.io/en/latest/api.html
+.. _Design: https://lxml-domesque.readthedocs.io/en/latest/design.html
 .. _Installation: https://lxml-domesque.readthedocs.io/en/latest/installation.html
 
 

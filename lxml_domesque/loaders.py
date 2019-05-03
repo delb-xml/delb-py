@@ -61,14 +61,17 @@ def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader
         @register_loader()
         def ipfs_loader(source: Any, parser: etree.XMLParser) -> LoaderResult:
             if isinstance(source, str) and source.startswith("ipfs://"):
-                data = "<root/>"  # let's assume the document is loaded here
+                # let's assume the document is loaded as string here:
+                data = "<root/>"
                 return text_loader(data, parser)
+            # return nothing to indicate that this loader is not suited or failed to
+            # load the document:
             return None, {}
 
     You might want to specify the loader to be considered before another one. Let's
     assume a loader shall figure out what to load from a remote resource that contains
     a reference to the actual document.
-    That one would have to be considered before the one loads the data from a URL
+    That one would have to be considered before the one loads XML documents from a URL
     into a :class:`lxml_domesque.Document`:
 
     .. testcode::

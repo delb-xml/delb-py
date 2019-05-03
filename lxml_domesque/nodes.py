@@ -932,7 +932,7 @@ class TagNode(NodeBase):
     @property
     def location_path(self):
         """
-        An unambiguous XPath location path that points to this node from its root.
+        An unambiguous XPath location path that points to this node from its tree root.
         """
         etree_obj = self._etree_obj
         return etree_obj.getroottree().getpath(etree_obj)

@@ -91,9 +91,9 @@ well anticipated when processing text. With that mental model, line beginnings
 would rather be considered to be on the same level as signs, but "Nomadisme …"
 turns out *not* to be a sibling object of the object that represents the line
 beginning and is *not* in direct relation with the paragraph. In lxml's model it
-is rather an attribute ``tail`` assigned to that line beginning. The structure
-of the object that represents the ``hi`` element gives a good impression how
-hairy simple tasks can become.
+is rather an attribute ``tail`` assigned to that line beginning. The text
+contents of the object that represents the ``hi`` element and its children give
+a good impression how hairy simple tasks can become.
 
 An algorithm that shall remove line beginnings, space representations and
 concatenate broken words would need a function that removes the element objects
@@ -190,7 +190,7 @@ complicated function would look like:
 .. code-block:: python
 
    def remove_nodes(*nodes: NodeBase, keep_children=False):
-       """ Removes the given elements from its tree. Unless ``keep_children`` is
+       """ Removes the given nodes from its tree. Unless ``keep_children`` is
             passed as ``True``, its children vanish with it into void. """
 
        for node in nodes:
