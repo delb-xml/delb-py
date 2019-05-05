@@ -135,8 +135,17 @@ def test_detach_node_with_tail():
 
     root[1].add_next("c")
     root[0].detach()
-
     assert str(document) == "<root>bc<d/></root>"
+
+    root.append_child(root.new_tag_node("e"), "f")
+    e = root[3]
+    e.detach()
+    assert str(document) == "<root>bc<d/>f</root>"
+
+    root.append_child(root.new_tag_node("g"), "h")
+
+    root[-2].detach()
+    assert str(document) == "<root>bc<d/>fh</root>"
 
 
 def test_detach_root():

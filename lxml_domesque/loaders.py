@@ -123,7 +123,7 @@ def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
         tree = etree.ElementTree(parser=parser)
         root = data.clone(deep=True)
         tree._setroot(root._etree_obj)
-        utils.copy_heading_pis(data._etree_obj, root._etree_obj)
+        utils.copy_root_siblings(data._etree_obj, root._etree_obj)
         return tree, root._wrapper_cache
     return None, {}
 

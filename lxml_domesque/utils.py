@@ -25,16 +25,25 @@ from lxml import etree
 css_translator = GenericTranslator()
 
 
-def copy_heading_pis(source: etree._Element, target: etree._Element):
-    heading_elements = []
+def copy_root_siblings(source: etree._Element, target: etree._Element):
+    stack = []
     current_element = source.getprevious()
     while current_element is not None:
-        heading_elements.append(current_element)
+        stack.append(current_element)
         current_element = current_element.getprevious()
-    while heading_elements:
-        target.addprevious(copy(heading_elements.pop()))
+    while stack:
+        target.addprevious(copy(stack.pop()))
+
+    stack = []
+    current_element = source.getnext()
+    while current_element is not None:
+        stack.append(current_element)
+        current_element = current_element.getnext()
+    while stack:
+        target.addnext(copy(stack.pop()))
 
 
+# TODO make cachesize configurable via environment variable?
 @lru_cache(maxsize=64)
 def css_to_xpath(expression: str) -> str:
     return css_translator.css_to_xpath(expression, prefix="descendant-or-self::")

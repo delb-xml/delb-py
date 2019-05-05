@@ -16,15 +16,13 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 
 - Serializations of documents are UTF-8 encoded by default and always start
   with an XML declaration.
-- Comment, CDATA and Processing Instruction nodes are not accessible (for now),
-  but are retained and appear in serializations; unless you **[DANGER ZONE]**
+- Comment and processing instruction nodes are shadowed by default, see
+  :func:`lxml_domesque.altered_default_filters` on how to make them accessible.
+- CDATA and Processing Instruction nodes are not accessible at all, but are
+  retained and appear in serializations; unless you **[DANGER ZONE]**
   manipulate the tree (and you want that often). Depending on your actions you
   might encounter no alterations or a complete loss of these nodes within the
-  root node.
-  As the implementation will evolve for a while, there are no recommendations
-  to last. **[/DANGER ZONE]** It is *guaranteed*, however, that processing
-  instructions and comments that appear before the root node in the stream are
-  always persist for a :class:`Document` instance and its clones.
+  root node. **[/DANGER ZONE]**
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
 lxml objects that are bound to :attr:`TagNode._etree_obj`.

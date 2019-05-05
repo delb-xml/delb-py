@@ -15,7 +15,9 @@
 
 
 from abc import abstractmethod, ABC
+from contextlib import contextmanager
 from copy import copy
+from itertools import chain
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -66,11 +68,44 @@ STRINGMETHODS = set(
 
 def _get_or_create_element_wrapper(
     element: _Element, cache: _WrapperCache
-) -> "TagNode":
+) -> "_ElementWrappingNode":
     result = cache.get(id(element))
     if result is None:
-        result = TagNode(element, cache)
+        tag = element.tag
+        if tag is Comment:
+            result = CommentNode(element, cache)
+        elif tag is PI:
+            result = ProcessingInstructionNode(element, cache)
+        else:
+            result = TagNode(element, cache)
         cache[id(element)] = result
+    return result
+
+
+def new_comment_node(content: str) -> "CommentNode":
+    """
+    Creates a new :class:`CommentNode`.
+
+    :param content: The comment's content a.k.a. as text.
+    :return: The newly created comment node.
+    """
+    result = _get_or_create_element_wrapper(etree.Comment(content), {})
+    assert isinstance(result, CommentNode)
+    return result
+
+
+def new_processing_instruction_node(
+    target: str, content: str
+) -> "ProcessingInstructionNode":
+    """
+    Creates a new :class:`ProcessingInstructionNode`.
+
+    :param target: The processing instruction's target name.
+    :param content: The processing instruction's text.
+    :return: The newly created processing instruction node.
+    """
+    result = _get_or_create_element_wrapper(etree.PI(target, content), {})
+    assert isinstance(result, ProcessingInstructionNode)
     return result
 
 
@@ -79,9 +114,8 @@ def new_tag_node(
 ) -> "TagNode":
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
-    use :meth:`Document.new_tag_node`, :meth:`TagNode.new_tag_node`,
-    :meth:`TextNode.new_tag_node` on instances where the instance is the creation
-    context.
+    use :meth:`new_tag_node`, on instances of documents and nodes where the instance is
+    the creation context.
 
     :param local_name: The tag name.
     :param attributes: Optional attributes that are assigned to the new node.
@@ -96,12 +130,14 @@ def new_tag_node(
     else:
         namespaces = cast("etree._NSMap", {None: namespace})
 
-    return _get_or_create_element_wrapper(
+    result = _get_or_create_element_wrapper(
         etree.Element(local_name, attrib=attributes, nsmap=namespaces), {}
     )
+    assert isinstance(result, TagNode)
+    return result
 
 
-def _prune_wrapper_cache(node: "TagNode"):
+def _prune_wrapper_cache(node: "_ElementWrappingNode"):
     if node.parent is None:
         root = node
     else:
@@ -110,6 +146,37 @@ def _prune_wrapper_cache(node: "TagNode"):
     cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
+
+
+# default filters
+
+default_filters: Tuple[Filter, ...] = ()
+
+
+@contextmanager
+def altered_default_filters(*filter: Filter):
+    """
+    This function can be either used as as context manager or decorator to define a set
+    of :obj:`default_filters` for the encapsuled code block or callable. These are then
+    applied to in all operations that allow node filtering, like
+    :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
+    access.
+
+    >>> root = Document(
+    ...     '<root xmlns="foo"><a/><!--x--><b/><!--y--><c/></root>'
+    ... ).root
+    >>> with altered_default_filters(is_comment_node):
+    ...     print([x.content for x in root.child_nodes()])
+    ['x', 'y']
+
+    As the default filters shadow comments and processing instructions by default,
+    use no argument to unset this in order to access all type of nodes.
+    """
+    global default_filters
+    saved_default_filters = default_filters
+    default_filters = filter
+    yield None
+    default_filters = saved_default_filters
 
 
 # nodes
@@ -131,7 +198,10 @@ class NodeBase(ABC):
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
         """
-        if self.parent is None:
+        if self.parent is None and not (
+            hasattr(self, "__document__")
+            and isinstance(node[0], (CommentNode, ProcessingInstructionNode))
+        ):
             raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
 
         if node:
@@ -154,7 +224,10 @@ class NodeBase(ABC):
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
         """
-        if self.parent is None:
+        if self.parent is None and not (
+            hasattr(self, "__document__")
+            and isinstance(node[0], (CommentNode, ProcessingInstructionNode))
+        ):
             raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
 
         if node:
@@ -279,11 +352,14 @@ class NodeBase(ABC):
                  document order.
         """
         for node in self._iterate_next_nodes_in_stream():
-            if all(f(node) for f in filter):
+            if all(f(node) for f in chain(default_filters, filter)):
                 yield node
 
+    @altered_default_filters()
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
-        def next_sibling_of_an_ancestor(node: NodeBase) -> Optional[TagNode]:
+        def next_sibling_of_an_ancestor(
+            node: NodeBase
+        ) -> Optional[_ElementWrappingNode]:
             parent = node.parent
             if parent is None:
                 return None
@@ -328,6 +404,7 @@ class NodeBase(ABC):
             if all(f(node) for f in filter):
                 yield node
 
+    @altered_default_filters()
     def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
         def iter_children(node: NodeBase) -> Iterator[NodeBase]:
             for child_node in reversed(tuple(node.child_nodes(recurse=False))):
@@ -396,10 +473,12 @@ class NodeBase(ABC):
         else:
             tag = QName(local_name)
 
-        return _get_or_create_element_wrapper(
+        result = _get_or_create_element_wrapper(
             context.makeelement(tag, attrib=attributes, nsmap=nsmap),
             self._wrapper_cache,
         )
+        assert isinstance(result, TagNode)
+        return result
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -489,7 +568,304 @@ class NodeBase(ABC):
         return self.detach()
 
 
-class TagNode(NodeBase):
+class _ChildLessNode(NodeBase):
+    """ Node types using this mixin also can't be root nodes of a document. """
+
+    first_child = last_child = None
+
+    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
+        """
+        A :term:`generator iterator` that yields nothing.
+        """
+        yield from []
+
+    @property
+    def depth(self) -> int:
+        return cast(TagNode, self.parent).depth + 1
+
+    @property
+    def document(self) -> Optional["Document"]:
+        parent = self.parent
+        if parent is None:
+            return None
+        return parent.document
+
+    def new_tag_node(
+        self,
+        local_name: str,
+        attributes: Optional[Dict[str, str]] = None,
+        namespace: Optional[str] = None,
+    ) -> "TagNode":
+        parent = self.parent
+        if parent is None:
+            return new_tag_node(
+                local_name=local_name, attributes=attributes, namespace=namespace
+            )
+        else:
+            return parent.new_tag_node(
+                local_name=local_name, attributes=attributes, namespace=namespace
+            )
+
+
+class _ElementWrappingNode(NodeBase):
+    def __init__(self, etree_element: _Element, cache: _WrapperCache):
+        super().__init__(wrapper_cache=cache)
+        self._etree_obj = etree_element
+        self._tail_node = TextNode(etree_element, position=TAIL, cache=cache)
+
+    def __copy__(self) -> "_ElementWrappingNode":
+        return self.clone(deep=False)
+
+    def __deepcopy__(self, memodict=None) -> "_ElementWrappingNode":
+        return self.clone(deep=True)
+
+    def _add_next_node(self, node: "NodeBase"):
+        if isinstance(node, _ElementWrappingNode):
+            my_old_tail = self._tail_node
+
+            if self._tail_node._exists:
+                my_old_tail._bind_to_tail(node)
+                self._etree_obj.tail = None
+                self._etree_obj.addnext(node._etree_obj)
+                self._tail_node = TextNode(self._etree_obj, TAIL, self._wrapper_cache)
+
+                assert self._tail_node is not my_old_tail
+                assert node._tail_node is my_old_tail
+            else:
+                self._etree_obj.addnext(node._etree_obj)
+
+                assert self._tail_node is my_old_tail
+                assert node._tail_node is not my_old_tail
+
+        elif isinstance(node, TextNode):
+            assert node._position is DETACHED
+            assert node._appended_text_node is None
+
+            if self._tail_node._exists:
+                my_old_tail = self._tail_node
+                my_old_tail_content = my_old_tail.content
+
+                node._bind_to_tail(self)
+                node._appended_text_node = my_old_tail
+                my_old_tail._bound_to = node
+                my_old_tail._position = APPENDED
+                my_old_tail.content = my_old_tail_content
+            else:
+                node._bind_to_tail(self)
+
+    def _add_previous_node(self, node: NodeBase):
+        previous = self.previous_node()
+
+        if previous is None:
+
+            if isinstance(node, _ElementWrappingNode):
+                self._etree_obj.addprevious(node._etree_obj)
+
+            else:
+                assert isinstance(node, TextNode)
+                parent = self.parent
+                assert parent is not None
+                if parent._data_node._exists:
+                    last_text_candidate = parent._data_node
+                    while last_text_candidate._appended_text_node is not None:
+                        last_text_candidate = last_text_candidate._appended_text_node
+                    last_text_candidate._add_next_node(node)
+                else:
+                    node._bind_to_data(parent)
+
+        else:
+            previous._add_next_node(node)
+
+    def clone(self, deep: bool = False) -> "_ElementWrappingNode":
+        etree_clone = copy(self._etree_obj)
+        etree_clone.tail = None
+        return _get_or_create_element_wrapper(etree_clone, self._wrapper_cache)
+
+    @altered_default_filters()
+    def detach(self) -> "_ElementWrappingNode":
+        parent = self.parent
+
+        if parent is None:
+            if self.document is not None:
+                raise InvalidOperation(
+                    "The root node of a document cannot be detached."
+                )
+            return self
+
+        if self._tail_node._exists:
+
+            if self.index == 0:
+                self._tail_node._bind_to_data(parent)
+
+            else:
+                previous_node = self.previous_node()
+                if isinstance(previous_node, _ElementWrappingNode):
+                    self._tail_node._bind_to_tail(previous_node)
+                elif isinstance(previous_node, TextNode):
+                    previous_node._insert_text_node_as_next_appended(self._tail_node)
+                else:
+                    raise InvalidCodePath
+
+        etree_obj = self._etree_obj
+        cast(_Element, etree_obj.getparent()).remove(etree_obj)
+
+        self._wrapper_cache = cache = copy(self._wrapper_cache)
+        with altered_default_filters():
+            for child_node in self.child_nodes(recurse=True):
+                child_node._wrapper_cache = cache
+
+        _prune_wrapper_cache(parent)
+        _prune_wrapper_cache(self)
+
+        return self
+
+    @property
+    def full_text(self) -> str:
+        return ""
+
+    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
+
+        candidate: NodeBase
+
+        if self._tail_node._exists:
+            candidate = self._tail_node
+        else:
+            next_etree_obj = self._etree_obj.getnext()
+
+            if next_etree_obj is None:
+                return None
+            candidate = _get_or_create_element_wrapper(
+                next_etree_obj, self._wrapper_cache
+            )
+
+        if all(f(candidate) for f in chain(default_filters, filter)):
+            return candidate
+        else:
+            return candidate.next_node(*filter)
+
+    @property
+    def parent(self) -> Optional["TagNode"]:
+        etree_parent = self._etree_obj.getparent()
+        if etree_parent is None:
+            return None
+        result = _get_or_create_element_wrapper(etree_parent, self._wrapper_cache)
+        assert isinstance(result, TagNode)
+        return result
+
+    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
+
+        candidate: Optional[NodeBase]
+
+        previous_etree_obj = self._etree_obj.getprevious()
+
+        if previous_etree_obj is None:
+            return None
+
+        wrapper_of_previous = _get_or_create_element_wrapper(
+            previous_etree_obj, self._wrapper_cache
+        )
+
+        if wrapper_of_previous._tail_node._exists:
+            candidate = wrapper_of_previous._tail_node
+            assert isinstance(candidate, TextNode)
+            while candidate._appended_text_node:
+                candidate = candidate._appended_text_node
+
+        else:
+            candidate = wrapper_of_previous
+
+        if candidate is None:
+            return None
+
+        if all(f(candidate) for f in chain(default_filters, filter)):
+            return candidate
+        else:
+            return candidate.previous_node(*filter)
+
+
+class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
+    """
+    The instances of this class represent comment nodes of a tree.
+
+    To instantiate new nodes use :func:`new_comment_node`.
+    """
+
+    __slots__ = ("_etree_obj", "_tail_node")
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, CommentNode) and self.content == other.content
+
+    def __str__(self) -> str:
+        return str(self._etree_obj)
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}("{self.content}") [{hex(id(self))}]>'
+
+    @property
+    def content(self) -> str:
+        """
+        The comment's text.
+        """
+        return cast(str, self._etree_obj.text)
+
+    @content.setter
+    def content(self, value: str):
+        self._etree_obj.text = value
+
+
+class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
+    """
+    The instances of this class represent processing instruction nodes of a tree.
+
+    To instantiate new nodes use :func:`new_processing_instruction_node`.
+    """
+
+    __slots__ = ("_etree_obj", "_tail_node")
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, ProcessingInstructionNode)
+            and self.target == other.target
+            and self.content == other.content
+        )
+
+    def __str__(self) -> str:
+        return str(self._etree_obj)
+
+    def __repr__(self) -> str:
+        return (
+            f'<{self.__class__.__name__}("{self.target}", "{self.content}") '
+            f"[{hex(id(self))}]>"
+        )
+
+    @property
+    def content(self) -> str:
+        """
+        The processing instruction's text.
+        """
+        return cast(str, self._etree_obj.text)
+
+    @content.setter
+    def content(self, value: str):
+        self._etree_obj.text = value
+
+    @property
+    def target(self) -> str:
+        """
+        The processing instruction's target.
+        """
+        etree_obj = self._etree_obj
+        assert isinstance(etree_obj, etree._ProcessingInstruction)
+        return cast(str, etree_obj.target)
+
+    @target.setter
+    def target(self, value: str):
+        etree_obj = self._etree_obj
+        assert isinstance(etree_obj, etree._ProcessingInstruction)
+        etree_obj.target = value
+
+
+class TagNode(_ElementWrappingNode, NodeBase):
     """
     The instances of this class represent :term:`tag node` s of a tree.
 
@@ -552,10 +928,8 @@ class TagNode(NodeBase):
     __slots__ = ("_data_node", "__document__", "_etree_obj", "_tail_node")
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
-        super().__init__(wrapper_cache=cache)
-        self._etree_obj = etree_element
+        super().__init__(etree_element, cache)
         self._data_node = TextNode(etree_element, position=DATA, cache=cache)
-        self._tail_node = TextNode(etree_element, position=TAIL, cache=cache)
 
     def __contains__(self, item: Union[str, NodeBase]) -> bool:
         if isinstance(item, str):
@@ -567,12 +941,6 @@ class TagNode(NodeBase):
             return False
         else:
             raise TypeError
-
-    def __copy__(self) -> "TagNode":
-        return self.clone(deep=False)
-
-    def __deepcopy__(self, memodict=None):
-        return self.clone(deep=True)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, TagNode):
@@ -626,85 +994,16 @@ class TagNode(NodeBase):
 
     def __repr__(self) -> str:
         return (
-            f"<{self.__class__.__name__}('{self.qualified_name}', "
-            f" {self.attributes}) [{hex(id(self))}]>"
+            f'<{self.__class__.__name__}("{self.qualified_name}", '
+            f"{self.attributes}) [{hex(id(self))}]>"
         )
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
-        if isinstance(node, TagNode):
+        if isinstance(node, _ElementWrappingNode):
             self._etree_obj.append(node._etree_obj)
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
-
-    def add_next(self, *node: Any, clone: bool = False):
-        if self.parent is None:
-            raise InvalidOperation("Can't add a sibling to a root node.")
-
-        super().add_next(*node, clone=clone)
-
-    def _add_next_node(self, node: "NodeBase"):
-        if isinstance(node, TagNode):
-            my_old_tail = self._tail_node
-
-            if self._tail_node._exists:
-                my_old_tail._bind_to_tail(node)
-                self._etree_obj.tail = None
-                self._etree_obj.addnext(node._etree_obj)
-                self._tail_node = TextNode(self._etree_obj, TAIL, self._wrapper_cache)
-
-                assert self._tail_node is not my_old_tail
-                assert node._tail_node is my_old_tail
-            else:
-                self._etree_obj.addnext(node._etree_obj)
-
-                assert self._tail_node is my_old_tail
-                assert node._tail_node is not my_old_tail
-
-        elif isinstance(node, TextNode):
-            assert node._position is DETACHED
-            assert node._appended_text_node is None
-
-            if self._tail_node._exists:
-                my_old_tail = self._tail_node
-                my_old_tail_content = my_old_tail.content
-
-                node._bind_to_tail(self)
-                node._appended_text_node = my_old_tail
-                my_old_tail._bound_to = node
-                my_old_tail._position = APPENDED
-                my_old_tail.content = my_old_tail_content
-            else:
-                node._bind_to_tail(self)
-
-    def add_previous(self, *node: Any, clone: bool = False):
-        if self.parent is None:
-            raise InvalidOperation("Can't add a sibling to a root node.")
-
-        super().add_previous(*node, clone=clone)
-
-    def _add_previous_node(self, node: NodeBase):
-        previous = self.previous_node()
-
-        if previous is None:
-
-            if isinstance(node, TagNode):
-                self._etree_obj.addprevious(node._etree_obj)
-
-            else:
-                assert isinstance(node, TextNode)
-                parent = self.parent
-                assert parent is not None
-                if parent._data_node._exists:
-                    last_text_candidate = parent._data_node
-                    while last_text_candidate._appended_text_node is not None:
-                        last_text_candidate = last_text_candidate._appended_text_node
-                    last_text_candidate._add_next_node(node)
-                else:
-                    node._bind_to_data(parent)
-
-        else:
-            previous._add_next_node(node)
 
     def append_child(self, *node: Any, clone: bool = False):
         """
@@ -770,7 +1069,7 @@ class TagNode(NodeBase):
 
         while current_node is not None:
 
-            if all(f(current_node) for f in filter):
+            if all(f(current_node) for f in chain(default_filters, filter)):
                 yield current_node
 
             if recurse and isinstance(current_node, TagNode):
@@ -778,6 +1077,7 @@ class TagNode(NodeBase):
 
             current_node = current_node.next_node()
 
+    @altered_default_filters()
     def clone(self, deep: bool = False) -> "TagNode":
         # a faster implementation may be to not clear a cloned element's children and
         # to clone appended text nodes afterwards
@@ -786,6 +1086,7 @@ class TagNode(NodeBase):
         etree_clone.text = etree_clone.tail = None
         del etree_clone[:]  # remove all subelements
         result = _get_or_create_element_wrapper(etree_clone, {})
+        assert isinstance(result, TagNode)
         assert not len(result)
 
         if deep:
@@ -794,7 +1095,7 @@ class TagNode(NodeBase):
             ):
                 assert isinstance(child_node, NodeBase)
                 assert child_node.parent is None
-                if isinstance(child_node, TagNode):
+                if isinstance(child_node, _ElementWrappingNode):
                     assert child_node._etree_obj.tail is None
                 elif isinstance(child_node, TextNode):
                     assert child_node._position is DETACHED
@@ -819,31 +1120,6 @@ class TagNode(NodeBase):
     @property
     def depth(self) -> int:
         return self.location_path.count("/") - 1
-
-    def detach(self) -> "TagNode":
-        parent = self.parent
-
-        if parent is None:
-            if self.document is not None:
-                raise InvalidOperation(
-                    "The root node of a document cannot be " "detached."
-                )
-            return self
-
-        if self._tail_node._exists:
-            self._tail_node._bind_to_data(parent)
-
-        etree_obj = self._etree_obj
-        cast(_Element, etree_obj.getparent()).remove(etree_obj)
-
-        self._wrapper_cache = cache = copy(self._wrapper_cache)
-        for child_node in self.child_nodes(recurse=True):
-            child_node._wrapper_cache = cache
-
-        _prune_wrapper_cache(parent)
-        _prune_wrapper_cache(self)
-
-        return self
 
     @property
     def document(self) -> Optional["Document"]:
@@ -895,7 +1171,7 @@ class TagNode(NodeBase):
         if index == 0:
             if len(self):
                 self[0].add_previous(this, clone=clone)
-                if isinstance(this, TagNode):
+                if isinstance(this, _ElementWrappingNode):
                     assert self[1].previous_node() is this
                     assert this.next_node() is self[1]
             else:
@@ -937,6 +1213,7 @@ class TagNode(NodeBase):
         etree_obj = self._etree_obj
         return etree_obj.getroottree().getpath(etree_obj)
 
+    @altered_default_filters()
     def merge_text_nodes(self):
         """
         Merges all consecutive text nodes in the subtree into one.
@@ -964,36 +1241,6 @@ class TagNode(NodeBase):
         """
         return cast(Dict[str, str], self._etree_obj.nsmap)
 
-    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-
-        candidate: NodeBase
-
-        if self._tail_node._exists:
-            candidate = self._tail_node
-        else:
-            next_etree_obj = self._etree_obj.getnext()
-
-            # TODO handle Comments' and PIs' tails properly
-            if next_etree_obj is not None and next_etree_obj.tag in (PI, Comment):
-                while True:
-                    next_etree_obj = next_etree_obj.getnext()
-                    if next_etree_obj is None or next_etree_obj.tag not in (
-                        PI,
-                        Comment,
-                    ):
-                        break
-
-            if next_etree_obj is None:
-                return None
-            candidate = _get_or_create_element_wrapper(
-                next_etree_obj, self._wrapper_cache
-            )
-
-        if all(f(candidate) for f in filter):
-            return candidate
-        else:
-            return candidate.next_node(*filter)
-
     def new_tag_node(
         self,
         local_name: str,
@@ -1003,13 +1250,6 @@ class TagNode(NodeBase):
         return self._new_tag_node_from(
             self._etree_obj, local_name, attributes, namespace
         )
-
-    @property
-    def parent(self) -> Optional["TagNode"]:
-        etree_parent = self._etree_obj.getparent()
-        if etree_parent is None:
-            return None
-        return _get_or_create_element_wrapper(etree_parent, self._wrapper_cache)
 
     @property
     def prefix(self) -> Optional[str]:
@@ -1039,46 +1279,6 @@ class TagNode(NodeBase):
         :param clone: Clones the node before adding if ``True``.
         """
         self.insert_child(0, *node, clone=clone)
-
-    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-
-        candidate: Optional[NodeBase]
-
-        previous_etree_obj = self._etree_obj.getprevious()
-
-        # TODO handle Comments' and PIs' tails properly
-        if previous_etree_obj is not None and previous_etree_obj.tag in (PI, Comment):
-            while True:
-                previous_etree_obj = previous_etree_obj.getprevious()
-                if previous_etree_obj is None or previous_etree_obj.tag not in (
-                    PI,
-                    Comment,
-                ):
-                    break
-
-        if previous_etree_obj is None:
-            return None
-
-        wrapper_of_previous = _get_or_create_element_wrapper(
-            previous_etree_obj, self._wrapper_cache
-        )
-
-        if wrapper_of_previous._tail_node._exists:
-            candidate = wrapper_of_previous._tail_node
-            assert isinstance(candidate, TextNode)
-            while candidate._appended_text_node:
-                candidate = candidate._appended_text_node
-
-        else:
-            candidate = wrapper_of_previous
-
-        if candidate is None:
-            return None
-
-        if all(f(candidate) for f in filter):
-            return candidate
-        else:
-            return candidate.previous_node(*filter)
 
     @property
     def qualified_name(self) -> str:
@@ -1152,15 +1352,18 @@ class TagNode(NodeBase):
                     node_test.data = prefix + ":" + node_test.data
 
         cache = self._wrapper_cache
-        return [
-            _get_or_create_element_wrapper(element, cache)
-            for element in etree_obj.xpath(  # type: ignore
-                str(location_path), namespaces=namespaces
-            )
-        ]
+        return cast(
+            List[TagNode],
+            [
+                _get_or_create_element_wrapper(element, cache)
+                for element in etree_obj.xpath(  # type: ignore
+                    str(location_path), namespaces=namespaces
+                )
+            ],
+        )
 
 
-class TextNode(NodeBase):
+class TextNode(_ChildLessNode, NodeBase):
     """
     TextNodes contain the textual data of a document.
 
@@ -1186,8 +1389,6 @@ class TextNode(NodeBase):
     """
 
     __slots__ = ("_appended_text_node", "_bound_to", "__content", "_position")
-
-    first_child = last_child = None
 
     def __init__(
         self,
@@ -1241,7 +1442,7 @@ class TextNode(NodeBase):
     def __repr__(self):
         if self._exists:
             return (
-                f"<{self.__class__.__name__}(text='{self.content}', "
+                f'<{self.__class__.__name__}(text="{self.content}", '
                 f"pos={self._position}) [{hex(id(self))}]>"
             )
         else:
@@ -1256,10 +1457,10 @@ class TextNode(NodeBase):
         if isinstance(node, TextNode):
             self._insert_text_node_as_next_appended(node)
 
-        elif isinstance(node, TagNode):
-            self._add_next_tag_node(node)
+        elif isinstance(node, _ElementWrappingNode):
+            self._add_next_element_wrapping_node(node)
 
-    def _add_next_tag_node(self, node: TagNode):
+    def _add_next_element_wrapping_node(self, node: _ElementWrappingNode):
 
         if self._position is DATA:
 
@@ -1313,7 +1514,7 @@ class TextNode(NodeBase):
         if isinstance(node, TextNode):
             self._prepend_text_node(node)
 
-        elif isinstance(node, TagNode):
+        elif isinstance(node, _ElementWrappingNode):
 
             if self._position is DATA:
 
@@ -1322,9 +1523,13 @@ class TextNode(NodeBase):
                 assert isinstance(current_bound, _Element)
                 current_bound.insert(0, node._etree_obj)
 
-                _get_or_create_element_wrapper(
+                current_bound_wrapper = _get_or_create_element_wrapper(
                     current_bound, self._wrapper_cache
-                )._data_node = TextNode(current_bound, DATA, self._wrapper_cache)
+                )
+                assert isinstance(current_bound_wrapper, TagNode)
+                current_bound_wrapper._data_node = TextNode(
+                    current_bound, DATA, self._wrapper_cache
+                )
                 self._bind_to_tail(node)
                 current_bound.text = None
                 self.content = content
@@ -1348,17 +1553,14 @@ class TextNode(NodeBase):
         self.__content = None
         assert isinstance(self.content, str)
 
-    def _bind_to_tail(self, target: TagNode):
-        assert isinstance(target, TagNode)
+    def _bind_to_tail(self, target: _ElementWrappingNode):
+        assert isinstance(target, _ElementWrappingNode)
         target._etree_obj.tail = self.content
         target._tail_node = self
         self._bound_to = target._etree_obj
         self._position = TAIL
         self.__content = None
         assert isinstance(self.content, str)
-
-    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
-        yield from []
 
     def clone(self, deep: bool = False) -> "NodeBase":
         assert self.content is not None
@@ -1407,7 +1609,7 @@ class TextNode(NodeBase):
     def depth(self) -> int:
         if self._position is DETACHED:
             return 0
-        return cast(TagNode, self.parent).depth + 1
+        return super().depth
 
     def detach(self) -> "TextNode":
 
@@ -1477,13 +1679,6 @@ class TextNode(NodeBase):
         return self
 
     @property
-    def document(self) -> Optional["Document"]:
-        parent = self.parent
-        if parent is None:
-            return None
-        return parent.document
-
-    @property
     def _exists(self) -> bool:
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
@@ -1527,22 +1722,6 @@ class TextNode(NodeBase):
         assert isinstance(self.content, str)
         assert isinstance(node.content, str)
 
-    def new_tag_node(
-        self,
-        local_name: str,
-        attributes: Optional[Dict[str, str]] = None,
-        namespace: Optional[str] = None,
-    ) -> "TagNode":
-        parent = self.parent
-        if parent is None:
-            return new_tag_node(
-                local_name=local_name, attributes=attributes, namespace=namespace
-            )
-        else:
-            return parent.new_tag_node(
-                local_name=local_name, attributes=attributes, namespace=namespace
-            )
-
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         if self._position is DETACHED:
             return None
@@ -1571,7 +1750,7 @@ class TextNode(NodeBase):
         if candidate is None:
             return None
 
-        if all(f(candidate) for f in filter):
+        if all(f(candidate) for f in chain(default_filters, filter)):
             if isinstance(candidate, TextNode):
                 assert candidate._exists
             return candidate
@@ -1609,7 +1788,9 @@ class TextNode(NodeBase):
     def parent(self) -> Optional[TagNode]:
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
-            return _get_or_create_element_wrapper(self._bound_to, self._wrapper_cache)
+            result = _get_or_create_element_wrapper(self._bound_to, self._wrapper_cache)
+            assert isinstance(result, TagNode)
+            return result
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
@@ -1631,22 +1812,21 @@ class TextNode(NodeBase):
         if self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = _get_or_create_element_wrapper(
-                self._bound_to, self._wrapper_cache
-            )
+            parent = _get_or_create_element_wrapper(self._bound_to, self._wrapper_cache)
+            assert isinstance(parent, TagNode)
             content = self.content
-            node._bind_to_data(sibling)
+            node._bind_to_data(parent)
             node._insert_text_node_as_next_appended(self)
             self.content = content
 
         elif self._position is TAIL:
 
             assert isinstance(self._bound_to, _Element)
-            sibling = _get_or_create_element_wrapper(
+            left_sibling = _get_or_create_element_wrapper(
                 self._bound_to, self._wrapper_cache
             )
             content = self.content
-            node._bind_to_tail(sibling)
+            node._bind_to_tail(left_sibling)
             node._insert_text_node_as_next_appended(self)
             self.content = content
 
@@ -1685,7 +1865,7 @@ class TextNode(NodeBase):
         if candidate is None:
             return None
 
-        if all(f(candidate) for f in filter):
+        if all(f(candidate) for f in chain(default_filters, filter)):
             return candidate
         else:
             return candidate.previous_node(*filter)
@@ -1700,7 +1880,7 @@ class TextNode(NodeBase):
             raise InvalidCodePath
 
 
-# contributed filters and filter wrappers
+# contributed filters, filter wrappers and default filters
 
 
 def any_of(*filter: Filter) -> Filter:
@@ -1713,6 +1893,20 @@ def any_of(*filter: Filter) -> Filter:
         return any(x(node) for x in filter)
 
     return any_of_wrapper
+
+
+def is_comment_node(node: NodeBase) -> bool:
+    """
+    Matches comment nodes.
+    """
+    return isinstance(node, CommentNode)
+
+
+def is_processing_instruction_node(node: NodeBase) -> bool:
+    """
+    Matches processing instruction nodes.
+    """
+    return isinstance(node, ProcessingInstructionNode)
 
 
 def is_root_node(node: NodeBase) -> bool:
@@ -1748,13 +1942,30 @@ def not_(filter: Filter) -> Filter:
     return not_wrapper
 
 
+def _is_tag_or_text_node(node: NodeBase) -> bool:
+    return isinstance(node, (TagNode, TextNode))
+
+
+default_filters = (_is_tag_or_text_node,)
+
+
+#
+
+
 __all__ = (
+    CommentNode.__name__,
+    ProcessingInstructionNode.__name__,
     TagNode.__name__,
     TextNode.__name__,
+    altered_default_filters.__name__,
     any_of.__name__,
+    is_comment_node.__name__,
+    is_processing_instruction_node.__name__,
     is_root_node.__name__,
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
+    new_comment_node.__name__,
+    new_processing_instruction_node.__name__,
     new_tag_node.__name__,
 )

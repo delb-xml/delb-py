@@ -25,6 +25,7 @@ Features
 - Designed to manipulate XML encoded text markup with ease.
 - Loads documents from various sources.
 - A completely type-annotated API.
+- Shadows comments and processing instructions by default.
 - …
 
 

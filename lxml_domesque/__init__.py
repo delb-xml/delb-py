@@ -24,14 +24,22 @@ from lxml_domesque import utils
 from lxml_domesque.exceptions import InvalidOperation
 from lxml_domesque.loaders import configured_loaders, tag_node_loader
 from lxml_domesque.nodes import (
+    altered_default_filters,
     any_of,
     _get_or_create_element_wrapper,
+    is_comment_node,
+    is_processing_instruction_node,
     is_root_node,
     is_tag_node,
+    _is_tag_or_text_node,
     is_text_node,
     not_,
+    new_comment_node,
+    new_processing_instruction_node,
     new_tag_node,
+    CommentNode,
     NodeBase,
+    ProcessingInstructionNode,
     TagNode,
     TextNode,
 )
@@ -175,25 +183,27 @@ class Document:
         return getattr(self, "__root_node__")
 
     @root.setter
-    def root(self, root: "TagNode"):
-        if not isinstance(root, TagNode):
-            raise TypeError("The document root node must be of 'TagNode'.")
+    def root(self, node: "TagNode"):
+        if not isinstance(node, TagNode):
+            raise TypeError("The document root node must be of 'TagNode' type.")
 
-        if not all(
-            x is None for x in (root.parent, root.previous_node(), root.next_node())
-        ):
-            raise InvalidOperation(
-                "Only a detached node can be set as root. Use :meth:`TagNode.clone` or "
-                ":meth:`TagNode.detach` on the designated root node."
-            )
+        with altered_default_filters(_is_tag_or_text_node):
+            if not all(
+                x is None for x in (node.parent, node.previous_node(), node.next_node())
+            ):
+                raise InvalidOperation(
+                    "Only a detached node can be set as root. Use "
+                    ":meth:`TagNode.clone` or :meth:`TagNode.detach` on the "
+                    "designated root node."
+                )
 
         current_root = getattr(self, "__root_node__", None)
         if current_root is not None:
-            utils.copy_heading_pis(current_root._etree_obj, root._etree_obj)
+            utils.copy_root_siblings(current_root._etree_obj, node._etree_obj)
             delattr(current_root, "__document__")
 
-        setattr(root, "__document__", self)
-        setattr(self, "__root_node__", root)
+        setattr(node, "__document__", self)
+        setattr(self, "__root_node__", node)
 
     def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
         """
@@ -239,14 +249,21 @@ class Document:
 
 
 __all__ = (
+    CommentNode.__name__,
     Document.__name__,
     InvalidOperation.__name__,
+    ProcessingInstructionNode.__name__,
     TagNode.__name__,
     TextNode.__name__,
+    altered_default_filters.__name__,
     any_of.__name__,
+    is_comment_node.__name__,
+    is_processing_instruction_node.__name__,
     is_root_node.__name__,
     is_tag_node.__name__,
     is_text_node.__name__,
     not_.__name__,
+    new_comment_node.__name__,
     new_tag_node.__name__,
+    new_processing_instruction_node.__name__,
 )
