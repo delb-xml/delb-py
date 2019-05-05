@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from lxml import etree
 
 if TYPE_CHECKING:
-    from lxml_domesque.nodes import (_ElementWrappingNode, NodeBase,)
+    from lxml_domesque.nodes import _ElementWrappingNode, NodeBase  # noqa: F401
 
 
 ElementAttributes = etree._Attrib
