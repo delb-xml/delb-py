@@ -150,11 +150,16 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
 
 # default filters
 
-default_filters: Tuple[Filter, ...] = ()
+
+def _is_tag_or_text_node(node: "NodeBase") -> bool:
+    return isinstance(node, (TagNode, TextNode))
+
+
+default_filters: Tuple[Filter, ...] = (_is_tag_or_text_node,)
 
 
 @contextmanager
-def altered_default_filters(*filter: Filter):
+def altered_default_filters(*filter: Filter, extend: bool = False):
     """
     This function can be either used as as context manager or decorator to define a set
     of :obj:`default_filters` for the encapsuled code block or callable. These are then
@@ -171,11 +176,20 @@ def altered_default_filters(*filter: Filter):
 
     As the default filters shadow comments and processing instructions by default,
     use no argument to unset this in order to access all type of nodes.
+
+    :param extend: Extends the currently active filters with the given ones.
     """
     global default_filters
+
     saved_default_filters = default_filters
-    default_filters = filter
-    yield None
+
+    if extend:
+        default_filters += filter
+    else:
+        default_filters = filter
+
+    yield
+
     default_filters = saved_default_filters
 
 
@@ -1880,7 +1894,7 @@ class TextNode(_ChildLessNode, NodeBase):
             raise InvalidCodePath
 
 
-# contributed filters, filter wrappers and default filters
+# contributed filters and filter wrappers
 
 
 def any_of(*filter: Filter) -> Filter:
@@ -1940,13 +1954,6 @@ def not_(filter: Filter) -> Filter:
         return not filter(node)
 
     return not_wrapper
-
-
-def _is_tag_or_text_node(node: NodeBase) -> bool:
-    return isinstance(node, (TagNode, TextNode))
-
-
-default_filters = (_is_tag_or_text_node,)
 
 
 #
