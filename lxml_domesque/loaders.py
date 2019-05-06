@@ -201,7 +201,6 @@ def ftp_http_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     return None, {}
 
 
-# TODO test with xml declaration
 @register_loader()
 def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     """

@@ -1,0 +1,20 @@
+---
+
+version: 2
+
+build:
+  image: latest
+
+formats: all
+
+python:
+  version: 3.7
+  install:
+    - method: pip
+      path: .
+    - requirements: docs/rtd-dependencies.txt
+
+
+submodules:
+  include:
+    - lxml-stubs
