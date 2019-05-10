@@ -1,4 +1,4 @@
-from lxml_domesque import Document, TagNode, any_of, not_
+from delb import Document, TagNode, any_of, not_
 
 
 def test_anyof_filter():

@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from lxml_domesque import Document, InvalidOperation, TagNode, TextNode, new_tag_node
+from delb import Document, InvalidOperation, TagNode, TextNode, new_tag_node
 
 
 def is_pagebreak(node):

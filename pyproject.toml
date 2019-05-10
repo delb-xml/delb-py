@@ -3,7 +3,7 @@ requires = ["poetry>=0.12.15"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
-name = "lxml-domesque"
+name = "delb"
 version = "0.1a1"
 description = "A DOM API inspired wrapper around lxml."
 authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]

@@ -1,4 +1,4 @@
-from lxml_domesque import (
+from delb import (
     Document,
     is_comment_node,
     CommentNode,

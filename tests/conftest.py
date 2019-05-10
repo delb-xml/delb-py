@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pytest import fixture
 
-from lxml_domesque import Document
+from delb import Document
 
 
 FILES_PATH = Path(__file__).parent / "files"

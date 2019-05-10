@@ -4,7 +4,7 @@ API Documentation
 Documents
 ---------
 
-.. autoclass:: lxml_domesque.Document
+.. autoclass:: delb.Document
 
 
 .. _document-loaders:
@@ -12,7 +12,7 @@ Documents
 Document loaders
 ----------------
 
-.. automodule:: lxml_domesque.loaders
+.. automodule:: delb.loaders
 
 
 Nodes
@@ -21,31 +21,31 @@ Nodes
 Comment
 ~~~~~~~
 
-.. autoclass:: lxml_domesque.CommentNode
+.. autoclass:: delb.CommentNode
 
 Processing instruction
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: lxml_domesque.ProcessingInstructionNode
+.. autoclass:: delb.ProcessingInstructionNode
 
 Tag
 ~~~
 
-.. autoclass:: lxml_domesque.TagNode
+.. autoclass:: delb.TagNode
 
 Text
 ~~~~
 
-.. autoclass:: lxml_domesque.TextNode
+.. autoclass:: delb.TextNode
 
 Node constructors
 ~~~~~~~~~~~~~~~~~
 
-.. autofunction:: lxml_domesque.new_comment_node
+.. autofunction:: delb.new_comment_node
 
-.. autofunction:: lxml_domesque.new_processing_instruction_node
+.. autofunction:: delb.new_processing_instruction_node
 
-.. autofunction:: lxml_domesque.new_tag_node
+.. autofunction:: delb.new_tag_node
 
 
 .. _contributed-filters:
@@ -56,28 +56,28 @@ Filters
 Default filters
 ~~~~~~~~~~~~~~~
 
-.. autofunction:: lxml_domesque.altered_default_filters
+.. autofunction:: delb.altered_default_filters
 
 
 Contributed filters
 ~~~~~~~~~~~~~~~~~~~
 
-.. autofunction:: lxml_domesque.any_of
+.. autofunction:: delb.any_of
 
-.. autofunction:: lxml_domesque.is_comment_node
+.. autofunction:: delb.is_comment_node
 
-.. autofunction:: lxml_domesque.is_processing_instruction_node
+.. autofunction:: delb.is_processing_instruction_node
 
-.. autofunction:: lxml_domesque.is_tag_node
+.. autofunction:: delb.is_tag_node
 
-.. autofunction:: lxml_domesque.is_text_node
+.. autofunction:: delb.is_text_node
 
-.. autofunction:: lxml_domesque.not_
+.. autofunction:: delb.not_
 
 
 Exceptions
 ----------
 
-.. autoexception:: lxml_domesque.exceptions.InvalidCodePath
+.. autoexception:: delb.exceptions.InvalidCodePath
 
-.. autoexception:: lxml_domesque.exceptions.InvalidOperation
+.. autoexception:: delb.exceptions.InvalidOperation

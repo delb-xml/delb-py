@@ -22,7 +22,7 @@ import sphinx_readable_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'lxml-domesque'
+project = 'delb'
 copyright = '2018-2019, Frank Sachsenheim'
 author = 'Frank Sachsenheim'
 
@@ -205,5 +205,5 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 doctest_global_setup = """
 from typing import Any
-from lxml_domesque import *
+from delb import *
 """

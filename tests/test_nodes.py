@@ -1,6 +1,6 @@
 import pytest
 
-from lxml_domesque import is_tag_node, Document, InvalidOperation, TagNode, TextNode
+from delb import is_tag_node, Document, InvalidOperation, TagNode, TextNode
 
 
 def test_add_previous():

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from lxml_domesque import Document
+from delb import Document
 
 
 TEST_FILE = (
@@ -29,7 +29,7 @@ def test_ftp_http_loader():
 
 def test_https_loader():
     Document(
-        "https://raw.githubusercontent.com/funkyfuture/lxml-domesque/master/tests/"
+        "https://raw.githubusercontent.com/funkyfuture/delb/master/tests/"
         "files/marx_manifestws_1848.TEI-P5.xml"
     )
 

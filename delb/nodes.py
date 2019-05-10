@@ -34,13 +34,13 @@ from typing import (
 
 from lxml import etree
 
-from lxml_domesque.exceptions import InvalidCodePath, InvalidOperation
-from lxml_domesque.typing import ElementAttributes, Filter, _WrapperCache
-from lxml_domesque.utils import css_to_xpath, random_unused_prefix
-from lxml_domesque.xpath import LocationPath
+from delb.exceptions import InvalidCodePath, InvalidOperation
+from delb.typing import ElementAttributes, Filter, _WrapperCache
+from delb.utils import css_to_xpath, random_unused_prefix
+from delb.xpath import LocationPath
 
 if TYPE_CHECKING:
-    from lxml_domesque import Document  # noqa: F401
+    from delb import Document  # noqa: F401
 
 
 # shortcuts

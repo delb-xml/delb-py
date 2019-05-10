@@ -1,4 +1,4 @@
-from lxml_domesque import Document
+from delb import Document
 
 from tests.utils import assert_documents_are_semantical_equal, count_pis
 

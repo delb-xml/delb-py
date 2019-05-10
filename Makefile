@@ -14,7 +14,7 @@ export PRINT_HELP_PYSCRIPT
 
 .PHONY: black
 black: ## normalize Python code
-	black lxml_domesque tests
+	black delb tests
 
 .PHONY: docs
 docs: ## generate Sphinx HTML documentation, including API docs
@@ -27,7 +27,7 @@ doctest: ## test the code that is contained in the docs
 
 .PHONY: flake8
 flake8: ## code linting with flake8
-	flake8 lxml_domesque tests
+	flake8 delb tests
 
 .PHONY: help
 help:
@@ -35,11 +35,11 @@ help:
 
 .PHONY: mypy
 mypy: ## run static type checks with mypy
-	MYPYPATH=./lxml-stubs mypy lxml_domesque
+	MYPYPATH=./lxml-stubs mypy delb
 
 .PHONY: pytest
 pytest: ## run the test suite
-	python -m pytest --cov-config .coveragerc --cov=lxml_domesque tests
+	python -m pytest --cov-config .coveragerc --cov=delb tests
 
 .PHONY: showdocs
 showdocs: docs ## build and open HTML documentation

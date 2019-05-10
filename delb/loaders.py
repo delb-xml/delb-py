@@ -27,9 +27,9 @@ from typing import cast, Any, Callable, IO, List, Optional, Tuple
 
 from lxml import etree
 
-from lxml_domesque import utils
-from lxml_domesque.nodes import TagNode
-from lxml_domesque.typing import Loader, LoaderResult
+from delb import utils
+from delb.nodes import TagNode
+from delb.typing import Loader, LoaderResult
 
 try:
     import requests
@@ -43,7 +43,7 @@ except ImportError:
 configured_loaders: List[Loader] = []
 """
 This list contains the loaders that are tried in order when a new
-:class:`lxml_domesque.Document` instance is created.
+:class:`delb.Document` instance is created.
 """
 
 
@@ -55,8 +55,8 @@ def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader
     .. testcode::
 
         from lxml import etree
-        from lxml_domesque.loaders import register_loader, text_loader
-        from lxml_domesque.typing import LoaderResult
+        from delb.loaders import register_loader, text_loader
+        from delb.typing import LoaderResult
 
         @register_loader()
         def ipfs_loader(source: Any, parser: etree.XMLParser) -> LoaderResult:
@@ -72,15 +72,15 @@ def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader
     assume a loader shall figure out what to load from a remote resource that contains
     a reference to the actual document.
     That one would have to be considered before the one loads XML documents from a URL
-    into a :class:`lxml_domesque.Document`:
+    into a :class:`delb.Document`:
 
     .. testcode::
 
         from lxml import etree
-        from lxml_domesque.loaders import (
+        from delb.loaders import (
             configured_loaders, https_loader, register_loader
         )
-        from lxml_domesque.typing import LoaderResult
+        from delb.typing import LoaderResult
 
         @register_loader(position=configured_loaders.index(https_loader))
         def mets_loader(source: Any, parser: etree.XMLParser) -> LoaderResult:
@@ -116,7 +116,7 @@ def register_loader(position: Optional[int] = None) -> Callable[[Loader], Loader
 @register_loader()
 def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     """
-    This loader loads, or rather clones, a :class:`lxml_domesque.TagNode` instance and
+    This loader loads, or rather clones, a :class:`delb.TagNode` instance and
     its descendant nodes.
     """
     if isinstance(data, TagNode):

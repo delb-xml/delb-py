@@ -1,23 +1,5 @@
-lxml-domesque
-=============
-
-The name
---------
-
-The name will be changed.
-
-
-Slug lines
-----------
-
-A DOM API inspired wrapper around lxml.
-
-XML encoded text documents for Kenny and all other kids too.
-
-The ergonomic tool for handling XML markup with Python.
-
-…
-
+delb
+====
 
 Features
 --------
@@ -36,9 +18,9 @@ Documentation
 - Installation_
 - Design_
 
-.. _API: https://lxml-domesque.readthedocs.io/en/latest/api.html
-.. _Design: https://lxml-domesque.readthedocs.io/en/latest/design.html
-.. _Installation: https://lxml-domesque.readthedocs.io/en/latest/installation.html
+.. _API: https://delb.readthedocs.io/en/latest/api.html
+.. _Design: https://delb.readthedocs.io/en/latest/design.html
+.. _Installation: https://delb.readthedocs.io/en/latest/installation.html
 
 
 Development status

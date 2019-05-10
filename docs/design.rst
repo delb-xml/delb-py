@@ -17,7 +17,7 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 - Serializations of documents are UTF-8 encoded by default and always start
   with an XML declaration.
 - Comment and processing instruction nodes are shadowed by default, see
-  :func:`lxml_domesque.altered_default_filters` on how to make them accessible.
+  :func:`delb.altered_default_filters` on how to make them accessible.
 - CDATA and Processing Instruction nodes are not accessible at all, but are
   retained and appear in serializations; unless you **[DANGER ZONE]**
   manipulate the tree (and you want that often). Depending on your actions you

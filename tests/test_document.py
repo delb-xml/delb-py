@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-from lxml_domesque import Document, InvalidOperation, TagNode
+from delb import Document, InvalidOperation, TagNode
 
 
 def test_cleanup_namespaces():

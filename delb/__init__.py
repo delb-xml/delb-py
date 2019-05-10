@@ -20,10 +20,10 @@ from typing import IO as IOType
 
 from lxml import etree
 
-from lxml_domesque import utils
-from lxml_domesque.exceptions import InvalidOperation
-from lxml_domesque.loaders import configured_loaders, tag_node_loader
-from lxml_domesque.nodes import (
+from delb import utils
+from delb.exceptions import InvalidOperation
+from delb.loaders import configured_loaders, tag_node_loader
+from delb.nodes import (
     altered_default_filters,
     any_of,
     _get_or_create_element_wrapper,
@@ -43,7 +43,7 @@ from lxml_domesque.nodes import (
     TagNode,
     TextNode,
 )
-from lxml_domesque.typing import _WrapperCache
+from delb.typing import _WrapperCache
 
 
 # constants

@@ -1,7 +1,7 @@
 import pytest
 
-from lxml_domesque import Document, TagNode, TextNode, is_text_node
-from lxml_domesque.nodes import TAIL, APPENDED
+from delb import Document, TagNode, TextNode, is_text_node
+from delb.nodes import TAIL, APPENDED
 
 
 def test_add_tag_before_tail():
