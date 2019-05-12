@@ -1299,7 +1299,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         The node's qualified name.
         """
-        return cast(str, QName(self._etree_obj).text)
+        return cast(str, QName(self._etree_obj.tag).text)
 
     def xpath(self, expression: str) -> List["TagNode"]:
         """ Returns all :term:`tag node` s that match the evaluation of an XPath

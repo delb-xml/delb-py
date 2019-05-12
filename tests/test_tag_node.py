@@ -331,6 +331,9 @@ def test_names(sample_document):
     assert text.local_name == "text"
     assert text.namespaces == {None: "https://name.space"}, root.namespaces
 
+    text.namespace = "https://space.name"
+    assert text.qualified_name == "{https://space.name}text"
+
 
 def test_next_in_stream(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
