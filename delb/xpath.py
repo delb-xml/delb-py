@@ -34,6 +34,14 @@ AXIS_NAMES = (
 )
 
 
+class XPathExpression:
+    def __init__(self, expression: str):
+        self.location_paths = [LocationPath(x.strip()) for x in expression.split("|")]
+
+    def __str__(self):
+        return " | ".join(str(x) for x in self.location_paths)
+
+
 class LocationPath:
     def __init__(self, expression: str):
         self.location_steps = [LocationStep(x) for x in expression.split("/")]

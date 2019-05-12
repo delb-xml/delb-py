@@ -37,7 +37,7 @@ from lxml import etree
 from delb.exceptions import InvalidCodePath, InvalidOperation
 from delb.typing import ElementAttributes, Filter, _WrapperCache
 from delb.utils import css_to_xpath, random_unused_prefix
-from delb.xpath import LocationPath
+from delb.xpath import XPathExpression
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -1331,39 +1331,45 @@ class TagNode(_ElementWrappingNode, NodeBase):
             :param expression: An XPath 1.0 location path.
         """
 
-        location_path = LocationPath(expression)
-        # TODO prepend self::node() if missing?
-
-        last_step = location_path.location_steps[-1]
-
-        if last_step.axis == "attribute":
-            raise InvalidOperation(
-                "XPath expressions that point to attributes are not supported."
-            )
-        if last_step.node_test.type == "type_test":
-            raise InvalidOperation(
-                "Other node tests than names tests are not supported for now. "
-                "If you require to retrieve other nodes than tag nodes, please open "
-                "an issue with a description of your use-case."
-            )
-
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
+        xpath_expression = XPathExpression(expression)
 
         if None in namespaces:
+            has_default_namespace = True
             prefix = random_unused_prefix(namespaces)
             namespaces = {  # type: ignore
                 **namespaces,  # type: ignore
                 prefix: namespaces[None],
             }
             namespaces.pop(None)
+        else:
+            has_default_namespace = False
+            prefix = ""
 
-            for location_step in location_path.location_steps:
-                node_test = location_step.node_test
-                if node_test.type != "name_test":
-                    continue
-                if ":" not in node_test.data:
-                    node_test.data = prefix + ":" + node_test.data
+        for location_path in xpath_expression.location_paths:
+            # TODO prepend self::node() if missing?
+
+            last_step = location_path.location_steps[-1]
+
+            if last_step.axis == "attribute":
+                raise InvalidOperation(
+                    "XPath expressions that point to attributes are not supported."
+                )
+            if last_step.node_test.type == "type_test":
+                raise InvalidOperation(
+                    "Other node tests than names tests are not supported for now. "
+                    "If you require to retrieve other nodes than tag nodes, please "
+                    "open an issue with a description of your use-case."
+                )
+
+            if has_default_namespace:
+                for location_step in location_path.location_steps:
+                    node_test = location_step.node_test
+                    if node_test.type != "name_test":
+                        continue
+                    if ":" not in node_test.data:
+                        node_test.data = prefix + ":" + node_test.data
 
         cache = self._wrapper_cache
         return cast(
@@ -1371,7 +1377,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             [
                 _get_or_create_element_wrapper(element, cache)
                 for element in etree_obj.xpath(  # type: ignore
-                    str(location_path), namespaces=namespaces
+                    str(xpath_expression), namespaces=namespaces
                 )
             ],
         )
