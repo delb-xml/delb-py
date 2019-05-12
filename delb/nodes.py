@@ -1016,7 +1016,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __repr__(self) -> str:
         return (
             f'<{self.__class__.__name__}("{self.qualified_name}", '
-            f"{self.attributes}) [{hex(id(self))}]>"
+            f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
 
     def __add_first_child(self, node: NodeBase):
@@ -1184,22 +1184,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if index < 0:
             raise ValueError
 
-        if index > len(self):
+        children_count = len(self)
+
+        if index > children_count:
             raise IndexError("The given index is beyond the target's size.")
 
         this, *queue = node
 
         if index == 0:
-            if len(self):
+            if children_count:
                 self[0].add_previous(this, clone=clone)
-                if isinstance(this, _ElementWrappingNode):
+                if isinstance(this, _ElementWrappingNode) and not clone:
                     assert self[1].previous_node() is this
                     assert this.next_node() is self[1]
             else:
                 self.__add_first_child(self._prepare_new_relative(this, clone=clone)[0])
 
         else:
-            self[index - 1].add_next(this, clone=False)
+            self[index - 1].add_next(this, clone=clone)
 
         if queue:
             this.add_next(*queue, clone=clone)
@@ -1306,7 +1308,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         The node's qualified name.
         """
-        return cast(str, QName(self._etree_obj.tag).text)
+        return QName(self._etree_obj.tag).text  # type: ignore
 
     def xpath(self, expression: str) -> List["TagNode"]:
         """ Returns all :term:`tag node` s that match the evaluation of an XPath
