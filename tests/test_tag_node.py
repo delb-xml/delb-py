@@ -387,6 +387,20 @@ def test_previous_node():
 
     #
 
+    document = Document("<root>a<c/></root>")
+    root = document.root
+    c = root[1]
+
+    assert c.local_name == "c"
+
+    a = c.previous_node()
+    assert a.content == "a"
+
+    a.add_next("b")
+    assert c.previous_node().content == "b"
+
+    #
+
     document = Document("<root><a/><!-- bla --><b/></root>")
 
     b = document.root[1]

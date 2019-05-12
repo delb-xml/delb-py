@@ -768,25 +768,32 @@ class _ElementWrappingNode(NodeBase):
 
     def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
-        candidate: Optional[NodeBase]
+        candidate: Optional[NodeBase] = None
 
         previous_etree_obj = self._etree_obj.getprevious()
 
         if previous_etree_obj is None:
-            return None
+            parent = self.parent
 
-        wrapper_of_previous = _get_or_create_element_wrapper(
-            previous_etree_obj, self._wrapper_cache
-        )
-
-        if wrapper_of_previous._tail_node._exists:
-            candidate = wrapper_of_previous._tail_node
-            assert isinstance(candidate, TextNode)
-            while candidate._appended_text_node:
-                candidate = candidate._appended_text_node
+            if parent is not None and parent._data_node._exists:
+                candidate = parent._data_node
+                assert isinstance(candidate, TextNode)
+                while candidate._appended_text_node:
+                    candidate = candidate._appended_text_node
 
         else:
-            candidate = wrapper_of_previous
+            wrapper_of_previous = _get_or_create_element_wrapper(
+                previous_etree_obj, self._wrapper_cache
+            )
+
+            if wrapper_of_previous._tail_node._exists:
+                candidate = wrapper_of_previous._tail_node
+                assert isinstance(candidate, TextNode)
+                while candidate._appended_text_node:
+                    candidate = candidate._appended_text_node
+
+            else:
+                candidate = wrapper_of_previous
 
         if candidate is None:
             return None
