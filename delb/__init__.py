@@ -58,6 +58,12 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 # api
 
 
+register_namespace = etree.register_namespace
+register_namespace.__doc__ = register_namespace.__doc__.replace(
+    "Elements", "TagNodes"
+).replace("namespace URI", "namespace")
+
+
 class Document:
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
@@ -125,13 +131,18 @@ class Document:
         redundant ones.
 
         :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
-                           (values) that will be declared at the root element. Use
-                           ``None`` as key for a default namespace.
+                           (values) that will be declared at the root element.
+                           Note that it is neither possible to assign a prefix for the
+                           current default namespace nor to declare a namespace as the
+                           default one (until this is fixed in lxml, another backend
+                           is used or someone comes up with a workaround).
         :param retain_prefixes: An optional iterable that contains prefixes whose
                                 declarations shall be kept despite not being used.
         """
         etree.cleanup_namespaces(
-            self.root._etree_obj, top_nsmap=namespaces, keep_ns_prefixes=retain_prefixes
+            self.root._etree_obj.getroottree(),
+            top_nsmap=namespaces,
+            keep_ns_prefixes=retain_prefixes,
         )
 
     def clone(self) -> "Document":
@@ -266,4 +277,5 @@ __all__ = (
     new_comment_node.__name__,
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
+    register_namespace.__name__,
 )

@@ -6,16 +6,16 @@ from delb import Document, InvalidOperation, TagNode
 
 
 def test_cleanup_namespaces():
-    document = Document('<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/><b/></root>')
+    document = Document('<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/></root>')
 
     document.cleanup_namespaces(retain_prefixes=("y",))
-    assert str(document) == '<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/><b/></root>'
+    assert str(document) == '<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/></root>'
 
     document.cleanup_namespaces()
-    assert str(document) == '<root xmlns="D"><x:a xmlns:x="X"/><b/></root>'
+    assert str(document) == '<root xmlns="D"><x:a xmlns:x="X"/></root>'
 
-    document.cleanup_namespaces(namespaces={None: "X", "d": "D"})
-    assert str(document) == '<root xmlns="D"><x:a xmlns:x="X"/><b/></root>'
+    document.cleanup_namespaces(namespaces={"x": "X"})
+    assert str(document) == '<root xmlns="D" xmlns:x="X"><x:a/></root>'
 
 
 def test_contains():

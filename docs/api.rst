@@ -31,6 +31,8 @@ Processing instruction
 Tag
 ~~~
 
+.. autofunction:: delb.register_namespace
+
 .. autoclass:: delb.TagNode
 
 Text
