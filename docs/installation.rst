@@ -11,7 +11,7 @@ management tool like pipenv_ or poetry_, or still use pip_::
 
 
 At the moment there's only one optional dependency to enable document loading
-via `https`, to include it use:
+via `https`, to include it use::
 
     # in a poetry managed project
     poetry add --extras=https-loader delb
