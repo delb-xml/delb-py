@@ -65,7 +65,7 @@ ROADMAPish
    :target: https://pypi.org/project/delb
 .. |license| image:: https://img.shields.io/pypi/l/delb.svg?style=flat-square
    :alt: License
-   :target: https://github.com/pyeve/delb/blob/master/LICENSE.txt
+   :target: https://github.com/funkyfuture/delb/blob/master/LICENSE.txt
 .. |python-support| image:: https://img.shields.io/pypi/pyversions/delb.svg?style=flat-square
    :alt: Python versions
 .. |rtd| image:: https://img.shields.io/badge/RTD-Docs-informational.svg?style=flat-square
