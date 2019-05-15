@@ -17,6 +17,8 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+import pkg_resources
+
 import sphinx_readable_theme
 
 
@@ -26,10 +28,10 @@ project = 'delb'
 copyright = '2018-2019, Frank Sachsenheim'
 author = 'Frank Sachsenheim'
 
+# The full version, including alpha/beta/rc tags
+release = pkg_resources.get_distribution("delb").version
 # The short X.Y version
 version = ''
-# The full version, including alpha/beta/rc tags
-release = '0.1a1'
 
 
 # -- General configuration ---------------------------------------------------
