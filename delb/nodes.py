@@ -879,7 +879,8 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
 class TagNode(_ElementWrappingNode, NodeBase):
     """
-    The instances of this class represent :term:`tag node` s of a tree.
+    The instances of this class represent :term:`tag node` s of a tree, the equivalent
+    of DOM's elements.
 
     To instantiate new nodes use :class:`Document.new_tag_node`,
     :class:`TagNode.new_tag_node`, :class:`TextNode.new_tag_node` or

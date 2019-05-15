@@ -31,8 +31,6 @@ Processing instruction
 Tag
 ~~~
 
-.. autofunction:: delb.register_namespace
-
 .. autoclass:: delb.TagNode
 
 Text
@@ -75,6 +73,14 @@ Contributed filters
 .. autofunction:: delb.is_text_node
 
 .. autofunction:: delb.not_
+
+
+Various helpers
+---------------
+
+.. autofunction:: delb.first
+
+.. autofunction:: delb.register_namespace
 
 
 Exceptions

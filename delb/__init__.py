@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from itertools import chain
 from typing import Any, Dict, Iterable, List, Optional
@@ -56,6 +57,22 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
 # api
+
+
+def first(iterable: Iterable) -> Optional["NodeBase"]:
+    """
+    Returns the first item of the given iterable.
+    Note that the first item is consumed when the iterable is an :term:`iterator`.
+    """
+    if isinstance(iterable, Iterator):
+        try:
+            return next(iterable)
+        except StopIteration:
+            return None
+    elif isinstance(iterable, Sequence):
+        return iterable[0] if len(iterable) else None
+    else:
+        raise TypeError
 
 
 def register_namespace(prefix: str, namespace: str):
@@ -289,6 +306,7 @@ __all__ = (
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,
+    first.__name__,
     is_comment_node.__name__,
     is_processing_instruction_node.__name__,
     is_root_node.__name__,
