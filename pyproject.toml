@@ -5,26 +5,27 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "delb"
 version = "0.1a1"
-description = "A DOM API inspired wrapper around lxml."
+description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
 authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
 license = "AGPL-3.0"
 readme = "README.rst"
+documentation = "https://delb.readthedocs.io/"
+repository = "https://github.com/funkyfuture/delb"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Natural Language :: English",
     "Topic :: Text Processing :: Markup :: XML",
 ]
-# TODO repository and documentation after rename
-# TODO keywords
+keywords = ["xml", "markup", "text processing"]  # TODO two more
 
 [tool.poetry.dependencies]
 python = ">=3.6"
-cssselect ="*"
+cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21",optional = true}
+sphinxcontrib-fulltoc = "^1.2"
 
 [tool.poetry.extras]
 https-loader = ["requests"]

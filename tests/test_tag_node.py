@@ -3,7 +3,14 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from delb import Document, InvalidOperation, TagNode, TextNode, new_tag_node
+from delb import (
+    Document,
+    InvalidOperation,
+    TagNode,
+    TextNode,
+    new_tag_node,
+    register_namespace,
+)
 
 
 def is_pagebreak(node):
@@ -305,11 +312,15 @@ def test_make_node_namespace_inheritance():
 
 def test_make_node_without_context():
     document = Document('<root xmlns="ham" />')
-    node = new_tag_node("a", namespace="spam")
+
+    register_namespace("spam", "https://spam")
+    node = new_tag_node("a", namespace="https://spam")
 
     document.root.append_child(node)
 
-    assert str(document) == '<root xmlns="ham"><a xmlns="spam"/></root>'
+    assert (
+        str(document) == '<root xmlns="ham"><spam:a xmlns:spam="https://spam"/></root>'
+    )
 
 
 def test_names(sample_document):

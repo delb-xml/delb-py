@@ -58,10 +58,19 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 # api
 
 
-register_namespace = etree.register_namespace
-register_namespace.__doc__ = register_namespace.__doc__.replace(
-    "Elements", "TagNodes"
-).replace("namespace URI", "namespace")
+def register_namespace(prefix: str, namespace: str):
+    """
+    Registers a namespace prefix that newly created :class:`TagNode` instances in that
+    namespace will use in serializations.
+
+    The registry is global, and any existing mapping for either the given prefix or the
+    namespace URI will be removed. It has however no effect on the serialization of
+    existing nodes, see :meth:`Document.cleanup_namespace` for that.
+
+    :param prefix: The prefix to register.
+    :param namespace: The targeted namespace.
+    """
+    etree.register_namespace(prefix, namespace)
 
 
 class Document:
@@ -130,12 +139,24 @@ class Document:
         Consolidates the namespace declarations in a document by removing unused and
         redundant ones.
 
+        There are currently some caveats due to lxml's implementations:
+          - prefixes cannot be set for the default namespace
+          - a namespace cannot be declared as default after a node's creation (where a
+            namespace was specified that had been registered for a prefix with
+            :func:`register_namespace`)
+          - there's no way to unregister a prefix for a namespace
+          - if there are other namespaces used as default namespaces (where a namespace
+            was specified that had *not* been registered for a prefix) in the
+            descendants of the root, their declarations are lost when this method is
+            used
+
+        To ensure clean serializations, one should:
+          - register prefixes for all except the default namespace at the start of an
+            application
+          - use only one default namespace within a document
+
         :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
                            (values) that will be declared at the root element.
-                           Note that it is neither possible to assign a prefix for the
-                           current default namespace nor to declare a namespace as the
-                           default one (until this is fixed in lxml, another backend
-                           is used or someone comes up with a workaround).
         :param retain_prefixes: An optional iterable that contains prefixes whose
                                 declarations shall be kept despite not being used.
         """

@@ -123,15 +123,8 @@ def new_tag_node(
     :return: The newly created tag node.
     """
 
-    namespaces: Optional[etree._NSMap]
-
-    if namespace is None:
-        namespaces = None
-    else:
-        namespaces = cast("etree._NSMap", {None: namespace})
-
     result = _get_or_create_element_wrapper(
-        etree.Element(local_name, attrib=attributes, nsmap=namespaces), {}
+        etree.Element(QName(namespace, local_name).text, attrib=attributes), {}
     )
     assert isinstance(result, TagNode)
     return result
@@ -471,12 +464,10 @@ class NodeBase(ABC):
         attributes: Optional[Dict[str, str]],
         namespace: Optional[str],
     ) -> "TagNode":
-        # TODO docs: hint on etree.register_namespace
 
         tag: QName
 
         context_namespace = QName(context).namespace
-        nsmap = context.nsmap
 
         if namespace:
             tag = QName(namespace, local_name)
@@ -488,7 +479,7 @@ class NodeBase(ABC):
             tag = QName(local_name)
 
         result = _get_or_create_element_wrapper(
-            context.makeelement(tag, attrib=attributes, nsmap=nsmap),
+            context.makeelement(tag.text, attrib=attributes, nsmap=context.nsmap),
             self._wrapper_cache,
         )
         assert isinstance(result, TagNode)
@@ -1222,11 +1213,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @local_name.setter
     def local_name(self, value: str):
-        namespace = self.namespace
-        if namespace:
-            self._etree_obj.tag = QName(self.namespace, value)
-        else:
-            self._etree_obj.tag = value
+        self._etree_obj.tag = QName(self.namespace, value).text
 
     @property
     def location_path(self):
@@ -1247,15 +1234,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def namespace(self) -> Optional[str]:
         """
-        The node's namespace.
+        The node's namespace. Be aware, that while this property can be set to ``None``,
+        serializations will continue to render a previous default namespace declaration
+        if the node had such.
         """
         # weirdly QName fails in some cases when called with an etree._Element
-        # passing its tag attribute works, though not documented
         return QName(self._etree_obj.tag).namespace  # type: ignore
 
     @namespace.setter
     def namespace(self, value: Optional[str]):
-        self._etree_obj.tag = QName(value, self.local_name)
+        self._etree_obj.tag = QName(value, self.local_name).text
 
     @property
     def namespaces(self) -> Dict[str, str]:
@@ -1308,7 +1296,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         The node's qualified name.
         """
-        return QName(self._etree_obj.tag).text  # type: ignore
+        return cast(str, self._etree_obj.tag)
 
     def xpath(self, expression: str) -> List["TagNode"]:
         """ Returns all :term:`tag node` s that match the evaluation of an XPath
