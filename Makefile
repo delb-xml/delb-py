@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := tests
 
+VERSION = $(shell grep -oP "^version = \K.+" pyproject.toml)
+# mind that the result includes surrounding quotes
+
 
 define PRINT_HELP_PYSCRIPT
 import re, sys
@@ -41,9 +44,17 @@ mypy: ## run static type checks with mypy
 pytest: ## run the test suite
 	python -m pytest --cov-config .coveragerc --cov=delb tests
 
+.PHONY: release
+release: tests ## release the current version on github & the PyPI
+	git tag -f $(VERSION)
+	git push origin master
+	git push -f origin $(VERSION)
+	poetry publish --build
+
 .PHONY: showdocs
 showdocs: docs ## build and open HTML documentation
 	xdg-open docs/build/html/index.html
 
 .PHONY: tests ## run all tests on normalized code
 tests: black flake8 mypy pytest doctest
+	poetry check
