@@ -18,11 +18,10 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
   with an XML declaration.
 - Comment and processing instruction nodes are shadowed by default, see
   :func:`delb.altered_default_filters` on how to make them accessible.
-- CDATA and Processing Instruction nodes are not accessible at all, but are
-  retained and appear in serializations; unless you **[DANGER ZONE]**
-  manipulate the tree (and you want that often). Depending on your actions you
-  might encounter no alterations or a complete loss of these nodes within the
-  root node. **[/DANGER ZONE]**
+- CDATA nodes are not accessible at all, but are retained and appear in
+  serializations; unless you **[DANGER ZONE]** manipulate the tree (and you want
+  that often). Depending on your actions you might encounter no alterations or a
+  complete loss of these nodes within the root node. **[/DANGER ZONE]**
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
 lxml objects that are bound to :attr:`TagNode._etree_obj`.
@@ -182,7 +181,7 @@ So, the obvious (?) idea is to wrap lxml in a layer that takes the DOM API as
 paradigmatic inspiration, looks and behaves pythonic while keeping the wrapped
 powers accessible.
 
-(Now with that API at hand, this is what an equivalent of the horribly
+Now with that API at hand, this is what an equivalent of the horribly
 complicated function would look like:
 
 .. code-block:: python
@@ -196,10 +195,11 @@ complicated function would look like:
           index = node.index
           node.detach()
           if keep_children:
-              parent.insert_node(
-                  index,
-                  *tuple(x.detach() for x in node.child_nodes())
-              )
+              with altered_default_filters():
+                  parent.insert_node(
+                      index,
+                      *tuple(x.detach() for x in node.child_nodes())
+                  )
 
 
 .. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/

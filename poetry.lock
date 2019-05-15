@@ -410,6 +410,14 @@ version = "1.0.1"
 
 [[package]]
 category = "dev"
+description = "Include a full table of contents in your Sphinx HTML sidebar"
+name = "sphinxcontrib-fulltoc"
+optional = false
+python-versions = "*"
+version = "1.2.0"
+
+[[package]]
+category = "dev"
 description = ""
 name = "sphinxcontrib-htmlhelp"
 optional = false
@@ -500,7 +508,7 @@ six = "*"
 https-loader = ["requests"]
 
 [metadata]
-content-hash = "b5dd6bd73d5710376fbeaa527bfaf5de7a33bce1b554eae7102ddb224e785dfb"
+content-hash = "155ffa22eb774fab65570e3f88ca0cfe5799e64b1e024ccefede6fc9f26c794d"
 python-versions = ">=3.6"
 
 [metadata.hashes]
@@ -546,6 +554,7 @@ sphinx = ["423280646fb37944dd3c85c58fb92a20d745793a9f6c511f59da82fa97cd404b", "d
 sphinx-readable-theme = ["f5fe65a2e112cb956b366df41e0fc894ff6b6f0e4a4814fcbff692566db47fc0"]
 sphinxcontrib-applehelp = ["edaa0ab2b2bc74403149cb0209d6775c96de797dfd5b5e2a71981309efab3897", "fb8dee85af95e5c30c91f10e7eb3c8967308518e0f7488a2828ef7bc191d0d5d"]
 sphinxcontrib-devhelp = ["6c64b077937330a9128a4da74586e8c2130262f014689b4b89e2d08ee7294a34", "9512ecb00a2b0821a146736b39f7aeb90759834b07e81e8cc23a9c70bacb9981"]
+sphinxcontrib-fulltoc = ["c845d62fc467f3135d4543e9f10e13ef91852683bd1c90fd19d07f9d36757cd9"]
 sphinxcontrib-htmlhelp = ["4670f99f8951bd78cd4ad2ab962f798f5618b17675c35c5ac3b2132a14ea8422", "d4fd39a65a625c9df86d7fa8a2d9f3cd8299a3a4b15db63b50aac9e161d8eff7"]
 sphinxcontrib-jsmath = ["2ec2eaebfb78f3f2078e73666b1415417a116cc848b72e5172e596c871103178", "a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8"]
 sphinxcontrib-qthelp = ["513049b93031beb1f57d4daea74068a4feb77aa5630f856fcff2e50de14e9a20", "79465ce11ae5694ff165becda529a600c754f4bc459778778c7017374d4d406f"]

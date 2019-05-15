@@ -25,7 +25,6 @@ python = ">=3.6"
 cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21",optional = true}
-sphinxcontrib-fulltoc = "^1.2"
 
 [tool.poetry.extras]
 https-loader = ["requests"]
@@ -37,6 +36,7 @@ mypy = "*"
 pytest = "*"
 pytest-cov = "*"
 sphinx = "*"
+sphinxcontrib-fulltoc = "*"
 sphinx-readable-theme = "^1.3"
 typing-extensions = "*"
 xmldiff = "^2.2"
