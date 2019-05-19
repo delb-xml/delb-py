@@ -668,12 +668,13 @@ class NodeBase(ABC):
         self, nodes: Tuple[Union["NodeBase", str], ...], clone: bool
     ) -> Tuple["NodeBase", List[Union["NodeBase", str]]]:
         this, *queue = nodes
-        if not isinstance(this, NodeBase):
-            this = TextNode(str(this))
-        elif clone:
-            this = this.clone(deep=True)
+        if isinstance(this, str):
+            this = TextNode(this)
+        elif isinstance(this, NodeBase):
+            if clone:
+                this = this.clone(deep=True)
         else:
-            assert isinstance(this, NodeBase)
+            raise TypeError
 
         if not all(
             x is None for x in (this.parent, this.next_node(), this.previous_node())
