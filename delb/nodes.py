@@ -1350,7 +1350,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     assert self[1].previous_node() is this
                     assert this.next_node() is self[1]
             else:
-                self.__add_first_child(self._prepare_new_relative(this, clone=clone)[0])
+                self.__add_first_child(
+                    self._prepare_new_relative((this,), clone=clone)[0]
+                )
 
         else:
             self[index - 1].add_next(this, clone=clone)
