@@ -16,7 +16,8 @@ For a more elaborated discussion see the *Design* chapter of the documentation.
 Features
 --------
 
-- Loads documents from various source types.
+- Loads documents from various source types. This is customizable and
+  extensible.
 - A completely type-annotated API.
 - Consistent design regarding names and callables' signatures.
 - Shadows comments and processing instructions by default.

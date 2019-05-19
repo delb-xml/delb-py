@@ -283,9 +283,9 @@ default_filters: Tuple[Filter, ...] = (_is_tag_or_text_node,)
 @contextmanager
 def altered_default_filters(*filter: Filter, extend: bool = False):
     """
-    This function can be either used as as context manager or decorator to define a set
-    of :obj:`default_filters` for the encapsuled code block or callable. These are then
-    applied to in all operations that allow node filtering, like
+    This function can be either used as as :term:`context manager` or :term:`decorator`
+    to define a set of :obj:`default_filters` for the encapsuled code block or callable.
+    These are then applied to in all operations that allow node filtering, like
     :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
     access.
 
