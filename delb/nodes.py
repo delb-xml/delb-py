@@ -324,12 +324,12 @@ class NodeBase(ABC):
     def __init__(self, wrapper_cache: _WrapperCache):
         self._wrapper_cache = wrapper_cache
 
-    def add_next(self, *node: Any, clone: bool = False):
+    def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
         """
         Adds one or more nodes to the right of the node this method is called on.
 
-        If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation is added.
+        If a given object is string, a :class:`TextNode` with the string's content is
+        added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -350,12 +350,12 @@ class NodeBase(ABC):
     def _add_next_node(self, node: "NodeBase"):
         pass
 
-    def add_previous(self, *node: Any, clone: bool = False):
+    def add_previous(self, *node: Union["NodeBase", str], clone: bool = False):
         """
         Adds one or more nodes to the left of the node this method is called on.
 
-        If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation is added.
+        If a given object is string, a :class:`TextNode` with the string's content is
+        added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -665,8 +665,8 @@ class NodeBase(ABC):
         pass
 
     def _prepare_new_relative(
-        self, nodes: Tuple[Any, ...], clone: bool
-    ) -> Tuple["NodeBase", List[Any]]:
+        self, nodes: Tuple[Union["NodeBase", str], ...], clone: bool
+    ) -> Tuple["NodeBase", List[Union["NodeBase", str]]]:
         this, *queue = nodes
         if not isinstance(this, NodeBase):
             this = TextNode(str(this))
@@ -1178,13 +1178,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
 
-    def append_child(self, *node: Any, clone: bool = False):
+    def append_child(self, *node: Union[NodeBase, str], clone: bool = False):
         """
         Adds one or more nodes as child nodes after any existing to the child nodes of
         the node this method is called on.
 
-        If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation is added.
+        If a given object is string, a :class:`TextNode` with the string's content is
+        added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -1192,7 +1192,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if not node:
             return
 
-        queue: Sequence[Any]
+        queue: Sequence[Union[NodeBase, str]]
 
         last_child = self.last_child
 
@@ -1321,12 +1321,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return None
         return super().index
 
-    def insert_child(self, index: int, *node: Any, clone: bool = False):
+    def insert_child(
+        self, index: int, *node: Union[NodeBase, str], clone: bool = False
+    ):
         """
         Inserts one or more child nodes.
 
-        If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation is added.
+        If a given object is string, a :class:`TextNode` with the string's content is
+        added.
 
         :param index: The index at which the first of the given nodes will be inserted,
                       the remaining nodes are added afterwards in the given order.
@@ -1358,7 +1360,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self[index - 1].add_next(this, clone=clone)
 
         if queue:
-            this.add_next(*queue, clone=clone)
+            self[index].add_next(*queue, clone=clone)
 
     @property
     def last_child(self) -> Optional[NodeBase]:
@@ -1447,8 +1449,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         Adds one or more nodes as child nodes before any existing to the child nodes of
         the node this method is called on.
 
-        If a given object is not of a node type, a :class:`TextNode` bearing the
-        object's string representation is added.
+        If a given object is string, a :class:`TextNode` with the string's content is
+        added.
 
         :param node: The node(s) to be added.
         :param clone: Clones the node before adding if ``True``.
@@ -1770,9 +1772,9 @@ class TextNode(_ChildLessNode, NodeBase):
             )
 
     @content.setter
-    def content(self, text: Any):
+    def content(self, text: str):
         if not isinstance(text, str):
-            text = str(text)
+            raise TypeError
 
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)

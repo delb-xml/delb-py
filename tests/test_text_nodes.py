@@ -230,8 +230,8 @@ def test_construction():
 
 def test_content_is_coerced():
     node = TextNode("")
-    node.content = 0
-    assert node.content == "0"
+    with pytest.raises(TypeError):
+        node.content = 0
 
 
 def test_depth():
