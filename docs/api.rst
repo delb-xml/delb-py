@@ -82,6 +82,8 @@ Various helpers
 
 .. autofunction:: delb.register_namespace
 
+.. autofunction:: delb.tag
+
 
 Exceptions
 ----------

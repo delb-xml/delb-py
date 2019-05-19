@@ -38,6 +38,7 @@ from delb.nodes import (
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
+    tag,
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
@@ -317,4 +318,5 @@ __all__ = (
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
     register_namespace.__name__,
+    tag.__name__,
 )

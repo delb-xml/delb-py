@@ -10,6 +10,7 @@ from delb import (
     TextNode,
     new_tag_node,
     register_namespace,
+    tag,
 )
 
 
@@ -308,6 +309,42 @@ def test_make_node_namespace_inheritance():
     node = document.new_tag_node("node")
     assert node.namespace == "https://name.space"
     assert node.prefix == "pfx"
+
+
+def test_make_node_with_children():
+    result = new_tag_node("infocard", children=[tag("label")])
+    assert str(result) == "<infocard><label/></infocard>"
+
+    result = new_tag_node("infocard", children=[tag("label", {"updated": "never"})])
+    assert str(result) == '<infocard><label updated="never"/></infocard>'
+
+    result = new_tag_node("infocard", children=[tag("label", "Monty Python")])
+    assert str(result) == "<infocard><label>Monty Python</label></infocard>"
+
+    result = new_tag_node(
+        "infocard", children=[tag("label", ("Monty Python", tag("fullstop")))]
+    )
+    assert str(result) == "<infocard><label>Monty Python<fullstop/></label></infocard>"
+
+    result = new_tag_node(
+        "infocard", children=[tag("label", {"updated": "never"}, "Monty Python")]
+    )
+    assert (
+        str(result) == '<infocard><label updated="never">Monty '
+        "Python</label></infocard>"
+    )
+
+    result = new_tag_node(
+        "infocard", children=[tag("label", {"updated": "never"}, ("Monty ", "Python"))]
+    )
+    assert (
+        str(result) == '<infocard><label updated="never">Monty '
+        "Python</label></infocard>"
+    )
+
+    register_namespace("foo", "https://foo.org")
+    result = new_tag_node("root", namespace="https://foo.org", children=[tag("node")])
+    assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
 def test_make_node_without_context():

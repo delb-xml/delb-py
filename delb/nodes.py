@@ -26,6 +26,8 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Mapping,
+    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -110,7 +112,10 @@ def new_processing_instruction_node(
 
 
 def new_tag_node(
-    local_name: str, attributes: Dict[str, str] = None, namespace: Optional[str] = None
+    local_name: str,
+    attributes: Optional[Dict[str, str]] = None,
+    namespace: Optional[str] = None,
+    children: Sequence[Union[str, "NodeBase", "_TagDefinition"]] = (),
 ) -> "TagNode":
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
@@ -120,6 +125,11 @@ def new_tag_node(
     :param local_name: The tag name.
     :param attributes: Optional attributes that are assigned to the new node.
     :param namespace: An optional tag namespace.
+    :param children: An optional sequence of objects that will be appended as child
+                     nodes. This can be existing nodes, strings that will be inserted
+                     as text nodes and in-place definitions of :class:`TagNode`
+                     instances from :func:`tag`. The latter will be assigned to the
+                     same namespace.
     :return: The newly created tag node.
     """
 
@@ -127,6 +137,22 @@ def new_tag_node(
         etree.Element(QName(namespace, local_name).text, attrib=attributes), {}
     )
     assert isinstance(result, TagNode)
+
+    for child in children:
+        if isinstance(child, (str, NodeBase)):
+            result.append_child(child)
+        elif isinstance(child, _TagDefinition):
+            result.append_child(
+                result.new_tag_node(
+                    local_name=child.local_name,
+                    attributes=child.attributes,
+                    namespace=namespace,
+                    children=child.children,
+                )
+            )
+        else:
+            raise TypeError
+
     return result
 
 
@@ -139,6 +165,109 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
     cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
+
+
+class _TagDefinition(NamedTuple):
+    local_name: str
+    attributes: Optional[Dict[str, str]] = None
+    children: Tuple = ()
+    # TODO use this notation when it is supported by Python, and only these versions
+    #      are supported by delb
+    # children: Tuple[Union[str, "_TagDefinition"], ...] = ()
+
+
+@overload
+def tag(local_name: str):
+    ...
+
+
+@overload
+def tag(local_name: str, attributes: ElementAttributes):
+    ...
+
+
+@overload
+def tag(local_name: str, child: Union[str, _TagDefinition]):
+    ...
+
+
+@overload
+def tag(local_name: str, children: Tuple[Union[str, _TagDefinition], ...]):
+    ...
+
+
+@overload
+def tag(
+    local_name: str, attributes: ElementAttributes, child: Union[str, _TagDefinition]
+):
+    ...
+
+
+@overload
+def tag(
+    local_name: str,
+    attributes: ElementAttributes,
+    children: Tuple[Union[str, _TagDefinition], ...],
+):
+    ...
+
+
+def tag(*args):  # noqa: C901
+    """
+    This function can be used for in-place creation of :class:`TagNode` instances in
+    the ``children`` argument of :func:`new_tag_node` and :meth:`NodeBase.new_tag_node`.
+
+    The first argument to the function is always the local name of the tag node.
+    Optionally, the second argument can be a :term:`mapping` that specifies attributes
+    for that node.
+    The optional last argument is either a single object that will be appended as child
+    node or a sequence of such, these objects can therefore be from the same types as
+    the ``new_tag_node``'s ``children`` argument's items can be.
+
+    >>> node = new_tag_node('root', children=[
+    ...     tag("head", {"lvl": "1"}, "Hello!"),
+    ...     tag("items", (
+    ...         tag("item1"),
+    ...         tag("item2"),
+    ...         )
+    ...     )
+    ... ])
+    >>> str(node)
+    '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
+    """
+
+    if len(args) == 1:
+        return _TagDefinition(local_name=args[0])
+
+    if len(args) == 2:
+        second_arg = args[1]
+        if isinstance(second_arg, Mapping):
+            return _TagDefinition(local_name=args[0], attributes=second_arg)
+        if isinstance(second_arg, (str, _TagDefinition)):
+            return _TagDefinition(local_name=args[0], children=(second_arg,))
+        if isinstance(second_arg, Sequence):
+            if not all(
+                isinstance(x, (str, NodeBase, _TagDefinition)) for x in second_arg
+            ):
+                raise TypeError
+            return _TagDefinition(local_name=args[0], children=tuple(second_arg))
+
+    if len(args) == 3:
+        third_arg = args[2]
+        if isinstance(third_arg, (str, _TagDefinition)):
+            return _TagDefinition(
+                local_name=args[0], attributes=args[1], children=(third_arg,)
+            )
+        if isinstance(third_arg, Sequence):
+            if not all(
+                isinstance(x, (str, NodeBase, _TagDefinition)) for x in third_arg
+            ):
+                raise TypeError
+            return _TagDefinition(
+                local_name=args[0], attributes=args[1], children=tuple(third_arg)
+            )
+
+    raise ValueError
 
 
 # default filters
@@ -446,13 +575,20 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
+        children: Sequence[Union[str, "NodeBase", _TagDefinition]] = (),
     ) -> "TagNode":
         """
         Creates a new :class:`TagNode` instance in the node's context.
 
         :param local_name: The tag name.
         :param attributes: Optional attributes that are assigned to the new node.
-        :param namespace: An optional tag namespace.
+        :param namespace: An optional tag namespace. If none is provided, the context
+                          node's namespace is inherited.
+        :param children: An optional sequence of objects that will be appended as child
+                         nodes. This can be existing nodes, strings that will be
+                         inserted as text nodes and in-place definitions of
+                         :class:`TagNode` instances from :func:`tag`. The latter will be
+                         assigned to the same namespace.
         :return: The newly created tag node.
         """
         pass
@@ -463,6 +599,7 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]],
         namespace: Optional[str],
+        children: Sequence[Union[str, "NodeBase", "_TagDefinition"]],
     ) -> "TagNode":
 
         tag: QName
@@ -483,6 +620,22 @@ class NodeBase(ABC):
             self._wrapper_cache,
         )
         assert isinstance(result, TagNode)
+
+        for child in children:
+            if isinstance(child, (str, NodeBase)):
+                result.append_child(child)
+            elif isinstance(child, _TagDefinition):
+                result.append_child(
+                    result.new_tag_node(
+                        local_name=child.local_name,
+                        attributes=child.attributes,
+                        namespace=result.namespace,
+                        children=child.children,
+                    )
+                )
+            else:
+                raise TypeError
+
         return result
 
     @abstractmethod
@@ -600,15 +753,22 @@ class _ChildLessNode(NodeBase):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
+        children: Sequence[Union[str, NodeBase, "_TagDefinition"]] = (),
     ) -> "TagNode":
         parent = self.parent
         if parent is None:
             return new_tag_node(
-                local_name=local_name, attributes=attributes, namespace=namespace
+                local_name=local_name,
+                attributes=attributes,
+                namespace=namespace,
+                children=children,
             )
         else:
             return parent.new_tag_node(
-                local_name=local_name, attributes=attributes, namespace=namespace
+                local_name=local_name,
+                attributes=attributes,
+                namespace=namespace,
+                children=children,
             )
 
 
@@ -1258,9 +1418,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
+        children: Sequence[Union[str, NodeBase, "_TagDefinition"]] = (),
     ) -> "TagNode":
         return self._new_tag_node_from(
-            self._etree_obj, local_name, attributes, namespace
+            self._etree_obj, local_name, attributes, namespace, children
         )
 
     @property
@@ -1979,4 +2140,5 @@ __all__ = (
     new_comment_node.__name__,
     new_processing_instruction_node.__name__,
     new_tag_node.__name__,
+    tag.__name__,
 )

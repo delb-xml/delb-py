@@ -9,5 +9,6 @@ exclude_lines =
     pragma: no cover
     raise InvalidCodePath
     raise NotImplementedError
-    raise ValueError\(f"A TextNode\._position
+    raise TypeError
+    raise ValueError
 fail_under = 96
