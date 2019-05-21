@@ -37,7 +37,7 @@ from typing import (
 from lxml import etree
 
 from delb.exceptions import InvalidCodePath, InvalidOperation
-from delb.typing import ElementAttributes, Filter, _WrapperCache
+from delb.typing import ElementAttributes, Filter, NodeSource, _WrapperCache
 from delb.utils import css_to_xpath, random_unused_prefix
 from delb.xpath import XPathExpression
 
@@ -115,7 +115,7 @@ def new_tag_node(
     local_name: str,
     attributes: Optional[Dict[str, str]] = None,
     namespace: Optional[str] = None,
-    children: Sequence[Union[str, "NodeBase", "_TagDefinition"]] = (),
+    children: Sequence[NodeSource] = (),
 ) -> "TagNode":
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
@@ -187,28 +187,22 @@ def tag(local_name: str, attributes: ElementAttributes):
 
 
 @overload
-def tag(local_name: str, child: Union[str, _TagDefinition]):
+def tag(local_name: str, child: NodeSource):
     ...
 
 
 @overload
-def tag(local_name: str, children: Tuple[Union[str, _TagDefinition], ...]):
+def tag(local_name: str, children: Sequence[NodeSource]):
     ...
 
 
 @overload
-def tag(
-    local_name: str, attributes: ElementAttributes, child: Union[str, _TagDefinition]
-):
+def tag(local_name: str, attributes: ElementAttributes, child: NodeSource):
     ...
 
 
 @overload
-def tag(
-    local_name: str,
-    attributes: ElementAttributes,
-    children: Tuple[Union[str, _TagDefinition], ...],
-):
+def tag(local_name: str, attributes: ElementAttributes, children: Sequence[NodeSource]):
     ...
 
 
@@ -575,7 +569,7 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]] = None,
         namespace: Optional[str] = None,
-        children: Sequence[Union[str, "NodeBase", _TagDefinition]] = (),
+        children: Sequence[NodeSource] = (),
     ) -> "TagNode":
         """
         Creates a new :class:`TagNode` instance in the node's context.
@@ -599,7 +593,7 @@ class NodeBase(ABC):
         local_name: str,
         attributes: Optional[Dict[str, str]],
         namespace: Optional[str],
-        children: Sequence[Union[str, "NodeBase", "_TagDefinition"]],
+        children: Sequence[NodeSource],
     ) -> "TagNode":
 
         tag: QName

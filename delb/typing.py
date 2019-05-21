@@ -14,16 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
 
 from lxml import etree
 
 if TYPE_CHECKING:
-    from delb.nodes import _ElementWrappingNode, NodeBase  # noqa: F401
+    from delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition  # noqa: F401
 
 
 ElementAttributes = etree._Attrib
 Filter = Callable[["NodeBase"], bool]
+NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 _WrapperCache = Dict[int, "_ElementWrappingNode"]
 
 LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
