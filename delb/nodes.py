@@ -189,7 +189,7 @@ def tag(local_name: str):
 
 
 @overload
-def tag(local_name: str, attributes: ElementAttributes):
+def tag(local_name: str, attributes: Mapping[str, str]):
     ...
 
 
@@ -204,12 +204,12 @@ def tag(local_name: str, children: Sequence[NodeSource]):
 
 
 @overload
-def tag(local_name: str, attributes: ElementAttributes, child: NodeSource):
+def tag(local_name: str, attributes: Mapping[str, str], child: NodeSource):
     ...
 
 
 @overload
-def tag(local_name: str, attributes: ElementAttributes, children: Sequence[NodeSource]):
+def tag(local_name: str, attributes: Mapping[str, str], children: Sequence[NodeSource]):
     ...
 
 
