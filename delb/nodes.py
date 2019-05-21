@@ -168,6 +168,13 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
 
 
 class _TagDefinition(NamedTuple):
+    """
+    Instances of this class describe tag nodes that are constructed from the context
+    they are used in (commonly additions to a tree) and the properties that this
+    description holds. For the sake of slick code they are not instantiated directly,
+    but with the :func:`tag` function.
+    """
+
     local_name: str
     attributes: Optional[Dict[str, str]] = None
     children: Tuple = ()
@@ -208,17 +215,25 @@ def tag(local_name: str, attributes: ElementAttributes, children: Sequence[NodeS
 
 def tag(*args):  # noqa: C901
     """
-    This function can be used for in-place creation of :class:`TagNode` instances in
-    the ``children`` argument of :func:`new_tag_node` and :meth:`NodeBase.new_tag_node`.
+    This function can be used for in-place creation (or call it templating if you
+    want to) of :class:`TagNode` instances as:
+
+    - ``node`` argument to methods that add nodes to a tree
+    - items in the ``children`` argument of :func:`new_tag_node` and
+      :meth:`NodeBase.new_tag_node`
 
     The first argument to the function is always the local name of the tag node.
     Optionally, the second argument can be a :term:`mapping` that specifies attributes
     for that node.
     The optional last argument is either a single object that will be appended as child
-    node or a sequence of such, these objects can therefore be from the same types as
-    the ``new_tag_node``'s ``children`` argument's items can be.
+    node or a sequence of such, these objects can be node instances of any type, strings
+    (for derived :class:`TextNode` instances) or other definitions from this function
+    (for derived :class:`TagNode` instances).
 
-    >>> node = new_tag_node('root', children=[
+    The actual nodes that are constructed always inherit the namespace of the context
+    node they are created in.
+
+    >>> root = new_tag_node('root', children=[
     ...     tag("head", {"lvl": "1"}, "Hello!"),
     ...     tag("items", (
     ...         tag("item1"),
@@ -226,8 +241,11 @@ def tag(*args):  # noqa: C901
     ...         )
     ...     )
     ... ])
-    >>> str(node)
+    >>> str(root)
     '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
+    >>> root.append_child(tag("addendum"))
+    >>> str(root)[-26:]
+    '</items><addendum/></root>'
     """
 
     if len(args) == 1:
@@ -318,15 +336,17 @@ class NodeBase(ABC):
     def __init__(self, wrapper_cache: _WrapperCache):
         self._wrapper_cache = wrapper_cache
 
-    def add_next(self, *node: Union["NodeBase", str], clone: bool = False):
+    def add_next(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes to the right of the node this method is called on.
 
-        If a given object is string, a :class:`TextNode` with the string's content is
-        added.
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the node before adding if ``True``.
+        :param clone: Clones the concrete nodes before adding if ``True``.
         """
         if self.parent is None and not (
             hasattr(self, "__document__")
@@ -344,15 +364,17 @@ class NodeBase(ABC):
     def _add_next_node(self, node: "NodeBase"):
         pass
 
-    def add_previous(self, *node: Union["NodeBase", str], clone: bool = False):
+    def add_previous(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes to the left of the node this method is called on.
 
-        If a given object is string, a :class:`TextNode` with the string's content is
-        added.
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the node before adding if ``True``.
+        :param clone: Clones the concrete nodes before adding if ``True``.
         """
         if self.parent is None and not (
             hasattr(self, "__document__")
@@ -563,6 +585,7 @@ class NodeBase(ABC):
         """
         pass
 
+    # REMOVE?
     @abstractmethod
     def new_tag_node(
         self,
@@ -616,21 +639,15 @@ class NodeBase(ABC):
         assert isinstance(result, TagNode)
 
         for child in children:
-            if isinstance(child, (str, NodeBase)):
+            if isinstance(child, (str, NodeBase, _TagDefinition)):
                 result.append_child(child)
-            elif isinstance(child, _TagDefinition):
-                result.append_child(
-                    result.new_tag_node(
-                        local_name=child.local_name,
-                        attributes=child.attributes,
-                        namespace=result.namespace,
-                        children=child.children,
-                    )
-                )
             else:
                 raise TypeError
 
         return result
+
+    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
+        return self.parent._new_tag_node_from_definition(definition)
 
     @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -659,14 +676,16 @@ class NodeBase(ABC):
         pass
 
     def _prepare_new_relative(
-        self, nodes: Tuple[Union["NodeBase", str], ...], clone: bool
-    ) -> Tuple["NodeBase", List[Union["NodeBase", str]]]:
+        self, nodes: Tuple[NodeSource, ...], clone: bool
+    ) -> Tuple["NodeBase", List[NodeSource]]:
         this, *queue = nodes
         if isinstance(this, str):
             this = TextNode(this)
         elif isinstance(this, NodeBase):
             if clone:
                 this = this.clone(deep=True)
+        elif isinstance(this, _TagDefinition):
+            this = self._new_tag_node_from_definition(this)
         else:
             raise TypeError
 
@@ -703,12 +722,17 @@ class NodeBase(ABC):
         except StopIteration:
             return None
 
-    def replace_with(self, node: "NodeBase", clone: bool = False) -> "NodeBase":
+    def replace_with(self, node: NodeSource, clone: bool = False) -> "NodeBase":
         """
         Removes the node and places the given one in its tree location.
 
+        The node can be  a concrete instance of any node type or a rather abstract
+        description in the form of a string or an object returned from the :func:`tag`
+        function that is used to derive a :class:`TextNode` respectively
+        :class:`TagNode` instance from.
+
         :param node: The replacing node.
-        :param clone: The replacing node is cloned if ``True``.
+        :param clone: A concrete, replacing node is cloned if ``True``.
         :return: The removed node.
         """
         if self.parent is None:
@@ -1173,21 +1197,23 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
 
-    def append_child(self, *node: Union[NodeBase, str], clone: bool = False):
+    def append_child(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes as child nodes after any existing to the child nodes of
         the node this method is called on.
 
-        If a given object is string, a :class:`TextNode` with the string's content is
-        added.
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the node before adding if ``True``.
+        :param clone: Clones the concrete nodes before adding if ``True``.
         """
         if not node:
             return
 
-        queue: Sequence[Union[NodeBase, str]]
+        queue: Sequence[NodeSource]
 
         last_child = self.last_child
 
@@ -1316,19 +1342,19 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return None
         return super().index
 
-    def insert_child(
-        self, index: int, *node: Union[NodeBase, str], clone: bool = False
-    ):
+    def insert_child(self, index: int, *node: NodeSource, clone: bool = False):
         """
         Inserts one or more child nodes.
 
-        If a given object is string, a :class:`TextNode` with the string's content is
-        added.
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
 
         :param index: The index at which the first of the given nodes will be inserted,
                       the remaining nodes are added afterwards in the given order.
         :param node: The node(s) to be added.
-        :param clone: Clones the node before adding if ``True``.
+        :param clone: Clones the concrete nodes before adding if ``True``.
         """
         if index < 0:
             raise ValueError
@@ -1421,6 +1447,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
     ) -> "TagNode":
         return self._new_tag_node_from(
             self._etree_obj, local_name, attributes, namespace, children
+        )
+
+    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
+        return self._new_tag_node_from(
+            self._etree_obj,
+            definition.local_name,
+            definition.attributes,
+            self.namespace,
+            definition.children,
         )
 
     @property

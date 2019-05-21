@@ -1,6 +1,6 @@
 import pytest
 
-from delb import is_tag_node, Document, InvalidOperation, TagNode, TextNode
+from delb import is_tag_node, Document, InvalidOperation, TagNode, TextNode, tag
 
 
 def test_add_previous():
@@ -128,6 +128,13 @@ def test_replace_with():
 
     with pytest.raises(InvalidOperation):
         root.replace_with(root.new_tag_node("new"))
+
+
+def test_replace_with_tag_definition():
+    root = Document('<root xmlns="https://name.space"><node/></root>').root
+    root.first_child.replace_with(tag("vertex", {"type": "xml"}))
+    assert root.first_child.namespace == "https://name.space"
+    assert str(root) == '<root xmlns="https://name.space"><vertex type="xml"/></root>'
 
 
 def test_root_takes_no_siblings():
