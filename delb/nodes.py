@@ -243,7 +243,7 @@ def tag(*args):  # noqa: C901
         second_arg = args[1]
         if isinstance(second_arg, Mapping):
             return _TagDefinition(local_name=args[0], attributes=second_arg)
-        if isinstance(second_arg, (str, _TagDefinition)):
+        if isinstance(second_arg, (str, NodeBase, _TagDefinition)):
             return _TagDefinition(local_name=args[0], children=(second_arg,))
         if isinstance(second_arg, Sequence):
             if not all(
@@ -254,7 +254,7 @@ def tag(*args):  # noqa: C901
 
     if len(args) == 3:
         third_arg = args[2]
-        if isinstance(third_arg, (str, _TagDefinition)):
+        if isinstance(third_arg, (str, NodeBase, _TagDefinition)):
             return _TagDefinition(
                 local_name=args[0], attributes=args[1], children=(third_arg,)
             )
