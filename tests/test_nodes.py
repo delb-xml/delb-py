@@ -1,20 +1,26 @@
 import pytest
 
-from delb import is_tag_node, Document, InvalidOperation, TagNode, TextNode, tag
+from delb import (
+    is_tag_node,
+    new_tag_node,
+    tag,
+    Document,
+    InvalidOperation,
+    TagNode,
+    TextNode,
+)
 
 
 def test_add_previous():
     document = Document("<root><e1/></root>")
-    document.root[0].add_previous(
-        document.new_tag_node("e2"), document.new_tag_node("e3")
-    )
+    document.root[0].add_previous(tag("e2"), tag("e3"))
 
     assert str(document) == "<root><e3/><e2/><e1/></root>"
 
 
 def test_add_next():
     document = Document("<root><e1/></root>")
-    document.root[0].add_next(document.new_tag_node("e2"), document.new_tag_node("e3"))
+    document.root[0].add_next(tag("e2"), tag("e3"))
 
     assert str(document) == "<root><e1/><e2/><e3/></root>"
 
@@ -107,7 +113,7 @@ def test_replace_with():
     root = document.root
 
     b_text = root[0][0]
-    b_text.replace_with(root.new_tag_node("b"))
+    b_text.replace_with(tag("b"))
     expected_new = root[0][0]
 
     assert b_text.parent is None
@@ -117,7 +123,7 @@ def test_replace_with():
     assert str(document) == "<root><a><b/></a>c<d>e</d></root>"
 
     c_text = root[1]
-    c_text.replace_with(root.new_tag_node("c"))
+    c_text.replace_with(tag("c"))
     expected_new = root[1]
 
     assert c_text.parent is None
@@ -127,7 +133,7 @@ def test_replace_with():
     assert str(document) == "<root><a><b/></a><c/><d>e</d></root>"
 
     with pytest.raises(InvalidOperation):
-        root.replace_with(root.new_tag_node("new"))
+        root.replace_with(tag("new"))
 
 
 def test_replace_with_tag_definition():
@@ -141,13 +147,13 @@ def test_root_takes_no_siblings():
     root = Document("<root/>").root
 
     with pytest.raises(InvalidOperation):
-        root.add_next(root.new_tag_node("x"))
+        root.add_next(tag("x"))
 
     with pytest.raises(InvalidOperation):
         root.add_next("x")
 
     with pytest.raises(InvalidOperation):
-        root.add_previous(root.new_tag_node("x"))
+        root.add_previous(tag("x"))
 
     with pytest.raises(InvalidOperation):
         root.add_previous("x")

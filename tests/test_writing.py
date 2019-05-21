@@ -1,4 +1,4 @@
-from delb import Document
+from delb import tag, Document
 
 from tests.utils import assert_documents_are_semantical_equal, count_pis
 
@@ -23,12 +23,12 @@ def test_initial_nodes(files_path, result_file):
 def test_significant_whitespace_is_saved(result_file):
     document = Document("<text/>")
     root = document.root
-    hi = root.new_tag_node("hi")
+    hi = tag("hi")
 
-    root.append_child(hi, clone=True)
+    root.append_child(hi)
     root[0].append_child("Hello")
     root.append_child(" ")
-    root.append_child(hi, clone=True)
+    root.append_child(hi)
     root[2].append_child("world!")
 
     document.save(result_file)

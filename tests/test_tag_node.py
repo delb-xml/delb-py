@@ -22,7 +22,7 @@ def test_add_next_tag_before_tail():
     document = Document("<root><a/>b</root>")
     root = document.root
 
-    root[0].add_next(root.new_tag_node("c"))
+    root[0].add_next(tag("c"))
 
     assert str(document) == "<root><a/><c/>b</root>"
 
@@ -41,7 +41,7 @@ def test_add_previous_node():
     root = document.root
 
     a = root[0]
-    a.add_previous(root.new_tag_node("z"))
+    a.add_previous(tag("z"))
     assert str(document) == "<root><z/><a/></root>"
 
     z = root[0]
@@ -51,7 +51,7 @@ def test_add_previous_node():
     z.add_previous("y")
     assert str(document) == "<root>xy<z/><a/></root>"
 
-    a.add_previous(a.new_tag_node("boundary"))
+    a.add_previous(tag("boundary"))
     assert str(document) == "<root>xy<z/><boundary/><a/></root>"
 
 
@@ -145,12 +145,12 @@ def test_detach_node_with_tail():
     root[0].detach()
     assert str(document) == "<root>bc<d/></root>"
 
-    root.append_child(root.new_tag_node("e"), "f")
+    root.append_child(tag("e"), "f")
     e = root[3]
     e.detach()
     assert str(document) == "<root>bc<d/>f</root>"
 
-    root.append_child(root.new_tag_node("g"), "h")
+    root.append_child(tag("g"), "h")
 
     root[-2].detach()
     assert str(document) == "<root>bc<d/>fh</root>"
@@ -222,7 +222,7 @@ def test_insert():
     root = document.root
     a = root[0]
 
-    a.insert_child(0, root.new_tag_node("b"))
+    a.insert_child(0, tag("b"))
     assert str(document) == "<root><a><b/>c</a></root>"
 
     a.insert_child(0, "|aaa|")
@@ -413,7 +413,7 @@ def test_prefix():
 
 def test_prepend_child():
     document = Document("<root><b/></root>")
-    document.root.prepend_child(document.new_tag_node("a"))
+    document.root.prepend_child(tag("a"))
     assert str(document) == "<root><a/><b/></root>"
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from delb import Document, TagNode, TextNode, is_text_node
+from delb import Document, TagNode, TextNode, is_text_node, tag
 from delb.nodes import TAIL, APPENDED
 
 
@@ -8,7 +8,7 @@ def test_add_tag_before_tail():
     document = Document("<root><a/>b</root>")
     root = document.root
 
-    root[1].add_previous(root.new_tag_node("c"))
+    root[1].add_previous(tag("c"))
 
     assert str(document) == "<root><a/><c/>b</root>"
 
@@ -17,7 +17,7 @@ def test_add_tag_after_tail_appended_text():
     document = Document("<root><a/>b</root>")
     root = document.root
     root.append_child("c")
-    root.append_child(root.new_tag_node("d"))
+    root.append_child(tag("d"))
     assert str(document) == "<root><a/>bc<d/></root>"
 
 
@@ -25,7 +25,7 @@ def test_add_tag_after_tail():
     document = Document("<root><node/>tail</root>")
     tail = document.root[1]
 
-    tail.add_next(document.new_tag_node("end"))
+    tail.add_next(tag("end"))
     assert str(document) == "<root><node/>tail<end/></root>"
 
 
@@ -105,7 +105,7 @@ def test_add_tag_between_text_nodes_at_tail_position():
 
     root[1].add_next("the")
     root[2].add_next(" end")
-    root[1].add_next(root.new_tag_node("node"))
+    root[1].add_next(tag("node"))
     assert len(document.root) == 5
     assert str(document) == "<root><a/>tail<node/>the end</root>"
 
@@ -131,7 +131,7 @@ def test_add_tag_between_two_appended():
     root = document.root
     root.append_child("appended")
 
-    document.root[0].add_next(root.new_tag_node("node"))
+    document.root[0].add_next(tag("node"))
 
     assert str(document) == "<root>data<node/>appended</root>"
 
@@ -139,7 +139,7 @@ def test_add_tag_between_two_appended():
     root = document.root
     root.append_child("appended")
 
-    root[1].add_previous(root.new_tag_node("node"))
+    root[1].add_previous(tag("node"))
 
     assert str(document) == "<root>data<node/>appended</root>"
 
@@ -151,7 +151,7 @@ def test_add_text_between_two_appended():
     root[0].add_next(" appended_1")
     root[1].add_next(" appended_2")
     root[2].add_next(" appended_3")
-    root[1].add_next(root.new_tag_node("tag"))
+    root[1].add_next(tag("tag"))
 
     assert len(document.root) == 5
     assert str(document) == "<root>data appended_1<tag/> appended_2 appended_3</root>"
@@ -294,7 +294,7 @@ def test_detach_text_sandwiched_node():
     data.detach()
     assert str(document) == "<root> more more more tailing</root>"
 
-    root.insert_child(0, data.new_tag_node("tag"))
+    root.insert_child(0, tag("tag"))
     more.detach()
     assert str(document) == "<root><tag/> tailing</root>"
 
@@ -329,7 +329,7 @@ def test_none_content_wrapping():
     e1 = document.root[0]
     assert e1.next_node() is None
 
-    e1.add_next(e1.new_tag_node("e1"))
+    e1.add_next(tag("e2"))
     assert isinstance(e1.next_node(), TagNode)
 
 
