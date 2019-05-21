@@ -166,11 +166,10 @@ def test_detach_root():
 
 
 def test_equality():
-    document = Document("<root/>")
-    a = document.new_tag_node("name", attributes={"x": "y"})
-    b = document.new_tag_node("name", attributes={"x": "y"})
-    c = document.new_tag_node("nome", attributes={"x": "y"})
-    d = document.new_tag_node("name", attributes={"y": "x"})
+    a = new_tag_node("name", attributes={"x": "y"})
+    b = new_tag_node("name", attributes={"x": "y"})
+    c = new_tag_node("nome", attributes={"x": "y"})
+    d = new_tag_node("name", attributes={"y": "x"})
 
     assert a == b
     assert b == a
@@ -296,14 +295,6 @@ def test_iter_stream_to_right():
         assert node.local_name == chars[i]
 
 
-def test_make_node_with_additional_namespace():
-    document = Document("<root/>")
-
-    node = document.new_tag_node("foo", namespace="https://name.space")
-    assert node.namespace == "https://name.space"
-    assert node._etree_obj.tag == "{https://name.space}foo"
-
-
 def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
     node = document.new_tag_node("node")
@@ -347,7 +338,7 @@ def test_make_node_with_children():
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
-def test_make_node_without_context():
+def test_make_node_outside_context():
     document = Document('<root xmlns="ham" />')
 
     register_namespace("spam", "https://spam")
@@ -358,6 +349,14 @@ def test_make_node_without_context():
     assert (
         str(document) == '<root xmlns="ham"><spam:a xmlns:spam="https://spam"/></root>'
     )
+
+
+def test_make_node_in_context_with_namespace():
+    document = Document("<root/>")
+
+    node = document.new_tag_node("foo", namespace="https://name.space")
+    assert node.namespace == "https://name.space"
+    assert node._etree_obj.tag == "{https://name.space}foo"
 
 
 def test_names(sample_document):

@@ -76,14 +76,14 @@ def test_index():
 
 
 def test_invalid_operations():
-    document = Document("<root/>")
+    document_1 = Document("<root/>")
     document_2 = Document("<root><replacement/>parts</root>")
 
     with pytest.raises(InvalidOperation):
-        document.root.append_child(document_2.root[0])
+        document_1.root.append_child(document_2.root[0])
 
-    new_node = document.new_tag_node("newNode")
-    document.root.append_child(new_node)
+    new_node = new_tag_node("newNode")
+    document_1.root.append_child(new_node)
 
     with pytest.raises(InvalidOperation):
         new_node.add_next(document_2.root[0])

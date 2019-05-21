@@ -139,17 +139,8 @@ def new_tag_node(
     assert isinstance(result, TagNode)
 
     for child in children:
-        if isinstance(child, (str, NodeBase)):
+        if isinstance(child, (str, NodeBase, _TagDefinition)):
             result.append_child(child)
-        elif isinstance(child, _TagDefinition):
-            result.append_child(
-                result.new_tag_node(
-                    local_name=child.local_name,
-                    attributes=child.attributes,
-                    namespace=namespace,
-                    children=child.children,
-                )
-            )
         else:
             raise TypeError
 
@@ -1479,11 +1470,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         Adds one or more nodes as child nodes before any existing to the child nodes of
         the node this method is called on.
 
-        If a given object is string, a :class:`TextNode` with the string's content is
-        added.
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the node before adding if ``True``.
+        :param clone: Clones the concrete nodes before adding if ``True``.
         """
         self.insert_child(0, *node, clone=clone)
 
