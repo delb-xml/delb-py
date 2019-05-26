@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "delb"
-version = "0.1b3"
+version = "0.1"
 description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
 authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
 license = "AGPL-3.0"
