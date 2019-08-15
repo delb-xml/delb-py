@@ -50,7 +50,6 @@ Kurt Raschke `noted in 2010 <https://web.archive.org/web/20190316214219/https://
 ROADMAPish
 ----------
 
-- refactor ``inxs`` to use this lib
 - gain insights from usage experience
 - implement the API in Rust
 - provide bindings for Python and Javascript to the Rust implementation, while
