@@ -138,7 +138,9 @@ class Document:
                 + ", ".join(x.__name__ for x in configured_loaders)
             )
 
-        self.root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
+        root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
+        assert isinstance(root, TagNode)
+        self.root = root
 
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self

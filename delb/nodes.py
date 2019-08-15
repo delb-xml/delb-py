@@ -1225,7 +1225,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
             >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
             >>> node.attributes
-            {'bar': '0', 'foo': '0'}
+            {'foo': '0', 'bar': '0'}
             >>> node.attributes.pop("bar")
             '0'
             >>> node.attributes["foo"] = "1"
