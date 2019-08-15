@@ -18,6 +18,7 @@ Features
 
 - Loads documents from various source types. This is customizable and
   extensible.
+- XML DOM types are represented by distinct classes.
 - A completely type-annotated API.
 - Consistent design regarding names and callables' signatures.
 - Shadows comments and processing instructions by default.
