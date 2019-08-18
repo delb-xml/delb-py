@@ -1519,19 +1519,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
+        compat_namespaces: etree._DictAnyStr
         xpath_expression = XPathExpression(expression)
 
         if None in namespaces:
             has_default_namespace = True
             prefix = random_unused_prefix(namespaces)
-            namespaces = {  # type: ignore
-                **namespaces,  # type: ignore
-                prefix: namespaces[None],
-            }
-            namespaces.pop(None)
+            compat_namespaces = cast(
+                "etree._DictAnyStr",
+                {
+                    **{k: v for k, v in namespaces.items() if k is not None},
+                    prefix: namespaces[None],
+                },
+            )
+
         else:
             has_default_namespace = False
             prefix = ""
+            compat_namespaces = cast("etree._DictAnyStr", namespaces)
 
         for location_path in xpath_expression.location_paths:
             # TODO prepend self::node() if missing?
@@ -1558,13 +1563,19 @@ class TagNode(_ElementWrappingNode, NodeBase):
                         node_test.data = prefix + ":" + node_test.data
 
         cache = self._wrapper_cache
+        _results = etree_obj.xpath(str(xpath_expression), namespaces=compat_namespaces)
+        if not (
+            isinstance(_results, list)
+            and all(isinstance(x, _Element) for x in _results)
+        ):
+            raise InvalidOperation(
+                "Only XPath expressions that target tag nodes are supported."
+            )
         return cast(
             List[TagNode],
             [
-                _get_or_create_element_wrapper(element, cache)
-                for element in etree_obj.xpath(  # type: ignore
-                    str(xpath_expression), namespaces=namespaces
-                )
+                _get_or_create_element_wrapper(cast(_Element, element), cache)
+                for element in _results
             ],
         )
 
