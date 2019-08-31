@@ -2097,13 +2097,13 @@ class TextNode(_ChildLessNode, NodeBase):
             raise InvalidCodePath
 
 
-# contributed filters and filter wrappers
+# contributed node filters and filter wrappers
 
 
 def any_of(*filter: Filter) -> Filter:
     """
-     A filter wrapper that matches when any of the given filters is matching, like a
-     boolean ``or``.
+     A node filter wrapper that matches when any of the given filters is matching,
+     like a boolean ``or``.
     """
 
     def any_of_wrapper(node: NodeBase) -> bool:
@@ -2114,43 +2114,43 @@ def any_of(*filter: Filter) -> Filter:
 
 def is_comment_node(node: NodeBase) -> bool:
     """
-    Matches comment nodes.
+    A node filter that matches comment nodes.
     """
     return isinstance(node, CommentNode)
 
 
 def is_processing_instruction_node(node: NodeBase) -> bool:
     """
-    Matches processing instruction nodes.
+    A node filter that matches processing instruction nodes.
     """
     return isinstance(node, ProcessingInstructionNode)
 
 
 def is_root_node(node: NodeBase) -> bool:
     """
-    Matches root nodes.
+    A node filter that matches root nodes.
     """
     return node.parent is None
 
 
 def is_tag_node(node: NodeBase) -> bool:
     """
-    Matches :class:`TagNode` instances.
+    A node filter that matches :class:`TagNode` instances.
     """
     return isinstance(node, TagNode)
 
 
 def is_text_node(node: NodeBase) -> bool:
     """
-    Matches :class:`TextNode` instances.
+    A node filter that matches :class:`TextNode` instances.
     """
     return isinstance(node, TextNode)
 
 
 def not_(filter: Filter) -> Filter:
     """
-    A filter wrapper that matches when the given filter is not matching, like a boolean
-    ``not``.
+    A node filter wrapper that matches when the given filter is not matching,
+    like a boolean ``not``.
     """
 
     def not_wrapper(node: NodeBase) -> bool:
