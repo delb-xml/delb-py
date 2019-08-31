@@ -18,10 +18,8 @@ matrix:
       python: "3.7"
 
 git:
-  submodules: false
+  submodules: true
 
-before_install:
-  - git submodule update --init --recursive
 install:
   - travis_retry pip install poetry
   - travis_retry poetry install
