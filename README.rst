@@ -37,15 +37,21 @@ theoretical nature. Of course, any kind of proposals for or implementations of
 improvements are welcome as well.
 
 
-Testimonials
-------------
+Related Projects & Testimonials
+-------------------------------
 
-Kurt Raschke `noted in 2010 <https://web.archive.org/web/20190316214219/https://kurtraschke.com/2010/09/lxml-inserting-elements-in-text/>`_::
+snakesist_ is an eXist-db client that uses ``delb`` to expose database
+resources.
+
+Kurt Raschke `noted in 2010`_::
 
   In a DOM-based implementation, it would be relatively easy […]
   But lxml doesn't use text nodes; instead it uses and properties to hold text
   content.
 
+
+.. _snakesist: https://pypi.org/project/snakesist/
+.. _noted in 2010: https://web.archive.org/web/20190316214219/https://kurtraschke.com/2010/09/lxml-inserting-elements-in-text/
 
 ROADMAPish
 ----------
