@@ -19,6 +19,7 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: XML",
 ]
 keywords = ["xml", "markup", "text processing"]  # TODO two more
+include = ["delb/py.typed"]
 
 [tool.poetry.dependencies]
 python = ">=3.6"
