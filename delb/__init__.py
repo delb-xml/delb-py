@@ -15,15 +15,14 @@
 
 from collections.abc import Iterator, Sequence
 from pathlib import Path
-from itertools import chain
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 from typing import IO as IOType
 
 from lxml import etree
 
 from delb import utils
 from delb.exceptions import InvalidOperation
-from delb.loaders import configured_loaders, tag_node_loader
+from delb.plugins.contrib.core_loaders import tag_node_loader
 from delb.nodes import (
     altered_default_filters,
     any_of,
@@ -45,10 +44,13 @@ from delb.nodes import (
     TagNode,
     TextNode,
 )
-from delb.typing import _WrapperCache
+
+from delb.plugins import plugin_manager
+from delb.typing import _WrapperCache, Loader
 
 
 # constants
+
 
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
@@ -91,7 +93,7 @@ def register_namespace(prefix: str, namespace: str):
     etree.register_namespace(prefix, namespace)
 
 
-class Document:
+class DocumentBase:
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
     document. For instantiation, any object can be passed. There must be a loader
@@ -122,12 +124,12 @@ class Document:
                    parse a document stream.
     """
 
-    __slots__ = ("__root_node__",)
+    _loaders: Tuple[Loader, ...]
 
     def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         loaded_tree: Optional[etree._ElementTree] = None
         wrapper_cache: Optional[_WrapperCache] = None
-        for loader in chain((tag_node_loader,), configured_loaders):
+        for loader in self._loaders:
             loaded_tree, wrapper_cache = loader(source, parser)
             if loaded_tree:
                 break
@@ -135,7 +137,7 @@ class Document:
         if loaded_tree is None or not isinstance(wrapper_cache, dict):
             raise ValueError(
                 f"Couldn't load {source!r} with these currently configured loaders: "
-                + ", ".join(x.__name__ for x in configured_loaders)
+                + ", ".join(x.__name__ for x in self._loaders)
             )
 
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
@@ -298,6 +300,36 @@ class Document:
         """
         result = transformation(self.root._etree_obj.getroottree())
         return Document(result.getroot())
+
+
+# FIXME als metaklasse bitte!?
+def _assemble_document_class():
+    base_classes = []
+    for obj in plugin_manager.hook.get_document_mixins():
+        if isinstance(obj, Iterable):
+            assert all(isinstance(x, type) for x in obj)
+            base_classes.extend(obj)
+        elif isinstance(obj, type):
+            base_classes.append(obj)
+        else:
+            raise TypeError
+    base_classes.append(DocumentBase)
+
+    configured_loaders = []
+    plugin_manager.hook.configure_loaders(loaders=configured_loaders)
+
+    namespace = {
+        "__doc__": DocumentBase.__doc__,
+        "_loaders": (tag_node_loader, *configured_loaders),
+    }
+
+    return type("Document", tuple(base_classes), namespace)
+
+
+if TYPE_CHECKING:
+    Document = DocumentBase
+else:
+    Document = _assemble_document_class()
 
 
 __all__ = (
