@@ -15,7 +15,7 @@
 
 from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 from typing import IO as IOType
 
 from lxml import etree
@@ -93,7 +93,37 @@ def register_namespace(prefix: str, namespace: str):
     etree.register_namespace(prefix, namespace)
 
 
-class DocumentBase:
+class DocumentMeta(type):
+    def __new__(mcs, name, base_classes, namespace):
+        extension_classes = []
+        for obj in plugin_manager.hook.get_document_mixins():
+            if isinstance(obj, Iterable):
+                assert all(isinstance(x, type) for x in obj)
+                extension_classes.extend(obj)
+            elif isinstance(obj, type):
+                extension_classes.append(obj)
+            else:
+                raise TypeError
+
+        docstring = namespace.pop("__doc__")
+        extension_docs = sorted(
+            (x.__name__, x.__doc__) for x in extension_classes if x.__doc__
+        )
+        if extension_docs:
+            docstring += "\n\n" + "\n\n".join((f"{x[0]}:\n\n" for x in extension_docs))
+
+        configured_loaders = []
+        plugin_manager.hook.configure_loaders(loaders=configured_loaders)
+
+        namespace.update(
+            {"__doc__": docstring, "_loaders": (tag_node_loader, *configured_loaders)}
+        )
+        return super().__new__(
+            mcs, name, tuple(extension_classes) + base_classes, namespace
+        )
+
+
+class Document(metaclass=DocumentMeta):
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
     document. For instantiation, any object can be passed. There must be a loader
@@ -300,36 +330,6 @@ class DocumentBase:
         """
         result = transformation(self.root._etree_obj.getroottree())
         return Document(result.getroot())
-
-
-# FIXME als metaklasse bitte!?
-def _assemble_document_class():
-    base_classes = []
-    for obj in plugin_manager.hook.get_document_mixins():
-        if isinstance(obj, Iterable):
-            assert all(isinstance(x, type) for x in obj)
-            base_classes.extend(obj)
-        elif isinstance(obj, type):
-            base_classes.append(obj)
-        else:
-            raise TypeError
-    base_classes.append(DocumentBase)
-
-    configured_loaders = []
-    plugin_manager.hook.configure_loaders(loaders=configured_loaders)
-
-    namespace = {
-        "__doc__": DocumentBase.__doc__,
-        "_loaders": (tag_node_loader, *configured_loaders),
-    }
-
-    return type("Document", tuple(base_classes), namespace)
-
-
-if TYPE_CHECKING:
-    Document = DocumentBase
-else:
-    Document = _assemble_document_class()
 
 
 __all__ = (
