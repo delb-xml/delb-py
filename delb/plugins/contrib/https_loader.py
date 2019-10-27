@@ -21,10 +21,10 @@ dependencies for this loader are installed as well. See :doc:`installation`.
 
 
 from io import IOBase
+from types import SimpleNamespace
 from typing import Any, List
 
 import pluggy  # type: ignore
-from lxml import etree
 
 from delb.plugins.contrib.core_loaders import buffer_loader, ftp_http_loader
 from delb.typing import Loader, LoaderResult
@@ -53,16 +53,18 @@ else:
             except StopIteration:
                 return b""
 
-    def https_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+    def https_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         """
         This loader loads a document from a URL with the ``https`` scheme and is only
-        available when requests_ is installed.
+        available when requests_ is installed. The URL will be bound to ``source_url``
+        on the document's :attr:`Document.config` attribute.
 
         .. _requests: http://python-requests.org
         """
         if isinstance(data, str) and data.lower().startswith("https://"):
             response = requests.get(data, stream=True)
-            return buffer_loader(HttpsStreamWrapper(response), parser)
+            config.source_url = response.url
+            return buffer_loader(HttpsStreamWrapper(response), config)
         return None, {}
 
     @hookimpl

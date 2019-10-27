@@ -2,7 +2,9 @@ import gc
 
 import pytest
 
-from delb import Document, InvalidOperation, TagNode
+from delb import Document, DocumentExtensionHooks, InvalidOperation, TagNode
+
+from tests.plugins import TestDocumentExtension
 
 
 def test_cleanup_namespaces():
@@ -16,6 +18,18 @@ def test_cleanup_namespaces():
 
     document.cleanup_namespaces(namespaces={"x": "X"})
     assert str(document) == '<root xmlns="D" xmlns:x="X"><x:a/></root>'
+
+
+@pytest.mark.usefixtures("test_plugins")
+def test_config_initialization():
+    # a subclass is needed to use test_plugins extensions
+    class TestClass(Document):
+        pass
+
+    document = TestClass("<root/>", test_property="foo")
+
+    assert document.config.test.initialized is True
+    assert document.config.test.property == "foo"
 
 
 def test_contains():
@@ -47,6 +61,20 @@ def test_css_select():
 def test_invalid_document():
     with pytest.raises(ValueError):
         Document(0)
+
+
+@pytest.mark.usefixtures("test_plugins")
+def test_mro():
+    class DocumentSubclass(Document):
+        pass
+
+    assert DocumentSubclass.__mro__ == (
+        DocumentSubclass,
+        Document,
+        TestDocumentExtension,
+        DocumentExtensionHooks,
+        object,
+    )
 
 
 def test_object_persistance():

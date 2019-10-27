@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
 
 from lxml import etree
@@ -28,4 +29,4 @@ NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 _WrapperCache = Dict[int, "_ElementWrappingNode"]
 
 LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
-Loader = Callable[[Any, etree.XMLParser], LoaderResult]
+Loader = Callable[[Any, SimpleNamespace], LoaderResult]

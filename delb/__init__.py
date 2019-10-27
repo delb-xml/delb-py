@@ -14,7 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections.abc import Iterator, Sequence
+from copy import copy
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from typing import IO as IOType
 
@@ -93,6 +95,26 @@ def register_namespace(prefix: str, namespace: str):
     etree.register_namespace(prefix, namespace)
 
 
+class DocumentExtensionHooks:
+    """
+    This class acts as termination for methods that can be implemented by extension
+    classes and must be called with :func:`super`.
+    """
+
+    def _init_config(self, config_args: Dict[str, Any]):
+        """
+        The ``config_args`` contains the additional keyword arguments that a
+        :class:`Document` instance is called with. Extension classes that expect
+        configuration data must process their specific arguments by clearing them
+        from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
+        storing the final configuration data in a :class:`types.SimpleNamespace` and
+        bind it to the instance's :attr:`Document.config` property with the extension's
+        name. The initially mentioned keyword arguments should be prefixed with that
+        name.
+        """
+        pass
+
+
 class DocumentMeta(type):
     def __new__(mcs, name, base_classes, namespace):
         extension_classes = []
@@ -114,13 +136,13 @@ class DocumentMeta(type):
                     (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
                 )
 
+        base_classes += tuple(extension_classes) + (DocumentExtensionHooks,)
+
         configured_loaders = []
         plugin_manager.hook.configure_loaders(loaders=configured_loaders)
         namespace["_loaders"] = (tag_node_loader, *configured_loaders)
 
-        return super().__new__(
-            mcs, name, tuple(extension_classes) + base_classes, namespace
-        )
+        return super().__new__(mcs, name, base_classes, namespace)
 
 
 class Document(metaclass=DocumentMeta):
@@ -152,15 +174,31 @@ class Document(metaclass=DocumentMeta):
                    parsed document tree.
     :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
                    parse a document stream.
+    :param config: Additional keyword arguments for the configuration of extension
+                   classes.
     """
 
     _loaders: Tuple[Loader, ...]
 
-    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
+    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER, **config):
+        self.config: SimpleNamespace = SimpleNamespace()
+        """
+        Beside the used ``parser``, this property contains the namespaced data that
+        extension classes and loaders may store.
+        """
+        self.config.parser = parser
+        self._init_config(config)  # type: ignore
+        if config:
+            raise RuntimeError(
+                "Not all configuration arguments have been processed. You either "
+                "passed invalid arguments or an extension doesn't handle them "
+                f"properly: {config}"
+            )
+
         loaded_tree: Optional[etree._ElementTree] = None
         wrapper_cache: Optional[_WrapperCache] = None
         for loader in self._loaders:
-            loaded_tree, wrapper_cache = loader(source, parser)
+            loaded_tree, wrapper_cache = loader(source, self.config)
             if loaded_tree:
                 break
 
@@ -222,9 +260,9 @@ class Document(metaclass=DocumentMeta):
         """
         :return: Another instance w/ the duplicated contents.
         """
-        return self.__class__(
-            self.root, parser=self.root._etree_obj.getroottree().parser
-        )
+        result = self.__class__(self.root, parser=self.config.parser)
+        result.config = copy(self.config)
+        return result
 
     def css_select(self, expression: str) -> List["TagNode"]:
         """
@@ -289,7 +327,12 @@ class Document(metaclass=DocumentMeta):
         setattr(node, "__document__", self)
         setattr(self, "__root_node__", node)
 
-    def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
+    def save(
+        self,
+        path: Optional[Path] = None,
+        pretty: bool = False,
+        **cleanup_namespaces_args,
+    ):
         """
         :param path: The path where the document shall be saved.
         :param pretty: Adds indentation for human consumers when ``True``.
@@ -297,6 +340,15 @@ class Document(metaclass=DocumentMeta):
                                         :meth:`Document.cleanup_namespaces` before
                                         saving.
         """
+        if path is None:
+            if isinstance(getattr(self, "source_path", None), Path):
+                path = self.config.source_path
+            else:
+                raise ValueError(
+                    "A path object must be passed for instances whose source wasn't "
+                    "loaded from such object."
+                )
+
         with path.open("bw") as file:
             self.write(file, pretty=pretty, **cleanup_namespaces_args)
 

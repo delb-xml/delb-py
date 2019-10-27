@@ -23,6 +23,7 @@ data sources.
 from copy import deepcopy
 from io import IOBase
 from pathlib import Path
+from types import SimpleNamespace
 from typing import cast, Any, IO, List
 
 import pluggy  # type: ignore
@@ -33,13 +34,13 @@ from delb.nodes import TagNode
 from delb.typing import Loader, LoaderResult
 
 
-def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    This loader loads, or rather clones, a :class:`delb.TagNode` instance and
-    its descendant nodes.
+    This loader loads, or rather clones, a :class:`delb.TagNode` instance and its
+    descendant nodes.
     """
     if isinstance(data, TagNode):
-        tree = etree.ElementTree(parser=parser)
+        tree = etree.ElementTree(parser=config.parser)
         root = data.clone(deep=True)
         tree._setroot(root._etree_obj)
         utils.copy_root_siblings(data._etree_obj, root._etree_obj)
@@ -47,7 +48,7 @@ def tag_node_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     return None, {}
 
 
-def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader processes :class:`lxml.etree._Element` and
     :class:`lxml.etree._ElementTree` instances.
@@ -55,40 +56,44 @@ def etree_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
     if isinstance(data, etree._ElementTree):
         return deepcopy(data), {}
     if isinstance(data, etree._Element):
-        return etree.ElementTree(element=deepcopy(data), parser=parser), {}
+        return etree.ElementTree(element=deepcopy(data), parser=config.parser), {}
     return None, {}
 
 
-def path_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    This loader loads from a file that is pointed at with a
-    :class:`pathlib.Path` instance.
+    This loader loads from a file that is pointed at with a :class:`pathlib.Path`
+    instance. That instance will be bound to ``source_path`` on the document's
+    :attr:`Document.config` attribute.
     """
     if isinstance(data, Path):
+        config.source_path = data
         with data.open("r") as file:
-            return buffer_loader(file, parser)
+            return buffer_loader(file, config)
     return None, {}
 
 
-def buffer_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader loads a document from a :term:`file-like object`.
     """
     if isinstance(data, IOBase):
-        return etree.parse(cast(IO, data), parser=parser), {}
+        return etree.parse(cast(IO, data), parser=config.parser), {}
     return None, {}
 
 
-def ftp_http_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def ftp_http_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    Loads a document from a URL with either the ``ftp`` or ``http`` schema.
+    Loads a document from a URL with either the ``ftp`` or ``http`` schema. The URL
+    will be bound to ``source_url`` on the document's :attr:`Document.config` attribute.
     """
     if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
-        return etree.parse(data, parser=parser), {}
+        config.source_url = data
+        return etree.parse(data, parser=config.parser), {}
     return None, {}
 
 
-def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
+def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     Parses a string containing a full document.
     """
@@ -96,7 +101,7 @@ def text_loader(data: Any, parser: etree.XMLParser) -> LoaderResult:
         data = data.encode()
     if isinstance(data, bytes):
         try:
-            root = etree.fromstring(data, parser)
+            root = etree.fromstring(data, config.parser)
         except etree.XMLSyntaxError:
             pass
         else:
