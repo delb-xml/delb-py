@@ -120,3 +120,13 @@ def configure_loaders(loaders: List[Loader]):
     loaders.extend(
         (etree_loader, path_loader, buffer_loader, ftp_http_loader, text_loader)
     )
+
+
+__all__ = (
+    buffer_loader.__name__,
+    etree_loader.__name__,
+    ftp_http_loader.__name__,
+    path_loader.__name__,
+    tag_node_loader.__name__,
+    text_loader.__name__,
+)

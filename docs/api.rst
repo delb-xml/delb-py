@@ -12,7 +12,15 @@ Documents
 Document loaders
 ----------------
 
-.. automodule:: delb.loaders
+Core
+~~~~
+
+.. automodule:: delb.plugins.contrib.core_loaders
+
+Extra
+~~~~~
+
+.. automodule:: delb.plugins.contrib.https_loader
 
 
 Nodes
