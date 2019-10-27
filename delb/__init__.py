@@ -105,19 +105,19 @@ class DocumentMeta(type):
             else:
                 raise TypeError
 
-        docstring = namespace.pop("__doc__")
-        extension_docs = sorted(
-            (x.__name__, x.__doc__) for x in extension_classes if x.__doc__
-        )
-        if extension_docs:
-            docstring += "\n\n" + "\n\n".join((f"{x[0]}:\n\n" for x in extension_docs))
+        if not base_classes:  # Document class is being constructed
+            extension_docs = sorted(
+                (x.__name__, x.__doc__) for x in extension_classes if x.__doc__
+            )
+            if extension_docs:
+                namespace["__doc__"] += "\n\n" + "\n\n".join(
+                    (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
+                )
 
         configured_loaders = []
         plugin_manager.hook.configure_loaders(loaders=configured_loaders)
+        namespace["_loaders"] = (tag_node_loader, *configured_loaders)
 
-        namespace.update(
-            {"__doc__": docstring, "_loaders": (tag_node_loader, *configured_loaders)}
-        )
         return super().__new__(
             mcs, name, tuple(extension_classes) + base_classes, namespace
         )
