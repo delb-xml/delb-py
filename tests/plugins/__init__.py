@@ -12,5 +12,5 @@ class TestDocumentExtension:
 
 
 @pluggy.HookimplMarker("delb")
-def get_document_mixins():
+def get_document_extensions():
     return TestDocumentExtension

@@ -205,19 +205,21 @@ class _TailNodes(_RootSiblingsContainer):
 class DocumentExtensionHooks:
     """
     This class acts as termination for methods that can be implemented by extension
-    classes and must be called with :func:`super`.
+    classes. Any implementation of a method must call a base class' one with
+    :func:`super`.
     """
 
     def _init_config(self, config_args: Dict[str, Any]):
         """
         The ``config_args`` contains the additional keyword arguments that a
         :class:`Document` instance is called with. Extension classes that expect
-        configuration data must process their specific arguments by clearing them
+        configuration data *must* process their specific arguments by clearing them
         from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
         storing the final configuration data in a :class:`types.SimpleNamespace` and
         bind it to the instance's :attr:`Document.config` property with the extension's
-        name. The initially mentioned keyword arguments should be prefixed with that
-        name.
+        name. The initially mentioned keyword arguments *should* be prefixed with that
+        name. This method is called before the loaders try to read and parse the given
+        source for a document.
         """
         pass
 
@@ -225,7 +227,7 @@ class DocumentExtensionHooks:
 class DocumentMeta(type):
     def __new__(mcs, name, base_classes, namespace):
         extension_classes = []
-        for obj in plugin_manager.hook.get_document_mixins():
+        for obj in plugin_manager.hook.get_document_extensions():
             if isinstance(obj, Iterable):
                 assert all(isinstance(x, type) for x in obj)
                 extension_classes.extend(obj)
@@ -255,11 +257,10 @@ class DocumentMeta(type):
 class Document(metaclass=DocumentMeta):
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
-    document. For instantiation, any object can be passed. There must be a loader
-    present in the :obj:`loaders.configured_loaders` list that is capable to return a
-    parsed tree from that object. See :ref:`document-loaders` for the default loaders
-    that come with this package. Have a look at the :mod:`loaders` module to figure out
-    how to implement and configure other loaders.
+    document. For instantiation any object can be passed. A suitable loader must be
+    available for the given source. See :ref:`document-loaders` for the default loaders
+    that come with this package. Plugins are capable to alter the available loaders,
+    see :doc:`extending`.
 
     Nodes can be tested for membership in a document:
 
@@ -271,7 +272,7 @@ class Document(metaclass=DocumentMeta):
     False
 
     The string coercion of a document yields an XML encoded stream, but unlike
-    :meth:`Document.save` and :meth:`Document.write` without an XML declaration:
+    :meth:`Document.save` and :meth:`Document.write`, without an XML declaration:
 
     >>> document = Document("<root/>")
     >>> str(document)

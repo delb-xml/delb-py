@@ -22,7 +22,7 @@ dependencies for this loader are installed as well. See :doc:`installation`.
 
 from io import IOBase
 from types import SimpleNamespace
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import pluggy  # type: ignore
 
@@ -38,7 +38,7 @@ hookimpl = pluggy.HookimplMarker("delb")
 try:
     import requests
 except ImportError:
-    pass
+    __all__: Tuple[str, ...] = ()
 else:
 
     class HttpsStreamWrapper(IOBase):
@@ -55,11 +55,8 @@ else:
 
     def https_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         """
-        This loader loads a document from a URL with the ``https`` scheme and is only
-        available when requests_ is installed. The URL will be bound to ``source_url``
-        on the document's :attr:`Document.config` attribute.
-
-        .. _requests: http://python-requests.org
+        This loader loads a document from a URL with the ``https`` scheme. The URL will
+        be bound to ``source_url`` on the document's :attr:`Document.config` attribute.
         """
         if isinstance(data, str) and data.lower().startswith("https://"):
             response = requests.get(data, stream=True)
@@ -70,3 +67,5 @@ else:
     @hookimpl
     def configure_loaders(loaders: List[Loader]):
         loaders.insert(loaders.index(ftp_http_loader), https_loader)
+
+    __all__ = ("https_loader",)
