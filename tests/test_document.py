@@ -32,6 +32,15 @@ def test_config_initialization():
     assert document.config.test.property == "foo"
 
 
+@pytest.mark.usefixtures("test_plugins")
+def test_clone():
+    class TestClass(Document):
+        pass
+
+    document = TestClass("<root/>", test_property="foo")
+    document.clone()
+
+
 def test_contains():
     document_a = Document("<root><a/></root>")
     document_b = Document("<root><a/></root>")
