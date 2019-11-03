@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections.abc import Iterator, Sequence
-from copy import copy
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -261,8 +261,11 @@ class Document(metaclass=DocumentMeta):
         """
         :return: Another instance w/ the duplicated contents.
         """
-        result = self.__class__(self.root, parser=self.config.parser)
-        result.config = copy(self.config)
+        # lxml.etree.XMLParser instances aren't pickable / copyable
+        parser = self.config.__dict__.pop("parser")
+        result = self.__class__(self.root, parser=parser)
+        result.config = deepcopy(self.config)
+        self.config.parser = result.config.parser = parser
         return result
 
     def css_select(self, expression: str) -> List["TagNode"]:
