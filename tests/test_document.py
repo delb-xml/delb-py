@@ -2,7 +2,14 @@ import gc
 
 import pytest
 
-from delb import Document, InvalidOperation, TagNode
+from delb import (
+    Document,
+    InvalidOperation,
+    TagNode,
+    new_comment_node,
+    new_processing_instruction_node,
+    altered_default_filters,
+)
 
 
 def test_cleanup_namespaces():
@@ -78,6 +85,38 @@ def test_set_root():
     document_2 = Document("<root><replacement/>parts</root>")
     with pytest.raises(InvalidOperation):
         document.root = document_2.root[0]
+
+
+def test_root_siblings():
+    document = Document("<root/>")
+    head_nodes = document.head_nodes
+    tail_nodes = document.tail_nodes
+
+    head_nodes.append(new_comment_node(" I Roy "))
+    head_nodes.insert(0, new_processing_instruction_node("Blood", "Fire"))
+
+    tail_nodes.prepend(new_comment_node(" Prince Jazzbo "))
+    tail_nodes.append(new_processing_instruction_node("over", "out"))
+
+    assert len(head_nodes) == len(tail_nodes) == 2
+
+    assert (
+        str(document) == "<?Blood Fire?><!-- I Roy --><root/><!-- Prince Jazzbo "
+        "--><?over out?>"
+    )
+
+    assert head_nodes[0].target == "Blood"
+    assert head_nodes[-1].content == " I Roy "
+
+    tail_nodes += [
+        new_comment_node("")
+    ]
+
+    with pytest.raises(InvalidOperation):
+        tail_nodes.append("nah")
+
+    with pytest.raises(InvalidOperation):
+        tail_nodes.pop(0)
 
 
 def test_xpath(files_path):

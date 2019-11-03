@@ -340,14 +340,9 @@ class NodeBase(ABC):
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
         """
-        if self.parent is None and not (
-            hasattr(self, "__document__")
-            and isinstance(node[0], (CommentNode, ProcessingInstructionNode))
-        ):
-            raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
-
         if node:
             this, queue = self._prepare_new_relative(node, clone)
+            self._validate_sibling_operation(this)
             self._add_next_node(this)
             if queue:
                 this.add_next(*queue, clone=clone)
@@ -368,14 +363,9 @@ class NodeBase(ABC):
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
         """
-        if self.parent is None and not (
-            hasattr(self, "__document__")
-            and isinstance(node[0], (CommentNode, ProcessingInstructionNode))
-        ):
-            raise InvalidOperation("Nodes cannot be added as siblings to a root node.")
-
         if node:
             this, queue = self._prepare_new_relative(node, clone)
+            self._validate_sibling_operation(this)
             self._add_previous_node(this)
             if queue:
                 this.add_previous(*queue, clone=clone)
@@ -735,6 +725,18 @@ class NodeBase(ABC):
 
         self.add_next(node, clone=clone)
         return self.detach()
+
+    def _validate_sibling_operation(self, node):
+        if self.parent is None and not (
+            isinstance(node, (CommentNode, ProcessingInstructionNode))
+            and (
+                isinstance(self, (CommentNode, ProcessingInstructionNode))
+                or hasattr(self, "__document__")
+            )
+        ):
+            raise InvalidOperation(
+                "Not all node types can be added as siblings to a root node."
+            )
 
 
 class _ChildLessNode(NodeBase):
