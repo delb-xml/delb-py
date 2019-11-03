@@ -501,7 +501,7 @@ class NodeBase(ABC):
     @altered_default_filters()
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
         def next_sibling_of_an_ancestor(
-            node: NodeBase
+            node: NodeBase,
         ) -> Optional[_ElementWrappingNode]:
             parent = node.parent
             if parent is None:
