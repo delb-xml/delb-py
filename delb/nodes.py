@@ -58,11 +58,11 @@ QName = etree.QName
 
 
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
-STRINGMETHODS = set(
+STRINGMETHODS = {
     name
     for name, obj in vars(str).items()
     if not name.startswith("_") and callable(obj)
-)
+}
 
 
 # functions
@@ -492,7 +492,7 @@ class NodeBase(ABC):
     @altered_default_filters()
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
         def next_sibling_of_an_ancestor(
-            node: NodeBase
+            node: NodeBase,
         ) -> Optional[_ElementWrappingNode]:
             parent = node.parent
             if parent is None:
@@ -708,7 +708,7 @@ class NodeBase(ABC):
         """
         Removes the node and places the given one in its tree location.
 
-        The node can be  a concrete instance of any node type or a rather abstract
+        The node can be a concrete instance of any node type or a rather abstract
         description in the form of a string or an object returned from the :func:`tag`
         function that is used to derive a :class:`TextNode` respectively
         :class:`TagNode` instance from.
@@ -864,10 +864,6 @@ class _ElementWrappingNode(NodeBase):
         parent = self.parent
 
         if parent is None:
-            if self.document is not None:
-                raise InvalidOperation(
-                    "The root node of a document cannot be detached."
-                )
             return self
 
         if self._tail_node._exists:
@@ -888,9 +884,8 @@ class _ElementWrappingNode(NodeBase):
         cast(_Element, etree_obj.getparent()).remove(etree_obj)
 
         self._wrapper_cache = cache = copy(self._wrapper_cache)
-        with altered_default_filters():
-            for child_node in self.child_nodes(recurse=True):
-                child_node._wrapper_cache = cache
+        for child_node in self.child_nodes(recurse=True):
+            child_node._wrapper_cache = cache
 
         _prune_wrapper_cache(parent)
         _prune_wrapper_cache(self)
@@ -1141,12 +1136,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __getitem__(self, item: str) -> str:
         ...
 
-    @overload  # noqa: F811
-    def __getitem__(self, item: int) -> NodeBase:
+    @overload
+    def __getitem__(self, item: int) -> NodeBase:  # noqa: F811
         ...
 
-    @overload  # noqa: F811
-    def __getitem__(self, item: slice) -> List[NodeBase]:
+    @overload
+    def __getitem__(self, item: slice) -> List[NodeBase]:  # noqa: F811
         ...
 
     def __getitem__(self, item):  # noqa: F811
@@ -1308,6 +1303,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def depth(self) -> int:
         return self.location_path.count("/") - 1
+
+    def detach(self) -> "_ElementWrappingNode":
+        if self.parent is None and getattr(self, "__document__", None):
+            raise InvalidOperation("The root node of a document cannot be detached.")
+
+        return super().detach()
 
     @property
     def document(self) -> Optional["Document"]:

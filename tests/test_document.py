@@ -8,7 +8,6 @@ from delb import (
     TagNode,
     new_comment_node,
     new_processing_instruction_node,
-    altered_default_filters,
 )
 
 
@@ -108,9 +107,7 @@ def test_root_siblings():
     assert head_nodes[0].target == "Blood"
     assert head_nodes[-1].content == " I Roy "
 
-    tail_nodes += [
-        new_comment_node("")
-    ]
+    tail_nodes += [new_comment_node("")]
 
     with pytest.raises(InvalidOperation):
         tail_nodes.append("nah")
