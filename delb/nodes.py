@@ -313,9 +313,10 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     else:
         default_filters = filter
 
-    yield
-
-    default_filters = saved_default_filters
+    try:
+        yield
+    finally:
+        default_filters = saved_default_filters
 
 
 # nodes
