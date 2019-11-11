@@ -80,6 +80,8 @@ Various helpers
 
 .. autofunction:: delb.first
 
+.. autofunction:: delb.last
+
 .. autofunction:: delb.register_namespace
 
 .. autofunction:: delb.tag

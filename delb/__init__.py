@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from collections.abc import Iterator, Sequence
+from abc import ABC, abstractmethod
+from collections.abc import MutableSequence
 from pathlib import Path
 from itertools import chain
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
 from typing import IO as IOType
 
 from lxml import etree
@@ -60,9 +61,9 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 # api
 
 
-def first(iterable: Iterable) -> Optional["NodeBase"]:
+def first(iterable: Iterable) -> Optional[Any]:
     """
-    Returns the first item of the given iterable.
+    Returns the first item of the given :term:`iterable` or ``None`` if it's empty.
     Note that the first item is consumed when the iterable is an :term:`iterator`.
     """
     if isinstance(iterable, Iterator):
@@ -72,6 +73,22 @@ def first(iterable: Iterable) -> Optional["NodeBase"]:
             return None
     elif isinstance(iterable, Sequence):
         return iterable[0] if len(iterable) else None
+    else:
+        raise TypeError
+
+
+def last(iterable: Iterable) -> Optional[Any]:
+    """
+    Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
+    Note that the whole :term:`iterator` is consumed when such is given.
+    """
+    if isinstance(iterable, Iterator):
+        result = None
+        for result in iterable:
+            pass
+        return result
+    elif isinstance(iterable, Sequence):
+        return iterable[-1] if len(iterable) else None
     else:
         raise TypeError
 
@@ -89,6 +106,97 @@ def register_namespace(prefix: str, namespace: str):
     :param namespace: The targeted namespace.
     """
     etree.register_namespace(prefix, namespace)
+
+
+class _RootSiblingsContainer(ABC, MutableSequence):
+    def __init__(self, document: "Document"):
+        self._document = document
+
+    def __delitem__(self, index):
+        # https://stackoverflow.com/q/54562097/
+        raise InvalidOperation(
+            "The thing is, lxml doesn't provide an interface to remove siblings of the "
+            "root node."
+        )
+
+    def __getitem__(self, index):
+        # TODO? slices
+
+        if index < 0:
+            index = len(self) + index
+
+        if len(self) <= index:
+            raise IndexError
+
+        if index == 0:
+            return self._get_first()
+
+        with altered_default_filters():
+            for i, result in enumerate(self._get_first().iterate_next_nodes(), start=1):
+                if i == index:
+                    return result
+
+    def __setitem__(self, index, node):
+        # https://stackoverflow.com/q/54562097/
+        raise InvalidOperation(
+            "The thing is, lxml doesn't provide an interface to remove siblings of the "
+            "root node."
+        )
+
+    def __len__(self):
+        index = -1
+        for index, _ in enumerate(self._iter_all()):
+            pass
+        return index + 1
+
+    def insert(self, index, node):
+        length = len(self)
+
+        if index == 0 and not length:
+            self._add_first(node)
+        elif index == length:
+            self[-1].add_next(node)
+        else:
+            self[index].add_previous(node)
+
+    def prepend(self, node):
+        self.insert(0, node)
+
+    @abstractmethod
+    def _add_first(self, node: NodeBase):
+        pass
+
+    @abstractmethod
+    def _get_first(self) -> Optional[NodeBase]:
+        pass
+
+    @abstractmethod
+    def _iter_all(self) -> Iterator["NodeBase"]:
+        pass
+
+
+class _HeadNodes(_RootSiblingsContainer):
+    def _add_first(self, node):
+        self._document.root.add_previous(node)
+
+    def _get_first(self):
+        return last(self._iter_all())
+
+    def _iter_all(self):
+        with altered_default_filters():
+            yield from self._document.root.iterate_previous_nodes()
+
+
+class _TailNodes(_RootSiblingsContainer):
+    def _add_first(self, node):
+        self._document.root.add_next(node)
+
+    def _get_first(self):
+        return first(self._iter_all())
+
+    def _iter_all(self):
+        with altered_default_filters():
+            yield from self._document.root.iterate_next_nodes()
 
 
 class Document:
@@ -122,7 +230,7 @@ class Document:
                    parse a document stream.
     """
 
-    __slots__ = ("__root_node__",)
+    __slots__ = ("__root_node__", "head_nodes", "tail_nodes")
 
     def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         loaded_tree: Optional[etree._ElementTree] = None
@@ -141,6 +249,17 @@ class Document:
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
         assert isinstance(root, TagNode)
         self.root = root
+
+        self.head_nodes = _HeadNodes(self)
+        """
+        A list-like accessor to the nodes that precede the document's root node.
+        Note that nodes can't be removed or replaced.
+        """
+        self.tail_nodes = _TailNodes(self)
+        """
+        A list-like accessor to the nodes that follow the document's root node.
+        Note that nodes can't be removed or replaced.
+        """
 
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self
@@ -315,6 +434,7 @@ __all__ = (
     is_root_node.__name__,
     is_tag_node.__name__,
     is_text_node.__name__,
+    last.__name__,
     not_.__name__,
     new_comment_node.__name__,
     new_tag_node.__name__,
