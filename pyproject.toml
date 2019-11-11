@@ -21,14 +21,18 @@ classifiers = [
 keywords = ["xml", "markup", "text processing"]  # TODO two more
 include = ["delb/py.typed"]
 
+[tool.poetry.extras]
+https-loader = ["requests"]
+
+[tool.poetry.plugins.delb]
+https-loader = "delb.plugins.contrib.https_loader"
+
 [tool.poetry.dependencies]
 python = ">=3.6"
 cssselect = "*"
 lxml = "*"
+pluggy = "^0.13.0"
 requests = {version = "^2.21",optional = true}
-
-[tool.poetry.extras]
-https-loader = ["requests"]
 
 [tool.poetry.dev-dependencies]
 black = "^19.3b0"

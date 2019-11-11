@@ -16,15 +16,15 @@
 from abc import ABC, abstractmethod
 from collections.abc import MutableSequence
 from pathlib import Path
-from itertools import chain
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 from typing import IO as IOType
 
 from lxml import etree
 
 from delb import utils
 from delb.exceptions import InvalidOperation
-from delb.loaders import configured_loaders, tag_node_loader
+from delb.plugins import plugin_manager
+from delb.plugins.contrib.core_loaders import tag_node_loader
 from delb.nodes import (
     altered_default_filters,
     any_of,
@@ -46,10 +46,11 @@ from delb.nodes import (
     TagNode,
     TextNode,
 )
-from delb.typing import _WrapperCache
+from delb.typing import _WrapperCache, Loader
 
 
 # constants
+
 
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
@@ -199,7 +200,37 @@ class _TailNodes(_RootSiblingsContainer):
             yield from self._document.root.iterate_next_nodes()
 
 
-class Document:
+class DocumentMeta(type):
+    def __new__(mcs, name, base_classes, namespace):
+        extension_classes = []
+        for obj in plugin_manager.hook.get_document_mixins():
+            if isinstance(obj, Iterable):
+                assert all(isinstance(x, type) for x in obj)
+                extension_classes.extend(obj)
+            elif isinstance(obj, type):
+                extension_classes.append(obj)
+            else:
+                raise TypeError
+
+        if not base_classes:  # Document class is being constructed
+            extension_docs = sorted(
+                (x.__name__, x.__doc__) for x in extension_classes if x.__doc__
+            )
+            if extension_docs:
+                namespace["__doc__"] += "\n\n" + "\n\n".join(
+                    (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
+                )
+
+        configured_loaders = []
+        plugin_manager.hook.configure_loaders(loaders=configured_loaders)
+        namespace["_loaders"] = (tag_node_loader, *configured_loaders)
+
+        return super().__new__(
+            mcs, name, tuple(extension_classes) + base_classes, namespace
+        )
+
+
+class Document(metaclass=DocumentMeta):
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
     document. For instantiation, any object can be passed. There must be a loader
@@ -230,12 +261,13 @@ class Document:
                    parse a document stream.
     """
 
+    _loaders: Tuple[Loader, ...]
     __slots__ = ("__root_node__", "head_nodes", "tail_nodes")
 
     def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
         loaded_tree: Optional[etree._ElementTree] = None
         wrapper_cache: Optional[_WrapperCache] = None
-        for loader in chain((tag_node_loader,), configured_loaders):
+        for loader in self._loaders:
             loaded_tree, wrapper_cache = loader(source, parser)
             if loaded_tree:
                 break
@@ -243,7 +275,7 @@ class Document:
         if loaded_tree is None or not isinstance(wrapper_cache, dict):
             raise ValueError(
                 f"Couldn't load {source!r} with these currently configured loaders: "
-                + ", ".join(x.__name__ for x in configured_loaders)
+                + ", ".join(x.__name__ for x in self._loaders)
             )
 
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
