@@ -5,23 +5,28 @@ cache: pip
 matrix:
   include:
     - env: TARGET=flake8
-      python: "3.7"
+      python: "3.8"
     - env: TARGET=mypy
-      python: "3.7"
+      python: "3.8"
     - env: TARGET=pytest
       python: "3.6"
     - env: TARGET=pytest
       python: "3.7"
     - env: TARGET=pytest
-      python: "3.8-dev"
+      python: "3.8"
     - env: TARGET=doctest
-      python: "3.7"
+      python: "3.8"
 
 git:
   submodules: true
 
+before_install:
+  - curl -LOsS https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
+  - python get-poetry.py -y --version 1.0.0b4
+  - source ~/.poetry/env
+  - rm get-poetry.py
+
 install:
-  - travis_retry pip install poetry
-  - travis_retry poetry install
+  - travis_retry poetry install -v
 script:
   - poetry run make $TARGET
