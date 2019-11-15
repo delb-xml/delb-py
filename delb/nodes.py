@@ -15,6 +15,7 @@
 
 
 from abc import abstractmethod, ABC
+from collections import deque
 from contextlib import contextmanager
 from copy import copy
 from itertools import chain
@@ -23,6 +24,7 @@ from typing import (
     cast,
     overload,
     Any,
+    Deque,
     Dict,
     Iterator,
     List,
@@ -280,7 +282,8 @@ def _is_tag_or_text_node(node: "NodeBase") -> bool:
     return isinstance(node, (TagNode, TextNode))
 
 
-default_filters: Tuple[Filter, ...] = (_is_tag_or_text_node,)
+default_filters: Deque[Tuple[Filter, ...]] = deque()
+default_filters.append((_is_tag_or_text_node,))
 
 
 @contextmanager
@@ -306,17 +309,15 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     """
     global default_filters
 
-    saved_default_filters = default_filters
-
     if extend:
-        default_filters += filter
+        default_filters.append(default_filters[-1] + filter)
     else:
-        default_filters = filter
+        default_filters.append(filter)
 
     try:
         yield
     finally:
-        default_filters = saved_default_filters
+        default_filters.pop()
 
 
 # nodes
@@ -486,7 +487,7 @@ class NodeBase(ABC):
                  document order.
         """
         for node in self._iterate_next_nodes_in_stream():
-            if all(f(node) for f in chain(default_filters, filter)):
+            if all(f(node) for f in chain(default_filters[-1], filter)):
                 yield node
 
     @altered_default_filters()
@@ -911,7 +912,7 @@ class _ElementWrappingNode(NodeBase):
                 next_etree_obj, self._wrapper_cache
             )
 
-        if all(f(candidate) for f in chain(default_filters, filter)):
+        if all(f(candidate) for f in chain(default_filters[-1], filter)):
             return candidate
         else:
             return candidate.next_node(*filter)
@@ -957,7 +958,7 @@ class _ElementWrappingNode(NodeBase):
         if candidate is None:
             return None
 
-        if all(f(candidate) for f in chain(default_filters, filter)):
+        if all(f(candidate) for f in chain(default_filters[-1], filter)):
             return candidate
         else:
             return candidate.previous_node(*filter)
@@ -1252,7 +1253,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         while current_node is not None:
 
-            if all(f(current_node) for f in chain(default_filters, filter)):
+            assert isinstance(default_filters[-1], tuple), default_filters[-1]
+
+            if all(f(current_node) for f in chain(default_filters[-1], filter)):
                 yield current_node
 
             if recurse and isinstance(current_node, TagNode):
@@ -1971,7 +1974,7 @@ class TextNode(_ChildLessNode, NodeBase):
         if candidate is None:
             return None
 
-        if all(f(candidate) for f in chain(default_filters, filter)):
+        if all(f(candidate) for f in chain(default_filters[-1], filter)):
             if isinstance(candidate, TextNode):
                 assert candidate._exists
             return candidate
@@ -2086,7 +2089,7 @@ class TextNode(_ChildLessNode, NodeBase):
         if candidate is None:
             return None
 
-        if all(f(candidate) for f in chain(default_filters, filter)):
+        if all(f(candidate) for f in chain(default_filters[-1], filter)):
             return candidate
         else:
             return candidate.previous_node(*filter)
