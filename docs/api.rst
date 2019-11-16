@@ -80,6 +80,8 @@ Various helpers
 
 .. autofunction:: delb.first
 
+.. autofunction:: delb.get_traverser
+
 .. autofunction:: delb.last
 
 .. autofunction:: delb.register_namespace

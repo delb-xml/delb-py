@@ -17,9 +17,15 @@
 from copy import copy
 from string import ascii_lowercase
 from functools import lru_cache
+from typing import TYPE_CHECKING, Iterator
 
 from cssselect import GenericTranslator  # type: ignore
 from lxml import etree
+
+from delb.typing import Filter
+
+if TYPE_CHECKING:
+    from delb.nodes import NodeBase
 
 
 css_translator = GenericTranslator()
@@ -57,3 +63,26 @@ def random_unused_prefix(namespaces: "etree._NSMap") -> str:
         "You really are using all latin letters as prefix in a document. "
         "Fair enough, please open a bug report."
     )
+
+
+# tree traversers
+
+
+def traverse_df_ltr_btt(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
+    def yield_children(node):
+        for child in tuple(node.child_nodes(*filters)):
+            yield from yield_children(child)
+        yield node
+
+    yield from yield_children(root)
+
+
+def traverse_df_ltr_ttb(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
+    yield root
+    yield from root.child_nodes(*filters, recurse=True)
+
+
+TRAVERSERS = {
+    (True, True, True): traverse_df_ltr_ttb,
+    (True, True, False): traverse_df_ltr_btt,
+}
