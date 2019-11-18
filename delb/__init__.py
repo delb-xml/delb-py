@@ -80,6 +80,33 @@ def first(iterable: Iterable) -> Optional[Any]:
         raise TypeError
 
 
+def get_traverser(from_left=True, depth_first=True, from_top=True):
+    """
+    Returns a function that can be used to traverse a (sub)tree with the given node as
+    root. While traversing the given root node is yielded at some point.
+
+    The returned functions have this signature:
+
+    .. code-block:: python
+
+        def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+            ...
+
+    :param from_left: The traverser yields sibling nodes from left to right if ``True``,
+                      or starting from the right if ``False``.
+    :param depth_first: The child nodes resp. the parent node are yielded before the
+                        siblings of a node by a traverser if ``True``. Siblings are
+                        favored if ``False``.
+    :param from_top: The traverser starts yielding nodes with the lowest depth if
+                     ``True``. When ``False``, again, the opposite is in effect.
+    """
+
+    result = utils.TRAVERSERS.get((from_left, depth_first, from_top))
+    if result is None:
+        raise NotImplementedError
+    return result
+
+
 def last(iterable: Iterable) -> Optional[Any]:
     """
     Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
@@ -503,6 +530,7 @@ __all__ = (
     altered_default_filters.__name__,
     any_of.__name__,
     first.__name__,
+    get_traverser.__name__,
     is_comment_node.__name__,
     is_processing_instruction_node.__name__,
     is_root_node.__name__,
