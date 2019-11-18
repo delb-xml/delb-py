@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "delb"
-version = "0.1.2"
+version = "0.2dev2"
 description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
 authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
 license = "AGPL-3.0"
@@ -21,14 +21,18 @@ classifiers = [
 keywords = ["xml", "markup", "text processing"]  # TODO two more
 include = ["delb/py.typed"]
 
+[tool.poetry.extras]
+https-loader = ["requests"]
+
+[tool.poetry.plugins.delb]
+https-loader = "delb.plugins.contrib.https_loader"
+
 [tool.poetry.dependencies]
 python = ">=3.6"
 cssselect = "*"
 lxml = "*"
+pluggy = "^0.13.0"
 requests = {version = "^2.21",optional = true}
-
-[tool.poetry.extras]
-https-loader = ["requests"]
 
 [tool.poetry.dev-dependencies]
 black = "^19.3b0"

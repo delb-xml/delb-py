@@ -13,20 +13,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import pluggy  # type: ignore
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
+from delb.plugins import specs
+from delb.plugins.contrib import core_loaders
 
-from lxml import etree
-
-if TYPE_CHECKING:
-    from delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition  # noqa: F401
-
-
-ElementAttributes = etree._Attrib
-Filter = Callable[["NodeBase"], bool]
-NodeSource = Union[str, "NodeBase", "_TagDefinition"]
-_WrapperCache = Dict[int, "_ElementWrappingNode"]
-
-LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
-Loader = Callable[[Any, SimpleNamespace], LoaderResult]
+plugin_manager = pluggy.PluginManager("delb")
+plugin_manager.add_hookspecs(specs)
+plugin_manager.load_setuptools_entrypoints("delb")
+plugin_manager.register(core_loaders)
+plugin_manager.check_pending()

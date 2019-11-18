@@ -15,16 +15,18 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import MutableSequence
+from copy import deepcopy
 from pathlib import Path
-from itertools import chain
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence
+from types import SimpleNamespace
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 from typing import IO as IOType
 
 from lxml import etree
 
 from delb import utils
 from delb.exceptions import InvalidOperation
-from delb.loaders import configured_loaders, tag_node_loader
+from delb.plugins import plugin_manager
+from delb.plugins.contrib.core_loaders import tag_node_loader
 from delb.nodes import (
     altered_default_filters,
     any_of,
@@ -46,10 +48,11 @@ from delb.nodes import (
     TagNode,
     TextNode,
 )
-from delb.typing import _WrapperCache
+from delb.typing import _WrapperCache, Loader
 
 
 # constants
+
 
 # care has to be taken:
 # https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
@@ -199,14 +202,65 @@ class _TailNodes(_RootSiblingsContainer):
             yield from self._document.root.iterate_next_nodes()
 
 
-class Document:
+class DocumentExtensionHooks:
+    """
+    This class acts as termination for methods that can be implemented by extension
+    classes. Any implementation of a method must call a base class' one with
+    :func:`super`.
+    """
+
+    def _init_config(self, config_args: Dict[str, Any]):
+        """
+        The ``config_args`` contains the additional keyword arguments that a
+        :class:`Document` instance is called with. Extension classes that expect
+        configuration data *must* process their specific arguments by clearing them
+        from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
+        storing the final configuration data in a :class:`types.SimpleNamespace` and
+        bind it to the instance's :attr:`Document.config` property with the extension's
+        name. The initially mentioned keyword arguments *should* be prefixed with that
+        name. This method is called before the loaders try to read and parse the given
+        source for a document.
+        """
+        pass
+
+
+class DocumentMeta(type):
+    def __new__(mcs, name, base_classes, namespace):
+        extension_classes = []
+        for obj in plugin_manager.hook.get_document_extensions():
+            if isinstance(obj, Iterable):
+                assert all(isinstance(x, type) for x in obj)
+                extension_classes.extend(obj)
+            elif isinstance(obj, type):
+                extension_classes.append(obj)
+            else:
+                raise TypeError
+
+        if not base_classes:  # Document class is being constructed
+            extension_docs = sorted(
+                (x.__name__, x.__doc__) for x in extension_classes if x.__doc__
+            )
+            if extension_docs:
+                namespace["__doc__"] += "\n\n" + "\n\n".join(
+                    (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
+                )
+
+        base_classes += tuple(extension_classes) + (DocumentExtensionHooks,)
+
+        configured_loaders = []
+        plugin_manager.hook.configure_loaders(loaders=configured_loaders)
+        namespace["_loaders"] = (tag_node_loader, *configured_loaders)
+
+        return super().__new__(mcs, name, base_classes, namespace)
+
+
+class Document(metaclass=DocumentMeta):
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
-    document. For instantiation, any object can be passed. There must be a loader
-    present in the :obj:`loaders.configured_loaders` list that is capable to return a
-    parsed tree from that object. See :ref:`document-loaders` for the default loaders
-    that come with this package. Have a look at the :mod:`loaders` module to figure out
-    how to implement and configure other loaders.
+    document. For instantiation any object can be passed. A suitable loader must be
+    available for the given source. See :ref:`document-loaders` for the default loaders
+    that come with this package. Plugins are capable to alter the available loaders,
+    see :doc:`extending`.
 
     Nodes can be tested for membership in a document:
 
@@ -218,7 +272,7 @@ class Document:
     False
 
     The string coercion of a document yields an XML encoded stream, but unlike
-    :meth:`Document.save` and :meth:`Document.write` without an XML declaration:
+    :meth:`Document.save` and :meth:`Document.write`, without an XML declaration:
 
     >>> document = Document("<root/>")
     >>> str(document)
@@ -228,22 +282,39 @@ class Document:
                    parsed document tree.
     :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
                    parse a document stream.
+    :param config: Additional keyword arguments for the configuration of extension
+                   classes.
     """
 
+    _loaders: Tuple[Loader, ...]
     __slots__ = ("__root_node__", "head_nodes", "tail_nodes")
 
-    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER):
+    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER, **config):
+        self.config: SimpleNamespace = SimpleNamespace()
+        """
+        Beside the used ``parser``, this property contains the namespaced data that
+        extension classes and loaders may store.
+        """
+        self.config.parser = parser
+        self._init_config(config)  # type: ignore
+        if config:
+            raise RuntimeError(
+                "Not all configuration arguments have been processed. You either "
+                "passed invalid arguments or an extension doesn't handle them "
+                f"properly: {config}"
+            )
+
         loaded_tree: Optional[etree._ElementTree] = None
         wrapper_cache: Optional[_WrapperCache] = None
-        for loader in chain((tag_node_loader,), configured_loaders):
-            loaded_tree, wrapper_cache = loader(source, parser)
+        for loader in self._loaders:
+            loaded_tree, wrapper_cache = loader(source, self.config)
             if loaded_tree:
                 break
 
         if loaded_tree is None or not isinstance(wrapper_cache, dict):
             raise ValueError(
                 f"Couldn't load {source!r} with these currently configured loaders: "
-                + ", ".join(x.__name__ for x in configured_loaders)
+                + ", ".join(x.__name__ for x in self._loaders)
             )
 
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
@@ -309,9 +380,12 @@ class Document:
         """
         :return: Another instance w/ the duplicated contents.
         """
-        return self.__class__(
-            self.root, parser=self.root._etree_obj.getroottree().parser
-        )
+        # lxml.etree.XMLParser instances aren't pickable / copyable
+        parser = self.config.__dict__.pop("parser")
+        result = self.__class__(self.root, parser=parser)
+        result.config = deepcopy(self.config)
+        self.config.parser = result.config.parser = parser
+        return result
 
     def css_select(self, expression: str) -> List["TagNode"]:
         """
