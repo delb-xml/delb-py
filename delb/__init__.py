@@ -18,12 +18,12 @@ from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from typing import IO as IOType
 
 from lxml import etree
 
-from delb.exceptions import InvalidOperation
+from delb.exceptions import FailedDocumentLoading, InvalidOperation
 from delb.plugins import plugin_manager as _plugin_manager
 from delb.plugins.contrib import core_loaders
 from delb.nodes import (
@@ -262,18 +262,26 @@ class Document(metaclass=DocumentMeta):
                 f"properly: {config}"
             )
 
+        loader_excuses: Dict[Loader, Union[str, Exception]] = {}
         loaded_tree: Optional[etree._ElementTree] = None
         wrapper_cache: Optional[_WrapperCache] = None
         for loader in self._loaders:
-            loaded_tree, wrapper_cache = loader(source, self.config)
-            if loaded_tree:
-                break
+            try:
+                loader_result = loader(source, self.config)
+            except Exception as e:
+                loader_excuses[loader] = e
+            else:
+                if isinstance(loader_result, tuple):
+                    loaded_tree, wrapper_cache = loader_result
+                    break
+                else:
+                    loader_excuses[loader] = loader_result
 
-        if loaded_tree is None or not isinstance(wrapper_cache, dict):
-            raise ValueError(
-                f"Couldn't load {source!r} with these currently configured loaders: "
-                + ", ".join(x.__name__ for x in self._loaders)
-            )
+        if loaded_tree is None:
+            raise FailedDocumentLoading(source, loader_excuses)
+
+        assert isinstance(loaded_tree, etree._ElementTree)
+        assert isinstance(wrapper_cache, dict)
 
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
         assert isinstance(root, TagNode)

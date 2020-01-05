@@ -45,7 +45,7 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         tree._setroot(root._etree_obj)
         utils.copy_root_siblings(data._etree_obj, root._etree_obj)
         return tree, root._wrapper_cache
-    return None, {}
+    return "The input value is not a TagNode instance."
 
 
 @plugin_manager.register_loader()
@@ -58,7 +58,7 @@ def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         return deepcopy(data), {}
     if isinstance(data, etree._Element):
         return etree.ElementTree(element=deepcopy(data), parser=config.parser), {}
-    return None, {}
+    return "The input value is neither an etree.Element or …Tree instance."
 
 
 @plugin_manager.register_loader(after=etree_loader)
@@ -72,7 +72,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         config.source_path = data
         with data.open("r") as file:
             return buffer_loader(file, config)
-    return None, {}
+    return "The input value is not a pathlib.Path instance."
 
 
 @plugin_manager.register_loader(after=path_loader)
@@ -82,7 +82,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     if isinstance(data, IOBase):
         return etree.parse(cast(IO, data), parser=config.parser), {}
-    return None, {}
+    return "The input value is no buffer object."
 
 
 @plugin_manager.register_loader(after=buffer_loader)
@@ -94,7 +94,7 @@ def ftp_http_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
         config.source_url = data
         return etree.parse(data, parser=config.parser), {}
-    return None, {}
+    return "The input value is not an URL with the ftp or http scheme."
 
 
 @plugin_manager.register_loader(after=ftp_http_loader)
@@ -105,13 +105,9 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, str):
         data = data.encode()
     if isinstance(data, bytes):
-        try:
-            root = etree.fromstring(data, config.parser)
-        except etree.XMLSyntaxError:
-            pass
-        else:
-            return etree.ElementTree(element=root), {}
-    return None, {}
+        root = etree.fromstring(data, config.parser)
+        return etree.ElementTree(element=root), {}
+    return "The input value is not a byte sequence."
 
 
 __all__ = (

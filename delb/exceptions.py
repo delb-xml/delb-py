@@ -14,6 +14,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import Any, Dict, Union
+
+from delb.typing import Loader
+
+
+class FailedDocumentLoading(Exception):
+    def __init__(self, source: Any, excuses: Dict[Loader, Union[str, Exception]]):
+        self.source = source
+        self.excuses = excuses
+
+    def __str__(self):
+        return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
+
+
 class InvalidCodePath(RuntimeError):
     """
     Raised when a code path that is not expected to be executed is reached.

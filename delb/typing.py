@@ -28,5 +28,5 @@ Filter = Callable[["NodeBase"], bool]
 NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 _WrapperCache = Dict[int, "_ElementWrappingNode"]
 
-LoaderResult = Tuple[Optional[etree._ElementTree], _WrapperCache]
+LoaderResult = Union[Tuple[Optional[etree._ElementTree], _WrapperCache], str]
 Loader = Callable[[Any, SimpleNamespace], LoaderResult]

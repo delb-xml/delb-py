@@ -82,9 +82,9 @@ class PluginManager:
 
                     return text_loader(data, config)
 
-                # return nothing to indicate that this loader is not suited to load the
-                # document:
-                return None, {}
+                # return an indication why this loader didn't attempt to load in order
+                # to support debugging
+                return "The input value is not an URL with the ipfs scheme."
 
 
         Note that the ``config`` argument that is passed to a loader function contains
@@ -106,7 +106,7 @@ class PluginManager:
             @plugin_manager.register_loader(before=https_loader)
             def mets_loader(source, config) -> LoaderResult:
                 # loading logic here
-                return None, {}
+                pass
         """
 
         if before is not None and after is not None:

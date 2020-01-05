@@ -5,11 +5,11 @@ import pytest
 from delb import (
     Document,
     DocumentExtensionHooks,
-    InvalidOperation,
     TagNode,
     new_comment_node,
     new_processing_instruction_node,
 )
+from delb.exceptions import FailedDocumentLoading, InvalidOperation
 
 from tests.plugins import TestDocumentExtension
 
@@ -73,7 +73,7 @@ def test_css_select():
 
 
 def test_invalid_document():
-    with pytest.raises(ValueError):
+    with pytest.raises(FailedDocumentLoading):
         Document(0)
 
 

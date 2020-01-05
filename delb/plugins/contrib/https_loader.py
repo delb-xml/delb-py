@@ -59,6 +59,6 @@ else:
             response = requests.get(data, stream=True)
             config.source_url = response.url
             return buffer_loader(HttpsStreamWrapper(response), config)
-        return None, {}
+        return "The input value is not an URL with the https scheme."
 
     __all__ = ("https_loader",)
