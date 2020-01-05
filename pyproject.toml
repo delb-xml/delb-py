@@ -31,8 +31,8 @@ https-loader = "delb.plugins.contrib.https_loader"
 python = ">=3.6"
 cssselect = "*"
 lxml = "*"
-pluggy = "^0.13.0"
 requests = {version = "^2.21",optional = true}
+setuptools = "*"
 
 [tool.poetry.dev-dependencies]
 black = "^19.3b0"

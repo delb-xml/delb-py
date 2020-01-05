@@ -24,14 +24,14 @@ from copy import deepcopy
 from io import IOBase
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast, Any, IO, List
+from typing import cast, Any, IO
 
-import pluggy  # type: ignore
 from lxml import etree
 
 from delb import utils
 from delb.nodes import TagNode
-from delb.typing import Loader, LoaderResult
+from delb.plugins import plugin_manager
+from delb.typing import LoaderResult
 
 
 def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
@@ -48,6 +48,7 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return None, {}
 
 
+@plugin_manager.register_loader()
 def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader processes :class:`lxml.etree._Element` and
@@ -60,6 +61,7 @@ def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return None, {}
 
 
+@plugin_manager.register_loader(after=etree_loader)
 def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader loads from a file that is pointed at with a :class:`pathlib.Path`
@@ -73,6 +75,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return None, {}
 
 
+@plugin_manager.register_loader(after=path_loader)
 def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader loads a document from a :term:`file-like object`.
@@ -82,6 +85,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return None, {}
 
 
+@plugin_manager.register_loader(after=buffer_loader)
 def ftp_http_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     Loads a document from a URL with either the ``ftp`` or ``http`` schema. The URL
@@ -93,6 +97,7 @@ def ftp_http_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return None, {}
 
 
+@plugin_manager.register_loader(after=ftp_http_loader)
 def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     Parses a string containing a full document.
@@ -107,19 +112,6 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         else:
             return etree.ElementTree(element=root), {}
     return None, {}
-
-
-# plugin registration
-
-
-hookimpl = pluggy.HookimplMarker("delb")
-
-
-@hookimpl(tryfirst=True)
-def configure_loaders(loaders: List[Loader]):
-    loaders.extend(
-        (etree_loader, path_loader, buffer_loader, ftp_http_loader, text_loader)
-    )
 
 
 __all__ = (

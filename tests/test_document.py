@@ -27,7 +27,6 @@ def test_cleanup_namespaces():
     assert str(document) == '<root xmlns="D" xmlns:x="X"><x:a/></root>'
 
 
-@pytest.mark.usefixtures("test_plugins")
 def test_config_initialization():
     # a subclass is needed to use test_plugins extensions
     class TestClass(Document):
@@ -39,7 +38,6 @@ def test_config_initialization():
     assert document.config.test.property == "foo"
 
 
-@pytest.mark.usefixtures("test_plugins")
 def test_clone():
     class TestClass(Document):
         pass
@@ -79,7 +77,6 @@ def test_invalid_document():
         Document(0)
 
 
-@pytest.mark.usefixtures("test_plugins")
 def test_mro():
     class DocumentSubclass(Document):
         pass

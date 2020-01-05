@@ -22,15 +22,11 @@ dependencies for this loader are installed as well. See :doc:`installation`.
 
 from io import IOBase
 from types import SimpleNamespace
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
-import pluggy  # type: ignore
-
+from delb.plugins import plugin_manager
 from delb.plugins.contrib.core_loaders import buffer_loader, ftp_http_loader
-from delb.typing import Loader, LoaderResult
-
-
-hookimpl = pluggy.HookimplMarker("delb")
+from delb.typing import LoaderResult
 
 
 # TODO define as extra-depending plugin once this is solved:
@@ -53,6 +49,7 @@ else:
             except StopIteration:
                 return b""
 
+    @plugin_manager.register_loader(before=ftp_http_loader)
     def https_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         """
         This loader loads a document from a URL with the ``https`` scheme. The URL will
@@ -63,9 +60,5 @@ else:
             config.source_url = response.url
             return buffer_loader(HttpsStreamWrapper(response), config)
         return None, {}
-
-    @hookimpl
-    def configure_loaders(loaders: List[Loader]):
-        loaders.insert(loaders.index(ftp_http_loader), https_loader)
 
     __all__ = ("https_loader",)

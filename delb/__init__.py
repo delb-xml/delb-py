@@ -18,15 +18,14 @@ from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 from typing import IO as IOType
 
 from lxml import etree
 
-from delb import utils
 from delb.exceptions import InvalidOperation
-from delb.plugins import plugin_manager
-from delb.plugins.contrib.core_loaders import tag_node_loader
+from delb.plugins import plugin_manager as _plugin_manager
+from delb.plugins.contrib import core_loaders
 from delb.nodes import (
     altered_default_filters,
     any_of,
@@ -49,6 +48,19 @@ from delb.nodes import (
     TextNode,
 )
 from delb.typing import _WrapperCache, Loader
+from delb.utils import (
+    copy_root_siblings,
+    first,
+    get_traverser,
+    last,
+    register_namespace,
+)
+
+
+# plugin loading
+
+
+_plugin_manager.load_plugins()
 
 
 # constants
@@ -62,80 +74,6 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
 
 
 # api
-
-
-def first(iterable: Iterable) -> Optional[Any]:
-    """
-    Returns the first item of the given :term:`iterable` or ``None`` if it's empty.
-    Note that the first item is consumed when the iterable is an :term:`iterator`.
-    """
-    if isinstance(iterable, Iterator):
-        try:
-            return next(iterable)
-        except StopIteration:
-            return None
-    elif isinstance(iterable, Sequence):
-        return iterable[0] if len(iterable) else None
-    else:
-        raise TypeError
-
-
-def get_traverser(from_left=True, depth_first=True, from_top=True):
-    """
-    Returns a function that can be used to traverse a (sub)tree with the given node as
-    root. While traversing the given root node is yielded at some point.
-
-    The returned functions have this signature:
-
-    .. code-block:: python
-
-        def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-            ...
-
-    :param from_left: The traverser yields sibling nodes from left to right if ``True``,
-                      or starting from the right if ``False``.
-    :param depth_first: The child nodes resp. the parent node are yielded before the
-                        siblings of a node by a traverser if ``True``. Siblings are
-                        favored if ``False``.
-    :param from_top: The traverser starts yielding nodes with the lowest depth if
-                     ``True``. When ``False``, again, the opposite is in effect.
-    """
-
-    result = utils.TRAVERSERS.get((from_left, depth_first, from_top))
-    if result is None:
-        raise NotImplementedError
-    return result
-
-
-def last(iterable: Iterable) -> Optional[Any]:
-    """
-    Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
-    Note that the whole :term:`iterator` is consumed when such is given.
-    """
-    if isinstance(iterable, Iterator):
-        result = None
-        for result in iterable:
-            pass
-        return result
-    elif isinstance(iterable, Sequence):
-        return iterable[-1] if len(iterable) else None
-    else:
-        raise TypeError
-
-
-def register_namespace(prefix: str, namespace: str):
-    """
-    Registers a namespace prefix that newly created :class:`TagNode` instances in that
-    namespace will use in serializations.
-
-    The registry is global, and any existing mapping for either the given prefix or the
-    namespace URI will be removed. It has however no effect on the serialization of
-    existing nodes, see :meth:`Document.cleanup_namespace` for that.
-
-    :param prefix: The prefix to register.
-    :param namespace: The targeted namespace.
-    """
-    etree.register_namespace(prefix, namespace)
 
 
 class _RootSiblingsContainer(ABC, MutableSequence):
@@ -245,23 +183,15 @@ class DocumentExtensionHooks:
         storing the final configuration data in a :class:`types.SimpleNamespace` and
         bind it to the instance's :attr:`Document.config` property with the extension's
         name. The initially mentioned keyword arguments *should* be prefixed with that
-        name. This method is called before the loaders try to read and parse the given
-        source for a document.
+        name as well. This method is called before the loaders try to read and parse
+        the given source for a document.
         """
         pass
 
 
 class DocumentMeta(type):
     def __new__(mcs, name, base_classes, namespace):
-        extension_classes = []
-        for obj in plugin_manager.hook.get_document_extensions():
-            if isinstance(obj, Iterable):
-                assert all(isinstance(x, type) for x in obj)
-                extension_classes.extend(obj)
-            elif isinstance(obj, type):
-                extension_classes.append(obj)
-            else:
-                raise TypeError
+        extension_classes = tuple(_plugin_manager.plugins.document_extensions)
 
         if not base_classes:  # Document class is being constructed
             extension_docs = sorted(
@@ -272,11 +202,12 @@ class DocumentMeta(type):
                     (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
                 )
 
-        base_classes += tuple(extension_classes) + (DocumentExtensionHooks,)
+        base_classes += extension_classes + (DocumentExtensionHooks,)
 
-        configured_loaders = []
-        plugin_manager.hook.configure_loaders(loaders=configured_loaders)
-        namespace["_loaders"] = (tag_node_loader, *configured_loaders)
+        namespace["_loaders"] = (
+            core_loaders.tag_node_loader,
+            *_plugin_manager.plugins.loaders,
+        )
 
         return super().__new__(mcs, name, base_classes, namespace)
 
@@ -471,7 +402,7 @@ class Document(metaclass=DocumentMeta):
 
         current_root = getattr(self, "__root_node__", None)
         if current_root is not None:
-            utils.copy_root_siblings(current_root._etree_obj, node._etree_obj)
+            copy_root_siblings(current_root._etree_obj, node._etree_obj)
             delattr(current_root, "__document__")
 
         setattr(node, "__document__", self)
