@@ -35,7 +35,7 @@ requests = {version = "^2.21",optional = true}
 setuptools = "*"
 
 [tool.poetry.dev-dependencies]
-black = "^19.3b0"
+black = "*"
 flake8-black = "*"
 mypy = "*"
 pytest = "*"
