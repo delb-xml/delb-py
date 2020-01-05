@@ -29,6 +29,7 @@ def test_cleanup_namespaces():
 
 def test_config_initialization():
     # a subclass is needed to use test_plugins extensions
+    # FIXME figure out why this is still necessary, might be fucked up vens
     class TestClass(Document):
         pass
 

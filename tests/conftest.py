@@ -2,9 +2,9 @@ from pathlib import Path
 
 from pytest import fixture
 
-from delb import Document
-
 from tests import plugins  # noqa: F401
+
+from delb import Document
 
 
 FILES_PATH = Path(__file__).parent / "files"
