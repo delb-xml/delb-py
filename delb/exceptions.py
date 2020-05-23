@@ -1,4 +1,4 @@
-# Copyright (C) 2019  Frank Sachsenheim
+# Copyright (C) 2018-'20  Frank Sachsenheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published

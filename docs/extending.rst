@@ -6,9 +6,9 @@ mechanics with Python packages.
 A package that extends its functionality must `provide entrypoint metadata`_
 for an entrypoint group named ``delb`` that points to modules that contain
 extensions. The individual extensions have to be decorated with specific methods
-of the plugin manager object.
+of the plugin manager object (see the following sections).
 
-There's a repository that outline the mechanics as developer reference:
+There's a repository that outlines the mechanics as developer reference:
 https://github.com/funkyfuture/delb-reference-plugins
 
 Authors are encouraged to prefix their package names with ``delb-`` in order to

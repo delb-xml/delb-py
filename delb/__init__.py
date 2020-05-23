@@ -1,4 +1,4 @@
-# Copyright (C) 2019  Frank Sachsenheim
+# Copyright (C) 2018-'20  Frank Sachsenheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -251,7 +251,7 @@ class Document(metaclass=DocumentMeta):
         self.config: SimpleNamespace = SimpleNamespace()
         """
         Beside the used ``parser``, this property contains the namespaced data that
-        extension classes and loaders may store.
+        extension classes and loaders may have stored.
         """
         self.config.parser = parser
         self._init_config(config)  # type: ignore
@@ -312,10 +312,10 @@ class Document(metaclass=DocumentMeta):
         retain_prefixes: Optional[Iterable[str]] = None,
     ):
         """
-        Consolidates the namespace declarations in a document by removing unused and
+        Consolidates the namespace declarations in the document by removing unused and
         redundant ones.
 
-        There are currently some caveats due to lxml's implementations:
+        There are currently some caveats due to lxml/libxml2's implementations:
           - prefixes cannot be set for the default namespace
           - a namespace cannot be declared as default after a node's creation (where a
             namespace was specified that had been registered for a prefix with
@@ -327,8 +327,8 @@ class Document(metaclass=DocumentMeta):
             used
 
         To ensure clean serializations, one should:
-          - register prefixes for all except the default namespace at the start of an
-            application
+          - register prefixes for all namespaces except the default one at the start of
+            an application
           - use only one default namespace within a document
 
         :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
@@ -344,7 +344,7 @@ class Document(metaclass=DocumentMeta):
 
     def clone(self) -> "Document":
         """
-        :return: Another instance w/ the duplicated contents.
+        :return: Another instance with the duplicated contents.
         """
         # lxml.etree.XMLParser instances aren't pickable / copyable
         parser = self.config.__dict__.pop("parser")
@@ -356,21 +356,21 @@ class Document(metaclass=DocumentMeta):
     def css_select(self, expression: str) -> List["TagNode"]:
         """
         This method proxies to the :meth:`TagNode.css_select` method of the document's
-        root node.
+        :attr:`root <Document.root>` node.
         """
         return self.root.css_select(expression)
 
     def merge_text_nodes(self):
         """
         This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
-        document's root node.
+        document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes()
 
     @property
     def namespaces(self) -> Dict[str, str]:
         """
-        The namespace mapping of the document's root node.
+        The namespace mapping of the document's :attr:`root <Document.root>` node.
         """
         return self.root.namespaces
 
@@ -429,7 +429,7 @@ class Document(metaclass=DocumentMeta):
 
     def write(self, buffer: IOType, pretty: bool = False, **cleanup_namespaces_args):
         """
-        :param buffer: An :term:`file-like object` that the document is written to.
+        :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: Adds indentation for human consumers when ``True``.
         :param cleanup_namespaces_args: Arguments that are a passed to
                                         :meth:`Document.cleanup_namespaces` before
@@ -443,8 +443,8 @@ class Document(metaclass=DocumentMeta):
 
     def xpath(self, expression: str) -> List["TagNode"]:
         """
-        This method proxies to the :meth:`TagNode.xpath` method of the document's root
-        node.
+        This method proxies to the :meth:`TagNode.xpath` method of the document's
+        :attr:`root <Document.root>` node.
         """
 
         return self.root.xpath(expression)

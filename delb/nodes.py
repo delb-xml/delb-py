@@ -1,4 +1,4 @@
-# Copyright (C) 2019  Frank Sachsenheim
+# Copyright (C) 2018-'20  Frank Sachsenheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -291,9 +291,9 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     """
     This function can be either used as as :term:`context manager` or :term:`decorator`
     to define a set of :obj:`default_filters` for the encapsuled code block or callable.
-    These are then applied to in all operations that allow node filtering, like
+    These are then applied in all operations that allow node filtering, like
     :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
-    access.
+    indexed access to child nodes.
 
     >>> root = Document(
     ...     '<root xmlns="foo"><a/><!--x--><b/><!--y--><c/></root>'
@@ -2121,14 +2121,14 @@ def any_of(*filter: Filter) -> Filter:
 
 def is_comment_node(node: NodeBase) -> bool:
     """
-    A node filter that matches comment nodes.
+    A node filter that matches :class:`CommentNode` instances.
     """
     return isinstance(node, CommentNode)
 
 
 def is_processing_instruction_node(node: NodeBase) -> bool:
     """
-    A node filter that matches processing instruction nodes.
+    A node filter that matches :class:`ProcessingInstructionNode` instances.
     """
     return isinstance(node, ProcessingInstructionNode)
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2019  Frank Sachsenheim
+# Copyright (C) 2018-'20  Frank Sachsenheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -66,26 +66,34 @@ class PluginManager:
 
         .. testcode::
 
+            from os import getenv
             from types import SimpleNamespace
             from typing import Any
 
             from delb.plugins import plugin_manager
-            from delb.plugins.contrib.core_loaders import text_loader
+            from delb.plugins.contrib.https_loaders import https_loader
             from delb.typing import LoaderResult
+
+
+            IPFS_GATEWAY = gentenv("IPFS_GATEWAY_PREFIX", "https://ipfs.io/ipfs/")
 
 
             @plugin_manager.register_loader()
             def ipfs_loader(source: Any, config: SimpleNamespace) -> LoaderResult:
                 if isinstance(source, str) and source.startswith("ipfs://"):
-                    # let's assume the document is loaded as string here:
-                    data = "<root/>"
 
-                    return text_loader(data, config)
+                    config.source_url = source
+                    config.ipfs_gateway_source_url = IPFS_GATEWAY + source[7:]
+
+                    return https_loader(config.ipfs_gateway_source_url, config)
 
                 # return an indication why this loader didn't attempt to load in order
                 # to support debugging
                 return "The input value is not an URL with the ipfs scheme."
 
+
+        The ``source`` argument is what a :class:`Document` instance is initialized with
+        as input data.
 
         Note that the ``config`` argument that is passed to a loader function contains
         configuration data, it's the :attr:`delb.Document.config` property after
@@ -95,7 +103,7 @@ class PluginManager:
         one. Let's assume a loader shall figure out what to load from a remote XML
         resource that contains a reference to the actual document.
         That one would have to be considered before the one that loads XML documents
-        from a URL into a :class:`delb.Document`:
+        from a URL with the `https` scheme:
 
         .. testcode::
 

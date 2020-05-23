@@ -25,7 +25,7 @@ import sphinx_readable_theme
 # -- Project information -----------------------------------------------------
 
 project = 'delb'
-copyright = '2018-2019, Frank Sachsenheim'
+copyright = '2018-2020, Frank Sachsenheim'
 author = 'Frank Sachsenheim'
 
 # The full version, including alpha/beta/rc tags
