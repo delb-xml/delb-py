@@ -21,10 +21,7 @@ git:
   submodules: true
 
 before_install:
-  - curl -LOsS https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py
-  - python get-poetry.py -y --version 1.0.0b4
-  - source ~/.poetry/env
-  - rm get-poetry.py
+  - pip install poetry
 
 install:
   - travis_retry poetry install -v
