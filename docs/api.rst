@@ -6,6 +6,8 @@ Documents
 
 .. autoclass:: delb.Document
 
+   .. autoclasstoc::
+
 
 .. _document-loaders:
 
@@ -31,20 +33,28 @@ Comment
 
 .. autoclass:: delb.CommentNode
 
+   .. autoclasstoc::
+
 Processing instruction
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: delb.ProcessingInstructionNode
+
+   .. autoclasstoc::
 
 Tag
 ~~~
 
 .. autoclass:: delb.TagNode
 
+   .. autoclasstoc::
+
 Text
 ~~~~
 
 .. autoclass:: delb.TextNode
+
+   .. autoclasstoc::
 
 Node constructors
 ~~~~~~~~~~~~~~~~~

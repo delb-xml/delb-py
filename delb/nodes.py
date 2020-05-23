@@ -340,6 +340,8 @@ class NodeBase(ABC):
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
+
+        :meta category: add-nodes
         """
         if node:
             this, queue = self._prepare_new_relative(node, clone)
@@ -363,6 +365,8 @@ class NodeBase(ABC):
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
+
+        :meta category: add-nodes
         """
         if node:
             this, queue = self._prepare_new_relative(node, clone)
@@ -381,6 +385,8 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
                  to top.
+
+        :meta category: iter-relatives
         """
         parent = self.parent
         if parent:
@@ -398,6 +404,8 @@ class NodeBase(ABC):
         :param recurse: Also returns the children's children and so on in document order
                         if ``True``.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
+
+        :meta category: iter-relatives
         """
         pass
 
@@ -423,6 +431,8 @@ class NodeBase(ABC):
         Removes the node, including its descendants, from its tree.
 
         :return: The removed node.
+
+        :meta category: remove-node
         """
         pass
 
@@ -473,6 +483,8 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  right.
+
+        :meta category: iter-relatives
         """
         next_node = self.next_node(*filter)
         while next_node is not None:
@@ -485,6 +497,8 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the following nodes in
                  document order.
+
+        :meta category: iter-relatives
         """
         for node in self._iterate_next_nodes_in_stream():
             if all(f(node) for f in chain(default_filters[-1], filter)):
@@ -522,6 +536,8 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  left.
+
+        :meta category: iter-relatives
         """
         previous_node = self.previous_node(*filter)
         while previous_node is not None:
@@ -534,6 +550,8 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the previous nodes in document
                  order.
+
+        :meta category: iter-relatives
         """
         for node in self._iterate_previous_nodes_in_stream():
             if all(f(node) for f in filter):
@@ -637,6 +655,8 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or ``None``.
+
+        :meta category: fetch-node
         """
         pass
 
@@ -644,6 +664,8 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or ``None``.
+
+        :meta category: fetch-node
         """
         try:
             return next(self.iterate_next_nodes_in_stream(*filter))
@@ -691,6 +713,8 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or ``None``.
+
+        :meta category: fetch-node
         """
         pass
 
@@ -699,6 +723,8 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
                  ``None``.
+
+        :meta category: fetch-node
         """
         try:
             return next(self.iterate_previous_nodes_in_stream(*filter))
@@ -717,6 +743,8 @@ class NodeBase(ABC):
         :param node: The replacing node.
         :param clone: A concrete, replacing node is cloned if ``True``.
         :return: The removed node.
+
+        :meta category: remove-node
         """
         if self.parent is None:
             raise InvalidOperation(
@@ -748,6 +776,8 @@ class _ChildLessNode(NodeBase):
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
         """
         A :term:`generator iterator` that yields nothing.
+
+        :meta category: iter-relatives
         """
         yield from []
 
@@ -1199,6 +1229,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
+
+        :meta category: add-nodes
         """
         if not node:
             return
@@ -1300,6 +1332,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param expression: A CSS selector expression.
         :return: A list of matching :term:`tag node` s.
+
+        :meta category: query-nodes
         """
         return self.xpath(css_to_xpath(expression))
 
@@ -1353,6 +1387,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
                       the remaining nodes are added afterwards in the given order.
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
+
+        :meta category: add-nodes
         """
         if index < 0:
             raise ValueError
@@ -1484,6 +1520,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if ``True``.
+
+        :meta category: add-nodes
         """
         self.insert_child(0, *node, clone=clone)
 
@@ -1522,6 +1560,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
             lxml issue: https://github.com/lxml/lxml/pull/236
 
             :param expression: An XPath 1.0 location path.
+
+            :meta category: query-nodes
         """
 
         etree_obj = self._etree_obj

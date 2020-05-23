@@ -17,9 +17,12 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+import abc
+
 import pkg_resources
 
 import sphinx_readable_theme
+from autoclasstoc import is_data_attr, is_public, PublicMethods, Section
 
 
 # -- Project information -----------------------------------------------------
@@ -44,11 +47,13 @@ version = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
-    'sphinxcontrib.fulltoc',
+    "autoclasstoc",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "sphinxcontrib.fulltoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -99,6 +104,8 @@ html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_css_files = ['styles.css']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -191,11 +198,60 @@ epub_exclude_files = ['search.html']
 # -- Options for autodoc extension -------------------------------------------
 
 autodoc_default_options = {
-    'inherited-members': True,
-    'members': None,
-    'show-inheritance': True,
-    'undoc-members': True,
+    "inherited-members": True,
+    "members": True,
 }
+
+
+class SectionBase(Section):
+    def _find_attrs(self):
+        result = {}
+        for base_class in reversed(self.cls.__mro__):
+            if base_class not in (object, abc.ABC):
+                result.update(base_class.__dict__)
+        return result
+
+    def _find_inherited_attrs(self):
+        return {}
+
+    def predicate(self, name, attr, meta):
+        return meta.get("category") == self.key
+
+
+for key, title in (
+    ("add-nodes", "Adding nodes"),
+    ("fetch-node", "Fetching a single relative node"),
+    ("iter-relatives", "Iterating over relative nodes"),
+    ("query-nodes", "Querying descending nodes"),
+    ("remove-node", "Removing a node from its tree")
+):
+    type("CategorySection", (SectionBase,), {"key": key, "title": title})
+
+
+class Property(SectionBase):
+    key = "property"
+    title = "Properties"
+
+    def predicate(self, name, attr, meta):
+        return is_data_attr(name, attr) and is_public(name)
+
+
+class UncategorizedMembers(PublicMethods, SectionBase):
+    title = "Uncategorized methods"
+
+    def predicate(self, name, attr, meta):
+        return super().predicate(name, attr, meta) and not meta.get("category")
+
+
+autoclasstoc_sections = [
+    "property",
+    "fetch-node",
+    "iter-relatives",
+    "query-nodes",
+    "add-nodes",
+    "remove-node",
+    "public-methods"
+]
 
 
 # -- Options for intersphinx extension ---------------------------------------
