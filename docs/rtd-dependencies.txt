@@ -1,5 +1,5 @@
 git+https://github.com/kalekundert/autoclasstoc@master#egg=autoclasstoc
 requests
-sphinx>=1.8
+sphinx>=3
 sphinxcontrib-fulltoc
 sphinx-readable-theme
