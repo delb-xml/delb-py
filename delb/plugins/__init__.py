@@ -15,11 +15,33 @@
 
 from inspect import isclass
 from types import SimpleNamespace
-from typing import Callable, Iterable, Type, Union
+from typing import Any, Callable, Dict, Iterable, Type, Union
 
 import pkg_resources
 
 from delb.typing import Loader
+
+
+class DocumentExtensionHooks:
+    """
+    This class acts as termination for methods that can be implemented by extension
+    classes. Any implementation of a method must call a base class' one with
+    :func:`super`.
+    """
+
+    def _init_config(self, config_args: Dict[str, Any]):
+        """
+        The ``config_args`` contains the additional keyword arguments that a
+        :class:`Document` instance is called with. Extension classes that expect
+        configuration data *must* process their specific arguments by clearing them
+        from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
+        storing the final configuration data in a :class:`types.SimpleNamespace` and
+        bind it to the instance's :attr:`Document.config` property with the extension's
+        name. The initially mentioned keyword arguments *should* be prefixed with that
+        name as well. This method is called before the loaders try to read and parse
+        the given source for a document.
+        """
+        pass
 
 
 LoaderConstraint = Union[Loader, Iterable[Loader], None]

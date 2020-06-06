@@ -24,7 +24,7 @@ from typing import IO as IOType
 from lxml import etree
 
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
-from delb.plugins import plugin_manager as _plugin_manager
+from delb.plugins import DocumentExtensionHooks, plugin_manager as _plugin_manager
 from delb.plugins.contrib import core_loaders
 from delb.nodes import (
     altered_default_filters,
@@ -165,28 +165,6 @@ class _TailNodes(_RootSiblingsContainer):
     def _iter_all(self):
         with altered_default_filters():
             yield from self._document.root.iterate_next_nodes()
-
-
-class DocumentExtensionHooks:
-    """
-    This class acts as termination for methods that can be implemented by extension
-    classes. Any implementation of a method must call a base class' one with
-    :func:`super`.
-    """
-
-    def _init_config(self, config_args: Dict[str, Any]):
-        """
-        The ``config_args`` contains the additional keyword arguments that a
-        :class:`Document` instance is called with. Extension classes that expect
-        configuration data *must* process their specific arguments by clearing them
-        from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
-        storing the final configuration data in a :class:`types.SimpleNamespace` and
-        bind it to the instance's :attr:`Document.config` property with the extension's
-        name. The initially mentioned keyword arguments *should* be prefixed with that
-        name as well. This method is called before the loaders try to read and parse
-        the given source for a document.
-        """
-        pass
 
 
 class DocumentMeta(type):
