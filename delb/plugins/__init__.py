@@ -121,6 +121,9 @@ class PluginManager:
         configuration data, it's the :attr:`delb.Document.config` property after
         :meth:`delb.DocumentExtensionHooks._init_config` has been processed.
 
+        Loaders that retrieve a document from an URL should add the origin as string to
+        the ``config`` object as ``source_url``.
+
         You might want to specify a loader to be considered before or after another
         one. Let's assume a loader shall figure out what to load from a remote XML
         resource that contains a reference to the actual document.

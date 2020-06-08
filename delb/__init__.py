@@ -223,7 +223,7 @@ class Document(metaclass=DocumentMeta):
     """
 
     _loaders: Tuple[Loader, ...]
-    __slots__ = ("__root_node__", "head_nodes", "tail_nodes")
+    __slots__ = ("__root_node__", "head_nodes", "source_url", "tail_nodes")
 
     def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER, **config):
         self.config: SimpleNamespace = SimpleNamespace()
@@ -264,6 +264,10 @@ class Document(metaclass=DocumentMeta):
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
         assert isinstance(root, TagNode)
         self.root = root
+        self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
+        """
+        The source URL where a loader obtained the document's contents or ``None``.
+        """
 
         self.head_nodes = _HeadNodes(self)
         """
