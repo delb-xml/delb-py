@@ -93,11 +93,11 @@ class PluginManager:
             from typing import Any
 
             from delb.plugins import plugin_manager
-            from delb.plugins.contrib.https_loaders import https_loader
+            from delb.plugins.contrib.https_loader import https_loader
             from delb.typing import LoaderResult
 
 
-            IPFS_GATEWAY = gentenv("IPFS_GATEWAY_PREFIX", "https://ipfs.io/ipfs/")
+            IPFS_GATEWAY = getenv("IPFS_GATEWAY_PREFIX", "https://ipfs.io/ipfs/")
 
 
             @plugin_manager.register_loader()
