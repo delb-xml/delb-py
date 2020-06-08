@@ -14,6 +14,14 @@ Documents
 Document loaders
 ----------------
 
+If you want or need to manipulate the availability of or order in which loaders
+are attempted, you can change the
+:obj:`delb.plugins.plugin_manager.plugins.loaders` object which is a
+:class:`list`. Its state is reflected in your whole application. Please refer to
+`this issue`_ when you require finer controls over these aspects.
+
+.. _this issue: https://github.com/funkyfuture/delb/issues/9
+
 Core
 ~~~~
 
