@@ -28,13 +28,14 @@ https-loader = ["requests"]
 https-loader = "delb.plugins.contrib.https_loader"
 
 [tool.poetry.dependencies]
-python = ">=3.6"
+python = "~=3.6"
 cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21",optional = true}
 setuptools = "*"
 
 [tool.poetry.dev-dependencies]
+autoclasstoc = "^1.1.1"
 black = {version = "*", allow-prereleases = true }
 flake8-black = "*"
 mypy = "*"

@@ -1,4 +1,4 @@
-git+https://github.com/kalekundert/autoclasstoc@master#egg=autoclasstoc
+autoclasstoc>=1.1.1
 requests
 sphinx>=3
 sphinxcontrib-fulltoc
