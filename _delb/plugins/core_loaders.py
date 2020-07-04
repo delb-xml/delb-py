@@ -28,10 +28,10 @@ from typing import cast, Any, IO
 
 from lxml import etree
 
-from delb import utils
-from delb.nodes import TagNode
-from delb.plugins import plugin_manager
-from delb.typing import LoaderResult
+from _delb import utils
+from _delb.nodes import TagNode
+from _delb.plugins import plugin_manager
+from _delb.typing import LoaderResult
 
 
 def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:

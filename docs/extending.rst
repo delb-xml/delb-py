@@ -1,6 +1,8 @@
 Extending delb
 ==============
 
+.. include:: api-note.rst
+
 ``delb`` offers a plugin system to facilitate the extendability of a few of its
 mechanics with Python packages.
 A package that extends its functionality must `provide entrypoint metadata`_
@@ -39,23 +41,23 @@ respectively the instance property of a document instance with that name.
 Document loaders
 ----------------
 
-Loaders are registered with :meth:`delb.plugins.plugin_manager.register_loader`:
+Loaders are registered with this decorator:
 
-.. autofunction:: delb.plugins.plugin_manager.register_loader
+.. autofunction:: _delb.plugins.plugin_manager.register_loader
 
 
 Document extensions
 -------------------
 
 Document extension classes are registered with
-:meth:`delb.plugins.plugin_manager.register_document_extension`:
+:meth:`_delb.plugins.plugin_manager.register_document_extension`:
 
-.. autofunction:: delb.plugins.plugin_manager.register_document_extension
+.. autofunction:: _delb.plugins.plugin_manager.register_document_extension
 
 They can implement methods that are called from builtin :class:`delb.Document`
 methods:
 
-.. autoclass:: delb.DocumentExtensionHooks
+.. autoclass:: _delb.plugins.DocumentExtensionHooks
    :private-members:
 
 

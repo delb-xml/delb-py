@@ -23,18 +23,19 @@ from typing import IO as IOType
 
 from lxml import etree
 
-from delb.exceptions import FailedDocumentLoading, InvalidOperation
-from delb.plugins import DocumentExtensionHooks, plugin_manager as _plugin_manager
-from delb.plugins.contrib import core_loaders
-from delb.nodes import (
+from delb.exceptions import FailedDocumentLoading, InvalidOperation  # type: ignore
+from _delb.plugins import (
+    DocumentExtensionHooks,
+    plugin_manager as _plugin_manager,
+)
+from _delb.plugins import core_loaders
+from delb.nodes import (  # type: ignore
     altered_default_filters,
     any_of,
-    _get_or_create_element_wrapper,
     is_comment_node,
     is_processing_instruction_node,
     is_root_node,
     is_tag_node,
-    _is_tag_or_text_node,
     is_text_node,
     not_,
     new_comment_node,
@@ -47,14 +48,16 @@ from delb.nodes import (
     TagNode,
     TextNode,
 )
-from delb.typing import _WrapperCache, Loader
-from delb.utils import (
-    copy_root_siblings,
+from _delb.nodes import _get_or_create_element_wrapper, _is_tag_or_text_node
+from delb.typing import Loader
+from _delb.typing import _WrapperCache
+from delb.utils import (  # type: ignore
     first,
     get_traverser,
     last,
     register_namespace,
 )
+from _delb.utils import copy_root_siblings
 
 
 # plugin loading
@@ -444,7 +447,6 @@ class Document(metaclass=DocumentMeta):
 __all__ = (
     CommentNode.__name__,
     Document.__name__,
-    InvalidOperation.__name__,
     ProcessingInstructionNode.__name__,
     TagNode.__name__,
     TextNode.__name__,

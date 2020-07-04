@@ -5,13 +5,13 @@ from lxml import etree
 
 from delb import (
     Document,
-    InvalidOperation,
     TagNode,
     TextNode,
     new_tag_node,
     register_namespace,
     tag,
 )
+from delb.exceptions import InvalidOperation
 
 
 def is_pagebreak(node):

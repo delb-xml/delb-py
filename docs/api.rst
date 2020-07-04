@@ -1,6 +1,8 @@
 API Documentation
 =================
 
+.. include:: api-note.rst
+
 Documents
 ---------
 
@@ -25,12 +27,12 @@ are attempted, you can change the
 Core
 ~~~~
 
-.. automodule:: delb.plugins.contrib.core_loaders
+.. automodule:: _delb.plugins.core_loaders
 
 Extra
 ~~~~~
 
-.. automodule:: delb.plugins.contrib.https_loader
+.. automodule:: _delb.plugins.https_loader
 
 
 Nodes

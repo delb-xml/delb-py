@@ -19,13 +19,17 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: XML",
 ]
 keywords = ["xml", "markup", "text processing"]  # TODO two more
+packages = [
+    {include = "delb"},
+    {include = "_delb"},
+]
 include = ["delb/py.typed"]
 
 [tool.poetry.extras]
 https-loader = ["requests"]
 
 [tool.poetry.plugins.delb]
-https-loader = "delb.plugins.contrib.https_loader"
+https-loader = "_delb.plugins.https_loader"
 
 [tool.poetry.dependencies]
 python = "~=3.6"

@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from delb.plugins import plugin_manager
+from _delb.plugins import plugin_manager
 
 
 @plugin_manager.register_document_extension

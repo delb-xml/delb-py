@@ -24,9 +24,9 @@ from io import IOBase
 from types import SimpleNamespace
 from typing import Any, Tuple
 
-from delb.plugins import plugin_manager
-from delb.plugins.contrib.core_loaders import buffer_loader, ftp_http_loader
-from delb.typing import LoaderResult
+from _delb.plugins import plugin_manager
+from _delb.plugins.core_loaders import buffer_loader, ftp_http_loader
+from _delb.typing import LoaderResult
 
 
 # TODO define as extra-depending plugin once this is solved:

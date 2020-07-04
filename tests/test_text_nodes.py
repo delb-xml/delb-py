@@ -1,7 +1,7 @@
 import pytest
 
 from delb import Document, TagNode, TextNode, is_text_node, tag
-from delb.nodes import TAIL, APPENDED
+from _delb.nodes import TAIL, APPENDED
 
 
 def test_add_tag_before_tail():

@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, Iterable, Type, Union
 
 import pkg_resources
 
-from delb.typing import Loader
+from _delb.typing import Loader
 
 
 class DocumentExtensionHooks:
@@ -68,7 +68,7 @@ class PluginManager:
         etc.
 
         There are hook methods that an extension can implement, they are declared in
-        :class:`delb.DocumentExtensionHooks`.
+        :class:`_delb.plugins.DocumentExtensionHooks`.
 
         Extension classes are *mixin classes* in Python OOP jargon.
         """
@@ -92,9 +92,9 @@ class PluginManager:
             from types import SimpleNamespace
             from typing import Any
 
-            from delb.plugins import plugin_manager
-            from delb.plugins.contrib.https_loader import https_loader
-            from delb.typing import LoaderResult
+            from _delb.plugins import plugin_manager
+            from _delb.plugins.https_loader import https_loader
+            from _delb.typing import LoaderResult
 
 
             IPFS_GATEWAY = getenv("IPFS_GATEWAY_PREFIX", "https://ipfs.io/ipfs/")
@@ -119,7 +119,7 @@ class PluginManager:
 
         Note that the ``config`` argument that is passed to a loader function contains
         configuration data, it's the :attr:`delb.Document.config` property after
-        :meth:`delb.DocumentExtensionHooks._init_config` has been processed.
+        :meth:`_delb.plugins.DocumentExtensionHooks._init_config` has been processed.
 
         Loaders that retrieve a document from an URL should add the origin as string to
         the ``config`` object as ``source_url``.
@@ -132,8 +132,8 @@ class PluginManager:
 
         .. testcode::
 
-            from delb.plugins import plugin_manager
-            from delb.plugins.contrib.https_loader import https_loader
+            from _delb.plugins import plugin_manager
+            from _delb.plugins.https_loader import https_loader
 
 
             @plugin_manager.register_loader(before=https_loader)

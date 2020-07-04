@@ -5,10 +5,10 @@ from delb import (
     new_tag_node,
     tag,
     Document,
-    InvalidOperation,
     TagNode,
     TextNode,
 )
+from delb.exceptions import InvalidOperation
 
 
 def test_add_previous():
