@@ -287,9 +287,10 @@ class Document(metaclass=DocumentMeta):
         return node.document is self
 
     def __str__(self):
-        clone = self.clone()
-        clone.merge_text_nodes()
-        return etree.tounicode(clone.root._etree_obj.getroottree())
+        cloned_root = self.root.clone(deep=True)
+        cloned_root.merge_text_nodes()
+        copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
+        return etree.tounicode(cloned_root._etree_obj.getroottree())
 
     def cleanup_namespaces(
         self,
