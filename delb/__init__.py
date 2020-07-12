@@ -45,6 +45,7 @@ from delb.nodes import (  # type: ignore
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
+    QueryResults,
     TagNode,
     TextNode,
 )
@@ -449,6 +450,7 @@ __all__ = (
     CommentNode.__name__,
     Document.__name__,
     ProcessingInstructionNode.__name__,
+    QueryResults.__name__,
     TagNode.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
