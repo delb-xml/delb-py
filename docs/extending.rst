@@ -10,9 +10,6 @@ for an entrypoint group named ``delb`` that points to modules that contain
 extensions. The individual extensions have to be decorated with specific methods
 of the plugin manager object (see the following sections).
 
-There's a repository that outlines the mechanics as developer reference:
-https://github.com/funkyfuture/delb-reference-plugins
-
 Authors are encouraged to prefix their package names with ``delb-`` in order to
 increase discoverability.
 
@@ -36,6 +33,12 @@ respectively the instance property of a document instance with that name.
 
     Mind to re-install a package in development when its entrypoint
     specification changed.
+
+There's a repository that outlines the mechanics as developer reference:
+https://github.com/funkyfuture/delb-reference-plugins
+
+There's also the snakesist_ project that implements both plugin types to
+interact with eXist-db_ as storage.
 
 
 Document loaders
@@ -61,5 +64,7 @@ methods:
    :private-members:
 
 
+.. _eXist-db: https://exist-db.org/
 .. _poetry: https://poetry.eustace.io/
 .. _provide entrypoint metadata: https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata
+.. _snakesist: https://github.com/03b8/snakesist
