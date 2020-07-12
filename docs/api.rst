@@ -76,6 +76,12 @@ Node constructors
 .. autofunction:: delb.new_tag_node
 
 
+Query results
+~~~~~~~~~~~~~
+
+.. autoclass:: delb.QueryResults
+
+
 .. _contributed-filters:
 
 Filters

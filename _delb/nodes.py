@@ -16,6 +16,7 @@
 
 from abc import abstractmethod, ABC
 from collections import deque
+from collections.abc import Sequence as AbstractSequence
 from contextlib import contextmanager
 from copy import copy
 from itertools import chain
@@ -32,6 +33,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Union,
 )
@@ -400,7 +402,7 @@ class NodeBase(ABC):
     ) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
+                       yielded.
         :param recurse: Also returns the children's children and so on in document order
                         if ``True``.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
@@ -1196,6 +1198,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         raise TypeError
 
+    def __hash__(self) -> int:
+        return hash(self._etree_obj)
+
     def __len__(self) -> int:
         return len([x for x in self.child_nodes(recurse=False)])
 
@@ -1323,7 +1328,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         return result
 
-    def css_select(self, expression: str) -> List["TagNode"]:
+    def css_select(self, expression: str) -> "QueryResults":
         """
         Namespace prefixes are delimited with a ``|`` before a name test, for example
         ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
@@ -1532,7 +1537,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         return cast(str, self._etree_obj.tag)
 
-    def xpath(self, expression: str) -> List["TagNode"]:
+    def xpath(self, expression: str) -> "QueryResults":
         """ Returns all :term:`tag node` s that match the evaluation of an XPath
             expression.
 
@@ -1618,12 +1623,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise InvalidOperation(
                 "Only XPath expressions that target tag nodes are supported."
             )
-        return cast(
-            List[TagNode],
-            [
+        return QueryResults(
+            (
                 _get_or_create_element_wrapper(cast(_Element, element), cache)
                 for element in _results
-            ],
+            )
         )
 
 
@@ -2144,6 +2148,74 @@ class TextNode(_ChildLessNode, NodeBase):
             raise InvalidCodePath
 
 
+# query results container
+
+
+class QueryResults(AbstractSequence):
+    """
+    A sequence with the results of a CSS or XPath query with some helpers for readable
+    Python expressions.
+    """
+
+    def __init__(self, results: Iterator[_ElementWrappingNode]):
+        self.__items = cast(Tuple[TagNode], tuple(results))
+
+    def __getitem__(self, item):
+        return self.__items[item]
+
+    def __len__(self) -> int:
+        return len(self.__items)
+
+    def __repr__(self):
+        return str([repr(x) for x in self.__items])
+
+    @property
+    def as_list(self) -> List[TagNode]:
+        """ The contained nodes in a :class:`list`. """
+        return list(self.__items)
+
+    @property
+    def as_tuple(self) -> Tuple[TagNode, ...]:
+        """ The contained nodes in a :class:`tuple`. """
+        return self.__items
+
+    @property
+    def as_set(self) -> Set[TagNode]:
+        """ The contained nodes in a :class:`set`. """
+        return set(self.__items)
+
+    def filtered_by(self, *filters: Filter) -> "QueryResults":
+        """
+        Returns another :class:`QueryResults` instance that contains all nodes filtered
+        by the provided :term:`filter` s.
+        """
+        items = self.__items
+        for filter in filters:
+            items = (x for x in items if filter(x))  # type: ignore
+        return self.__class__(items)  # type: ignore
+
+    @property
+    def first(self) -> Optional[TagNode]:
+        """ The first node from the results or ``None`` if there are none. """
+        if len(self.__items):
+            return self.__items[0]
+        else:
+            return None
+
+    @property
+    def last(self) -> Optional[TagNode]:
+        """ The last node from the results or ``None`` if there are none. """
+        if len(self.__items):
+            return self.__items[-1]
+        else:
+            return None
+
+    @property
+    def size(self) -> int:
+        """ The amount of contained nodes. """
+        return len(self.__items)
+
+
 # contributed node filters and filter wrappers
 
 
@@ -2213,6 +2285,7 @@ __all__ = (
     CommentNode.__name__,
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
+    QueryResults.__name__,
     TagNode.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
