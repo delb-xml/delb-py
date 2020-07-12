@@ -29,9 +29,6 @@ Features
 Development status
 ------------------
 
-This project is currently developed as proof-of-concept. If you happen to
-depend on it, please notify me to consider this in future.
-
 You're invited to submit tests that reflect desired use cases or are merely of
 theoretical nature. Of course, any kind of proposals for or implementations of
 improvements are welcome as well.
