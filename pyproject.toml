@@ -34,8 +34,9 @@ https-loader = "_delb.plugins.https_loader"
 [tool.poetry.dependencies]
 python = "~=3.6"
 cssselect = "*"
+fastcache = "^1.1.0"
 lxml = "*"
-requests = {version = "^2.21",optional = true}
+requests = {version = "^2.21", optional = true}
 setuptools = "*"
 
 [tool.poetry.dev-dependencies]
