@@ -340,7 +340,7 @@ class Document(metaclass=DocumentMeta):
         self.config.parser = result.config.parser = parser
         return result
 
-    def css_select(self, expression: str) -> List["TagNode"]:
+    def css_select(self, expression: str) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.css_select` method of the document's
         :attr:`root <Document.root>` node.
@@ -428,7 +428,7 @@ class Document(metaclass=DocumentMeta):
             file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
         )
 
-    def xpath(self, expression: str) -> List["TagNode"]:
+    def xpath(self, expression: str) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.xpath` method of the document's
         :attr:`root <Document.root>` node.
