@@ -18,7 +18,7 @@ from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union
 from typing import IO as IOType
 
 from lxml import etree
