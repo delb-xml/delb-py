@@ -23,13 +23,15 @@ from typing import IO as IOType
 
 from lxml import etree
 
-from delb.exceptions import FailedDocumentLoading, InvalidOperation  # type: ignore
+from _delb.exceptions import FailedDocumentLoading, InvalidOperation
 from _delb.plugins import (
+    core_loaders,
     DocumentExtensionHooks,
     plugin_manager as _plugin_manager,
 )
-from _delb.plugins import core_loaders
-from delb.nodes import (  # type: ignore
+from _delb.nodes import (
+    _get_or_create_element_wrapper,
+    _is_tag_or_text_node,
     altered_default_filters,
     any_of,
     is_comment_node,
@@ -49,16 +51,14 @@ from delb.nodes import (  # type: ignore
     TagNode,
     TextNode,
 )
-from _delb.nodes import _get_or_create_element_wrapper, _is_tag_or_text_node
-from delb.typing import Loader
-from _delb.typing import _WrapperCache
-from delb.utils import (  # type: ignore
+from _delb.typing import Loader, _WrapperCache
+from _delb.utils import (
+    copy_root_siblings,
     first,
     get_traverser,
     last,
     register_namespace,
 )
-from _delb.utils import copy_root_siblings
 
 
 # plugin loading
