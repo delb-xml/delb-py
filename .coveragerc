@@ -1,5 +1,13 @@
 [run]
-source = delb
+source =
+    _delb
+    delb
+
+omit =
+    delb/exceptions.py
+    delb/nodes.py
+    delb/typing.py
+    delb/utils.py
 
 [report]
 exclude_lines =
@@ -11,4 +19,4 @@ exclude_lines =
     raise NotImplementedError
     raise TypeError
     raise ValueError
-fail_under = 95
+fail_under = 96

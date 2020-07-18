@@ -42,7 +42,7 @@ mypy: ## run static type checks with mypy
 
 .PHONY: pytest
 pytest: ## run the test suite
-	python -m pytest --cov-config .coveragerc --cov=delb tests
+	python -m pytest --cov-config .coveragerc --cov=_delb --cov=delb tests
 
 .PHONY: release
 release: tests ## release the current version on github & the PyPI
