@@ -3,6 +3,7 @@ API Documentation
 
 .. include:: api-note.rst
 
+
 Documents
 ---------
 
@@ -12,6 +13,7 @@ Documents
 
 
 .. _document-loaders:
+
 
 Document loaders
 ----------------
@@ -75,7 +77,6 @@ Node constructors
 
 .. autofunction:: delb.new_tag_node
 
-
 Query results
 ~~~~~~~~~~~~~
 
@@ -84,6 +85,7 @@ Query results
 
 .. _contributed-filters:
 
+
 Filters
 -------
 
@@ -91,7 +93,6 @@ Default filters
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: delb.altered_default_filters
-
 
 Contributed filters
 ~~~~~~~~~~~~~~~~~~~
