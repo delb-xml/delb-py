@@ -25,7 +25,7 @@ def test_css_select_or(files_path):
 def test_results_as_other_type():
     results = sample_document.css_select("node")
 
-    as_list = results.as_list
+    as_list = results.as_list()
     assert isinstance(as_list, list)
     assert len(as_list) == 4
 
@@ -33,7 +33,7 @@ def test_results_as_other_type():
     assert isinstance(as_tuple, tuple)
     assert len(as_tuple) == 4
 
-    as_set = results.as_set
+    as_set = results.as_set()
     assert isinstance(as_set, set)
     assert len(as_list) == 4
 

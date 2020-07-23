@@ -2169,20 +2169,18 @@ class QueryResults(AbstractSequence):
     def __repr__(self):
         return str([repr(x) for x in self.__items])
 
-    @property
     def as_list(self) -> List[TagNode]:
-        """ The contained nodes in a :class:`list`. """
+        """ The contained nodes as a new :class:`list`. """
         return list(self.__items)
+
+    def as_set(self) -> Set[TagNode]:
+        """ The contained nodes as a new :class:`set`. """
+        return set(self.__items)
 
     @property
     def as_tuple(self) -> Tuple[TagNode, ...]:
         """ The contained nodes in a :class:`tuple`. """
         return self.__items
-
-    @property
-    def as_set(self) -> Set[TagNode]:
-        """ The contained nodes in a :class:`set`. """
-        return set(self.__items)
 
     def filtered_by(self, *filters: Filter) -> "QueryResults":
         """
