@@ -307,7 +307,8 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     As the default filters shadow comments and processing instructions by default,
     use no argument to unset this in order to access all type of nodes.
 
-    :param extend: Extends the currently active filters with the given ones.
+    :param extend: Extends the currently active filters with the given ones instead of
+                   replacing them.
     """
     global default_filters
 
