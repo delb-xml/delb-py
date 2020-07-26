@@ -94,6 +94,8 @@ html_theme = 'readable'
 
 html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
 
+html_logo = 'images/delb_logo.svg'
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.

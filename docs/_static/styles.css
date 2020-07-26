@@ -3,8 +3,5 @@
 .autoclasstoc table.docutils tr td { border: 0; padding: 0 8px 0 5px; }
 .autoclasstoc table.docutils tr td:nth-child(2) { display: none; }
 .autoclasstoc table.docutils tr td p { line-height: 1.2em; }
-
-div.body p, div.body dd, div.body li {
-  margin-block-end: 0;
-  margin-block-start: 0;
-}
+.sphinxsidebar p.logo { margin: 0; }
+.sphinxsidebar img.logo { margin-left: 2.15em; max-height: 8rem; }
