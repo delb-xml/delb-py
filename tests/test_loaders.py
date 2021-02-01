@@ -26,7 +26,7 @@ def test_etree_loader():
 
 
 def test_ftp_http_loader():
-    url = "http://deutschestextarchiv.de/book/download_xml/marx_manifestws_1848"
+    url = "http://textgridlab.org/1.0/tgcrud-public/rest/textgrid:mhpz.0/data"
     document = Document(url)
     assert document.source_url == url
 
