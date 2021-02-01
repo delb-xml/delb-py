@@ -1,4 +1,4 @@
-from delb import Document
+from delb import Document, is_tag_node
 
 
 sample_document = Document(
@@ -20,6 +20,16 @@ def test_css_select_or(files_path):
 
     assert len(result) == 2
     assert {x.local_name for x in result} == {"author", "title"}
+
+
+def test_location_path_and_xpath_concordance(files_path):
+    for doc_path in files_path.glob("*.xml"):
+        document = Document(doc_path)
+
+        for node in document.root.child_nodes(is_tag_node, recurse=True):
+            queried_nodes = document.xpath(node.location_path)
+            assert queried_nodes.size == 1
+            assert queried_nodes.first is node
 
 
 def test_results_as_other_type():

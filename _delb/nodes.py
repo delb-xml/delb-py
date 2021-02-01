@@ -1353,7 +1353,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def depth(self) -> int:
-        return self.location_path.count("/") - 1
+        return self.location_path.count("/")
 
     def detach(self) -> "_ElementWrappingNode":
         if self.parent is None and getattr(self, "__document__", None):
@@ -1460,12 +1460,21 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self._etree_obj.tag = QName(self.namespace, value).text
 
     @property
-    def location_path(self):
+    def location_path(self) -> str:
         """
         An unambiguous XPath location path that points to this node from its tree root.
         """
-        etree_obj = self._etree_obj
-        return etree_obj.getroottree().getpath(etree_obj)
+        steps = []
+
+        node = self
+        with altered_default_filters(is_tag_node):
+            while node.parent is not None:
+                index = node.index
+                assert isinstance(index, int)
+                steps.append(index + 1)
+                node = node.parent
+
+        return "." + "".join(f"/*[{i}]" for i in reversed(steps))
 
     @altered_default_filters()
     def merge_text_nodes(self):
