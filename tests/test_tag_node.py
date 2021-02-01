@@ -295,6 +295,30 @@ def test_iter_stream_to_right():
         assert node.local_name == chars[i]
 
 
+def test_last_descendant():
+    document = Document(
+        "<root>"
+        "<a><aa><aaa/><aab/></aa><ab><aba/><abb/></ab></a>"
+        "<b><ba>baa</ba></b>"
+        "<c/>"
+        "</root>"
+    )
+    a, b, c = tuple(document.root.child_nodes())
+
+    a_ld = a.last_descendant
+    assert a.last_child.last_descendant is a_ld
+    assert isinstance(a_ld, TagNode)
+    assert a_ld.local_name == "abb"
+    assert a_ld.last_descendant is None
+
+    b_ld = b.last_descendant
+    assert isinstance(b_ld, TextNode)
+    assert b_ld.content == "baa"
+    assert b_ld.last_descendant is None
+
+    assert c.last_descendant is None
+
+
 def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
     node = document.new_tag_node("node")

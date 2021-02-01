@@ -589,6 +589,14 @@ class NodeBase(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def last_descendant(self) -> Optional["NodeBase"]:
+        """
+        The node's last descendant.
+        """
+        pass
+
     # REMOVE?
     @abstractmethod
     def new_tag_node(
@@ -774,7 +782,7 @@ class NodeBase(ABC):
 class _ChildLessNode(NodeBase):
     """ Node types using this mixin also can't be root nodes of a document. """
 
-    first_child = last_child = None
+    first_child = last_child = last_descendant = None
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
         """
@@ -1429,6 +1437,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
         for result in self.child_nodes(recurse=False):
             pass
         return result
+
+    @property
+    def last_descendant(self) -> Optional["NodeBase"]:
+        node = self.last_child
+        while node is not None:
+            candidate = node.last_child
+            if candidate is None:
+                break
+            node = candidate
+        return node
 
     @property
     def local_name(self) -> str:
