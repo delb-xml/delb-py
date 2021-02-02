@@ -1265,21 +1265,21 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def attributes(self) -> ElementAttributes:
-        """ A :term:`mapping` that can be used to query and alter the node's
-            attributes.
+        """
+        A :term:`mapping` that can be used to query and alter the node's attributes.
 
-            >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
-            >>> node.attributes
-            {'foo': '0', 'bar': '0'}
-            >>> node.attributes.pop("bar")
-            '0'
-            >>> node.attributes["foo"] = "1"
-            >>> node.attributes["peng"] = "1"
-            >>> print(node)
-            <node foo="1" peng="1"/>
-            >>> node.attributes.update({"bar": "2", "zong": "2"})
-            >>> print(node)
-            <node foo="1" peng="1" bar="2" zong="2"/>
+        >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
+        >>> node.attributes
+        {'foo': '0', 'bar': '0'}
+        >>> node.attributes.pop("bar")
+        '0'
+        >>> node.attributes["foo"] = "1"
+        >>> node.attributes["peng"] = "1"
+        >>> print(node)
+        <node foo="1" peng="1"/>
+        >>> node.attributes.update({"bar": "2", "zong": "2"})
+        >>> print(node)
+        <node foo="1" peng="1" bar="2" zong="2"/>
         """
         return self._etree_obj.attrib
 
@@ -1566,35 +1566,34 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return cast(str, self._etree_obj.tag)
 
     def xpath(self, expression: str) -> "QueryResults":
-        """ Returns all :term:`tag node` s that match the evaluation of an XPath
-            expression.
+        """
+        Returns all :term:`tag node` s that match the evaluation of an XPath expression.
 
-            Mind to start any the expression with a ``.`` when the node you call it on
-            is supposed to be the initial context node in the path evaluation.
+        Mind to start any the expression with a ``.`` when the node you call it on is
+        supposed to be the initial context node in the path evaluation.
 
-            As this API is for a real programming language, the full XPath
-            specification is not intended to be supported. For example, instead of
-            querying attributes with an XPath expression, one must use a comprehension
-            like:
+        As this API is for a real programming language, the full XPath specification is
+        not intended to be supported. For example, instead of querying attributes with
+        an XPath expression, one must use a comprehension like:
 
-            >>> [ x.attributes["target"] for x in root.xpath(".//foo")
-            ...   if "target" in x.attributes ]  # doctest: +SKIP
+        >>> [ x.attributes["target"] for x in root.xpath(".//foo")
+        ...   if "target" in x.attributes ]  # doctest: +SKIP
 
-            Instead of:
+        Instead of:
 
-            >>> root.xpath(".//foo/@target")  # doctest: +SKIP
+        >>> root.xpath(".//foo/@target")  # doctest: +SKIP
 
-            Having that said, implementing retrieval of attributes may actually happen
-            if there are convincing user stories. But other things like addressing
-            processing instructions and higher level operations are out of scope.
+        Having that said, implementing retrieval of attributes may actually happen if
+        there are convincing user stories. But other things like addressing processing
+        instructions and higher level operations are out of scope.
 
-            This method includes a workaround for a bug in XPath 1.0 that concerns
-            its lack of default namespace support. It is extensively described in this
-            lxml issue: https://github.com/lxml/lxml/pull/236
+        This method includes a workaround for a bug in XPath 1.0 that concerns its lack
+        of default namespace support. It is extensively described in this lxml issue:
+        https://github.com/lxml/lxml/pull/236
 
-            :param expression: An XPath 1.0 location path.
+        :param expression: An XPath 1.0 location path.
 
-            :meta category: query-nodes
+        :meta category: query-nodes
         """
 
         etree_obj = self._etree_obj
@@ -2247,8 +2246,8 @@ class QueryResults(AbstractSequence):
 
 def any_of(*filter: Filter) -> Filter:
     """
-     A node filter wrapper that matches when any of the given filters is matching,
-     like a boolean ``or``.
+    A node filter wrapper that matches when any of the given filters is matching, like a
+    boolean ``or``.
     """
 
     def any_of_wrapper(node: NodeBase) -> bool:
