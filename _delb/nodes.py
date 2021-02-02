@@ -1215,7 +1215,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return hash(self._etree_obj)
 
     def __len__(self) -> int:
-        return len([x for x in self.child_nodes(recurse=False)])
+        i = 0
+        for _ in self.child_nodes(recurse=False):
+            i += 1
+        return i
 
     def __str__(self) -> str:
         clone = self.clone(deep=True)
