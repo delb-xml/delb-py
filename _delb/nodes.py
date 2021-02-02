@@ -908,6 +908,9 @@ class _ElementWrappingNode(NodeBase):
         if parent is None:
             return self
 
+        etree_obj = self._etree_obj
+        self._wrapper_cache = cache = copy(self._wrapper_cache)
+
         if self._tail_node._exists:
 
             if self.index == 0:
@@ -922,10 +925,11 @@ class _ElementWrappingNode(NodeBase):
                 else:
                     raise InvalidCodePath
 
-        etree_obj = self._etree_obj
+            etree_obj.tail = None
+            self._tail_node = TextNode(etree_obj, position=TAIL, cache=cache)
+
         cast(_Element, etree_obj.getparent()).remove(etree_obj)
 
-        self._wrapper_cache = cache = copy(self._wrapper_cache)
         for child_node in self.child_nodes(recurse=True):
             child_node._wrapper_cache = cache
 

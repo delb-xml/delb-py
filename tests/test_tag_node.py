@@ -137,7 +137,7 @@ def test_detach_and_document_property():
     assert str(document) == "<root/>"
 
 
-def test_detach_node_with_tail():
+def test_detach_node_with_tail_1():
     document = Document("<root><a>c<c/></a>b<d/></root>")
     root = document.root
 
@@ -154,6 +154,17 @@ def test_detach_node_with_tail():
 
     root[-2].detach()
     assert str(document) == "<root>bc<d/>fh</root>"
+
+
+def test_detach_node_with_tail_2():
+    root = Document("<root><node><child/>childish</node></root>").root
+
+    node = root.first_child
+    child = node.first_child
+
+    child.detach()
+    assert str(node) == "<node>childish</node>"
+    assert child.next_node() is None
 
 
 def test_detach_root():
