@@ -429,10 +429,11 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def detach(self) -> "NodeBase":
+    def detach(self, retain_child_nodes: bool = False) -> "NodeBase":
         """
         Removes the node, including its descendants, from its tree.
 
+        :param retain_child_nodes: Keeps the child nodes in the tree if ``True``.
         :return: The removed node.
 
         :meta category: remove-node
@@ -902,7 +903,7 @@ class _ElementWrappingNode(NodeBase):
         return _get_or_create_element_wrapper(etree_clone, self._wrapper_cache)
 
     @altered_default_filters()
-    def detach(self) -> "_ElementWrappingNode":
+    def detach(self, retain_child_nodes: bool = False) -> "_ElementWrappingNode":
         parent = self.parent
 
         if parent is None:
@@ -1362,11 +1363,32 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def depth(self) -> int:
         return self.location_path.count("/")
 
-    def detach(self) -> "_ElementWrappingNode":
-        if self.parent is None and getattr(self, "__document__", None):
+    @altered_default_filters()
+    def detach(self, retain_child_nodes: bool = False) -> "_ElementWrappingNode":
+        parent = self.parent
+        index = self.index
+
+        if parent is None and getattr(self, "__document__", None):
             raise InvalidOperation("The root node of a document cannot be detached.")
 
-        return super().detach()
+        if retain_child_nodes and parent is None:
+            raise InvalidOperation(
+                "Child nodes can't be retained when the node to detach has no parent "
+                "node."
+            )
+
+        result = super().detach()
+
+        if retain_child_nodes:
+            child_nodes = tuple(self.child_nodes())
+            for node in child_nodes:
+                node.detach()
+
+            assert isinstance(parent, TagNode)
+            assert isinstance(index, int)
+            parent.insert_child(index, *child_nodes)
+
+        return result
 
     @property
     def document(self) -> Optional["Document"]:
@@ -1913,7 +1935,7 @@ class TextNode(_ChildLessNode, NodeBase):
             return 0
         return super().depth
 
-    def detach(self) -> "TextNode":
+    def detach(self, retain_child_nodes: bool = False) -> "TextNode":
 
         if self._position is DETACHED:
             return self

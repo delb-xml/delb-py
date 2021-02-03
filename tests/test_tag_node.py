@@ -167,6 +167,16 @@ def test_detach_node_with_tail_2():
     assert child.next_node() is None
 
 
+def test_detach_node_retain_child_nodes():
+    root = Document("<root><node><child/>childish<!-- [~.ö] --></node></root>").root
+    node = root.first_child
+
+    node.detach(retain_child_nodes=True)
+
+    assert len(node) == 0
+    assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
+
+
 def test_detach_root():
     unbound_node = new_tag_node("unbound")
     assert unbound_node.detach() is unbound_node
