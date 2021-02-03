@@ -16,7 +16,7 @@
 
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import Sequence as AbstractSequence
+
 from contextlib import contextmanager
 from copy import copy
 from itertools import chain
@@ -2207,7 +2207,7 @@ class TextNode(_ChildLessNode, NodeBase):
 # query results container
 
 
-class QueryResults(AbstractSequence):
+class QueryResults(Sequence[TagNode]):
     """
     A sequence with the results of a CSS or XPath query with some helpers for readable
     Python expressions.
