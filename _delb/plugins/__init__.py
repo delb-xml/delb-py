@@ -49,7 +49,10 @@ LoaderConstraint = Union[Loader, Iterable[Loader], None]
 
 class PluginManager:
     def __init__(self):
-        self.plugins = SimpleNamespace(document_extensions=[], loaders=[],)
+        self.plugins = SimpleNamespace(
+            document_extensions=[],
+            loaders=[],
+        )
 
     @staticmethod
     def load_plugins():
