@@ -14,6 +14,8 @@ matrix:
       python: "3.7"
     - env: TARGET=pytest
       python: "3.8"
+    - env: TARGET=pytest
+      python: "3.9"
     - env: TARGET=doctest
       python: "3.8"
 
