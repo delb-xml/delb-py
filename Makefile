@@ -24,13 +24,14 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 
+.PHONY: check-formatting
+check-formatting: ## code linting with black & flake8
+	black --check _delb delb tests
+	flake8 _delb delb tests
+
 .PHONY: doctest
 doctest: ## test the code that is contained in the docs
 	$(MAKE) -C docs doctest
-
-.PHONY: flake8
-flake8: ## code linting with flake8
-	flake8 _delb delb tests
 
 .PHONY: help
 help:
@@ -56,5 +57,5 @@ showdocs: docs ## build and open HTML documentation
 	xdg-open docs/build/html/index.html
 
 .PHONY: tests ## run all tests on normalized code
-tests: black flake8 mypy pytest doctest
+tests: black check-formatting mypy pytest doctest
 	poetry check
