@@ -1,3 +1,0 @@
-[submodule "lxml-stubs"]
-	path = lxml-stubs
-	url = https://github.com/lxml/lxml-stubs.git

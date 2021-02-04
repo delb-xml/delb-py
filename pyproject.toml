@@ -43,6 +43,7 @@ setuptools = "*"
 autoclasstoc = "^1.1.1"
 black = {version = "*", allow-prereleases = true }
 flake8-black = "*"
+lxml-stubs = "^0.1.1"
 mypy = "*"
 pytest = "*"
 pytest-cov = "*"
