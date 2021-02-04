@@ -33,7 +33,7 @@ def test_ftp_http_loader():
 
 def test_https_loader():
     url = (
-        "https://raw.githubusercontent.com/funkyfuture/delb/master/tests/files/"
+        "https://raw.githubusercontent.com/funkyfuture/delb/main/tests/files/"
         "marx_manifestws_1848.TEI-P5.xml"
     )
     document = Document(url)

@@ -31,7 +31,7 @@ Prerequisites:
 Obtain the code with roughly one of:
 
 - ``git clone --recurse-submodules git@github.com:funkyfuture/delb.git``
-- ``curl -LosS https://github.com/funkyfuture/delb/archive/master.tar.gz | tar xzf -``
+- ``curl -LosS https://github.com/funkyfuture/delb/archive/main.tar.gz | tar xzf -``
 
 To install it regularly::
 

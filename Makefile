@@ -47,7 +47,7 @@ pytest: ## run the test suite
 .PHONY: release
 release: tests ## release the current version on github & the PyPI
 	git tag -f $(VERSION)
-	git push origin master
+	git push origin main
 	git push -f origin $(VERSION)
 	poetry publish --build
 
