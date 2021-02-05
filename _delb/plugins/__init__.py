@@ -36,10 +36,10 @@ class DocumentExtensionHooks:
         configuration data *must* process their specific arguments by clearing them
         from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
         storing the final configuration data in a :class:`types.SimpleNamespace` and
-        bind it to the instance's :attr:`Document.config` property with the extension's
-        name. The initially mentioned keyword arguments *should* be prefixed with that
-        name as well. This method is called before the loaders try to read and parse
-        the given source for a document.
+        bind it to the instance's :attr:`delb.Document.config` property with the
+        extension's name. The initially mentioned keyword arguments *should* be prefixed
+        with that name as well. This method is called before the loaders try to read and
+        parse the given source for a document.
         """
         pass
 
