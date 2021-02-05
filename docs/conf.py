@@ -119,6 +119,8 @@ html_css_files = ["styles.css"]
 #
 # html_sidebars = {}
 
+html_domain_indices = False
+
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
