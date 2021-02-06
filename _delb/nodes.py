@@ -42,7 +42,7 @@ from lxml import etree
 
 from _delb.exceptions import InvalidCodePath, InvalidOperation
 from _delb.typing import ElementAttributes, Filter, NodeSource, _WrapperCache
-from _delb.utils import css_to_xpath, random_unused_prefix
+from _delb.utils import css_to_xpath, last, random_unused_prefix
 from _delb.xpath import XPathExpression
 
 if TYPE_CHECKING:
@@ -155,8 +155,9 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
     if node.parent is None:
         root = node
     else:
-        assert node.document is not None
-        root = node.document.root
+        with altered_default_filters():
+            root = cast(TagNode, last(node.ancestors()))
+
     cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)

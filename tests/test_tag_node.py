@@ -177,6 +177,12 @@ def test_detach_node_retain_child_nodes():
     assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
 
+def test_detach_node_without_a_document():
+    root = new_tag_node("root", children=[tag("node")])
+    root.first_child.detach()
+    assert str(root) == "<root/>"
+
+
 def test_detach_root():
     unbound_node = new_tag_node("unbound")
     assert unbound_node.detach() is unbound_node
