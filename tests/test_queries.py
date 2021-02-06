@@ -13,6 +13,17 @@ sample_document = Document(
 )
 
 
+def test_css_considers_xml_namespace(files_path):
+    document = Document("<root><xml:node/><node/></root>")
+    assert document.css_select("xml|node").size == 1
+
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    results = document.css_select("*[xml|id]")
+    assert results.size == 1
+    results = document.css_select("*[xml|lang]")
+    assert results.size == 2
+
+
 def test_css_select_or(files_path):
     document = Document(files_path / "stevenson_treasure_island.xml")
 
