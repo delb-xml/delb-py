@@ -176,6 +176,10 @@ def test_detach_node_retain_child_nodes():
     assert len(node) == 0
     assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
+    child = root.first_child
+    child.detach(retain_child_nodes=True)
+    assert str(root) == "<root>childish<!-- [~.ö] --></root>"
+
 
 def test_detach_node_without_a_document():
     root = new_tag_node("root", children=[tag("node")])

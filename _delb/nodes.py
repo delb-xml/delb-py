@@ -1385,9 +1385,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
             for node in child_nodes:
                 node.detach()
 
-            assert isinstance(parent, TagNode)
-            assert isinstance(index, int)
-            parent.insert_child(index, *child_nodes)
+            if child_nodes:
+                assert isinstance(parent, TagNode)
+                assert isinstance(index, int)
+                parent.insert_child(index, *child_nodes)
 
         return result
 
