@@ -45,7 +45,7 @@ def insert_child():
     document = Document("<root><a>b</a></root>")
     root = document.root
 
-    root[0].insert_child(root.new_tag_node("c"), index=1)
+    root[0].insert_child(1, root.new_tag_node("c"))
 
     assert str(document) == "<root><a>b<c/></a></root>"
 
