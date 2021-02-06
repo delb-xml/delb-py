@@ -42,7 +42,7 @@ from lxml import etree
 
 from _delb.exceptions import InvalidCodePath, InvalidOperation
 from _delb.typing import ElementAttributes, Filter, NodeSource, _WrapperCache
-from _delb.utils import css_to_xpath, last, random_unused_prefix
+from _delb.utils import _css_to_xpath, last, _random_unused_prefix
 from _delb.xpath import XPathExpression
 
 if TYPE_CHECKING:
@@ -1358,7 +1358,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: query-nodes
         """
-        return self.xpath(css_to_xpath(expression))
+        return self.xpath(_css_to_xpath(expression))
 
     @property
     def depth(self) -> int:
@@ -1634,7 +1634,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         if None in namespaces:
             has_default_namespace = True
-            prefix = random_unused_prefix(namespaces)
+            prefix = _random_unused_prefix(namespaces)
             compat_namespaces = cast(
                 "etree._DictAnyStr",
                 {

@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 css_translator = GenericTranslator()
 
 
-def copy_root_siblings(source: etree._Element, target: etree._Element):
+def _copy_root_siblings(source: etree._Element, target: etree._Element):
     stack = []
     current_element = source.getprevious()
     while current_element is not None:
@@ -51,7 +51,7 @@ def copy_root_siblings(source: etree._Element, target: etree._Element):
 
 # TODO make cachesize configurable via environment variable?
 @lru_cache(maxsize=64)
-def css_to_xpath(expression: str) -> str:
+def _css_to_xpath(expression: str) -> str:
     return css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
 
 
@@ -114,7 +114,7 @@ def last(iterable: Iterable) -> Optional[Any]:
         raise TypeError
 
 
-def random_unused_prefix(namespaces: "etree._NSMap") -> str:
+def _random_unused_prefix(namespaces: "etree._NSMap") -> str:
     for prefix in ascii_lowercase:
         if prefix not in namespaces:
             return prefix

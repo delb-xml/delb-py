@@ -53,7 +53,7 @@ from _delb.nodes import (
 )
 from _delb.typing import Loader, _WrapperCache
 from _delb.utils import (
-    copy_root_siblings,
+    _copy_root_siblings,
     first,
     get_traverser,
     last,
@@ -290,7 +290,7 @@ class Document(metaclass=DocumentMeta):
     def __str__(self):
         cloned_root = self.root.clone(deep=True)
         cloned_root.merge_text_nodes()
-        copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
+        _copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
         return etree.tounicode(cloned_root._etree_obj.getroottree())
 
     def cleanup_namespaces(
@@ -397,7 +397,7 @@ class Document(metaclass=DocumentMeta):
 
         current_root = getattr(self, "__root_node__", None)
         if current_root is not None:
-            copy_root_siblings(current_root._etree_obj, node._etree_obj)
+            _copy_root_siblings(current_root._etree_obj, node._etree_obj)
             delattr(current_root, "__document__")
 
         setattr(node, "__document__", self)
