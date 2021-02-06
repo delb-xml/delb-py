@@ -42,7 +42,7 @@ from lxml import etree
 
 from _delb.exceptions import InvalidCodePath, InvalidOperation
 from _delb.typing import ElementAttributes, Filter, NodeSource, _WrapperCache
-from _delb.utils import _css_to_xpath, last, _random_unused_prefix
+from _delb.utils import _crunch_whitespace, _css_to_xpath, last, _random_unused_prefix
 from _delb.xpath import XPathExpression
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ STRINGMETHODS = {
     for name, obj in vars(str).items()
     if not name.startswith("_") and callable(obj)
 }
+XML_ATT_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 
 
 # functions
@@ -1345,6 +1346,45 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 assert child_node in result
 
         return result
+
+    def _collapse_whitespace(self, normalize_space: str = "default"):
+        normalize_space = cast(str, self.attributes.get(XML_ATT_SPACE, normalize_space))
+
+        if normalize_space == "default":
+            for child_node in self.child_nodes():
+                if not isinstance(child_node, TextNode):
+                    continue
+
+                crunched = _crunch_whitespace(child_node.content)
+                crunched_stripped = crunched.strip()
+
+                if (
+                    crunched_stripped  # has non-whitespace content
+                    and crunched[0] == " "  # begins w/ whitespace
+                    and cast(int, child_node.index) > 0  # isn't first child
+                ):
+                    child_node.content = f" {crunched_stripped}"
+                elif (
+                    crunched[-1] == " "  # ends w/ whitespace
+                    and child_node is not self.first_child
+                    and child_node is not self.last_child
+                ) or (
+                    crunched_stripped  # has non-whitespace content
+                    and crunched[-1] == " "  # ends w/ whitespace
+                    and child_node is self.first_child
+                    and child_node is not self.last_child
+                ):
+                    child_node.content = f"{crunched.strip()} "
+                elif len(self) == 1 and crunched == " ":
+                    # is only child and contains only whitespace
+                    child_node.content = " "
+                else:
+                    child_node.content = crunched_stripped
+        else:
+            assert normalize_space == "preserve"
+
+        for child_node in self.child_nodes(is_tag_node, recurse=False):
+            cast(TagNode, child_node)._collapse_whitespace(normalize_space)
 
     def css_select(self, expression: str) -> "QueryResults":
         """

@@ -24,16 +24,14 @@ def result_file():
 @fixture()
 def sample_document():
     yield Document(
-        """\
-    <doc xmlns="https://name.space">
-        <header/>
-        <text>
-            <milestone unit="page"/>
-            <p>Lorem ipsum
-                <milestone unit="line"/>
-                dolor sit amet
-            </p>
-        </text>
-    </doc>
-    """
+        '<doc xmlns="https://name.space">'
+        "<header/>"
+        "<text>"
+        '<milestone unit="page"/>'
+        "<p>Lorem ipsum"
+        '<milestone unit="line"/>'
+        "dolor sit amet"
+        "</p>"
+        "</text>"
+        "</doc>"
     )

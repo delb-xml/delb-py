@@ -184,47 +184,50 @@ def test_bindings(sample_document):
 
 
 def test_construction():
-    document = Document("<root><node>one </node>two </root>")
+    document = Document("<root><node>one</node> two </root>", collapse_whitespace=True)
     root = document.root
     node, two = tuple(x for x in root.child_nodes())
     one = node[0]
 
-    one.add_next(TextNode("threehalfs "))
-    assert str(document) == "<root><node>one threehalfs </node>two </root>"
+    assert one.content == "one"
+    assert two.content == " two"
 
-    three = TextNode("three ")
+    one.add_next(TextNode(" threehalfs"))
+    assert str(document) == "<root><node>one threehalfs</node> two</root>"
+
+    three = TextNode(" three")
     two.add_next(three)
-    assert str(document) == "<root><node>one threehalfs </node>two three </root>"
+    assert str(document) == "<root><node>one threehalfs</node> two three</root>"
 
-    three.add_next("four ")
-    assert str(document) == "<root><node>one threehalfs </node>two three four </root>"
+    three.add_next(" four")
+    assert str(document) == "<root><node>one threehalfs</node> two three four</root>"
 
-    node.append_child("sevenquarters ")
+    node.append_child(" sevenquarters")
     assert (
         str(document)
-        == "<root><node>one threehalfs sevenquarters </node>two three four </root>"
+        == "<root><node>one threehalfs sevenquarters</node> two three four</root>"
     )
 
-    twoandahalf = TextNode("twoandahalf ")
+    twoandahalf = TextNode(" twoandahalf")
     three.add_previous(twoandahalf)
     assert (
         str(document)
-        == "<root><node>one threehalfs sevenquarters </node>two twoandahalf three "
-        "four </root>"
+        == "<root><node>one threehalfs sevenquarters</node> two twoandahalf three "
+        "four</root>"
     )
 
-    twoandahalf.add_previous("2/3π ")
+    twoandahalf.add_previous(" 2/3π")
     assert (
         str(document)
-        == "<root><node>one threehalfs sevenquarters </node>two 2/3π twoandahalf three "
-        "four </root>"
+        == "<root><node>one threehalfs sevenquarters</node> two 2/3π twoandahalf three "
+        "four</root>"
     )
 
-    two.add_previous("almosttwo ")
+    two.add_previous(" almosttwo")
     assert (
         str(document)
-        == "<root><node>one threehalfs sevenquarters </node>almosttwo two 2/3π "
-        "twoandahalf three four </root>"
+        == "<root><node>one threehalfs sevenquarters</node> almosttwo two 2/3π "
+        "twoandahalf three four</root>"
     )
 
 

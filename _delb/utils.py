@@ -14,7 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import re
 from copy import copy
+from functools import partial
 from string import ascii_lowercase
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Optional, Sequence
 
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from _delb.nodes import NodeBase
 
 
+_crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 css_translator = GenericTranslator()
 
 

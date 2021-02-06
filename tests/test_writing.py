@@ -48,7 +48,7 @@ def test_significant_whitespace_is_saved(result_file):
 
 def test_transparency(files_path, result_file):
     for file in (x for x in files_path.iterdir() if x.suffix == ".xml"):
-        doc = Document(file)
+        doc = Document(file, collapse_whitespace=False)
         doc.save(result_file)
 
         assert_documents_are_semantical_equal(file, result_file)

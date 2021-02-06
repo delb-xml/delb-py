@@ -70,11 +70,7 @@ _plugin_manager.load_plugins()
 # constants
 
 
-# care has to be taken:
-# https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
-# https://wiki.tei-c.org/index.php/XML_Whitespace#Default_Whitespace_Processing
-# https://lxml.de/FAQ.html#why-doesn-t-the-pretty-print-option-reformat-my-xml-output
-DEFAULT_PARSER = etree.XMLParser(remove_blank_text=True)
+DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 
 # api
@@ -220,6 +216,8 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
+    :param collapse_whitespace: Calls :meth:`delb.Document.collapse_whitespace` after
+                                loading the document.
     :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
                    parse a document stream.
     :param config: Additional keyword arguments for the configuration of extension
@@ -229,12 +227,19 @@ class Document(metaclass=DocumentMeta):
     _loaders: Tuple[Loader, ...]
     __slots__ = ("__root_node__", "head_nodes", "source_url", "tail_nodes")
 
-    def __init__(self, source: Any, parser: etree.XMLParser = DEFAULT_PARSER, **config):
-        self.config: SimpleNamespace = SimpleNamespace()
+    def __init__(
+        self,
+        source: Any,
+        collapse_whitespace: bool = False,
+        parser: etree.XMLParser = DEFAULT_PARSER,
+        **config,
+    ):
+        self.config = SimpleNamespace()
         """
-        Beside the used ``parser``, this property contains the namespaced data that
-        extension classes and loaders may have stored.
+        Beside the used ``parser`` and ``collapsed_whitespace`` option, this property
+        contains the namespaced data that extension classes and loaders may have stored.
         """
+        self.config.collapse_whitespace = collapse_whitespace
         self.config.parser = parser
         self._init_config(config)  # type: ignore
         if config:
@@ -268,6 +273,9 @@ class Document(metaclass=DocumentMeta):
         root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
         assert isinstance(root, TagNode)
         self.root = root
+        if collapse_whitespace:
+            self.collapse_whitespace()
+
         self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
         The source URL where a loader obtained the document's contents or ``None``.
@@ -339,6 +347,17 @@ class Document(metaclass=DocumentMeta):
         result.config = deepcopy(self.config)
         self.config.parser = result.config.parser = parser
         return result
+
+    def collapse_whitespace(self):
+        """
+        Collapses whitespace as described here:
+        https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
+
+        Implicitly merges all neighbouring text nodes.
+        """
+        self.merge_text_nodes()
+        with altered_default_filters():
+            self.root._collapse_whitespace()
 
     def css_select(self, expression: str) -> QueryResults:
         """

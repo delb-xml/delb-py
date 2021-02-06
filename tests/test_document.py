@@ -6,6 +6,7 @@ from delb import (
     Document,
     DocumentExtensionHooks,
     TagNode,
+    TextNode,
     new_comment_node,
     new_processing_instruction_node,
 )
@@ -45,6 +46,44 @@ def test_clone():
 
     document = TestClass("<root/>", test_property="foo")
     document.clone()
+
+
+def test_collapse_whitespace():
+    document = Document(
+        """
+    <root>
+        <title>
+            I Roy -
+            <hi>Touting I Self</hi>
+        </title>
+        <matrix xml:space="preserve">HB 243 A  Re</matrix>
+        <matrix xml:space="preserve">HB 243 B\tRe</matrix>
+    </root>
+    """
+    )
+
+    document.collapse_whitespace()
+    root = document.root
+
+    assert root.first_child.full_text == "I Roy - Touting I Self"
+    assert root.css_select("matrix")[0].full_text == "HB 243 A  Re"
+    assert root.css_select("matrix")[1].full_text == "HB 243 B\tRe"
+
+    #
+
+    document = Document(
+        '<docImprint><hi rendition="#g">Veröffentlicht im</hi> <docDate>'
+        '<hi rendition="#g">Februar</hi> 1848</docDate>.</docImprint>'
+    )
+
+    hi_1 = document.root.first_child
+    assert hi_1._etree_obj.tail == " "
+    x = hi_1.next_node()
+    assert isinstance(x, TextNode)
+    assert x.content == " "
+
+    document.collapse_whitespace()
+    assert document.root.full_text == "Veröffentlicht im Februar 1848."
 
 
 def test_contains():
