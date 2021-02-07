@@ -3,6 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
+from _delb.nodes import XML_ATT_ID
 from delb import (
     Document,
     TagNode,
@@ -246,6 +247,21 @@ def test_getitem():
     assert "".join(x.local_name for x in root[:3]) == "abc"
 
     assert "".join(x.local_name for x in root[::-1]) == "dcba"
+
+
+def test_id_property(files_path):
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    publisher = document.css_select("publicationStmt publisher").first
+
+    assert publisher.id == "DTACorpusPublisher"
+    with pytest.raises(TypeError):
+        publisher.id = 1234
+    publisher.id = None
+    assert XML_ATT_ID not in publisher.attributes
+    publisher.id = "foo"
+    assert publisher.attributes[XML_ATT_ID] == "foo"
+    with pytest.raises(InvalidOperation):
+        publisher.parent.id = "foo"
 
 
 def test_insert():

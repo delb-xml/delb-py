@@ -67,6 +67,7 @@ STRINGMETHODS = {
     for name, obj in vars(str).items()
     if not name.startswith("_") and callable(obj)
 }
+XML_ATT_ID = "{http://www.w3.org/XML/1998/namespace}id"
 XML_ATT_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 
 
@@ -1437,7 +1438,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if self.parent is None:
             root_node = self
         else:
-            root_node = next(self.ancestors(is_root_node))
+            root_node = cast(TagNode, last(self.ancestors()))
         return getattr(root_node, "__document__", None)
 
     @property
@@ -1452,6 +1453,27 @@ class TagNode(_ElementWrappingNode, NodeBase):
             x.content  # type: ignore
             for x in self.child_nodes(is_text_node, recurse=True)
         )
+
+    @property
+    def id(self) -> Optional[str]:
+        """
+        This is a shortcut to retrieve and set the ``id``  attribute in the XML
+        namespace. The client code is responsible to pass properly formed id names.
+        """
+        return cast(str, self.attributes.get(XML_ATT_ID))
+
+    @id.setter
+    def id(self, value: Optional[str]):
+        if value is None:
+            self.attributes.pop(XML_ATT_ID, "")
+        elif isinstance(value, str):
+            if cast(TagNode, last(self.ancestors())).css_select(f'*[xml|id="{value}"]'):
+                raise InvalidOperation(
+                    "An id with that value is already assigned in the tree."
+                )
+            self.attributes[XML_ATT_ID] = value
+        else:
+            raise TypeError("Value must be None or a string.")
 
     @property
     def index(self) -> Optional[int]:

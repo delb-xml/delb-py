@@ -19,6 +19,7 @@ News
 - Adds the ``retain_child_node`` to :meth:`delb.NodeBase.detach`.
 - Adds :meth:`delb.Document.collapse_whitespace` and the initialization option
   for :class:`delb.Document` instances with the same name.
+- Adds the :attr:`delb.TagNode.id` property.
 - Adds the :attr:`delb.NodeBase.last_descendant` property.
 - Adds support for Python 3.9.
 - Uses GitHub actions for CI checks.
