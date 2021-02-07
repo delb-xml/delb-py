@@ -7,4 +7,4 @@
     As a thumb of rule, use the public API in applications and the private API
     in *delb* extensions. By doing so, you can avoid circular dependencies if
     your extension (or other code that it depends on) uses contents from the
-    ``delb`` API.
+    ``_delb`` package.
