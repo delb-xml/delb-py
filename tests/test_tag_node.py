@@ -250,7 +250,7 @@ def test_getitem():
 
 
 def test_id_property(files_path):
-    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     publisher = document.css_select("publicationStmt publisher").first
 
     assert publisher.id == "DTACorpusPublisher"
@@ -454,7 +454,7 @@ def test_names(sample_document):
 
 
 def test_next_in_stream(files_path):
-    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     page_breaks = document.xpath(".//pb").as_list()
 
     cursor = page_breaks.pop(0)
@@ -489,7 +489,7 @@ def test_prepend_child():
 
 
 def test_previous_in_stream(files_path):
-    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     page_breaks = document.xpath(".//pb").as_list()
 
     cursor = page_breaks.pop()

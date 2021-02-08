@@ -47,7 +47,7 @@ def test_significant_whitespace_is_saved(result_file):
 
 
 def test_transparency(files_path, result_file):
-    for file in (x for x in files_path.iterdir() if x.suffix == ".xml"):
+    for file in (x for x in files_path.glob("[!tei_]*.xml")):
         doc = Document(file, collapse_whitespace=False)
         doc.save(result_file)
 
@@ -56,7 +56,7 @@ def test_transparency(files_path, result_file):
 
 
 def test_xml_declaration(files_path, result_file):
-    Document(files_path / "marx_manifestws_1848.TEI-P5.xml").save(result_file)
+    Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml").save(result_file)
     with result_file.open("rt") as f:
         first_line = f.readline()
     assert first_line.startswith("<?xml version='1.0' encoding='UTF-8'?>")

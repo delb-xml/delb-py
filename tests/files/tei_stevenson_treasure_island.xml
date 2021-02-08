@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TEI xmlns="http://www.tei-c.org/ns/0.0">
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
   <teiHeader>
       <fileDesc>
          <titleStmt>
@@ -104,7 +104,7 @@ often afterwards:</p>
                <lg>
                   <l>"Fifteen men on the dead man's chest--</l>
                   <l>Yo-ho-ho, and a bottle of rum!"</l>
-               </lg>
+               </lg>        
                <p>in the high, old tottering voice that seemed to have been tuned and
 broken at the capstan bars. Then he rapped on the door with a bit of
 stick like a handspike that he carried, and when my father appeared,
@@ -224,7 +224,7 @@ that is—began to pipe up his eternal song:</p>
                   <l>             Yo-ho-ho, and a bottle of rum!</l>
                   <l>           Drink and the devil had done for the rest--</l>
                   <l>             Yo-ho-ho, and a bottle of rum!"</l>
-               </lg>
+               </lg>         
                <p>At first I had supposed "the dead man's chest" to be that identical big
 box of his upstairs in the front room, and the thought had been mingled
 in my nightmares with that of the one-legged seafaring man. But by this
@@ -1107,7 +1107,7 @@ part of the island, one in the southwest—and beside this last, in
 the same red ink, and in a small, neat hand, very different from the
 captain's tottery characters, these words: "Bulk of treasure here."</p>
                <p>Over on the back the same hand had written this further information:</p>
-
+         
                <p>That was all; but brief as it was, and to me incomprehensible, it filled
 the squire and Dr. Livesey with delight.</p>
                <p>"Livesey," said the squire, "you will give up this wretched practice
@@ -1184,7 +1184,7 @@ anything but print—the following important news:</p>
                   </body>
                </floatingText>
 
-
+         
                <p>"Redruth," said I, interrupting the letter, "Dr. Livesey will not like
 that. The squire has been talking, after all."</p>
                <p>"Well, who's a better right?" growled the gamekeeper. "A pretty rum go
@@ -1273,7 +1273,7 @@ if squire ain't to talk for Dr. Livesey, I should think."</p>
      mother.
      J. T.</p>
                   </body>
-               </floatingText>
+               </floatingText>         
                <p>You can fancy the excitement into which that letter put me. I was half
 beside myself with glee; and if ever I despised a man, it was old
 Tom Redruth, who could do nothing but grumble and lament. Any of the
@@ -3055,7 +3055,7 @@ hold her steady against the current. Silver was in the stern-sheets in
 command; and every man of them was now provided with a musket from some
 secret magazine of their own.</p>
                <p>The captain sat down to his log, and here is the beginning of the entry:</p>
-
+         
                <p>And at the same time, I was wondering over poor Jim Hawkins' fate.</p>
                <p>A hail on the land side.</p>
                <p>"Somebody hailing us," said Hunter, who was on guard.</p>
@@ -3815,7 +3815,7 @@ through the shore-side trees. Someone was singing, a dull, old, droning
 sailor's song, with a droop and a quaver at the end of every verse,
 and seemingly no end to it at all but the patience of the singer. I had
 heard it on the voyage more than once and remembered these words:</p>
-
+         
                <p>And I thought it was a ditty rather too dolefully appropriate for a
 company that had met such cruel losses in the morning. But, indeed, from
 what I saw, all these buccaneers were as callous as the sea they sailed
@@ -3856,7 +3856,7 @@ eyes to let them grow once more familiar with the darkness.</p>
                <p>The endless ballad had come to an end at last, and the whole diminished
 company about the camp-fire had broken into the chorus I had heard so
 often:</p>
-
+         
                <p>I was just thinking how busy drink and the devil were at that very
 moment in the cabin of the HISPANIOLA, when I was surprised by a sudden
 lurch of the coracle. At the same moment, she yawed sharply and seemed
@@ -5321,7 +5321,7 @@ between them, we set forth upon the bosom of the anchorage.</p>
 was, of course, far too large to be a guide; and the terms of the note
 on the back, as you will hear, admitted of some ambiguity. They ran, the
 reader may remember, thus:</p>
-
+         
                <p>A tall tree was thus the principal mark. Now, right before us the
 anchorage was bounded by a plateau from two to three hundred feet high,
 adjoining on the north the sloping southern shoulder of the Spy-glass
@@ -5455,7 +5455,7 @@ whispering by now, so that the sound of their talk hardly interrupted
 the silence of the wood. All of a sudden, out of the middle of the trees
 in front of us, a thin, high, trembling voice struck up the well-known
 air and words:</p>
-
+         
                <p>I never have seen men more dreadfully affected than the pirates. The
 colour went from their six faces like enchantment; some leaped to their
 feet, some clawed hold of others; Morgan grovelled on the ground.</p>
