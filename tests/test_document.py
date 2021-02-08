@@ -29,22 +29,14 @@ def test_cleanup_namespaces():
 
 
 def test_config_initialization():
-    # a subclass is needed to use test_plugins extensions
-    # FIXME figure out why this is still necessary, might be fucked up vens
-    class TestClass(Document):
-        pass
-
-    document = TestClass("<root/>", test_property="foo")
+    document = Document("<root/>", test_property="foo")
 
     assert document.config.test.initialized is True
     assert document.config.test.property == "foo"
 
 
 def test_clone():
-    class TestClass(Document):
-        pass
-
-    document = TestClass("<root/>", test_property="foo")
+    document = Document("<root/>", test_property="foo")
     document.clone()
 
 
