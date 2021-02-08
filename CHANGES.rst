@@ -51,7 +51,6 @@ News
   document from the given object.
 - Various documentation improvements, including table of contents for class
   members.
-- Uses the fastcache_ ``lru_cache`` implementation.
 
 .. _fastcache: https://pypi.org/project/fastcache/
 

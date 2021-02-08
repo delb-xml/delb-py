@@ -16,12 +16,11 @@
 
 import re
 from copy import copy
-from functools import partial
+from functools import lru_cache, partial
 from string import ascii_lowercase
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Optional, Sequence
 
 from cssselect import GenericTranslator  # type: ignore
-from fastcache import lru_cache  # type: ignore
 from lxml import etree
 
 from _delb.typing import Filter
