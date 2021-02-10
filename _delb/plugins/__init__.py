@@ -16,32 +16,48 @@
 from inspect import isclass
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, Type, Union
+from warnings import warn
 
 import pkg_resources
 
 from _delb.typing import Loader
 
 
-class DocumentExtensionHooks:
+class DocumentMixinHooks:
     """
-    This class acts as termination for methods that can be implemented by extension
-    classes. Any implementation of a method must call a base class' one with
-    :func:`super`.
+    This class acts as termination for methods that can be implemented by mixin classes.
+    Any implementation of a method must call a base class' one with :func:`super`.
     """
 
-    def _init_config(self, config_args: Dict[str, Any]):
+    @classmethod
+    def _init_config(cls, config: SimpleNamespace, kwargs: Dict[str, Any]):
         """
-        The ``config_args`` contains the additional keyword arguments that a
+        The ``kwargs`` argument contains the additional keyword arguments that a
         :class:`Document` instance is called with. Extension classes that expect
         configuration data *must* process their specific arguments by clearing them
-        from the ``config_args`` dictionary, e.g. with :meth:`dict.pop`, and preferably
+        from the ``kwargs`` dictionary, e.g. with :meth:`dict.pop`, and preferably
         storing the final configuration data in a :class:`types.SimpleNamespace` and
-        bind it to the instance's :attr:`delb.Document.config` property with the
+        adding it to the :class:`types.SimpleNamespace` passed as ``config`` with the
         extension's name. The initially mentioned keyword arguments *should* be prefixed
         with that name as well. This method is called before the loaders try to read and
         parse the given source for a document.
         """
-        pass
+        if kwargs:
+            raise RuntimeError(
+                "Not all configuration arguments have been processed. You either "
+                "passed invalid arguments or an extension doesn't handle them "
+                f"properly: {config}"
+            )
+
+
+class DocumentExtensionHooks(DocumentMixinHooks):
+    def __init__(self, *args, **kwargs):
+        warn(
+            "DocumentExtensionHooks is deprecated, use DocumentMixinHooks instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 LoaderConstraint = Union[Loader, Iterable[Loader], None]
@@ -62,7 +78,7 @@ class PluginManager:
         for entrypoint in pkg_resources.iter_entry_points("delb"):
             entrypoint.load()
 
-    def register_document_extension(self, extension: Type) -> Type:
+    def register_document_mixin(self, extension: Type) -> Type:
         """
         This decorator registers document extension classes which are supposed to add
         additional attributes to a document, e.g. derived data or methods to interact
@@ -71,14 +87,21 @@ class PluginManager:
         etc.
 
         There are hook methods that an extension can implement, they are declared in
-        :class:`_delb.plugins.DocumentExtensionHooks`.
-
-        Extension classes are *mixin classes* in Python OOP jargon.
+        :class:`_delb.plugins.DocumentMixinHooks`.
         """
 
         assert isclass(extension)
         self.plugins.document_extensions.append(extension)
         return extension
+
+    def register_document_extension(self, extension: Type) -> Type:
+        warn(
+            "register_document_extension is deprecated, use register_document_mixin "
+            "instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.register_document_mixin(extension)
 
     def register_loader(
         self, before: LoaderConstraint = None, after: LoaderConstraint = None
@@ -122,7 +145,8 @@ class PluginManager:
 
         Note that the ``config`` argument that is passed to a loader function contains
         configuration data, it's the :attr:`delb.Document.config` property after
-        :meth:`_delb.plugins.DocumentExtensionHooks._init_config` has been processed.
+        :meth:`_init_config <_delb.plugins.DocumentMixinHooks._init_config>` has
+        been processed.
 
         Loaders that retrieve a document from an URL should add the origin as string to
         the ``config`` object as ``source_url``.

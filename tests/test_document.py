@@ -4,7 +4,7 @@ import pytest
 
 from delb import (
     Document,
-    DocumentExtensionHooks,
+    DocumentMixinHooks,
     TagNode,
     TextNode,
     new_comment_node,
@@ -117,7 +117,7 @@ def test_mro():
         DocumentSubclass,
         Document,
         TestDocumentExtension,
-        DocumentExtensionHooks,
+        DocumentMixinHooks,
         object,
     )
 

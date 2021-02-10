@@ -18,7 +18,17 @@ import re
 from copy import copy
 from functools import lru_cache, partial
 from string import ascii_lowercase
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Optional, Sequence
+from types import SimpleNamespace
+from typing import (
+    Mapping,
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+)
 
 from cssselect import GenericTranslator  # type: ignore
 from lxml import etree
@@ -31,6 +41,17 @@ if TYPE_CHECKING:
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 css_translator = GenericTranslator()
+
+
+class _ConfigNamespace(SimpleNamespace):
+    def __hash__(self):
+        return _hash_config_value(self.__dict__)
+
+
+def _collect_subclasses(cls: type, classes: List[type]):
+    for subclass in cls.__subclasses__():
+        _collect_subclasses(subclass, classes)
+        classes.append(subclass)
 
 
 def _copy_root_siblings(source: etree._Element, target: etree._Element):
@@ -98,6 +119,16 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
     if result is None:
         raise NotImplementedError
     return result
+
+
+def _hash_config_value(value: Any) -> int:
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, str)):
+        return hash(tuple(_hash_config_value(x) for x in value))
+    if isinstance(value, Mapping):
+        return hash(frozenset((k, _hash_config_value(v)) for k, v in value.items()))
+    if isinstance(value, SimpleNamespace):
+        return _hash_config_value(value.__dict__)
+    return hash((type(value), value))
 
 
 def last(iterable: Iterable) -> Optional[Any]:

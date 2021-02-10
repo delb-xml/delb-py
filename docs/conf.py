@@ -274,6 +274,7 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 
 
 doctest_global_setup = """
+import types
 from typing import Any
 from delb import *
 """

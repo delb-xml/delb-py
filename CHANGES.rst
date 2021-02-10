@@ -10,13 +10,21 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.2.1 (unreleased)
-------------------
+0.3 (unreleased)
+----------------
 
 News
 ~~~~
 
-- Adds the ``retain_child_node`` to :meth:`delb.NodeBase.detach`.
+- Subclasses can claim to be the default class based on the evaluation of a
+  document's content and configuration by implementing `__class_test__`.
+- ⚠️ :meth:`_delb.plugins.PluginManager._register_document_extension` is renamed
+  to :meth:`_delb.plugins.PluginManager._register_document_mixin`.
+- ⚠️ :meth:`_delb.plugins.DocumentExtensionHooks` is renamed to
+  :meth:`_delb.plugins.DocumentMixinHooks`.
+- ⚠️ :meth:`_delb.plugins.DocumentMixinHooks._init_config` is now a
+  :func:`classmethod` and now also takes the config namespace as first argument.
+- Adds the ``retain_child_node`` argument to :meth:`delb.NodeBase.detach`.
 - Adds :meth:`delb.Document.collapse_whitespace` and the initialization option
   for :class:`delb.Document` instances with the same name.
 - Adds the :attr:`delb.TagNode.id` property.

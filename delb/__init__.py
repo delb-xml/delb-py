@@ -17,8 +17,9 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
+from threading import get_ident as get_thread_id
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Type, Union
 from typing import IO as IOType
 
 from lxml import etree
@@ -26,7 +27,7 @@ from lxml import etree
 from _delb.exceptions import FailedDocumentLoading, InvalidOperation
 from _delb.plugins import (
     core_loaders,
-    DocumentExtensionHooks,
+    DocumentMixinHooks,
     plugin_manager as _plugin_manager,
 )
 from _delb.nodes import (
@@ -51,13 +52,15 @@ from _delb.nodes import (
     TagNode,
     TextNode,
 )
-from _delb.typing import Loader, _WrapperCache
+from _delb.typing import Loader
 from _delb.utils import (
+    _collect_subclasses,
     _copy_root_siblings,
     first,
     get_traverser,
     last,
     register_namespace,
+    _ConfigNamespace,
 )
 
 
@@ -71,6 +74,12 @@ _plugin_manager.load_plugins()
 
 
 DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
+
+
+# module objects
+
+
+_loader_cache: Dict[Tuple[Any, int], Tuple[_ConfigNamespace, TagNode]] = {}
 
 
 # api
@@ -180,7 +189,7 @@ class DocumentMeta(type):
                     (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
                 )
 
-        base_classes += extension_classes + (DocumentExtensionHooks,)
+        base_classes += extension_classes + (DocumentMixinHooks,)
 
         namespace["_loaders"] = (
             core_loaders.tag_node_loader,
@@ -216,10 +225,14 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
-    :param collapse_whitespace: Calls :meth:`delb.Document.collapse_whitespace` after
-                                loading the document.
+    :param collapse_whitespace: :meth:`Collapses the content's whitespace
+                                <delb.Document.collapse_whitespace>` after loading the
+                                document.
     :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
                    parse a document stream.
+    :param klass: Explicitly define the initilized class. This can be useful for
+                  applications that have :ref:`default document subclasses
+                  <extending-subclasses>` in use.
     :param config: Additional keyword arguments for the configuration of extension
                    classes.
     """
@@ -227,52 +240,48 @@ class Document(metaclass=DocumentMeta):
     _loaders: Tuple[Loader, ...]
     __slots__ = ("__root_node__", "head_nodes", "source_url", "tail_nodes")
 
+    def __new__(
+        cls,
+        source,
+        collapse_whitespace=False,
+        parser=DEFAULT_PARSER,
+        klass=None,
+        **config,
+    ):
+        config = cls.__process_config(collapse_whitespace, parser, config)
+        root = cls.__load_source(source, config)
+
+        if klass is None:
+            subclasses = list()
+            _collect_subclasses(cls, subclasses)
+
+            for subclass in subclasses:
+                if hasattr(subclass, "__class_test__") and subclass.__class_test__(
+                    root, config
+                ):
+                    klass = subclass
+                    break
+            else:
+                klass = cls
+
+        assert issubclass(klass, Document)
+        _loader_cache[(get_thread_id(), source)] = (config, root)
+        return super().__new__(klass)
+
     def __init__(
         self,
         source: Any,
         collapse_whitespace: bool = False,
         parser: etree.XMLParser = DEFAULT_PARSER,
+        klass: Optional[Type["Document"]] = None,
         **config,
     ):
-        self.config = SimpleNamespace()
+        _config, self.root = _loader_cache.pop((get_thread_id(), source))
+        self.config = _config
         """
         Beside the used ``parser`` and ``collapsed_whitespace`` option, this property
         contains the namespaced data that extension classes and loaders may have stored.
         """
-        self.config.collapse_whitespace = collapse_whitespace
-        self.config.parser = parser
-        self._init_config(config)  # type: ignore
-        if config:
-            raise RuntimeError(
-                "Not all configuration arguments have been processed. You either "
-                "passed invalid arguments or an extension doesn't handle them "
-                f"properly: {config}"
-            )
-
-        loader_excuses: Dict[Loader, Union[str, Exception]] = {}
-        loaded_tree: Optional[etree._ElementTree] = None
-        wrapper_cache: Optional[_WrapperCache] = None
-        for loader in self._loaders:
-            try:
-                loader_result = loader(source, self.config)
-            except Exception as e:
-                loader_excuses[loader] = e
-            else:
-                if isinstance(loader_result, tuple):
-                    loaded_tree, wrapper_cache = loader_result
-                    break
-                else:
-                    loader_excuses[loader] = loader_result
-
-        if loaded_tree is None:
-            raise FailedDocumentLoading(source, loader_excuses)
-
-        assert isinstance(loaded_tree, etree._ElementTree)
-        assert isinstance(wrapper_cache, dict)
-
-        root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
-        assert isinstance(root, TagNode)
-        self.root = root
         if collapse_whitespace:
             self.collapse_whitespace()
 
@@ -280,7 +289,6 @@ class Document(metaclass=DocumentMeta):
         """
         The source URL where a loader obtained the document's contents or ``None``.
         """
-
         self.head_nodes = _HeadNodes(self)
         """
         A list-like accessor to the nodes that precede the document's root node.
@@ -291,6 +299,40 @@ class Document(metaclass=DocumentMeta):
         A list-like accessor to the nodes that follow the document's root node.
         Note that nodes can't be removed or replaced.
         """
+
+    @classmethod
+    def __process_config(cls, collapse_whitespace, parser, kwargs) -> SimpleNamespace:
+        config = _ConfigNamespace(
+            collapse_whitespace=collapse_whitespace, parser=parser
+        )
+        cls._init_config(config, kwargs)  # type: ignore
+        return config
+
+    @classmethod
+    def __load_source(cls, source: Any, config: SimpleNamespace) -> TagNode:
+        loader_excuses: Dict[Loader, Union[str, Exception]] = {}
+
+        for loader in cls._loaders:
+            try:
+                loader_result = loader(source, config)
+            except Exception as e:
+                loader_excuses[loader] = e
+            else:
+                if isinstance(loader_result, tuple):
+                    loaded_tree, wrapper_cache = loader_result
+                    break
+                else:
+                    loader_excuses[loader] = loader_result
+        else:
+            raise FailedDocumentLoading(source, loader_excuses)
+
+        assert isinstance(loaded_tree, etree._ElementTree)
+        assert isinstance(wrapper_cache, dict)
+
+        root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
+        assert isinstance(root, TagNode)
+
+        return root
 
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self
@@ -343,7 +385,7 @@ class Document(metaclass=DocumentMeta):
         """
         # lxml.etree.XMLParser instances aren't pickable / copyable
         parser = self.config.__dict__.pop("parser")
-        result = self.__class__(self.root, parser=parser)
+        result = Document(self.root, parser=parser, klass=self.__class__)
         result.config = deepcopy(self.config)
         self.config.parser = result.config.parser = parser
         return result

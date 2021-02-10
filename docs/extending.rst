@@ -7,20 +7,31 @@ Extending delb
 mechanics with Python packages.
 A package that extends its functionality must `provide entrypoint metadata`_
 for an entrypoint group named ``delb`` that points to modules that contain
-extensions. The individual extensions have to be decorated with specific methods
-of the plugin manager object (see the following sections).
+extensions. Some extensions have to be decorated with specific methods
+of the plugin manager object. Authors are encouraged to prefix their package
+names with ``delb-`` in order to increase discoverability.
 
-Authors are encouraged to prefix their package names with ``delb-`` in order to
-increase discoverability.
+These extension types are currently available:
 
-There are currently two distinct plugin types: *loaders* and *document extension
-classes*. *Loaders* are functions that try to make sense of any given input
-value, and if they can they return a parsed document. *Extension classes* add
-functionality / attributes to the :class:`delb.Document` class as *mixin
-classes* (instead of inheriting from it). That allows applications to rely
-optionally on the availability of plugins. The designated means of communication
-between these two extension types is the ``config`` argument to the loader
-respectively the instance property of a document instance with that name.
+- document loaders
+- document mixin classes
+- document subclasses
+
+*Loaders* are functions that try to make sense of any given input value, and if
+they can they return a parsed document.
+
+*Mixin classes* add functionality / attributes to the :class:`delb.Document`
+class as (instead of inheriting from it). That allows applications to rely
+optionally on the availability of plugins and to combine various extensions.
+
+*Subclasses* can be used to provide distinct models of arbitrary aspects for
+contents that are represented by a specific encoding. They can optionally
+implement a test method to qualify them as default class for recognized
+contents.
+
+The designated means of communication between extensions is the ``config``
+argument to the loader respectively the instance property of a document instance
+with that name.
 
 .. warning::
 
@@ -52,16 +63,64 @@ Loaders are registered with this decorator:
 Document extensions
 -------------------
 
-Document extension classes are registered with
-:meth:`_delb.plugins.plugin_manager.register_document_extension`:
+Document mxin classes are registered with this :term:`decorator`:
 
-.. autofunction:: _delb.plugins.plugin_manager.register_document_extension
+.. autofunction:: _delb.plugins.plugin_manager.register_document_mixin
 
 They can implement methods that are called from builtin :class:`delb.Document`
 methods:
 
-.. autoclass:: _delb.plugins.DocumentExtensionHooks
+.. autoclass:: _delb.plugins.DocumentMixinHooks
    :private-members:
+
+
+.. _extending-subclasses:
+
+Document subclasses
+-------------------
+
+Of course one can simply subclass :class:`delb.Document` to add functionality.
+Beside using a subclass directly, you can let :class:`delb.Document` figure out
+which subclass is an appropriate representation of the content. Subclasses can
+claim that by implementing a :func:`staticmethod` named ``_class_test__`` that
+takes the document's root node and the configuration to return a boolean that
+indicates the subclass is suited. Here's an example:
+
+.. testcode::
+
+    class TEIDocument(Document):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **{**kwargs, "collapse_whitespace": True})
+
+        @staticmethod
+        def __class_test__(root: TagNode, config: types.SimpleNamespace) -> bool:
+            return root.qualified_name == "{http://www.tei-c.org/ns/1.0}TEI"
+
+        @property
+        def title(self) -> str:
+            return self.css_select('titleStmt title[type="main"]').first.full_text
+
+    document = Document("""\
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><fileDesc><titleStmt>
+    <title type="main">The Document's Title</title>
+    </titleStmt></fileDesc></teiHeader></TEI>
+    """)
+
+    if isinstance(document, TEIDocument):
+        print(document.title)
+    else:
+        print("Sorry, I don't know how to retrieve the document's title.")
+
+.. testoutput::
+
+    The Document's Title
+
+
+The recommendations as laid out for :meth:`DocumentMixinHooks._init_config
+<_delb.plugins.DocumentMixinHooks._init_config>` also apply for subclasses who
+would process configuration arguments in their ``__init__`` method before
+calling the super class' one.
 
 
 .. _eXist-db: https://exist-db.org/
