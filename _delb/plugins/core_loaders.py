@@ -40,7 +40,7 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     descendant nodes.
     """
     if isinstance(data, TagNode):
-        tree = etree.ElementTree(parser=config.parser)
+        tree = etree.ElementTree()
         root = data.clone(deep=True)
         tree._setroot(root._etree_obj)
         utils._copy_root_siblings(data._etree_obj, root._etree_obj)

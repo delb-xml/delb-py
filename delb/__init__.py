@@ -17,7 +17,6 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
-from threading import get_ident as get_thread_id
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Type, Union
 from typing import IO as IOType
@@ -60,7 +59,6 @@ from _delb.utils import (
     get_traverser,
     last,
     register_namespace,
-    _ConfigNamespace,
 )
 
 
@@ -74,12 +72,6 @@ _plugin_manager.load_plugins()
 
 
 DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
-
-
-# module objects
-
-
-_loader_cache: Dict[Tuple[Any, int], Tuple[_ConfigNamespace, TagNode]] = {}
 
 
 # api
@@ -265,8 +257,10 @@ class Document(metaclass=DocumentMeta):
                 klass = cls
 
         assert issubclass(klass, Document)
-        _loader_cache[(get_thread_id(), source)] = (config, root)
-        return super().__new__(klass)
+        instance = super().__new__(klass)
+        instance.config = config
+        instance.root = root
+        return instance
 
     def __init__(
         self,
@@ -276,8 +270,7 @@ class Document(metaclass=DocumentMeta):
         klass: Optional[Type["Document"]] = None,
         **config,
     ):
-        _config, self.root = _loader_cache.pop((get_thread_id(), source))
-        self.config = _config
+        self.config: SimpleNamespace
         """
         Beside the used ``parser`` and ``collapsed_whitespace`` option, this property
         contains the namespaced data that extension classes and loaders may have stored.
@@ -302,9 +295,7 @@ class Document(metaclass=DocumentMeta):
 
     @classmethod
     def __process_config(cls, collapse_whitespace, parser, kwargs) -> SimpleNamespace:
-        config = _ConfigNamespace(
-            collapse_whitespace=collapse_whitespace, parser=parser
-        )
+        config = SimpleNamespace(collapse_whitespace=collapse_whitespace, parser=parser)
         cls._init_config(config, kwargs)  # type: ignore
         return config
 
@@ -383,9 +374,9 @@ class Document(metaclass=DocumentMeta):
         """
         :return: Another instance with the duplicated contents.
         """
+        result = Document(self.root, klass=self.__class__)
         # lxml.etree.XMLParser instances aren't pickable / copyable
         parser = self.config.__dict__.pop("parser")
-        result = Document(self.root, parser=parser, klass=self.__class__)
         result.config = deepcopy(self.config)
         self.config.parser = result.config.parser = parser
         return result
