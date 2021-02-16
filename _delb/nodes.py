@@ -25,6 +25,7 @@ from typing import (
     cast,
     overload,
     Any,
+    AnyStr,
     Deque,
     Dict,
     Iterator,
@@ -42,7 +43,13 @@ from lxml import etree
 
 from _delb.exceptions import InvalidCodePath, InvalidOperation
 from _delb.typing import ElementAttributes, Filter, NodeSource, _WrapperCache
-from _delb.utils import _crunch_whitespace, _css_to_xpath, last, _random_unused_prefix
+from _delb.utils import (
+    DEFAULT_PARSER,
+    _crunch_whitespace,
+    _css_to_xpath,
+    last,
+    _random_unused_prefix,
+)
 from _delb.xpath import XPathExpression
 
 if TYPE_CHECKING:
@@ -1617,6 +1624,28 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self.namespace,
             definition.children,
         )
+
+    @staticmethod
+    def parse(
+        text: AnyStr,
+        parser: etree.XMLParser = DEFAULT_PARSER,
+        collapse_whitespace: bool = False,
+    ) -> "TagNode":
+        """
+        Parses the given string or bytes sequence into a new tree.
+
+        :param text: A serialized XML tree.
+        :param parser: The XML parser to use.
+        :param collapse_whitespace: :meth:`Collapses the content's whitespace
+                                    <delb.Document.collapse_whitespace>`.
+        """
+        result = _get_or_create_element_wrapper(
+            etree.fromstring(text, parser=parser), {}
+        )
+        assert isinstance(result, TagNode)
+        if collapse_whitespace:
+            result._collapse_whitespace()
+        return result
 
     @property
     def prefix(self) -> Optional[str]:

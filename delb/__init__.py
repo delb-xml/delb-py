@@ -53,6 +53,7 @@ from _delb.nodes import (
 )
 from _delb.typing import Loader
 from _delb.utils import (
+    DEFAULT_PARSER,
     _collect_subclasses,
     _copy_root_siblings,
     first,
@@ -66,12 +67,6 @@ from _delb.utils import (
 
 
 _plugin_manager.load_plugins()
-
-
-# constants
-
-
-DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 
 # api

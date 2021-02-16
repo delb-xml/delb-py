@@ -24,11 +24,12 @@ News
   :meth:`_delb.plugins.DocumentMixinHooks`.
 - ⚠️ :meth:`_delb.plugins.DocumentMixinHooks._init_config` is now a
   :func:`classmethod` and now also takes the config namespace as first argument.
-- Adds the ``retain_child_node`` argument to :meth:`delb.NodeBase.detach`.
 - Adds :meth:`delb.Document.collapse_whitespace` and the initialization option
   for :class:`delb.Document` instances with the same name.
-- Adds the :attr:`delb.TagNode.id` property.
+- Adds the ``retain_child_node`` argument to :meth:`delb.NodeBase.detach`.
 - Adds the :attr:`delb.NodeBase.last_descendant` property.
+- Adds the :attr:`delb.TagNode.id` property.
+- Adds the :meth:`delb.Tagnode.parse` method.
 - Adds support for Python 3.9.
 - Uses GitHub actions for CI checks.
 

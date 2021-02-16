@@ -1,6 +1,7 @@
 import pytest
 
 from delb import (
+    altered_default_filters,
     is_tag_node,
     new_tag_node,
     tag,
@@ -106,6 +107,22 @@ def test_no_next_node_in_stream():
 def test_no_previous_node_in_stream():
     document = Document("<root><a/></root>")
     assert document.root.previous_node_in_stream() is None
+
+
+@pytest.mark.parametrize("yes_or_no", (True, False))
+def test_parse(yes_or_no):
+    data = "<node>foo<child><!--bar--></child></node>"
+    if yes_or_no:
+        data = data.encode()
+    node = TagNode.parse(data, collapse_whitespace=yes_or_no)
+    child = node.last_child
+
+    assert node.document is None
+    assert node.local_name == "node"
+    assert node.first_child.content == "foo"
+    assert child.local_name == "child"
+    with altered_default_filters():
+        assert child.first_child.content == "bar"
 
 
 def test_replace_with():
