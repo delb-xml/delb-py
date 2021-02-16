@@ -84,7 +84,12 @@ Beside using a subclass directly, you can let :class:`delb.Document` figure out
 which subclass is an appropriate representation of the content. Subclasses can
 claim that by implementing a :func:`staticmethod` named ``_class_test__`` that
 takes the document's root node and the configuration to return a boolean that
-indicates the subclass is suited. Here's an example:
+indicates the subclass is suited.
+
+Subclasses are registered by importing them into an application, they must not
+be pointed to by entrypoint definitions.
+
+Here's an example:
 
 .. testcode::
 
