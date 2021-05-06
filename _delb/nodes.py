@@ -1517,8 +1517,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if index == 0:
             if children_count:
                 self[0].add_previous(this, clone=clone)
-                if isinstance(this, _ElementWrappingNode) and not clone:
-                    assert self[1].previous_node() is this
+                if not (
+                    clone
+                    or isinstance(node[0], (str, _TagDefinition))
+                    or isinstance(self[1], TextNode)
+                ):
+                    assert self[0] is this
+                    assert self[1].previous_node() is this, self[1].previous_node()
                     assert this.next_node() is self[1]
             else:
                 self.__add_first_child(
