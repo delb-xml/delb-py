@@ -1524,6 +1524,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 ):
                     assert self[0] is this
                     assert self[1].previous_node() is this, self[1].previous_node()
+                    assert isinstance(this, NodeBase)
                     assert this.next_node() is self[1]
             else:
                 self.__add_first_child(
