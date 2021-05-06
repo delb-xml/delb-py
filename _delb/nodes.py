@@ -791,7 +791,7 @@ class NodeBase(ABC):
 
 
 class _ChildLessNode(NodeBase):
-    """ Node types using this mixin also can't be root nodes of a document. """
+    """Node types using this mixin also can't be root nodes of a document."""
 
     first_child = last_child = last_descendant = None
 
@@ -2324,16 +2324,16 @@ class QueryResults(Sequence[TagNode]):
         return str([repr(x) for x in self.__items])
 
     def as_list(self) -> List[TagNode]:
-        """ The contained nodes as a new :class:`list`. """
+        """The contained nodes as a new :class:`list`."""
         return list(self.__items)
 
     def as_set(self) -> Set[TagNode]:
-        """ The contained nodes as a new :class:`set`. """
+        """The contained nodes as a new :class:`set`."""
         return set(self.__items)
 
     @property
     def as_tuple(self) -> Tuple[TagNode, ...]:
-        """ The contained nodes in a :class:`tuple`. """
+        """The contained nodes in a :class:`tuple`."""
         return self.__items
 
     def filtered_by(self, *filters: Filter) -> "QueryResults":
@@ -2348,7 +2348,7 @@ class QueryResults(Sequence[TagNode]):
 
     @property
     def first(self) -> Optional[TagNode]:
-        """ The first node from the results or ``None`` if there are none. """
+        """The first node from the results or ``None`` if there are none."""
         if len(self.__items):
             return self.__items[0]
         else:
@@ -2356,7 +2356,7 @@ class QueryResults(Sequence[TagNode]):
 
     @property
     def last(self) -> Optional[TagNode]:
-        """ The last node from the results or ``None`` if there are none. """
+        """The last node from the results or ``None`` if there are none."""
         if len(self.__items):
             return self.__items[-1]
         else:
@@ -2364,7 +2364,7 @@ class QueryResults(Sequence[TagNode]):
 
     @property
     def size(self) -> int:
-        """ The amount of contained nodes. """
+        """The amount of contained nodes."""
         return len(self.__items)
 
 

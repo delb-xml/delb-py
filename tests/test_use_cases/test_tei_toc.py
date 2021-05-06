@@ -21,7 +21,7 @@ def is_section(node: NodeBase) -> bool:
 
 @dataclass
 class TOCSection:
-    """ A document's section. """
+    """A document's section."""
 
     index: int
     level: int
@@ -40,14 +40,14 @@ class TOCSection:
 
 
 class TableOfContents:
-    """ Not a table but a tree of a document's sections.  """
+    """Not a table but a tree of a document's sections."""
 
     def __init__(self, document):
         self.document = document
 
     @property
     def back_sections(self) -> Tuple[TOCSection, ...]:
-        """ A sequence of all top-level back sections. """
+        """A sequence of all top-level back sections."""
         back_nodes = self.document.xpath("./text/back")
         if back_nodes:
             assert len(back_nodes) == 1
@@ -58,7 +58,7 @@ class TableOfContents:
 
     @property
     def body_sections(self) -> Tuple[TOCSection, ...]:
-        """ A sequence of all top-level body sections. """
+        """A sequence of all top-level body sections."""
         body_nodes = self.document.xpath("./text/body")
         if body_nodes:
             assert len(body_nodes) == 1
