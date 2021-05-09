@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import sys
 from abc import abstractmethod, ABC
 from collections import deque
-
 from contextlib import contextmanager
 from copy import copy
+from functools import wraps
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -26,6 +26,7 @@ from typing import (
     overload,
     Any,
     AnyStr,
+    Callable,
     Deque,
     Dict,
     Iterator,
@@ -170,6 +171,30 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
     cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
+
+
+# wrapper
+
+
+def _yield_with_altered_recursion_limit(func: Callable) -> Callable:
+    def count_nodes(node) -> int:
+        result = 0
+        with altered_default_filters():
+            for _ in node.document.root.child_nodes(recurse=True):
+                result += 1
+        return result
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        recursion_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(max(int(count_nodes(self) * 1.1), recursion_limit))
+        yield from func(self, *args, **kwargs)
+        sys.setrecursionlimit(recursion_limit)
+
+    return wrapper
+
+
+# abstract tag definitions
 
 
 class _TagDefinition(NamedTuple):
@@ -505,6 +530,7 @@ class NodeBase(ABC):
             yield next_node
             next_node = next_node.next_node(*filter)
 
+    @_yield_with_altered_recursion_limit
     def iterate_next_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
@@ -558,6 +584,7 @@ class NodeBase(ABC):
             yield previous_node
             previous_node = previous_node.previous_node(*filter)
 
+    @_yield_with_altered_recursion_limit
     def iterate_previous_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be

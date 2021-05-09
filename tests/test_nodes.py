@@ -106,6 +106,12 @@ def test_invalid_operations():
         new_node.add_previous(document_2.root[0])
 
 
+def test_next_node_over_long_stream(files_path):
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    node = document.root.next_node_in_stream(lambda _: False)
+    assert node is None
+
+
 def test_no_next_node_in_stream():
     document = Document("<root><a/></root>")
     assert document.root[0].next_node_in_stream() is None

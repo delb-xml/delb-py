@@ -29,7 +29,7 @@ News
 - Adds the ``retain_child_node`` argument to :meth:`delb.NodeBase.detach`.
 - Adds the :attr:`delb.NodeBase.last_descendant` property.
 - Adds the :attr:`delb.TagNode.id` property.
-- Adds the :meth:`delb.Tagnode.parse` method.
+- Adds the :meth:`delb.TagNode.parse` method.
 - Adds support for Python 3.9.
 - Uses GitHub actions for CI checks.
 
@@ -40,6 +40,8 @@ Fixes
   siblings.
 - Ensures that :attr:`delb.TagNode.location_path` always consists of indexed
   steps (``/*[i]``) only.
+- Avoids hitting the interpreter's recursion limit when iterating in stream
+  dimension.
 
 
 0.2 (2020-07-26)
