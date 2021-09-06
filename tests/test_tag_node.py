@@ -569,3 +569,12 @@ def test_set_tag_components():
 
     root.local_name = "root"
     assert str(document) == '<prfx:root xmlns:prfx="https://name.space"/>'
+
+
+def test_tag_definition_copies_attributes():
+    root = Document('<root foo="bar"/>').root
+    definition = tag("test", root.attributes)
+    root.attributes["bar"] = "foo"
+    root.append_child(definition)
+    assert root.attributes == {"bar": "foo", "foo": "bar"}
+    assert root.first_child.attributes == {"foo": "bar"}

@@ -283,8 +283,8 @@ def tag(*args):  # noqa: C901
 
     if len(args) == 2:
         second_arg = args[1]
-        if isinstance(second_arg, Mapping):
-            return _TagDefinition(local_name=args[0], attributes=second_arg)
+        if isinstance(second_arg, (Mapping, etree._Attrib)):
+            return _TagDefinition(local_name=args[0], attributes=dict(second_arg))
         if isinstance(second_arg, (str, NodeBase, _TagDefinition)):
             return _TagDefinition(local_name=args[0], children=(second_arg,))
         if isinstance(second_arg, Sequence):
