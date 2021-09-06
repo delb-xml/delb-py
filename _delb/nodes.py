@@ -1501,7 +1501,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if value is None:
             self.attributes.pop(XML_ATT_ID, "")
         elif isinstance(value, str):
-            if cast(TagNode, last(self.ancestors())).css_select(f'*[xml|id="{value}"]'):
+            root = cast(TagNode, last(self.ancestors())) or self
+            if root.css_select(f'*[xml|id="{value}"]'):
                 raise InvalidOperation(
                     "An id with that value is already assigned in the tree."
                 )

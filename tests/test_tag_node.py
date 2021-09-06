@@ -254,14 +254,22 @@ def test_id_property(files_path):
     publisher = document.css_select("publicationStmt publisher").first
 
     assert publisher.id == "DTACorpusPublisher"
-    with pytest.raises(TypeError):
-        publisher.id = 1234
+
     publisher.id = None
     assert XML_ATT_ID not in publisher.attributes
+
     publisher.id = "foo"
     assert publisher.attributes[XML_ATT_ID] == "foo"
+
+    with pytest.raises(TypeError):
+        publisher.id = 1234
+
     with pytest.raises(InvalidOperation):
         publisher.parent.id = "foo"
+
+    publisher.detach()
+    with pytest.raises(InvalidOperation):
+        publisher.first_child.id = "foo"
 
 
 def test_insert():
