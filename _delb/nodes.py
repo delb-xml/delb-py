@@ -918,7 +918,7 @@ class _ElementWrappingNode(NodeBase):
     def clone(self, deep: bool = False) -> "_ElementWrappingNode":
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
-        return _get_or_create_element_wrapper(etree_clone, self._wrapper_cache)
+        return _get_or_create_element_wrapper(etree_clone, {})
 
     @altered_default_filters()
     def detach(self, retain_child_nodes: bool = False) -> "_ElementWrappingNode":
