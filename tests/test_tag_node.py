@@ -335,6 +335,7 @@ def test_iter_stream_to_left():
         "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
     )
     k = document.root[1][1][0][1]
+    assert k.local_name == "k"
     chars = "abcdefghij"[::-1]
     for i, node in enumerate(k.iterate_previous_nodes_in_stream()):
         assert node.local_name == chars[i]

@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 from abc import abstractmethod, ABC
 from collections import deque
 from contextlib import contextmanager
 from copy import copy
-from functools import wraps
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -26,7 +24,6 @@ from typing import (
     overload,
     Any,
     AnyStr,
-    Callable,
     Deque,
     Dict,
     Iterator,
@@ -171,27 +168,6 @@ def _prune_wrapper_cache(node: "_ElementWrappingNode"):
     cache = root._wrapper_cache
     for key in set(cache) - {id(x) for x in root._etree_obj.iter()}:
         cache.pop(key)
-
-
-# wrapper
-
-
-def _yield_with_altered_recursion_limit(func: Callable) -> Callable:
-    def count_nodes(node) -> int:
-        result = 0
-        with altered_default_filters():
-            for _ in node.document.root.child_nodes(recurse=True):
-                result += 1
-        return result
-
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        recursion_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(max(int(count_nodes(self) * 1.1), recursion_limit))
-        yield from func(self, *args, **kwargs)
-        sys.setrecursionlimit(recursion_limit)
-
-    return wrapper
 
 
 # abstract tag definitions
@@ -530,7 +506,6 @@ class NodeBase(ABC):
             yield next_node
             next_node = next_node.next_node(*filter)
 
-    @_yield_with_altered_recursion_limit
     def iterate_next_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
@@ -557,18 +532,20 @@ class NodeBase(ABC):
                 return next_sibling_of_an_ancestor(parent)
             return parents_next
 
-        next_node = self.first_child
-        if next_node is None:
-            next_node = self.next_node()
+        pointer = self
+        while True:
+            next_node = pointer.first_child
+            if next_node is None:
+                next_node = pointer.next_node()
 
-        if next_node is None:
-            next_node = next_sibling_of_an_ancestor(self)
+            if next_node is None:
+                next_node = next_sibling_of_an_ancestor(pointer)
 
-        if next_node is None:
-            return
+            if next_node is None:
+                return
 
-        yield next_node
-        yield from next_node._iterate_next_nodes_in_stream()
+            yield next_node
+            pointer = next_node
 
     def iterate_previous_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
@@ -584,7 +561,6 @@ class NodeBase(ABC):
             yield previous_node
             previous_node = previous_node.previous_node(*filter)
 
-    @_yield_with_altered_recursion_limit
     def iterate_previous_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
@@ -605,19 +581,24 @@ class NodeBase(ABC):
                 yield from iter_children(child_node)
                 yield child_node
 
-        previous_node = self.previous_node()
+        pointer: Optional[NodeBase] = self
+        last_yield = pointer
+        assert pointer is not None
 
-        if previous_node is None:
-            parent = self.parent
-            if parent is None:
-                return
-            yield parent
-            yield from parent._iterate_previous_nodes_in_stream()
+        while True:
+            pointer = pointer.previous_node()
 
-        else:
-            yield from iter_children(previous_node)
-            yield previous_node
-            yield from previous_node._iterate_previous_nodes_in_stream()
+            if pointer is not None:
+                yield from iter_children(pointer)
+                yield pointer
+                last_yield = pointer
+
+            else:
+                parent = last_yield.parent
+                if parent is None:
+                    return
+                yield parent
+                pointer = last_yield = parent
 
     @property
     @abstractmethod

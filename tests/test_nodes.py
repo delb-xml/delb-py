@@ -106,10 +106,25 @@ def test_invalid_operations():
         new_node.add_previous(document_2.root[0])
 
 
-def test_next_node_over_long_stream(files_path):
-    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    node = document.root.next_node_in_stream(lambda _: False)
+def test_iter_next_node_over_long_stream(files_path):
+    root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
+
+    node = root.next_node_in_stream(lambda _: False)
     assert node is None
+
+    all_node_ids = {
+        id(root),
+    }
+    for node in root.child_nodes(recurse=True):
+        all_node_ids.add(id(node))
+    encountered_node_ids = {
+        id(root),
+    }
+    for node in root.iterate_next_nodes_in_stream():
+        _id = id(node)
+        assert _id not in encountered_node_ids
+        encountered_node_ids.add(_id)
+    assert encountered_node_ids == all_node_ids
 
 
 def test_no_next_node_in_stream():
