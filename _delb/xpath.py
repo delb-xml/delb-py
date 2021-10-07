@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Iterator, List
 
 
 AXIS_NAMES = (
@@ -34,9 +34,30 @@ AXIS_NAMES = (
 )
 
 
+def _split(expression: str, separator: str) -> Iterator[str]:
+    assert separator not in ('"', "'")
+    part = ""
+    quote = ""
+    for character in expression:
+
+        if character == separator and not quote:
+            yield part
+            part = ""
+            continue
+
+        if character == quote:
+            quote = ""
+        elif character in ('"', "'"):
+            quote = character
+
+        part += character
+
+    yield part
+
+
 class XPathExpression:
     def __init__(self, expression: str):
-        self.location_paths = [LocationPath(x.strip()) for x in expression.split("|")]
+        self.location_paths = [LocationPath(x.strip()) for x in _split(expression, "|")]
 
     def __str__(self):
         return " | ".join(str(x) for x in self.location_paths)
@@ -44,7 +65,7 @@ class XPathExpression:
 
 class LocationPath:
     def __init__(self, expression: str):
-        self.location_steps = [LocationStep(x) for x in expression.split("/")]
+        self.location_steps = [LocationStep(x) for x in _split(expression, "/")]
 
     def __str__(self):
         return "/".join(str(x) for x in self.location_steps)

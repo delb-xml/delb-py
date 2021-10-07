@@ -43,6 +43,11 @@ def test_location_path_and_xpath_concordance(files_path):
             assert queried_nodes.first is node
 
 
+def test_quotes_in_css_selector():
+    document = Document('<a href="https://super.test/123"/>')
+    assert document.css_select('a[href^="https://super.test/"]').size == 1
+
+
 def test_results_as_other_type():
     results = sample_document.css_select("node")
 
