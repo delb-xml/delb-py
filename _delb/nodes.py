@@ -442,9 +442,10 @@ class NodeBase(ABC):
     @abstractmethod
     def detach(self, retain_child_nodes: bool = False) -> "NodeBase":
         """
-        Removes the node, including its descendants, from its tree.
+        Removes the node from its tree.
 
-        :param retain_child_nodes: Keeps the child nodes in the tree if ``True``.
+        :param retain_child_nodes: Keeps the node's descendants in the originating
+                                   tree if ``True``.
         :return: The removed node.
 
         :meta category: remove-node
