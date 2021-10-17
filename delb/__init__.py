@@ -327,7 +327,7 @@ class Document(metaclass=DocumentMeta):
         cloned_root = self.root.clone(deep=True)
         cloned_root.merge_text_nodes()
         _copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
-        return etree.tounicode(cloned_root._etree_obj.getroottree())
+        return etree.tostring(cloned_root._etree_obj.getroottree(), encoding="unicode")
 
     def cleanup_namespaces(
         self,

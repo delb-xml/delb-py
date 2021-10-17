@@ -1242,7 +1242,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __str__(self) -> str:
         clone = self.clone(deep=True)
         clone.merge_text_nodes()
-        return etree.tounicode(clone._etree_obj)
+        return etree.tostring(clone._etree_obj, encoding="unicode")
 
     def __repr__(self) -> str:
         return (
