@@ -8,6 +8,7 @@ from delb import (
     Document,
     TagNode,
     TextNode,
+    is_tag_node,
     new_tag_node,
     register_namespace,
     tag,
@@ -182,6 +183,20 @@ def test_detach_node_retain_child_nodes():
     assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
 
+def test_detach_node_retains_namespace_prefixes():
+    # libxml2 loses the notion if a default prefix for nodes that have been
+    # removed from a parent node
+    document = Document(
+        """\
+        <root xmlns="schema://default/">
+            <child><grandchild/></child>
+        </root>
+        """
+    )
+    child = document.css_select("child").first.detach()
+    assert child.css_select("grandchild").size == 1
+
+
 def test_detach_node_without_a_document():
     root = new_tag_node("root", children=[tag("node")])
     root.first_child.detach()
@@ -269,7 +284,8 @@ def test_id_property(files_path):
 
     publisher.detach()
     with pytest.raises(InvalidOperation):
-        publisher.first_child.id = "foo"
+        a_tag_child_node = next(publisher.child_nodes(is_tag_node))
+        a_tag_child_node.id = "foo"
 
 
 def test_insert():

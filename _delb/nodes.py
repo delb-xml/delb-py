@@ -1435,19 +1435,37 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "node."
             )
 
-        result = super().detach()
+        super().detach()
+
+        parent_has_default_namespace = parent is not None and None in parent.namespaces
+
+        if not (parent_has_default_namespace or retain_child_nodes):
+            return self
+
+        child_nodes = tuple(self.child_nodes())
+        for child_node in child_nodes:
+            child_node.detach()
+
+        # workaround to keep a default namespace:
+        if parent_has_default_namespace:
+            self._wrapper_cache.pop(id(self._etree_obj))
+            assert isinstance(parent, TagNode)
+            self._etree_obj = parent._etree_obj.makeelement(
+                etree.QName(self._etree_obj),
+                attrib=cast(Dict[str, str], self.attributes),
+                nsmap=parent.namespaces,
+            )
+            self._wrapper_cache[id(self._etree_obj)] = self
 
         if retain_child_nodes:
-            child_nodes = tuple(self.child_nodes())
-            for node in child_nodes:
-                node.detach()
-
             if child_nodes:
                 assert isinstance(parent, TagNode)
                 assert isinstance(index, int)
                 parent.insert_child(index, *child_nodes)
+        else:
+            self.append_child(*child_nodes)
 
-        return result
+        return self
 
     @property
     def document(self) -> Optional["Document"]:
@@ -1484,7 +1502,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self.attributes.pop(XML_ATT_ID, "")
         elif isinstance(value, str):
             root = cast(TagNode, last(self.ancestors())) or self
-            if root.css_select(f'*[xml|id="{value}"]'):
+            if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
                 raise InvalidOperation(
                     "An id with that value is already assigned in the tree."
                 )
