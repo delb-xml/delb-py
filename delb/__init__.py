@@ -402,7 +402,7 @@ class Document(metaclass=DocumentMeta):
         self.root.merge_text_nodes()
 
     @property
-    def namespaces(self) -> Dict[str, str]:
+    def namespaces(self) -> Dict[Optional[str], str]:
         """
         The namespace mapping of the document's :attr:`root <Document.root>` node.
         """

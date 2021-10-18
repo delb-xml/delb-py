@@ -583,8 +583,8 @@ class NodeBase(ABC):
                 yield child_node
 
         pointer: Optional[NodeBase] = self
-        last_yield = pointer
         assert pointer is not None
+        last_yield: NodeBase = pointer
 
         while True:
             pointer = pointer.previous_node()
@@ -1615,11 +1615,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self._etree_obj.tag = QName(value, self.local_name).text
 
     @property
-    def namespaces(self) -> Dict[str, str]:
+    def namespaces(self) -> Dict[Optional[str], str]:
         """
         The prefix to namespace :term:`mapping` of the node.
         """
-        return cast(Dict[str, str], self._etree_obj.nsmap)
+        return cast(Dict[Optional[str], str], self._etree_obj.nsmap)
 
     def new_tag_node(
         self,
@@ -1779,7 +1779,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     if ":" not in node_test.data:
                         node_test.data = prefix + ":" + node_test.data
 
-        cache = self._wrapper_cache
         _results = etree_obj.xpath(str(xpath_expression), namespaces=compat_namespaces)
         if not (
             isinstance(_results, list)
@@ -1788,6 +1787,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise InvalidOperation(
                 "Only XPath expressions that target tag nodes are supported."
             )
+        cache = self._wrapper_cache
         return QueryResults(
             (
                 _get_or_create_element_wrapper(cast(_Element, element), cache)
@@ -2200,12 +2200,12 @@ class TextNode(_ChildLessNode, NodeBase):
             else:
                 return None
         elif head._position is TAIL:
-            next_etree_tag = head._bound_to.getnext()
-            if next_etree_tag is None:
+            next_etree_element = head._bound_to.getnext()
+            if next_etree_element is None:
                 return None
             else:
                 return _get_or_create_element_wrapper(
-                    next_etree_tag, self._wrapper_cache
+                    next_etree_element, self._wrapper_cache
                 )
 
         raise InvalidCodePath
