@@ -612,7 +612,6 @@ class NodeBase(ABC):
         """
         pass
 
-    # REMOVE?
     @abstractmethod
     def new_tag_node(
         self,
@@ -665,11 +664,8 @@ class NodeBase(ABC):
         )
         assert isinstance(result, TagNode)
 
-        for child in children:
-            if isinstance(child, (str, NodeBase, _TagDefinition)):
-                result.append_child(child)
-            else:
-                raise TypeError
+        if children:
+            result.append_child(*children)
 
         return result
 
@@ -805,7 +801,7 @@ class _ChildLessNode(NodeBase):
 
         :meta category: iter-relatives
         """
-        yield from []
+        yield from ()
 
     @property
     def depth(self) -> int:
