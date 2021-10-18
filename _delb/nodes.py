@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod, ABC
-from collections import deque
+from collections import deque, UserString
 from contextlib import contextmanager
 from copy import copy
 from itertools import chain
@@ -67,11 +67,6 @@ QName = etree.QName
 
 
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
-STRINGMETHODS = {
-    name
-    for name, obj in vars(str).items()
-    if not name.startswith("_") and callable(obj)
-}
 XML_ATT_ID = "{http://www.w3.org/XML/1998/namespace}id"
 XML_ATT_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 
@@ -1483,10 +1478,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def full_text(self) -> str:
-        return "".join(
-            x.content  # type: ignore
-            for x in self.child_nodes(is_text_node, recurse=True)
-        )
+        return "".join(str(x) for x in self.child_nodes(is_text_node, recurse=True))
 
     @property
     def id(self) -> Optional[str]:
@@ -1814,11 +1806,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
 
-class TextNode(_ChildLessNode, NodeBase):
+class TextNode(_ChildLessNode, NodeBase, UserString):  # type: ignore
     """
-    TextNodes contain the textual data of a document.
+    TextNodes contain the textual data of a document. The class shall not be initialized
+    by client code, just throw strings into the trees.
 
-    Instances expose all methods of :class:`str`:
+    Instances expose all methods of :class:`str` except :meth:`str.index`:
 
     >>> node = TextNode("Show us the way to the next whisky bar.")
     >>> node.split()
@@ -1849,7 +1842,7 @@ class TextNode(_ChildLessNode, NodeBase):
     ):
         if cache is None:
             cache = {}
-        super().__init__(cache)
+        NodeBase.__init__(self, cache)
 
         self._bound_to: Union[None, _Element, TextNode]
         self.__content: Optional[str]
@@ -1870,39 +1863,19 @@ class TextNode(_ChildLessNode, NodeBase):
         else:
             raise ValueError
 
-    def __contains__(self, item) -> bool:
-        return item in self.content
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, TextNode):
-            return self.content == other.content
-        elif isinstance(other, str):
-            return self.content == other
-        return False
-
-    def __getattr__(self, item: str) -> Any:
-        if item in STRINGMETHODS:
-            return getattr(self.content, item)
-        raise AttributeError(
-            f"type object '{self.__class__.__name__}' has no " f"attribute '{item}'"
-        )
-
     def __getitem__(self, item):
         return self.content[item]
 
     def __repr__(self):
         if self._exists:
             return (
-                f'<{self.__class__.__name__}(text="{self.content}", '
+                f'<{self.__class__.__name__}(text="{self}", '
                 f"pos={self._position}) [{hex(id(self))}]>"
             )
         else:
             return (
                 f"<{self.__class__.__name__}(pos={self._position}) [{hex(id(self))}]>"
             )
-
-    def __str__(self):
-        return self.content
 
     def _add_next_node(self, node: NodeBase):
         if isinstance(node, TextNode):
@@ -2055,6 +2028,9 @@ class TextNode(_ChildLessNode, NodeBase):
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             self.__content = text
+
+    # for collections.UserString:
+    data = content  # type: ignore
 
     @property
     def depth(self) -> int:

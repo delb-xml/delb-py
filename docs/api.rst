@@ -65,6 +65,7 @@ Text
 ~~~~
 
 .. autoclass:: delb.TextNode
+   :exclude-members: data, maketrans
 
    .. autoclasstoc::
 
