@@ -16,7 +16,7 @@
 from abc import abstractmethod, ABC
 from collections import deque, UserString
 from contextlib import contextmanager
-from copy import copy
+from copy import copy, deepcopy
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -419,9 +419,14 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def clone(self, deep: bool = False) -> "NodeBase":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "NodeBase":
         """
         :param deep: Clones the whole subtree if ``True``.
+        :param quick_and_unsafe: Creates a deep clone in a quicker manner where text
+                                 nodes may get lost. It should be safe with trees that
+                                 don't contain subsequent text nodes, e.g. freshly
+                                 parsed, unaltered documents of after
+                                 :meth:`TagNode.merge_text_nodes` has been applied.
         :return: A copy of the node.
         """
         pass
@@ -907,7 +912,9 @@ class _ElementWrappingNode(NodeBase):
         else:
             previous._add_next_node(node)
 
-    def clone(self, deep: bool = False) -> "_ElementWrappingNode":
+    def clone(
+        self, deep: bool = False, quick_and_unsafe=False
+    ) -> "_ElementWrappingNode":
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
         return _get_or_create_element_wrapper(etree_clone, {})
@@ -1328,9 +1335,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
             current_node = current_node.next_node()
 
     @altered_default_filters()
-    def clone(self, deep: bool = False) -> "TagNode":
+    def clone(self, deep: bool = False, quick_and_unsafe=False) -> "TagNode":
         # a faster implementation may be to not clear a cloned element's children and
         # to clone appended text nodes afterwards
+
+        if deep and quick_and_unsafe:
+            result = _get_or_create_element_wrapper(deepcopy(self._etree_obj), {})
+            assert isinstance(result, TagNode)
+            result._etree_obj.tail = None
+            return result
 
         etree_clone = copy(self._etree_obj)
         etree_clone.text = etree_clone.tail = None
@@ -1982,7 +1995,7 @@ class TextNode(_ChildLessNode, NodeBase, UserString):  # type: ignore
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(self, deep: bool = False) -> "NodeBase":
+    def clone(self, deep: bool = False, quick_and_unsafe=False) -> "NodeBase":
         assert self.content is not None
         return self.__class__(self.content, cache={})
 

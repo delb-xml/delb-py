@@ -74,6 +74,17 @@ def test_attribute_access_via_getitem():
     assert document.root["ham"] == "spam"
 
 
+def test_clone_quick_and_unsafe(sample_document):
+    assert str(sample_document.root.clone(deep=True, quick_and_unsafe=True)) == str(
+        sample_document.root
+    )
+
+    root = Document("<root>node a</root>").root
+    root.append_child("|node b")
+
+    assert str(root.clone(deep=True, quick_and_unsafe=True)) == "<root>node a</root>"
+
+
 def test_contains():
     document = Document('<root foo="bar"><node><descendant/></node></root>')
     root = document.root
