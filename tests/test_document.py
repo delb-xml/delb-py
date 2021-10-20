@@ -101,7 +101,7 @@ def test_css_select():
 
     results = document.css_select("a y|c")
     assert len(results) == 1
-    assert results[0].qualified_name == "{y}c"
+    assert results[0].universal_name == "{y}c"
 
 
 def test_invalid_document():
@@ -188,13 +188,13 @@ def test_xpath(files_path):
 
     for i, page_break in enumerate(document.xpath(".//pb")):
         assert isinstance(page_break, TagNode)
-        assert page_break.qualified_name == "{http://www.tei-c.org/ns/1.0}pb"
+        assert page_break.universal_name == "{http://www.tei-c.org/ns/1.0}pb"
 
     assert i == 22
 
     for j, page_break in enumerate(document.xpath('.//pb[@n="I"]')):
         assert isinstance(page_break, TagNode)
-        assert page_break.qualified_name == "{http://www.tei-c.org/ns/1.0}pb"
+        assert page_break.universal_name == "{http://www.tei-c.org/ns/1.0}pb"
         assert page_break.attributes["n"] == "I"
 
     assert j == 0

@@ -109,7 +109,7 @@ def test_copy():
 
     assert clone is not node
     assert clone._etree_obj is not node._etree_obj
-    assert clone.qualified_name == clone.qualified_name
+    assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
 
 
@@ -119,7 +119,7 @@ def test_deepcopy():
 
     assert clone is not node
     assert clone._etree_obj is not node._etree_obj
-    assert clone.qualified_name == clone.qualified_name
+    assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
     assert clone[0] is not node[0]
 
@@ -471,7 +471,7 @@ def test_names(sample_document):
 
     assert root.namespace == "https://name.space"
     assert root.local_name == "doc"
-    assert root.qualified_name == "{https://name.space}doc"
+    assert root.universal_name == "{https://name.space}doc"
     assert root.namespaces == {None: "https://name.space"}
 
     first_level_children = tuple(x for x in root.child_nodes())
@@ -486,7 +486,7 @@ def test_names(sample_document):
     assert text.namespaces == {None: "https://name.space"}, root.namespaces
 
     text.namespace = "https://space.name"
-    assert text.qualified_name == "{https://space.name}text"
+    assert text.universal_name == "{https://space.name}text"
 
 
 def test_next_in_stream(files_path):

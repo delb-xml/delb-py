@@ -13,7 +13,7 @@ class TEIDocument(Document):
 
     @staticmethod
     def __class_test__(root: TagNode, config: types.SimpleNamespace) -> bool:
-        return root.qualified_name == "{http://www.tei-c.org/ns/1.0}TEI"
+        return root.universal_name == "{http://www.tei-c.org/ns/1.0}TEI"
 
     @property
     def title(self) -> str:

@@ -30,6 +30,8 @@ News
 - Adds the :attr:`delb.NodeBase.last_descendant` property.
 - Adds the :attr:`delb.TagNode.id` property.
 - Adds the :meth:`delb.TagNode.parse` method.
+- ⚠ :meth:`TagNode.qualified_name` is marked deprecated and the same property
+  is now available as :meth:`TagNode.universal_name`.
 - Adds support for Python 3.9.
 - Uses GitHub actions for CI checks.
 

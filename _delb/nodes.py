@@ -17,6 +17,7 @@ from abc import abstractmethod, ABC
 from collections import deque, UserString
 from contextlib import contextmanager
 from copy import copy, deepcopy
+from warnings import warn
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -1191,7 +1192,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if not isinstance(other, TagNode):
             return False
 
-        return (self.qualified_name == other.qualified_name) and (
+        return (self.universal_name == other.universal_name) and (
             set(self.attributes.items()) == set(other.attributes.items())
         )
 
@@ -1245,7 +1246,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def __repr__(self) -> str:
         return (
-            f'<{self.__class__.__name__}("{self.qualified_name}", '
+            f'<{self.__class__.__name__}("{self.universal_name}", '
             f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
 
@@ -1716,9 +1717,20 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self.insert_child(0, *node, clone=clone)
 
     @property
-    def qualified_name(self) -> str:
+    def qualified_name(self):
+        warn(
+            "The property `TagNode.qualified_name` is now named `universal_name`. "
+            "The former will be removed in a future release.",
+            category=DeprecationWarning,
+        )
+        return self.universal_name
+
+    @property
+    def universal_name(self) -> str:
         """
-        The node's qualified name.
+        The node's qualified name in `Clark notation`_.
+
+        .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
         return cast(str, self._etree_obj.tag)
 
