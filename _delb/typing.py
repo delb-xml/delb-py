@@ -23,7 +23,6 @@ if TYPE_CHECKING:
     from _delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition  # noqa: F401
 
 
-ElementAttributes = etree._Attrib
 Filter = Callable[["NodeBase"], bool]
 NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 _WrapperCache = Dict[int, "_ElementWrappingNode"]
@@ -33,7 +32,6 @@ Loader = Callable[[Any, SimpleNamespace], LoaderResult]
 
 
 __all__ = (
-    "ElementAttributes",
     "Filter",
     "Loader",
     "LoaderResult",
