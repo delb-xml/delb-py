@@ -61,6 +61,14 @@ Tag
 
    .. autoclasstoc::
 
+Tag attribute
+~~~~~~~~~~~~~
+
+.. autoclass:: delb.nodes.Attribute
+
+   .. autoclasstoc::
+
+
 Text
 ~~~~
 
