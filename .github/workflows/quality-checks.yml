@@ -14,7 +14,8 @@ jobs:
           - 3.7
           - 3.8
           - 3.9
-          - "3.10"
+          # TODO look into dependency groups with poetry 1.12
+          # - "3.10"
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -56,6 +57,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
+        with:
+          # b/c Sphinx 3.5.4 is incompatible w/ Python 3.10
+          python-version: "3.9"
       - uses: actions/cache@v2
         with:
           path: ~/.cache/pip
