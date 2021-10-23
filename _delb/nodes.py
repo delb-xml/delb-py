@@ -51,7 +51,7 @@ from _delb.utils import (
 )
 from _delb.xpath import XPathExpression
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: nocover
     from delb import Document  # noqa: F401
 
 
@@ -186,32 +186,37 @@ class _TagDefinition(NamedTuple):
 
 
 @overload
-def tag(local_name: str):
+def tag(local_name: str):  # pragma: nocover
     ...
 
 
 @overload
-def tag(local_name: str, attributes: Mapping[str, str]):
+def tag(local_name: str, attributes: Mapping[str, str]):  # pragma: nocover
     ...
 
 
 @overload
-def tag(local_name: str, child: NodeSource):
+def tag(local_name: str, child: NodeSource):  # pragma: nocover
     ...
 
 
 @overload
-def tag(local_name: str, children: Sequence[NodeSource]):
+def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: nocover
     ...
 
 
 @overload
-def tag(local_name: str, attributes: Mapping[str, str], child: NodeSource):
+def tag(
+    local_name: str, attributes: Mapping[str, str], child: NodeSource
+):  # pragma: nocover
+
     ...
 
 
 @overload
-def tag(local_name: str, attributes: Mapping[str, str], children: Sequence[NodeSource]):
+def tag(
+    local_name: str, attributes: Mapping[str, str], children: Sequence[NodeSource]
+):  # pragma: nocover
     ...
 
 
@@ -1196,20 +1201,19 @@ class TagNode(_ElementWrappingNode, NodeBase):
             set(self.attributes.items()) == set(other.attributes.items())
         )
 
-    # TODO remove flake8 exception soonish; the issue is fixed in pyflakes
     @overload
-    def __getitem__(self, item: str) -> str:
+    def __getitem__(self, item: str) -> Attribute:
         ...
 
     @overload
-    def __getitem__(self, item: int) -> NodeBase:  # noqa: F811
+    def __getitem__(self, item: int) -> NodeBase:
         ...
 
     @overload
-    def __getitem__(self, item: slice) -> List[NodeBase]:  # noqa: F811
+    def __getitem__(self, item: slice) -> List[NodeBase]:
         ...
 
-    def __getitem__(self, item):  # noqa: F811
+    def __getitem__(self, item):
         if isinstance(item, str):
             return self._etree_obj.attrib[item]
 
