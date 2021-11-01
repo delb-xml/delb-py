@@ -253,6 +253,9 @@ def test_detach_node_retain_child_nodes():
     child.detach(retain_child_nodes=True)
     assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
+    with pytest.raises(InvalidOperation):
+        root.detach(retain_child_nodes=True)
+
 
 def test_detach_node_retains_namespace_prefixes():
     # libxml2 loses the notion if a default prefix for nodes that have been
