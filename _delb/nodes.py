@@ -28,6 +28,7 @@ from typing import (
     AnyStr,
     Deque,
     Dict,
+    Iterable,
     Iterator,
     List,
     Mapping,
@@ -51,7 +52,7 @@ from _delb.utils import (
     last,
     _random_unused_prefix,
 )
-from _delb.xpath import XPathExpression
+from _delb.xpath import LocationStep, XPathExpression
 
 if TYPE_CHECKING:  # pragma: nocover
     from delb import Document  # noqa: F401
@@ -1703,6 +1704,101 @@ class TagNode(_ElementWrappingNode, NodeBase):
             root_node = cast(TagNode, last(self.ancestors()))
         return getattr(root_node, "__document__", None)
 
+    def fetch_or_create_by_xpath(self, expression: str) -> "TagNode":
+        """
+        Fetches a single node that is locatable by the provided XPath expression. If
+        the node doesn't exist, the non-existing branch will be created. All location
+        steps in the expression must therefore:
+
+        - use the child axis (``/``).
+        - have a name test.
+        - only use attribute tests as predicates that define a value and,
+          if applicable, are contained in an ``and`` conjunction.
+
+        All expressions must start with a ``./``.
+
+        >>> document = Document("<root/>")
+        >>> str(document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild"))
+        '<grandchild/>'
+        >>> str(document)
+        '<root><child a="b"><grandchild/></child></root>'
+        >>> str(document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild"))
+        '<grandchild/>'
+        >>> str(document)
+        '<root><child a="b"><grandchild/></child></root>'
+
+        This is an *experimental* feature. Its behaviour may change significantly or it
+        may be removed altogether in the future.
+        """
+        _expression = (
+            expression
+            if isinstance(expression, XPathExpression)
+            else XPathExpression(expression)
+        )
+
+        if not _expression.is_unambiguously_locatable():
+            raise InvalidOperation(
+                "The XPath expression doesn't determine a distinct branch."
+            )
+
+        query_result = self.xpath(str(_expression))
+        if query_result.size == 1:
+            return query_result[0]
+
+        if query_result:
+            raise InvalidOperation(
+                f"The tree already contains {query_result.size} matching branches."
+            )
+
+        return self._create_by_xpath(_expression.location_paths[0].location_steps[1:])
+
+    def _create_by_xpath(self, steps: Iterable[LocationStep]) -> "TagNode":
+        namespace: Optional[str]
+        node = self
+        for i, step in enumerate(steps):
+            candidates = node.xpath(f"./{step}")
+
+            if len(candidates) == 0:
+                assert step.axis == "child"
+                assert step.node_test.type == "name_test"
+
+                name = step.node_test.data
+                if ":" in name:
+                    prefix, name = name.split(":")
+                    namespace = str(self._etree_obj.nsmap[prefix])  # type: ignore
+                else:
+                    namespace = None
+
+                if len(step.predicates):
+                    attributes = cast(
+                        Dict[str, str],
+                        step.predicates[0].parse_attribute_test_to_dict(),
+                    )
+                    for a_name in tuple(attributes):
+                        if ":" in a_name:
+                            prefix, a_name = a_name.split(":")
+                            a_namespace = node._etree_obj.nsmap[prefix]  # type: ignore
+                            assert isinstance(a_namespace, str)
+                            attributes[f"{{{a_namespace}}}{a_name}"] = attributes.pop(
+                                f"{prefix}:{a_name}"
+                            )
+                else:
+                    attributes = {}
+
+                new_node = node.new_tag_node(name, attributes, namespace)
+                node.append_child(new_node)
+                node = new_node
+
+            elif len(candidates) == 1:
+                node = candidates[0]
+
+            else:
+                raise InvalidOperation(
+                    "The tree has multiple possible branches at "
+                    f"{'/'.join(steps[:i])}"  # type: ignore
+                )
+        return node
+
     @property
     def first_child(self) -> Optional[NodeBase]:
         for result in self.child_nodes(recurse=False):
@@ -2041,10 +2137,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise InvalidOperation(
                 "Only XPath expressions that target tag nodes are supported."
             )
-        cache = self._wrapper_cache
         return QueryResults(
             (
-                _get_or_create_element_wrapper(cast(_Element, element), cache)
+                _get_or_create_element_wrapper(
+                    cast(_Element, element), self._wrapper_cache
+                )
                 for element in _results
             )
         )

@@ -1,4 +1,7 @@
-from delb import Document, is_tag_node
+import pytest
+from lxml.etree import XPathEvalError
+
+from delb import Document, InvalidOperation, is_tag_node, tag
 
 
 sample_document = Document(
@@ -31,6 +34,80 @@ def test_css_select_or(files_path):
 
     assert len(result) == 2
     assert {x.local_name for x in result} == {"author", "title"}
+
+
+def test_fetch_or_create_by_xpath():
+    root = Document("<root><intermediate/></root>").root
+
+    assert str(root.fetch_or_create_by_xpath("./test")) == "<test/>"
+    assert str(root) == "<root><intermediate/><test/></root>"
+
+    assert str(root.fetch_or_create_by_xpath("./intermediate/target")) == "<target/>"
+    assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
+
+    assert str(root.fetch_or_create_by_xpath("./intermediate/target")) == "<target/>"
+    assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
+
+    root.append_child(tag("intermediate"))
+
+    with pytest.raises(InvalidOperation):
+        root.fetch_or_create_by_xpath("./intermediate")
+
+    with pytest.raises(InvalidOperation):
+        root.fetch_or_create_by_xpath("./intermediate/test")
+
+
+def test_fetch_or_create_by_xpath_with_prefix():
+    root = Document("<root xmlns:prfx='http://test.io'><intermediate/></root>").root
+    assert (
+        str(root.fetch_or_create_by_xpath("./intermediate/prfx:test"))
+        == '<prfx:test xmlns:prfx="http://test.io"/>'
+    )
+    assert (
+        str(root) == '<root xmlns:prfx="http://test.io">'
+        "<intermediate><prfx:test/></intermediate>"
+        "</root>"
+    )
+
+    with pytest.raises(XPathEvalError):
+        root.fetch_or_create_by_xpath("./unknwn:test")
+
+
+def test_fetch_or_create_by_xpath_with_attributes():
+    root = Document("<root/>").root
+
+    assert (
+        str(root.fetch_or_create_by_xpath('./author/name[@type="surname"]'))
+        == '<name type="surname"/>'
+    )
+    assert (
+        str(root.fetch_or_create_by_xpath('./author/name[@type="forename"]'))
+        == '<name type="forename"/>'
+    )
+
+    assert str(
+        root.fetch_or_create_by_xpath("./author/name[@type='forename']/transcriptions")
+        == "<transcriptions/>"
+    )
+
+
+def test_fetch_or_create_by_xpath_with_prefixes_attributes():
+    root = Document('<root xmlns:foo="bar"/>').root
+
+    assert (
+        str(root.fetch_or_create_by_xpath("./node[@foo:attr='value']"))
+        == '<node xmlns:foo="bar" foo:attr="value"/>'
+    )
+    assert str(root) == '<root xmlns:foo="bar"><node foo:attr="value"/></root>'
+
+
+@pytest.mark.parametrize(
+    "expression", ("node", "./child[0]", './child[@locale="en-gb" or @locale="en-us"]')
+)
+def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
+    node = Document("<node/>").root
+    with pytest.raises(InvalidOperation):
+        node.fetch_or_create_by_xpath(expression)
 
 
 def test_location_path_and_xpath_concordance(files_path):

@@ -13,9 +13,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+""" This is not an XPath implementation. """
 
-from typing import Iterator, List
-
+from collections import UserString
+from functools import lru_cache
+from typing import Dict, Iterator, List, Optional
 
 AXIS_NAMES = (
     "ancestor",
@@ -36,13 +38,19 @@ AXIS_NAMES = (
 
 def _split(expression: str, separator: str) -> Iterator[str]:
     assert separator not in ('"', "'")
+    cursor = -1
     part = ""
     quote = ""
-    for character in expression:
+    separator_length = len(separator)
 
-        if character == separator and not quote:
+    for i, character in enumerate(expression):
+        if i < cursor:
+            continue
+
+        if expression[i : i + separator_length] == separator and not quote:
             yield part
             part = ""
+            cursor += separator_length
             continue
 
         if character == quote:
@@ -51,19 +59,58 @@ def _split(expression: str, separator: str) -> Iterator[str]:
             quote = character
 
         part += character
+        cursor += 1
 
     yield part
 
 
-class XPathExpression:
+class XPathExpression(UserString):
+    __slots__ = ("location_paths",)
+
     def __init__(self, expression: str):
         self.location_paths = [LocationPath(x.strip()) for x in _split(expression, "|")]
 
-    def __str__(self):
+    @property
+    def data(self):
         return " | ".join(str(x) for x in self.location_paths)
+
+    def is_unambiguously_locatable(self) -> bool:
+        if len(self.location_paths) != 1:
+            return False
+
+        steps = self.location_paths[0].location_steps
+
+        if steps[0].axis != "self":
+            return False
+
+        for step in steps[1:]:
+            if step.axis != "child":
+                return False
+
+            predicates = step.predicates
+            if not predicates:
+                continue
+            if len(predicates) > 1:
+                return False
+
+            predicate = predicates[0]
+            if predicate.type != "attribute_test":
+                return False
+
+            if len(tuple(_split(predicate.expression, " or "))) > 1:
+                return False
+
+            if any(
+                v is None for v in predicate.parse_attribute_test_to_dict().values()
+            ):
+                return False
+
+        return True
 
 
 class LocationPath:
+    __slots__ = ("location_steps",)
+
     def __init__(self, expression: str):
         self.location_steps = [LocationStep(x) for x in _split(expression, "/")]
 
@@ -72,6 +119,8 @@ class LocationPath:
 
 
 class LocationStep:
+    __slots__ = ("axis", "node_test", "predicates")
+
     def __init__(self, expression: str):
         self.axis: str
         self.node_test: NodeTest
@@ -117,6 +166,8 @@ class LocationStep:
 
 
 class NodeTest:
+    __slots__ = ("data", "type")
+
     def __init__(self, expression: str):
         self.data = expression
 
@@ -130,8 +181,39 @@ class NodeTest:
 
 
 class Predicate:
+    __slots__ = ("expression", "type")
+
     def __init__(self, expression: str):
         self.expression = expression
+        if expression.startswith("@"):
+            self.type = "attribute_test"
+        elif expression.isdigit():
+            self.type = "index_test"
+        else:
+            self.type = "unsupported_test"
 
     def __str__(self):
-        return "[" + self.expression + "]"
+        return f"[{self.expression}]"
+
+    __repr__ = __str__
+
+    @lru_cache(1)
+    def parse_attribute_test_to_dict(self) -> Dict[str, Optional[str]]:
+        # assumes that this is called after the containing
+        # XPathExpression.is_unambiguously_locatable has returned True
+        if not self.type == "attribute_test":
+            raise ValueError
+
+        result: Dict[str, Optional[str]] = {}
+
+        for test in _split(self.expression, " and "):
+            assert test.startswith("@")
+            parts = tuple(_split(test[1:], "="))
+            if len(parts) == 1:
+                result[parts[0]] = None
+            elif len(parts) == 2:
+                result[parts[0]] = parts[1][1:-1]
+            else:
+                raise AssertionError
+
+        return result
