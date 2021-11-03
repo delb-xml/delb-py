@@ -91,6 +91,16 @@ def test_fetch_or_create_by_xpath_with_attributes():
     )
 
 
+def test_fetch_or_create_by_xpath_with_multiple_attributes():
+    root = Document('<root xmlns:foo="bar"/>').root
+
+    assert str(
+        root.fetch_or_create_by_xpath(
+            './entry/sense/cit[@type="translation" and @lang="en"]'
+        )
+    ) == '<cit type="translation" lang="en"/>'
+
+
 def test_fetch_or_create_by_xpath_with_prefixes_attributes():
     root = Document('<root xmlns:foo="bar"/>').root
 

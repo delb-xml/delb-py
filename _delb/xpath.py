@@ -37,8 +37,19 @@ AXIS_NAMES = (
 
 
 def _split(expression: str, separator: str) -> Iterator[str]:
+    """
+    Split expression at occurrences of specified seperator, except
+    where within quotation marks.
+
+    >>> list(_split('./root/path[@a="n/a"]', '/'))
+    ['.', 'root', 'path[@a="n/a"]']
+
+    >>> list(_split('@type="translation" and @xml:lang="en"', ' and '))
+    ['@type="translation"', '@xml:lang="en"']
+
+    """
     assert separator not in ('"', "'")
-    cursor = -1
+    cursor = 0
     part = ""
     quote = ""
     separator_length = len(separator)
@@ -199,6 +210,16 @@ class Predicate:
 
     @lru_cache(1)
     def parse_attribute_test_to_dict(self) -> Dict[str, Optional[str]]:
+        """ Creates a dictionary of attribute-value pairs (with the attributes' leading
+        ``@``s removed) from an expression consisting of one ore more
+        ``and``-concatenated attribute test predicates.
+
+        >>> Predicate(
+        ...     '@type="translation" and @xml:lang="en"'
+        ... ).parse_attribute_test_to_dict()
+        {'type': 'translation', 'xml:lang': 'en'}
+
+        """
         # assumes that this is called after the containing
         # XPathExpression.is_unambiguously_locatable has returned True
         if not self.type == "attribute_test":
@@ -207,8 +228,8 @@ class Predicate:
         result: Dict[str, Optional[str]] = {}
 
         for test in _split(self.expression, " and "):
-            assert test.startswith("@")
-            parts = tuple(_split(test[1:], "="))
+            assert test.strip().startswith("@")
+            parts = tuple(_split(test.strip()[1:], "="))
             if len(parts) == 1:
                 result[parts[0]] = None
             elif len(parts) == 2:
