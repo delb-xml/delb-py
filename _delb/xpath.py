@@ -86,6 +86,29 @@ class XPathExpression(UserString):
         return " | ".join(str(x) for x in self.location_paths)
 
     def is_unambiguously_locatable(self) -> bool:
+        """ determine whether an xpath expression addresses exactly one possible node.
+
+        can't have multiple paths:
+
+        >>> XPathExpression('./path1|./path2').is_unambiguously_locatable()
+        False
+
+        can't have path not starting at root:
+
+        >>> XPathExpression('/path').is_unambiguously_locatable()
+        False
+
+        can't have path that is not strictly hierarchical:
+
+        >>> XPathExpression('./root/node/descendant::foo').is_unambiguously_locatable()
+        False
+
+        can't have predicates with OR operator:
+
+        >>> XPathExpression('./node[@a="1" or @b="2"]').is_unambiguously_locatable()
+        False
+
+        """
         if len(self.location_paths) != 1:
             return False
 
@@ -101,8 +124,6 @@ class XPathExpression(UserString):
             predicates = step.predicates
             if not predicates:
                 continue
-            if len(predicates) > 1:
-                return False
 
             predicate = predicates[0]
             if predicate.type != "attribute_test":
