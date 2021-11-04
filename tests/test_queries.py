@@ -103,7 +103,7 @@ def test_fetch_or_create_by_xpath_with_multiple_attributes():
         root.fetch_or_create_by_xpath(
             './entry/sense/cit[@type="translation"][@lang="en"]'
         )
-        == cit
+        is cit
     )
 
 

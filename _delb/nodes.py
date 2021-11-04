@@ -1718,9 +1718,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         All expressions must start with a ``./``.
 
         >>> document = Document("<root/>")
-        >>> grandchild = document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild")
-        >>> document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild") is grandchild
+        >>> grandchild = document.root.fetch_or_create_by_xpath(
+        ...     "./child[@a='b']/grandchild"
+        ... )
+        >>> document.root.fetch_or_create_by_xpath(
+        ...     "./child[@a='b']/grandchild"
+        ... ) is grandchild
         True
+
         >>> str(document)
         '<root><child a="b"><grandchild/></child></root>'
 
