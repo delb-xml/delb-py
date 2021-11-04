@@ -99,9 +99,12 @@ def test_fetch_or_create_by_xpath_with_multiple_attributes():
     )
     assert str(cit) == '<cit type="translation" lang="en"/>'
 
-    assert root.fetch_or_create_by_xpath(
-        './entry/sense/cit[@type="translation"][@lang="en"]'
-    ) == cit
+    assert (
+        root.fetch_or_create_by_xpath(
+            './entry/sense/cit[@type="translation"][@lang="en"]'
+        )
+        == cit
+    )
 
 
 def test_fetch_or_create_by_xpath_with_prefixes_attributes():
@@ -115,11 +118,17 @@ def test_fetch_or_create_by_xpath_with_prefixes_attributes():
 
 
 @pytest.mark.parametrize(
-    "expression", (
-        "node", "./child[0]", './child[@locale="en-gb" or @locale="en-us"]',
-        './root/foo|./foo/bar', './root/node/descendant-or-self::node()',
-        './body/div[@hidden]', './root/node/child/../node', './root[foo]',
-    )
+    "expression",
+    (
+        "node",
+        "./child[0]",
+        './child[@locale="en-gb" or @locale="en-us"]',
+        "./root/foo|./foo/bar",
+        "./root/node/descendant-or-self::node()",
+        "./body/div[@hidden]",
+        "./root/node/child/../node",
+        "./root[foo]",
+    ),
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
     node = Document("<node/>").root

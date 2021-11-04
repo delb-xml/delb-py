@@ -86,27 +86,25 @@ class XPathExpression(UserString):
         return " | ".join(str(x) for x in self.location_paths)
 
     def is_unambiguously_locatable(self) -> bool:
-        """ determine whether an xpath expression addresses exactly one possible node.
+        """
+        Determine whether an xpath expression addresses exactly one possible node.
 
-        can't have multiple paths:
+        Examples::
 
         >>> XPathExpression('./path1|./path2').is_unambiguously_locatable()
         False
 
-        can't have path not starting at root:
-
         >>> XPathExpression('/path').is_unambiguously_locatable()
         False
-
-        can't have path that is not strictly hierarchical:
 
         >>> XPathExpression('./root/node/descendant::foo').is_unambiguously_locatable()
         False
 
-        can't have predicates with OR operator:
-
         >>> XPathExpression('./node[@a="1" or @b="2"]').is_unambiguously_locatable()
         False
+
+        >>> XPathExpression('./root/node[@a="1"][@b="2"]').is_unambiguously_locatable()
+        True
 
         """
         if len(self.location_paths) != 1:
@@ -231,7 +229,8 @@ class Predicate:
 
     @lru_cache(1)
     def parse_attribute_test_to_dict(self) -> Dict[str, Optional[str]]:
-        """ Creates a dictionary of attribute-value pairs (with the attributes' leading
+        """
+        Creates a dictionary of attribute-value pairs (with the attributes' leading
         ``@``s removed) from an expression consisting of one ore more
         ``and``-concatenated attribute test predicates.
 
