@@ -94,11 +94,10 @@ def test_fetch_or_create_by_xpath_with_attributes():
 def test_fetch_or_create_by_xpath_with_multiple_attributes():
     root = Document('<root xmlns:foo="bar"/>').root
 
-    assert str(
-        cit := root.fetch_or_create_by_xpath(
-            './entry/sense/cit[@type="translation" and @lang="en"]'
-        )
-    ) == '<cit type="translation" lang="en"/>'
+    cit = root.fetch_or_create_by_xpath(
+        './entry/sense/cit[@type="translation" and @lang="en"]'
+    )
+    assert str(cit) == '<cit type="translation" lang="en"/>'
 
     assert root.fetch_or_create_by_xpath(
         './entry/sense/cit[@type="translation"][@lang="en"]'
