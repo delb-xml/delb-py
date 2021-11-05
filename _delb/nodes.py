@@ -1721,11 +1721,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> grandchild = document.root.fetch_or_create_by_xpath(
         ...     "./child[@a='b']/grandchild"
         ... )
-        >>> document.root.fetch_or_create_by_xpath(
-        ...     "./child[@a='b']/grandchild"
-        ... ) is grandchild
+        >>> document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild") \
+        ...     is grandchild
         True
-
         >>> str(document)
         '<root><child a="b"><grandchild/></child></root>'
 
@@ -1771,10 +1769,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 else:
                     namespace = None
 
-                if len(step.predicates):
+                if step.predicates is not None:
                     attributes = cast(
                         Dict[str, str],
-                        step.predicates[0].parse_attribute_test_to_dict(),
+                        step._derive_attributes(),
                     )
                     for a_name in tuple(attributes):
                         if ":" in a_name:
