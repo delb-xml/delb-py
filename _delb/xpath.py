@@ -258,17 +258,20 @@ def _in_parenthesis(expression: str) -> bool:
     >>> _in_parenthesis('(foo)(bar)')
     False
 
+    >>> _in_parenthesis('foo)') == _in_parenthesis('(foo') == False
+    True
+
     >>> _in_parenthesis('((foo)(bar))')
     True
 
     """
-    if not expression.startswith('(') and not expression.endswith(')'):
+    if not expression.startswith("(") or not expression.endswith(")"):
         return False
     level = 1
     for character in expression[1:-1]:
-        if character == '(':
+        if character == "(":
             level += 1
-        elif character == ')':
+        elif character == ")":
             level -= 1
         if level < 1:
             return False
