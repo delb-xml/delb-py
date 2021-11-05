@@ -366,7 +366,7 @@ class AttributePredicate(PredicateExpression):
         value = self.value
         if value is None:
             return f"@{self.name}"
-        quote = "'" if '"' in value else "'"
+        quote = "'" if '"' in value else '"'
         return f"@{self.name}={quote}{self.value}{quote}"
 
     @property

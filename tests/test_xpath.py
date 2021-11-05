@@ -4,7 +4,7 @@ from _delb.xpath import AttributePredicate, BooleanPredicate, XPathExpression
 def test_parsing_1():
     assert (
         str(XPathExpression('.//pb[@n="I"]'))
-        == "self::node()/descendant-or-self::node()/child::pb[@n='I']"
+        == 'self::node()/descendant-or-self::node()/child::pb[@n="I"]'
     )
 
 
