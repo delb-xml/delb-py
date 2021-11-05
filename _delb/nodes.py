@@ -1721,8 +1721,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> grandchild = document.root.fetch_or_create_by_xpath(
         ...     "./child[@a='b']/grandchild"
         ... )
-        >>> document.root.fetch_or_create_by_xpath("./child[@a='b']/grandchild") \
-        ...     is grandchild
+        >>> grandchild is document.root.fetch_or_create_by_xpath(
+        ...     "./child[@a='b']/grandchild"
+        ... )
         True
         >>> str(document)
         '<root><child a="b"><grandchild/></child></root>'

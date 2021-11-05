@@ -45,6 +45,16 @@ PREDICATE_OPERATORS = ("<=", "<", ">=", ">", "=", "!=", "and", "or")
 
 
 def _reduce_whitespace(expression: str) -> str:
+    """
+    Remove unnecessary whitespace from xpath predicate expression.
+
+    >>> _reduce_whitespace('[@a = "1" or @b = "2"][@c = "3"]')
+    '[@a="1" or @b="2"][@c="3"]'
+
+    >>> _reduce_whitespace('[contains(@a, "1")]')
+    '[contains(@a,"1")]'
+
+    """
     quote = ""
     result = ""
     skip = 0
@@ -237,6 +247,34 @@ class NodeTest:
         return self.data
 
 
+def _in_parenthesis(expression: str) -> bool:
+    """
+    Determines whether an expression is surrounded by parenthesis in its
+    entirety.
+
+    >>> _in_parenthesis('foo and bar')
+    False
+
+    >>> _in_parenthesis('(foo)(bar)')
+    False
+
+    >>> _in_parenthesis('((foo)(bar))')
+    True
+
+    """
+    if not expression.startswith('(') and not expression.endswith(')'):
+        return False
+    level = 1
+    for character in expression[1:-1]:
+        if character == '(':
+            level += 1
+        elif character == ')':
+            level -= 1
+        if level < 1:
+            return False
+    return True
+
+
 class PredicateExpression(ABC):
     def evaluate(self, node_set: Set["TagNode"]) -> Set["TagNode"]:
         # shall not be implemented
@@ -244,6 +282,19 @@ class PredicateExpression(ABC):
 
     @classmethod
     def parse(cls, expression: str) -> "PredicateExpression":
+        """
+        Parse string expression into ``PredicateExpression`` subclass instance.
+
+        >>> type(PredicateExpression.parse('[(@foo)]')) == AttributePredicate
+        True
+
+        >>> type(PredicateExpression.parse('[@a="1" or @b="2"]')) == BooleanPredicate
+        True
+
+        >>> type(PredicateExpression.parse('[1]')) == IndexPredicate
+        True
+
+        """
         expressions = tuple(_split(expression[1:-1], "]["))
         if len(expressions) > 1:
             return cls.parse(
@@ -253,7 +304,8 @@ class PredicateExpression(ABC):
         if expression.startswith("["):
             expression = expression[1:-1]
 
-        # TODO consider brackets
+        if _in_parenthesis(expression):
+            expression = expression[1:-1]
 
         tokens = tuple(_split(expression, " "))
 
@@ -290,6 +342,14 @@ class AttributePredicate(PredicateExpression):
 
     @classmethod
     def parse(cls, expression: str) -> "PredicateExpression":
+        """
+        Parse an xpath predicate string expression into an ``AttributePredicate``
+        instance.
+
+        >>> type(AttributePredicate.parse('@type="translation"')) == AttributePredicate
+        True
+
+        """
         if expression.startswith("attribute::"):
             raise NotImplementedError
         assert expression.startswith("@")
