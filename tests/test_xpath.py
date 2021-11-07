@@ -1,4 +1,9 @@
-from _delb.xpath import AttributePredicate, BooleanPredicate, XPathExpression
+from _delb.xpath import (
+    AttributePredicate,
+    BooleanPredicate,
+    PredicateExpression,
+    XPathExpression,
+)
 
 
 def test_parsing_1():
@@ -46,3 +51,9 @@ def test_parsing_3():
     assert left_operand.name == "this"
     assert isinstance(right_operand, AttributePredicate)
     assert right_operand.name == "that"
+
+
+def test_parsing_4():
+    predicate = PredicateExpression.parse('[@href and starts-with(@href,"https://")]')
+
+    assert str(predicate) == '(@href and starts-with(@href,"https://"))'

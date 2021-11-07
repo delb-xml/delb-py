@@ -45,12 +45,29 @@ BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
 
 
 def _partition_terms(expression: str) -> List[str]:  # noqa: C901
+    """
+    Split up expression into partitions under consideration of quotes and
+    parentheses.
+
+    >>> _partition_terms('(@foo="1") and (@bar="2")')
+    ['@foo="1"', 'and', '@bar="2"']
+
+    >>> _partition_terms('@foo = "1"')
+    ['@foo', '=', '"1"']
+
+    >>> _partition_terms('((@foo="1") or (@bar="2")) and @baz!="3"')
+    ['(@foo="1") or (@bar="2")', 'and', '@baz!="3"']
+
+    >>> _partition_terms('(@href and starts-with(@href,"https://"))')
+    ['@href and starts-with(@href,"https://")']
+
+    """
     bracket_level = 0
     current_term = ""
     quote = ""
     result = []
 
-    for i, character in enumerate(expression):
+    for character in expression:
         if quote or bracket_level:
             if character == quote:
                 quote = ""
@@ -327,11 +344,14 @@ class PredicateExpression(ABC):
         >>> isinstance(PredicateExpression.parse('[(@foo)]'), AttributePredicate)
         True
 
-        >>> isinstance(PredicateExpression.parse('[@a="1" or @b="2"]'),  BooleanPredicate)
+        >>> isinstance(PredicateExpression.parse('[@a="1" or @b="2"]'), BooleanPredicate) # noqa: E501
         True
 
         >>> isinstance(PredicateExpression.parse('[1]'), IndexPredicate)
         True
+
+        >>> str(PredicateExpression.parse('[@href and starts-with(@href,"https://")]'))
+        '(@href and starts-with(@href,"https://"))'
 
         """
         if expression.startswith("["):
@@ -434,6 +454,19 @@ class BooleanPredicate(PredicateExpression):
 
     @classmethod
     def from_partitions(cls, partitions: List[str]) -> PredicateExpression:
+        """
+        Instantiates a boolean predicate from a list of string expressions. If the
+        expression list passed contains only 1 element, an attribute or index predicate
+        object gets instantiated.
+
+        >>> bp = BooleanPredicate.from_partitions(['@foo="1"', 'and', '@bar="2"'])
+        >>> bp.operator
+        'and'
+
+        >>> isinstance(bp.left_operand, AttributePredicate)
+        True
+
+        """
         if len(partitions) == 1:
             return PredicateExpression.parse(partitions[0])
 
