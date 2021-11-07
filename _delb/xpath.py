@@ -339,10 +339,16 @@ class PredicateExpression(ABC):
         expressions = tuple(_split(expression, "]["))
 
         if len(expressions) > 1:
-            # TODO without transformation
-            return cls.parse(
-                "[" + " and ".join("(" + e + ")" for e in expressions) + "]"
-            )
+            parsed_expressions = [PredicateExpression.parse(e) for e in expressions]
+            parsed_expressions.reverse()
+
+            while len(parsed_expressions) > 1:
+                parsed_expressions.append(
+                    BooleanPredicate(
+                        "and", parsed_expressions.pop(), parsed_expressions.pop()
+                    ),
+                )
+            return parsed_expressions[0]
 
         if _in_parenthesis(expression):
             expression = expression[1:-1]
@@ -359,8 +365,6 @@ class PredicateExpression(ABC):
 
         else:
             return BooleanPredicate.from_partitions(partitions)
-
-        raise ValueError
 
     @property
     def _can_describe_attributes(self) -> bool:
