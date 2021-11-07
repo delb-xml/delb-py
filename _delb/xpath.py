@@ -17,7 +17,7 @@
 
 from abc import ABC
 from collections import UserString
-from typing import TYPE_CHECKING, Dict, Iterator, Optional, Set
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Set
 
 
 if TYPE_CHECKING:
@@ -40,8 +40,44 @@ AXIS_NAMES = (
     "preceding-sibling",
     "self",
 )
-# ordered by weight
-PREDICATE_OPERATORS = ("<=", "<", ">=", ">", "=", "!=", "and", "or")
+# ordered by weight (ascending)
+BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
+
+
+def _partition_terms(expression: str) -> List[str]:  # noqa: C901
+    bracket_level = 0
+    current_term = ""
+    quote = ""
+    result = []
+
+    for i, character in enumerate(expression):
+        if quote or bracket_level:
+            if character == quote:
+                quote = ""
+            elif character == "(":
+                bracket_level += 1
+            elif character == ")":
+                bracket_level -= 1
+                if not bracket_level:
+                    continue
+            current_term += character
+        elif character in ("'", '"'):
+            quote = character
+            current_term += character
+        elif character == "(":
+            bracket_level += 1
+        elif character == ")":
+            raise AssertionError
+        elif character == " ":
+            result.append(current_term)
+            current_term = ""
+        else:
+            current_term += character
+
+    if current_term:
+        result.append(current_term)
+
+    return result
 
 
 def _reduce_whitespace(expression: str) -> str:
@@ -288,31 +324,32 @@ class PredicateExpression(ABC):
         """
         Parse string expression into ``PredicateExpression`` subclass instance.
 
-        >>> type(PredicateExpression.parse('[(@foo)]')) == AttributePredicate
+        >>> isinstance(PredicateExpression.parse('[(@foo)]'), AttributePredicate)
         True
 
-        >>> type(PredicateExpression.parse('[@a="1" or @b="2"]')) == BooleanPredicate
+        >>> isinstance(PredicateExpression.parse('[@a="1" or @b="2"]'),  BooleanPredicate)
         True
 
-        >>> type(PredicateExpression.parse('[1]')) == IndexPredicate
+        >>> isinstance(PredicateExpression.parse('[1]'), IndexPredicate)
         True
 
         """
-        expressions = tuple(_split(expression[1:-1], "]["))
+        if expression.startswith("["):
+            expression = expression[1:-1]
+        expressions = tuple(_split(expression, "]["))
+
         if len(expressions) > 1:
+            # TODO without transformation
             return cls.parse(
                 "[" + " and ".join("(" + e + ")" for e in expressions) + "]"
             )
 
-        if expression.startswith("["):
-            expression = expression[1:-1]
-
         if _in_parenthesis(expression):
             expression = expression[1:-1]
 
-        tokens = tuple(_split(expression, " "))
+        partitions = _partition_terms(expression)
 
-        if len(tokens) == 1:
+        if len(partitions) == 1:
             if expression.startswith("@") or expression.startswith("attribute::"):
                 return AttributePredicate.parse(expression)
             elif expression.isdigit():
@@ -320,13 +357,8 @@ class PredicateExpression(ABC):
             else:
                 return UnsupportedPredicate(expression)
 
-        for operator in PREDICATE_OPERATORS:
-            if operator in tokens:
-                index = tokens.index(operator)
-                left = tokens[:index]
-                right = tokens[index + 1 :]
-
-                return BooleanPredicate(operator, " ".join(left), " ".join(right))
+        else:
+            return BooleanPredicate.from_partitions(partitions)
 
         raise ValueError
 
@@ -385,16 +417,32 @@ class BooleanPredicate(PredicateExpression):
     def __init__(
         self,
         operator: str,
-        left_operand: str,
-        right_operand: str,
+        left_operand: PredicateExpression,
+        right_operand: PredicateExpression,
     ):
         self.operator = operator
-        self.left_operand = PredicateExpression.parse(left_operand)
-        self.right_operand = PredicateExpression.parse(right_operand)
+        self.left_operand = left_operand
+        self.right_operand = right_operand
 
     def __str__(self):
         sep = " " if self.operator in ("and", "or") else ""
-        return f"{self.left_operand}{sep}{self.operator}{sep}{self.right_operand}"
+        return f"({self.left_operand}{sep}{self.operator}{sep}{self.right_operand})"
+
+    @classmethod
+    def from_partitions(cls, partitions: List[str]) -> PredicateExpression:
+        if len(partitions) == 1:
+            return PredicateExpression.parse(partitions[0])
+
+        for operator in BOOLEAN_OPERATORS:
+            for i, token in tuple(enumerate(partitions))[-2::-2]:
+                if token == operator:
+                    return cls(
+                        operator,
+                        BooleanPredicate.from_partitions(partitions[:i]),
+                        BooleanPredicate.from_partitions(partitions[i + 1 :]),
+                    )
+
+        raise RuntimeError
 
     @property
     def _can_describe_attributes(self) -> bool:
