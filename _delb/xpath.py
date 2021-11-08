@@ -382,7 +382,7 @@ class PredicateExpression(ABC):
                 )
             return parsed_expressions[0]
 
-        if _in_parenthesis(expression):
+        while _in_parenthesis(expression):
             expression = expression[1:-1]
 
         partitions = _partition_terms(expression)

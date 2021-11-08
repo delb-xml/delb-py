@@ -92,7 +92,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
 
 
 def test_fetch_or_create_by_xpath_with_multiple_attributes():
-    root = Document('<root xmlns:foo="bar"/>').root
+    root = Document("<root/>").root
 
     cit = root.fetch_or_create_by_xpath(
         './entry/sense/cit[@type="translation" and @lang="en"]'
@@ -105,6 +105,21 @@ def test_fetch_or_create_by_xpath_with_multiple_attributes():
         )
         is cit
     )
+
+
+def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():
+    root = Document("<root/>").root
+
+    cit = root.fetch_or_create_by_xpath(
+        './entry/sense/cit[((@type="translation") and (@lang="en"))]'
+    )
+    assert (
+        root.fetch_or_create_by_xpath(
+            './entry/sense/cit[(@type="translation")][((@lang="en"))]'
+        )
+        is cit
+    )
+    assert root.css_select('entry > sense > cit[lang="en"]').size == 1
 
 
 def test_fetch_or_create_by_xpath_with_prefixes_attributes():
