@@ -42,6 +42,7 @@ AXIS_NAMES = (
 )
 # ordered by weight (ascending)
 BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
+BOOLEAN_FUNCTIONS = ("not", "starts-with", "contains")  # "substring"
 
 
 def _partition_terms(expression: str) -> List[str]:  # noqa: C901
@@ -58,11 +59,15 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
     >>> _partition_terms('((@foo="1") or (@bar="2")) and @baz!="3"')
     ['(@foo="1") or (@bar="2")', 'and', '@baz!="3"']
 
-    >>> _partition_terms('(@href and starts-with(@href,"https://"))')
-    ['@href and starts-with(@href,"https://")']
+    >>> _partition_terms('@href and starts-with(@href,"https://")')
+    ['@href', 'and', 'starts-with(@href,"https://")']
+
+    >>> _partition_terms('@href and not(starts-with(@href,"https://"))')
+    ['@href', 'and', 'not(starts-with(@href,"https://"))']
 
     """
     bracket_level = 0
+    function_level = 0
     current_term = ""
     quote = ""
     result = []
@@ -74,6 +79,10 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
             elif character == "(":
                 bracket_level += 1
             elif character == ")":
+                if bracket_level == function_level and any(
+                    current_term.startswith(func) for func in BOOLEAN_FUNCTIONS
+                ):
+                    current_term += character
                 bracket_level -= 1
                 if not bracket_level:
                     continue
@@ -83,6 +92,9 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
             current_term += character
         elif character == "(":
             bracket_level += 1
+            if current_term in BOOLEAN_FUNCTIONS:
+                current_term += character
+                function_level = bracket_level
         elif character == ")":
             raise AssertionError
         elif character == " ":
@@ -101,7 +113,7 @@ def _reduce_whitespace(expression: str) -> str:
     """
     Remove unnecessary whitespace from xpath predicate expression.
 
-    >>> _reduce_whitespace('[@a = "1" or @b = "2"][@c = "3"]')
+    >>> _reduce_whitespace('[@a = "1" or  @b = "2"][@c = "3"]')
     '[@a="1" or @b="2"][@c="3"]'
 
     >>> _reduce_whitespace('[contains(@a, "1")]')

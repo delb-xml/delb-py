@@ -1,7 +1,6 @@
 from _delb.xpath import (
     AttributePredicate,
     BooleanPredicate,
-    PredicateExpression,
     XPathExpression,
 )
 
@@ -54,6 +53,9 @@ def test_parsing_3():
 
 
 def test_parsing_4():
-    predicate = PredicateExpression.parse('[@href and starts-with(@href,"https://")]')
+    parsed_expression = XPathExpression(
+        './/a[@href and not(starts-with(@href, "https://"))]'
+    )
+    predicates = parsed_expression.location_paths[0].location_steps[-1].predicates
 
-    assert str(predicate) == '(@href and starts-with(@href,"https://"))'
+    assert str(predicates) == '(@href and not(starts-with(@href,"https://")))'
