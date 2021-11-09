@@ -1,6 +1,9 @@
 from _delb.xpath import (
     AttributePredicate,
     BooleanPredicate,
+    FunctionExpression,
+    Literal,
+    PredicateExpression,
     XPathExpression,
 )
 
@@ -59,3 +62,17 @@ def test_parsing_4():
     predicates = parsed_expression.location_paths[0].location_steps[-1].predicates
 
     assert str(predicates) == '(@href and not(starts-with(@href,"https://")))'
+
+
+def test_parsing_5():
+    predicates = PredicateExpression.parse("starts-with(@foo, 'a(b(c)')")
+
+    assert isinstance(predicates, FunctionExpression)
+    assert predicates.name == "starts-with"
+    assert len(predicates.arguments) == 2
+
+    assert isinstance(predicates.arguments[0], AttributePredicate)
+    assert predicates.arguments[0].name == "foo"
+
+    assert isinstance(predicates.arguments[1], Literal)
+    assert predicates.arguments[1].value == "a(b(c)"

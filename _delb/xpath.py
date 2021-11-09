@@ -17,6 +17,7 @@
 
 from abc import ABC
 from collections import UserString
+from functools import lru_cache
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Set
 
 
@@ -67,7 +68,7 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
 
     """
     bracket_level = 0
-    function_level = 0
+    is_function = False
     current_term = ""
     quote = ""
     result = []
@@ -79,14 +80,12 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
             elif character == "(":
                 bracket_level += 1
             elif character == ")":
-                if bracket_level == function_level and any(
-                    current_term.startswith(func) for func in BOOLEAN_FUNCTIONS
-                ):
-                    current_term += character
                 bracket_level -= 1
-                if not bracket_level:
+                is_function = is_function and bool(bracket_level)
+                if not bracket_level and not is_function:
                     continue
             current_term += character
+        # TODO escaped characters
         elif character in ("'", '"'):
             quote = character
             current_term += character
@@ -94,7 +93,7 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
             bracket_level += 1
             if current_term in BOOLEAN_FUNCTIONS:
                 current_term += character
-                function_level = bracket_level
+                is_function = True
         elif character == ")":
             raise AssertionError
         elif character == " ":
@@ -348,8 +347,9 @@ class PredicateExpression(ABC):
         # shall not be implemented
         raise NotImplementedError
 
-    @classmethod
-    def parse(cls, expression: str) -> "PredicateExpression":
+    @staticmethod
+    @lru_cache(64)
+    def parse(expression: str) -> "PredicateExpression":
         """
         Parse string expression into ``PredicateExpression`` subclass instance.
 
@@ -371,8 +371,9 @@ class PredicateExpression(ABC):
         expressions = tuple(_split(expression, "]["))
 
         if len(expressions) > 1:
-            parsed_expressions = [PredicateExpression.parse(e) for e in expressions]
-            parsed_expressions.reverse()
+            parsed_expressions = [
+                PredicateExpression.parse(e) for e in expressions[::-1]
+            ]
 
             while len(parsed_expressions) > 1:
                 parsed_expressions.append(
@@ -392,6 +393,10 @@ class PredicateExpression(ABC):
                 return AttributePredicate.parse(expression)
             elif expression.isdigit():
                 return IndexPredicate(expression)
+            elif any(expression.startswith(f) for f in BOOLEAN_FUNCTIONS):
+                return FunctionExpression(expression)
+            elif expression.startswith('"') or expression.endswith("'"):
+                return Literal(expression)
             else:
                 return UnsupportedPredicate(expression)
 
@@ -411,8 +416,8 @@ class AttributePredicate(PredicateExpression):
         self.name = name
         self.value = value
 
-    @classmethod
-    def parse(cls, expression: str) -> "PredicateExpression":
+    @staticmethod
+    def parse(expression: str) -> "AttributePredicate":
         """
         Parse an xpath predicate string expression into an ``AttributePredicate``
         instance.
@@ -427,9 +432,9 @@ class AttributePredicate(PredicateExpression):
 
         parts = tuple(_split(expression[1:], "="))
         if len(parts) == 1:
-            return cls(parts[0], None)
+            return AttributePredicate(parts[0], None)
         elif len(parts) == 2:
-            return cls(parts[0], parts[1][1:-1])
+            return AttributePredicate(parts[0], parts[1][1:-1])
         else:
             raise ValueError
 
@@ -464,8 +469,8 @@ class BooleanPredicate(PredicateExpression):
         sep = " " if self.operator in ("and", "or") else ""
         return f"({self.left_operand}{sep}{self.operator}{sep}{self.right_operand})"
 
-    @classmethod
-    def from_partitions(cls, partitions: List[str]) -> PredicateExpression:
+    @staticmethod
+    def from_partitions(partitions: List[str]) -> PredicateExpression:
         """
         Instantiates a boolean predicate from a list of string expressions. If the
         expression list passed contains only 1 element, an attribute or index predicate
@@ -485,7 +490,7 @@ class BooleanPredicate(PredicateExpression):
         for operator in BOOLEAN_OPERATORS:
             for i, token in tuple(enumerate(partitions))[-2::-2]:
                 if token == operator:
-                    return cls(
+                    return BooleanPredicate(
                         operator,
                         BooleanPredicate.from_partitions(partitions[:i]),
                         BooleanPredicate.from_partitions(partitions[i + 1 :]),
@@ -511,12 +516,29 @@ class BooleanPredicate(PredicateExpression):
         }
 
 
+class FunctionExpression(PredicateExpression):
+    def __init__(self, expression: str):
+        self.name, rest = expression.split("(", maxsplit=1)
+        assert rest.endswith(")")
+        # FIXME this fails where an argument itself is a function call,
+        #       _split would have to consider brackets as it does with quotes
+        self.arguments = tuple(
+            PredicateExpression.parse(e) for e in _split(rest[:-1], ",")
+        )
+
+
 class IndexPredicate(PredicateExpression):
     def __init__(self, index: str):
         self.index = int(index)
 
     def __str__(self):
         return str(self.index)
+
+
+class Literal(PredicateExpression):
+    def __init__(self, expression: str):
+        assert expression.endswith(expression[0])
+        self.value = expression[1:-1]
 
 
 class UnsupportedPredicate(PredicateExpression):
