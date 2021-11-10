@@ -423,7 +423,7 @@ class AttributePredicate(PredicateExpression):
         Parse an xpath predicate string expression into an ``AttributePredicate``
         instance.
 
-        >>> type(AttributePredicate.parse('@type="translation"')) == AttributePredicate
+        >>> isinstance(AttributePredicate.parse('@type="translation"'), AttributePredicate)
         True
 
         """
