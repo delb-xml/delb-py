@@ -76,6 +76,8 @@ def test_parsing_4():
 
 
 def test_parsing_5():
+    with pytest.raises(AssertionError):
+        PredicateExpression.parse(")")
     predicates = PredicateExpression.parse("starts-with(@foo,'a(b(c)')")
 
     assert isinstance(predicates, FunctionExpression)

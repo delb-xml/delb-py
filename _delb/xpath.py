@@ -66,6 +66,9 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
     >>> _partition_terms('@href and not(starts-with(@href,"https://"))')
     ['@href', 'and', 'not(starts-with(@href,"https://"))']
 
+    >>> _partition_terms('not(@foo) and (@bar)')
+    ['not(@foo)', 'and', '@bar']
+
     """
     bracket_level = 0
     function_args = False
@@ -423,7 +426,9 @@ class AttributePredicate(PredicateExpression):
         Parse an xpath predicate string expression into an ``AttributePredicate``
         instance.
 
-        >>> isinstance(AttributePredicate.parse('@type="translation"'), AttributePredicate)
+        >>> isinstance(
+        ...     AttributePredicate.parse('@type="translation"'), AttributePredicate
+        ... )
         True
 
         """
