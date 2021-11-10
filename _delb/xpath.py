@@ -417,7 +417,8 @@ class AttributePredicate(PredicateExpression):
         self.value = value
 
     @staticmethod
-    def parse(expression: str) -> "AttributePredicate":
+    # related: https://github.com/python/mypy/issues/5107
+    def parse(expression: str) -> "AttributePredicate":  # type: ignore
         """
         Parse an xpath predicate string expression into an ``AttributePredicate``
         instance.

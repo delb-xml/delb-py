@@ -1,7 +1,6 @@
 import pkg_resources
 import pytest
 from lxml.etree import XPathEvalError
-from pkg_resources import get_distribution
 
 from delb import Document, InvalidOperation, is_tag_node, tag
 
