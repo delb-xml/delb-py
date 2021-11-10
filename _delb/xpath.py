@@ -43,7 +43,7 @@ AXIS_NAMES = (
 )
 # ordered by weight (ascending)
 BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
-BOOLEAN_FUNCTIONS = ("contains", "not", "starts-with", "substring")
+BOOLEAN_FUNCTIONS = ("contains", "not", "starts-with")
 
 
 def _partition_terms(expression: str) -> List[str]:  # noqa: C901
