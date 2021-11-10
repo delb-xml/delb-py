@@ -43,7 +43,7 @@ AXIS_NAMES = (
 )
 # ordered by weight (ascending)
 BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
-BOOLEAN_FUNCTIONS = ("not", "starts-with", "contains")  # "substring"
+BOOLEAN_FUNCTIONS = ("contains", "not", "starts-with", "substring")
 
 
 def _partition_terms(expression: str) -> List[str]:  # noqa: C901
@@ -68,7 +68,7 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
 
     """
     bracket_level = 0
-    is_function = False
+    function_args = False
     current_term = ""
     quote = ""
     result = []
@@ -81,9 +81,9 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
                 bracket_level += 1
             elif character == ")":
                 bracket_level -= 1
-                is_function = is_function and bool(bracket_level)
-                if not bracket_level and not is_function:
+                if not bracket_level and not function_args:
                     continue
+                function_args = function_args and bool(bracket_level)
             current_term += character
         # TODO escaped characters
         elif character in ("'", '"'):
@@ -93,7 +93,7 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
             bracket_level += 1
             if current_term in BOOLEAN_FUNCTIONS:
                 current_term += character
-                is_function = True
+                function_args = True
         elif character == ")":
             raise AssertionError
         elif character == " ":
@@ -526,6 +526,9 @@ class FunctionExpression(PredicateExpression):
             PredicateExpression.parse(e) for e in _split(rest[:-1], ",")
         )
 
+    def __str__(self):
+        return f"{self.name}({','.join(str(a) for a in self.arguments)})"
+
 
 class IndexPredicate(PredicateExpression):
     def __init__(self, index: str):
@@ -539,6 +542,11 @@ class Literal(PredicateExpression):
     def __init__(self, expression: str):
         assert expression.endswith(expression[0])
         self.value = expression[1:-1]
+
+    def __str__(self):
+        value = self.value
+        quote = "'" if '"' in value else '"'
+        return f"{quote}{value}{quote}"
 
 
 class UnsupportedPredicate(PredicateExpression):

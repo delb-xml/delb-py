@@ -1,3 +1,6 @@
+import pytest
+from pkg_resources import get_distribution
+
 from _delb.xpath import (
     AttributePredicate,
     BooleanPredicate,
@@ -6,6 +9,9 @@ from _delb.xpath import (
     PredicateExpression,
     XPathExpression,
 )
+
+
+DELB_VERSION = get_distribution("delb").parsed_version.release
 
 
 def test_parsing_1():
@@ -55,6 +61,11 @@ def test_parsing_3():
     assert right_operand.name == "that"
 
 
+@pytest.mark.xfail(
+    DELB_VERSION < (0, 4),
+    reason="A solid XPath parser will be implemented when a supported subset of XPath "
+    "has been defined.",
+)
 def test_parsing_4():
     parsed_expression = XPathExpression(
         './/a[@href and not(starts-with(@href, "https://"))]'
@@ -65,7 +76,7 @@ def test_parsing_4():
 
 
 def test_parsing_5():
-    predicates = PredicateExpression.parse("starts-with(@foo, 'a(b(c)')")
+    predicates = PredicateExpression.parse("starts-with(@foo,'a(b(c)')")
 
     assert isinstance(predicates, FunctionExpression)
     assert predicates.name == "starts-with"
