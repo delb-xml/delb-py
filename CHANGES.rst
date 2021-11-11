@@ -22,7 +22,7 @@ News
       with functions that take more than one argument.
 - Subclasses of :class:`delb.Document` can claim to be the default class based
   on the evaluation of a document's content and configuration by implementing
-  `__class_test__`.
+  ``__class_test__``.
 - ⚠️ :meth:`_delb.plugins.PluginManager._register_document_extension` is renamed
   to :meth:`_delb.plugins.PluginManager._register_document_mixin`.
 - ⚠️ :meth:`_delb.plugins.DocumentExtensionHooks` is renamed to
