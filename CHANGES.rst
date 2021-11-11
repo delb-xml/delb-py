@@ -16,8 +16,13 @@ Intentionally.
 News
 ~~~~
 
-- Subclasses can claim to be the default class based on the evaluation of a
-  document's content and configuration by implementing `__class_test__`.
+- Adds the :meth:`delb.TagNode.fetch_or_create_by_xpath` method.
+    - ⚠️ Because of that a pre-mature parser of XPath expressions has been
+      implemented and you can expect some expressions to cause failures, e.g.
+      with functions that take more than one argument.
+- Subclasses of :class:`delb.Document` can claim to be the default class based
+  on the evaluation of a document's content and configuration by implementing
+  ``__class_test__``.
 - ⚠️ :meth:`_delb.plugins.PluginManager._register_document_extension` is renamed
   to :meth:`_delb.plugins.PluginManager._register_document_mixin`.
 - ⚠️ :meth:`_delb.plugins.DocumentExtensionHooks` is renamed to
@@ -32,7 +37,7 @@ News
 - Adds the :meth:`delb.TagNode.parse` method.
 - ⚠ :meth:`TagNode.qualified_name` is marked deprecated and the same property
   is now available as :meth:`TagNode.universal_name`.
-- Adds support for Python 3.9.
+- Adds support for Python 3.9 & 3.10.
 - Uses GitHub actions for CI checks.
 
 Fixes

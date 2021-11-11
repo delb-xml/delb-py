@@ -1,4 +1,11 @@
-from delb import Document, is_tag_node
+import pkg_resources
+import pytest
+from lxml.etree import XPathEvalError
+
+from delb import Document, InvalidOperation, is_tag_node, tag
+
+
+DELB_VERSION = pkg_resources.get_distribution("delb").parsed_version.release
 
 
 sample_document = Document(
@@ -33,6 +40,121 @@ def test_css_select_or(files_path):
     assert {x.local_name for x in result} == {"author", "title"}
 
 
+def test_fetch_or_create_by_xpath():
+    root = Document("<root><intermediate/></root>").root
+
+    assert str(root.fetch_or_create_by_xpath("./test")) == "<test/>"
+    assert str(root) == "<root><intermediate/><test/></root>"
+
+    assert str(root.fetch_or_create_by_xpath("./intermediate/target")) == "<target/>"
+    assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
+
+    assert str(root.fetch_or_create_by_xpath("./intermediate/target")) == "<target/>"
+    assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
+
+    root.append_child(tag("intermediate"))
+
+    with pytest.raises(InvalidOperation):
+        root.fetch_or_create_by_xpath("./intermediate")
+
+    with pytest.raises(InvalidOperation):
+        root.fetch_or_create_by_xpath("./intermediate/test")
+
+
+def test_fetch_or_create_by_xpath_with_prefix():
+    root = Document("<root xmlns:prfx='http://test.io'><intermediate/></root>").root
+    assert (
+        str(root.fetch_or_create_by_xpath("./intermediate/prfx:test"))
+        == '<prfx:test xmlns:prfx="http://test.io"/>'
+    )
+    assert (
+        str(root) == '<root xmlns:prfx="http://test.io">'
+        "<intermediate><prfx:test/></intermediate>"
+        "</root>"
+    )
+
+    with pytest.raises(XPathEvalError):
+        root.fetch_or_create_by_xpath("./unknwn:test")
+
+
+def test_fetch_or_create_by_xpath_with_attributes():
+    root = Document("<root/>").root
+
+    assert (
+        str(root.fetch_or_create_by_xpath('./author/name[@type="surname"]'))
+        == '<name type="surname"/>'
+    )
+    assert (
+        str(root.fetch_or_create_by_xpath('./author/name[@type="forename"]'))
+        == '<name type="forename"/>'
+    )
+
+    assert str(
+        root.fetch_or_create_by_xpath("./author/name[@type='forename']/transcriptions")
+        == "<transcriptions/>"
+    )
+
+
+def test_fetch_or_create_by_xpath_with_multiple_attributes():
+    root = Document("<root/>").root
+
+    cit = root.fetch_or_create_by_xpath(
+        './entry/sense/cit[@type="translation" and @lang="en"]'
+    )
+    assert str(cit) == '<cit type="translation" lang="en"/>'
+
+    assert (
+        root.fetch_or_create_by_xpath(
+            './entry/sense/cit[@type="translation"][@lang="en"]'
+        )
+        is cit
+    )
+
+
+def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():
+    root = Document("<root/>").root
+
+    cit = root.fetch_or_create_by_xpath(
+        './entry/sense/cit[((@type="translation") and (@lang="en"))]'
+    )
+    assert (
+        root.fetch_or_create_by_xpath(
+            './entry/sense/cit[(@type="translation")][((@lang="en"))]'
+        )
+        is cit
+    )
+    assert root.css_select('entry > sense > cit[lang="en"]').size == 1
+
+
+def test_fetch_or_create_by_xpath_with_prefixes_attributes():
+    root = Document('<root xmlns:foo="bar"/>').root
+
+    assert (
+        str(root.fetch_or_create_by_xpath("./node[@foo:attr='value']"))
+        == '<node xmlns:foo="bar" foo:attr="value"/>'
+    )
+    assert str(root) == '<root xmlns:foo="bar"><node foo:attr="value"/></root>'
+
+
+@pytest.mark.parametrize(
+    "expression",
+    (
+        "node",
+        "./child[0]",
+        './child[@locale="en-gb" or @locale="en-us"]',
+        "./root/foo|./foo/bar",
+        "./root/node/descendant-or-self::node()",
+        "./body/div[@hidden]",
+        "./root/node/child/../node",
+        "./root[foo]",
+    ),
+)
+def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
+    node = Document("<node/>").root
+    with pytest.raises(InvalidOperation):
+        node.fetch_or_create_by_xpath(expression)
+
+
 def test_location_path_and_xpath_concordance(files_path):
     for doc_path in files_path.glob("*.xml"):
         document = Document(doc_path)
@@ -46,6 +168,14 @@ def test_location_path_and_xpath_concordance(files_path):
 def test_quotes_in_css_selector():
     document = Document('<a href="https://super.test/123"/>')
     assert document.css_select('a[href^="https://super.test/"]').size == 1
+    assert document.css_select('a[href|="https://super.test/123"]').size == 1
+    assert document.css_select('a[href*="super"]').size == 1
+
+    # TODO
+    if DELB_VERSION >= (0, 4):
+        assert document.css_select('a:not([href|="https"])').size == 1
+        # TODO specify an `ends-with` function for XPath
+        assert document.css_select('a[href$="123"]').size == 1
 
 
 def test_results_as_other_type():
