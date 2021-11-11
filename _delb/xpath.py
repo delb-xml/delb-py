@@ -46,6 +46,37 @@ BOOLEAN_OPERATORS = ("or", "and", "!=", "=", ">", ">=", "<", "<=")
 BOOLEAN_FUNCTIONS = ("contains", "not", "starts-with")
 
 
+def _in_parenthesis(expression: str) -> bool:
+    """
+    Determines whether an expression is surrounded by parenthesis in its
+    entirety.
+
+    >>> _in_parenthesis('foo and bar')
+    False
+
+    >>> _in_parenthesis('(foo)(bar)')
+    False
+
+    >>> _in_parenthesis('foo)') == _in_parenthesis('(foo') == False
+    True
+
+    >>> _in_parenthesis('((foo)(bar))')
+    True
+
+    """
+    if not expression.startswith("(") or not expression.endswith(")"):
+        return False
+    level = 1
+    for character in expression[1:-1]:
+        if character == "(":
+            level += 1
+        elif character == ")":
+            level -= 1
+        if level < 1:
+            return False
+    return True
+
+
 def _partition_terms(expression: str) -> List[str]:  # noqa: C901
     """
     Split up expression into partitions under consideration of quotes and
@@ -312,37 +343,6 @@ class NodeTest:
 
     def __str__(self):
         return self.data
-
-
-def _in_parenthesis(expression: str) -> bool:
-    """
-    Determines whether an expression is surrounded by parenthesis in its
-    entirety.
-
-    >>> _in_parenthesis('foo and bar')
-    False
-
-    >>> _in_parenthesis('(foo)(bar)')
-    False
-
-    >>> _in_parenthesis('foo)') == _in_parenthesis('(foo') == False
-    True
-
-    >>> _in_parenthesis('((foo)(bar))')
-    True
-
-    """
-    if not expression.startswith("(") or not expression.endswith(")"):
-        return False
-    level = 1
-    for character in expression[1:-1]:
-        if character == "(":
-            level += 1
-        elif character == ")":
-            level -= 1
-        if level < 1:
-            return False
-    return True
 
 
 class PredicateExpression(ABC):
