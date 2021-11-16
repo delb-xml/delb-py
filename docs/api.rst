@@ -119,6 +119,12 @@ Contributed filters
 .. autofunction:: delb.not_
 
 
+Transformations
+---------------
+
+.. automodule:: delb.transform
+
+
 Various helpers
 ---------------
 
