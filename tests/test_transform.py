@@ -4,6 +4,9 @@ from delb import Document
 from delb.transform import Transformation, TransformationSequence
 
 
+XML_NS = "http://www.w3.org/XML/1998/namespace"
+
+
 class ResolveCopyOf(Transformation):
     def transform(self):
         for node in self.root.css_select("*[copyOf]"):
@@ -52,16 +55,35 @@ class ResolveChoice(Transformation):
             choice_node.detach(retain_child_nodes=True)
 
 
-def test_transform():
+def test_simple_transformation():
+    root = Document('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>').root
+    doc = Document(
+        """<radix xmlns:xml="{}">
+             <a>
+               <b xml:id="foo"><c>hi</c></b>
+               <b xml:id="baz"/>
+             </a>
+             <a xml:id="bar">na?</a>
+          </radix>
+        """.format(XML_NS)
+    )
+    resolve_copy_of = ResolveCopyOf()
+    tree = resolve_copy_of(root, doc)
+    assert str(tree) == (
+        '<root><b><c>hi</c></b><a>na?</a></root>'
+    )
+
+
+def test_transformation_sequence():
     document = Document(
         """\
-        <root>
-            <div id="1">
+        <root xmlns:xml="{}">
+            <div xml:id="d1">
                 <choice><sic>taeteraetae</sic><corr>täterätä</corr></choice>
             </div>
-            <div copyOf="#1"/>
+            <div copyOf="#d1"/>
         </root>
-    """
+        """.format(XML_NS)
     )
 
     second_div = document.css_select("div").last.clone()
