@@ -14,7 +14,7 @@ class ResolveCopyOf(Transformation):
             # FIXME remove str() when attributes were fixed
             # FIXME there could be something wrong with the query
             source_node = self.origin_document.xpath(
-                f'//*[@xml:id="{str(source_id)[1:]}"]'
+                f'//*[@xml:id="{source_id[1:]}"]'
             ).first
             cloned_node = source_node.clone(deep=True)
             cloned_node.id = None
@@ -58,20 +58,18 @@ class ResolveChoice(Transformation):
 def test_simple_transformation():
     root = Document('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>').root
     doc = Document(
-        """<radix xmlns:xml="{}">
+        """<radix>
              <a>
                <b xml:id="foo"><c>hi</c></b>
                <b xml:id="baz"/>
              </a>
              <a xml:id="bar">na?</a>
           </radix>
-        """.format(XML_NS)
+        """
     )
     resolve_copy_of = ResolveCopyOf()
     tree = resolve_copy_of(root, doc)
-    assert str(tree) == (
-        '<root><b><c>hi</c></b><a>na?</a></root>'
-    )
+    assert str(tree) == ("<root><b><c>hi</c></b><a>na?</a></root>")
 
 
 def test_transformation_sequence():
