@@ -88,10 +88,10 @@ interface allows also to chain multiple chains::
    This is an experimental feature. It might change significantly in the future or be
    removed altogether.
 """
-
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional, Type, Union
+from typing import NamedTuple, List, Optional, Type, Union
 
 from delb import Document, TagNode
 
@@ -148,20 +148,20 @@ class TransformationSequence(TransformationBase):
     """
     A transformation sequence can be used to combine any number of both
     :class:`Transformation` (provided as class or instantiated with options) and other
-    :class:`TransformationSequence` instances.
+    :class:`TransformationSequence` instances or classes.
     """
 
     def __init__(
         self,
-        *transformations: Union[Transformation, Type[Transformation]],
+        *transformations: TransformationSequenceElement,
     ):
-        self.transformations = []
+        self.transformations: List[Union[Transformation, TransformationSequence]] = []
         for transformation in transformations:
             if isinstance(transformation, type) and issubclass(
-                transformation, Transformation
+                transformation, TransformationBase
             ):
                 self.transformations.append(transformation())
-            elif isinstance(transformation, Transformation):
+            elif isinstance(transformation, TransformationBase):
                 self.transformations.append(transformation)
             else:
                 raise ValueError
@@ -170,3 +170,11 @@ class TransformationSequence(TransformationBase):
         for transformation in self.transformations:
             root = transformation(root, document=document)
         return root
+
+
+TransformationSequenceElement = Union[
+    Transformation,
+    Type[Transformation],
+    TransformationSequence,
+    Type[TransformationSequence],
+]

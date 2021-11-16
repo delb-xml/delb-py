@@ -1,24 +1,44 @@
 from typing import NamedTuple
 
-from delb import Document
+import pytest
+
+from delb import Document, tag
 from delb.transform import Transformation, TransformationSequence
-
-
-XML_NS = "http://www.w3.org/XML/1998/namespace"
 
 
 class ResolveCopyOf(Transformation):
     def transform(self):
         for node in self.root.css_select("*[copyOf]"):
             source_id = node["copyOf"]
-            # FIXME remove str() when attributes were fixed
-            # FIXME there could be something wrong with the query
             source_node = self.origin_document.xpath(
                 f'//*[@xml:id="{source_id[1:]}"]'
             ).first
             cloned_node = source_node.clone(deep=True)
             cloned_node.id = None
             node.replace_with(cloned_node)
+
+
+class ResolveItemList(Transformation):
+    def transform(self):
+        for i, node in enumerate(self.root.xpath("//ul/li")):
+            source_node = self.origin_document.css_select(
+                f"item:nth-of-type({i + 1}) > name"
+            ).first
+            node.append_child(source_node.full_text)
+
+
+class ResolveItems(Transformation):
+    def transform(self):
+        ul = self.root.css_select("body > ul").first
+        for node in self.origin_document.xpath("//name[text()]"):
+            ul.append_child(tag("li"))
+            cloned_node = node.clone(deep=True)
+            node.replace_with(tag("item", cloned_node))
+
+
+class ResolveNothing(Transformation):
+    def transform(self):
+        pass
 
 
 class ResolveChoiceOptions(NamedTuple):
@@ -29,7 +49,7 @@ class ResolveChoiceOptions(NamedTuple):
 class ResolveChoice(Transformation):
     options_class = ResolveChoiceOptions
 
-    def __init__(self, options):
+    def __init__(self, options=None):
         super().__init__(options)
         self.keep_selector = ",".join(
             (
@@ -57,7 +77,7 @@ class ResolveChoice(Transformation):
 
 def test_simple_transformation():
     root = Document('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>').root
-    doc = Document(
+    document = Document(
         """<radix>
              <a>
                <b xml:id="foo"><c>hi</c></b>
@@ -68,8 +88,22 @@ def test_simple_transformation():
         """
     )
     resolve_copy_of = ResolveCopyOf()
-    tree = resolve_copy_of(root, doc)
+    tree = resolve_copy_of(root, document)
     assert str(tree) == ("<root><b><c>hi</c></b><a>na?</a></root>")
+
+
+def test_transformation_options():
+    document = Document(
+        """\
+        <root>
+            <choice><sic>taeteraetae</sic><corr>täterätä</corr></choice>
+        </root>
+        """,
+        collapse_whitespace=True,
+    )
+    transformation = ResolveChoice()
+    result = transformation(document.root)
+    assert str(result) == "<root>täterätä</root>"
 
 
 def test_transformation_sequence():
@@ -81,11 +115,37 @@ def test_transformation_sequence():
             </div>
             <div copyOf="#d1"/>
         </root>
-        """
+        """,
+        collapse_whitespace=True,
     )
     transformation = TransformationSequence(
-        ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=True))
+        ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=False))
     )
     result = transformation(document.root, document)
     second_div = result.css_select("div").last
-    assert "täterätä" in str(second_div)
+    assert str(second_div) == "<div>taeteraetae</div>"
+
+
+def test_transformation_sequence_sequence():
+    document = Document(
+        """<cast>
+            <name/>
+            <name>abla fahita</name>
+            <name/>
+            <name>caro</name>
+            <name>boudi</name>
+        </cast>""",
+        collapse_whitespace=True,
+    )
+    root = Document("<body><ul/></body>").root
+    transformation = TransformationSequence(
+        ResolveNothing,
+        TransformationSequence(ResolveItems, ResolveNothing()),
+        TransformationSequence(ResolveItemList),
+    )
+    assert str(transformation(root, document)) == (
+        "<body><ul><li>abla fahita</li><li>caro</li><li>boudi</li></ul></body>"
+    )
+
+    with pytest.raises(ValueError):
+        TransformationSequence(transformation, None)
