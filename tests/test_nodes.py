@@ -220,11 +220,3 @@ def test_siblings_filter():
     spam.add_next("plate")
 
     assert isinstance(spam.next_node(is_tag_node), TagNode)
-
-
-def test_attributes():
-    root = Document('<root><node xmlns:foo="bar" foo:a="1" foo:b="2"/></root>').root
-    node = root.css_select("root > node")[0]
-    assert len(node.attributes) == 2
-    del node.attributes["bar":"a"]
-    assert len(node.attributes) == 1

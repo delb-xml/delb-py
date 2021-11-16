@@ -372,6 +372,9 @@ class Attribute(UserString):
         self._element = element
         self._key = key
 
+    def __getitem__(self, item):
+        return self.value[item]
+
     def _set_new_key(self, namespace, name):
         old_key = self._key
 
