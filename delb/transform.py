@@ -11,7 +11,7 @@ Let's look at it with examples::
        def transform(self):
            for node in self.root.css_select("*[copyOf]"):
                source_id = node["copyOf"]
-               source_node = delb.document.xpath(
+               source_node = self.origin_document.xpath(
                    f'//*[@xml:id="{source_id[1:]}"]'
                ).first
                cloned_node = source_node.clone(deep=True)
@@ -54,7 +54,7 @@ optional document where that tree originates from::
                )
            )
 
-       def transform():
+       def transform(self):
            for choice_node in self.root.css_select("choice"):
                node_to_drop = choice_node.css_select(self.drop_selector).first
                node_to_drop.detach()
