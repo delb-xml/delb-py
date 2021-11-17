@@ -49,7 +49,7 @@ class ResolveChoiceOptions(NamedTuple):
 class ResolveChoice(Transformation):
     options_class = ResolveChoiceOptions
 
-    def __init__(self, options):
+    def __init__(self, options=None):
         super().__init__(options)
         self.keep_selector = ",".join(
             (
@@ -92,6 +92,20 @@ def test_simple_transformation():
     assert str(tree) == ("<root><b><c>hi</c></b><a>na?</a></root>")
 
 
+def test_transformation_options():
+    document = Document(
+        """\
+        <root>
+            <choice><sic>taeteraetae</sic><corr>täterätä</corr></choice>
+        </root>
+        """,
+        collapse_whitespace=True,
+    )
+    transformation = ResolveChoice()
+    result = transformation(document.root)
+    assert str(result) == "<root>täterätä</root>"
+
+
 def test_transformation_sequence():
     document = Document(
         """\
@@ -105,11 +119,11 @@ def test_transformation_sequence():
         collapse_whitespace=True,
     )
     transformation = TransformationSequence(
-        ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=True))
+        ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=False))
     )
     result = transformation(document.root, document)
     second_div = result.css_select("div").last
-    assert str(second_div) == "<div>täterätä</div>"
+    assert str(second_div) == "<div>taeteraetae</div>"
 
 
 def test_transformation_sequence_sequence():
