@@ -1,5 +1,7 @@
 from typing import NamedTuple
 
+import pytest
+
 from delb import Document, tag
 from delb.transform import Transformation, TransformationSequence
 
@@ -18,12 +20,10 @@ class ResolveCopyOf(Transformation):
 
 class ResolveItemList(Transformation):
     def transform(self):
-        print(f"doc: {self.origin_document}")
         for i, node in enumerate(self.root.xpath("//ul/li")):
             source_node = self.origin_document.css_select(
                 f"item:nth-of-type({i + 1}) > name"
             ).first
-            print(f"item/name/text(): {source_node.full_text}")
             node.append_child(source_node.full_text)
 
 
@@ -77,7 +77,7 @@ class ResolveChoice(Transformation):
 
 def test_simple_transformation():
     root = Document('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>').root
-    doc = Document(
+    document = Document(
         """<radix>
              <a>
                <b xml:id="foo"><c>hi</c></b>
@@ -88,7 +88,7 @@ def test_simple_transformation():
         """
     )
     resolve_copy_of = ResolveCopyOf()
-    tree = resolve_copy_of(root, doc)
+    tree = resolve_copy_of(root, document)
     assert str(tree) == ("<root><b><c>hi</c></b><a>na?</a></root>")
 
 
@@ -132,3 +132,6 @@ def test_transformation_sequence_sequence():
     assert str(transformation(root, document)) == (
         "<body><ul><li>abla fahita</li><li>caro</li><li>boudi</li></ul></body>"
     )
+
+    with pytest.raises(ValueError):
+        TransformationSequence(transformation, None)

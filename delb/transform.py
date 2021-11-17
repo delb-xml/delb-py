@@ -157,22 +157,17 @@ class TransformationSequence(TransformationBase):
     ):
         self.transformations: List[Union[Transformation, TransformationSequence]] = []
         for transformation in transformations:
-            self += transformation
-
-    def __add__(self, transformation: TransformationSequenceElement):
-        additional = None  #: Optional[Transformation, TransformationSequence] = None
-        if isinstance(transformation, type) and issubclass(
-            transformation, TransformationBase
-        ):
-            additional = transformation()
-        elif isinstance(transformation, TransformationBase):
-            additional = transformation
-        if additional:
-            self.transformations += (
+            if isinstance(transformation, type) and issubclass(
+                transformation, TransformationBase
+            ):
+                additional = transformation()
+            elif isinstance(transformation, TransformationBase):
+                additional = transformation
+            else:
+                raise ValueError
+            self.transformations.extend(
                 additional if isinstance(additional, list) else [additional]
             )
-            return self
-        raise ValueError
 
     def __call__(self, root: TagNode, document: Document = None) -> TagNode:
         for transformation in self.transformations:
