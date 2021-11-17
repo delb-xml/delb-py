@@ -88,7 +88,6 @@ interface allows also to chain multiple chains::
    This is an experimental feature. It might change significantly in the future or be
    removed altogether.
 """
-from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import NamedTuple, List, Optional, Type, Union
@@ -153,7 +152,7 @@ class TransformationSequence(TransformationBase):
 
     def __init__(
         self,
-        *transformations: TransformationSequenceElement,
+        *transformations: "TransformationSequenceElement",
     ):
         self.transformations: List[Union[Transformation, TransformationSequence]] = []
         for transformation in transformations:

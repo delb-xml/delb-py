@@ -59,7 +59,8 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           # b/c Sphinx 3.5.4 is incompatible w/ Python 3.10
-          python-version: "3.9"
+          # and black 20.8b1 is incompatible w/ Python 3.9.8
+          python-version: "3.9.7"
       - uses: actions/cache@v2
         with:
           path: ~/.cache/pip
