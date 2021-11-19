@@ -32,7 +32,7 @@ https-loader = ["requests"]
 https-loader = "_delb.plugins.https_loader"
 
 [tool.poetry.dependencies]
-python = "~=3.6"
+python = "^3.6.2"
 cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21", optional = true}
