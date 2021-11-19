@@ -6,37 +6,7 @@ from delb import Document, tag
 from delb.transform import Transformation, TransformationSequence
 
 
-class ResolveCopyOf(Transformation):
-    def transform(self):
-        for node in self.root.css_select("*[copyOf]"):
-            source_id = node["copyOf"]
-            source_node = self.origin_document.xpath(
-                f'//*[@xml:id="{source_id[1:]}"]'
-            ).first
-            cloned_node = source_node.clone(deep=True)
-            cloned_node.id = None
-            node.replace_with(cloned_node)
-
-
-class ResolveItemList(Transformation):
-    def transform(self):
-        for i, node in enumerate(self.root.xpath("//ul/li")):
-            source_node = self.origin_document.css_select(
-                f"item:nth-of-type({i + 1}) > name"
-            ).first
-            node.append_child(source_node.full_text)
-
-
-class ResolveItems(Transformation):
-    def transform(self):
-        ul = self.root.css_select("body > ul").first
-        for node in self.origin_document.xpath("//name[text()]"):
-            ul.append_child(tag("li"))
-            cloned_node = node.clone(deep=True)
-            node.replace_with(tag("item", cloned_node))
-
-
-class ResolveNothing(Transformation):
+class DoNothing(Transformation):
     def transform(self):
         pass
 
@@ -73,6 +43,36 @@ class ResolveChoice(Transformation):
             node_to_keep.detach(retain_child_nodes=True)
 
             choice_node.detach(retain_child_nodes=True)
+
+
+class ResolveCopyOf(Transformation):
+    def transform(self):
+        for node in self.root.css_select("*[copyOf]"):
+            source_id = node["copyOf"]
+            source_node = self.origin_document.xpath(
+                f'//*[@xml:id="{source_id[1:]}"]'
+            ).first
+            cloned_node = source_node.clone(deep=True)
+            cloned_node.id = None
+            node.replace_with(cloned_node)
+
+
+class ResolveItemList(Transformation):
+    def transform(self):
+        for i, node in enumerate(self.root.xpath("//ul/li")):
+            source_node = self.origin_document.css_select(
+                f"item:nth-of-type({i + 1}) > name"
+            ).first
+            node.append_child(source_node.full_text)
+
+
+class ResolveItems(Transformation):
+    def transform(self):
+        ul = self.root.css_select("body > ul").first
+        for node in self.origin_document.xpath("//name[text()]"):
+            ul.append_child(tag("li"))
+            cloned_node = node.clone(deep=True)
+            node.replace_with(tag("item", cloned_node))
 
 
 def test_simple_transformation():
@@ -139,8 +139,8 @@ def test_transformation_sequence_sequence():
     )
     root = Document("<body><ul/></body>").root
     transformation = TransformationSequence(
-        ResolveNothing,
-        TransformationSequence(ResolveItems, ResolveNothing()),
+        DoNothing,
+        TransformationSequence(ResolveItems, DoNothing()),
         TransformationSequence(ResolveItemList),
     )
     assert str(transformation(root, document)) == (

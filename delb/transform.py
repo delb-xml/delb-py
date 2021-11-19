@@ -88,10 +88,9 @@ interface allows also to chain multiple chains::
    This is an experimental feature. It might change significantly in the future or be
    removed altogether.
 """
-from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple, List, Optional, Type, Union
+from typing import NamedTuple, Optional, Type, Union
 
 from delb import Document, TagNode
 
@@ -153,9 +152,9 @@ class TransformationSequence(TransformationBase):
 
     def __init__(
         self,
-        *transformations: TransformationSequenceElement,
+        *transformations: Union[TransformationBase, Type[TransformationBase]],
     ):
-        self.transformations: List[Union[Transformation, TransformationSequence]] = []
+        self.transformations = []
         for transformation in transformations:
             if isinstance(transformation, type) and issubclass(
                 transformation, TransformationBase
@@ -170,11 +169,3 @@ class TransformationSequence(TransformationBase):
         for transformation in self.transformations:
             root = transformation(root, document=document)
         return root
-
-
-TransformationSequenceElement = Union[
-    Transformation,
-    Type[Transformation],
-    TransformationSequence,
-    Type[TransformationSequence],
-]
