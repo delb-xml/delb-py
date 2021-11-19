@@ -40,7 +40,7 @@ setuptools = "*"
 
 [tool.poetry.dev-dependencies]
 autoclasstoc = "^1.1.1"
-black = "21.10b0"
+black = "*"
 flake8-black = "*"
 lxml-stubs = "*"
 mypy = "*"
