@@ -693,8 +693,8 @@ https-loader = ["requests"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.6.2,<4.0"
-content-hash = "9f74130f5bed5147abcf094e9e9d9634a2249c309ecda3b4817fa875e5d0a303"
+python-versions = "^3.6.2"
+content-hash = "201634c9236820ff49abe68cd6e0e45f03cd0e3d8ee6a337b21617c6c556348a"
 
 [metadata.files]
 alabaster = [
