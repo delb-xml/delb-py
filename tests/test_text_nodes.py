@@ -323,6 +323,10 @@ def test_equality():
     assert not TextNode("1") == 1
 
 
+def test_index():
+    assert Document("<root>test</root>").root.first_child.index == 0
+
+
 def test_none_content_wrapping():
     document = Document("<root><e1/></root>")
 

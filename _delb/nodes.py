@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod, ABC
-from collections import deque, UserString
+from collections import deque
 from collections.abc import MutableMapping
 from contextlib import contextmanager
 from copy import copy, deepcopy
@@ -47,6 +47,7 @@ from _delb.exceptions import InvalidCodePath, InvalidOperation
 from _delb.typing import Filter, NodeSource, _WrapperCache
 from _delb.utils import (
     DEFAULT_PARSER,
+    _StringMixin,
     _crunch_whitespace,
     _css_to_xpath,
     last,
@@ -360,7 +361,7 @@ def _deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
         return None, name
 
 
-class Attribute(UserString):
+class Attribute(_StringMixin):
     """
     Attribute objects represent :term:`tag node`'s attributes. See the
     :meth:`delb.TagNode.attributes` documentation for capabilities.
@@ -371,9 +372,6 @@ class Attribute(UserString):
     def __init__(self, element: _Element, key: str):
         self._element = element
         self._key = key
-
-    def __getitem__(self, item):
-        return self.value[item]
 
     def _set_new_key(self, namespace, name):
         old_key = self._key
@@ -444,8 +442,8 @@ class Attribute(UserString):
         else:
             raise InvalidOperation("The attribute was removed from its node.")
 
-    # for collections.UserString:
-    data = value  # type: ignore
+    # for utils._StringMixin:
+    data = value
 
 
 class TagAttributes(MutableMapping):
@@ -2151,7 +2149,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
 
-class TextNode(_ChildLessNode, NodeBase, UserString):  # type: ignore
+class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     """
     TextNodes contain the textual data of a document. The class shall not be initialized
     by client code, just throw strings into the trees.
@@ -2374,7 +2372,7 @@ class TextNode(_ChildLessNode, NodeBase, UserString):  # type: ignore
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
             self.__content = text
 
-    # for collections.UserString:
+    # for utils._StringMixin:
     data = content  # type: ignore
 
     @property

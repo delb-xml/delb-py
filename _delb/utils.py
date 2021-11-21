@@ -15,6 +15,7 @@
 
 
 import re
+import sys
 from copy import copy
 from functools import lru_cache, partial
 from string import ascii_lowercase
@@ -42,6 +43,212 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 css_translator = GenericTranslator()
+
+
+class _StringMixin:  # pragma: no cover
+    # copied from CPython 3.10.0's stdlib collections.UserString and adjusted
+
+    def __str__(self):
+        return str(self.data)
+
+    def __int__(self):
+        return int(self.data)
+
+    def __float__(self):
+        return float(self.data)
+
+    def __complex__(self):
+        return complex(self.data)
+
+    def __hash__(self):
+        return hash(self.data)
+
+    def __eq__(self, string):
+        return self.data == string
+
+    def __lt__(self, string):
+        return self.data < string
+
+    def __le__(self, string):
+        return self.data <= string
+
+    def __gt__(self, string):
+        return self.data > string
+
+    def __ge__(self, string):
+        return self.data >= string
+
+    def __contains__(self, char):
+        return char in self.data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __add__(self, other):
+        if isinstance(other, str):
+            return self.data + other
+        return self.data + str(other)
+
+    def __radd__(self, other):
+        if isinstance(other, str):
+            return other + self.data
+        return str(other) + self.data
+
+    def __mul__(self, n):
+        return self.data * n
+
+    __rmul__ = __mul__
+
+    def __mod__(self, args):
+        return self.data % args
+
+    def __rmod__(self, template):
+        return str(template) % self
+
+    def capitalize(self):
+        return self.data.capitalize()
+
+    def casefold(self):
+        return self.data.casefold()
+
+    def center(self, width, *args):
+        return self.data.center(width, *args)
+
+    def count(self, sub, start=0, end=sys.maxsize):
+        return self.data.count(sub, start, end)
+
+    def removeprefix(self, prefix):
+        return self.data.removeprefix(prefix)
+
+    def removesuffix(self, suffix):
+        return self.data.removesuffix(suffix)
+
+    def encode(self, encoding="utf-8", errors="strict"):
+        encoding = "utf-8" if encoding is None else encoding
+        errors = "strict" if errors is None else errors
+        return self.data.encode(encoding, errors)
+
+    def endswith(self, suffix, start=0, end=sys.maxsize):
+        return self.data.endswith(suffix, start, end)
+
+    def expandtabs(self, tabsize=8):
+        return self.data.expandtabs(tabsize)
+
+    def find(self, sub, start=0, end=sys.maxsize):
+        return self.data.find(sub, start, end)
+
+    def format(self, *args, **kwds):
+        return self.data.format(*args, **kwds)
+
+    def format_map(self, mapping):
+        return self.data.format_map(mapping)
+
+    def index(self, sub, start=0, end=sys.maxsize):
+        return self.data.index(sub, start, end)
+
+    def isalpha(self):
+        return self.data.isalpha()
+
+    def isalnum(self):
+        return self.data.isalnum()
+
+    def isascii(self):
+        return self.data.isascii()
+
+    def isdecimal(self):
+        return self.data.isdecimal()
+
+    def isdigit(self):
+        return self.data.isdigit()
+
+    def isidentifier(self):
+        return self.data.isidentifier()
+
+    def islower(self):
+        return self.data.islower()
+
+    def isnumeric(self):
+        return self.data.isnumeric()
+
+    def isprintable(self):
+        return self.data.isprintable()
+
+    def isspace(self):
+        return self.data.isspace()
+
+    def istitle(self):
+        return self.data.istitle()
+
+    def isupper(self):
+        return self.data.isupper()
+
+    def join(self, seq):
+        return self.data.join(seq)
+
+    def ljust(self, width, *args):
+        return self.data.ljust(width, *args)
+
+    def lower(self):
+        return self.data.lower()
+
+    def lstrip(self, chars=None):
+        return self.data.lstrip(chars)
+
+    maketrans = str.maketrans
+
+    def partition(self, sep):
+        return self.data.partition(sep)
+
+    def replace(self, old, new, maxsplit=-1):
+        return self.data.replace(old, new, maxsplit)
+
+    def rfind(self, sub, start=0, end=sys.maxsize):
+        return self.data.rfind(sub, start, end)
+
+    def rindex(self, sub, start=0, end=sys.maxsize):
+        return self.data.rindex(sub, start, end)
+
+    def rjust(self, width, *args):
+        return self.data.rjust(width, *args)
+
+    def rpartition(self, sep):
+        return self.data.rpartition(sep)
+
+    def rstrip(self, chars=None):
+        return self.data.rstrip(chars)
+
+    def split(self, sep=None, maxsplit=-1):
+        return self.data.split(sep, maxsplit)
+
+    def rsplit(self, sep=None, maxsplit=-1):
+        return self.data.rsplit(sep, maxsplit)
+
+    def splitlines(self, keepends=False):
+        return self.data.splitlines(keepends)
+
+    def startswith(self, prefix, start=0, end=sys.maxsize):
+        return self.data.startswith(prefix, start, end)
+
+    def strip(self, chars=None):
+        return self.data.strip(chars)
+
+    def swapcase(self):
+        return self.data.swapcase()
+
+    def title(self):
+        return self.data.title()
+
+    def translate(self, *args):
+        return self.data.translate(*args)
+
+    def upper(self):
+        return self.data.upper()
+
+    def zfill(self, width):
+        return self.data.zfill(width)
 
 
 def _collect_subclasses(cls: type, classes: List[type]):

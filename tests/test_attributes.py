@@ -69,11 +69,6 @@ def test_delete_namespaced_attribute():
     assert len(node.attributes) == 1
 
 
-def test_value_slicing():
-    node = Document("<node foo='bar'/>").root
-    assert node.attributes["foo"][1:-1] == "a"
-
-
 def test_various_attribute_operations(sample_document):
     # une assemblage from back in the days
     milestone = sample_document.root[1][0]
