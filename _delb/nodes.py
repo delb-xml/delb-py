@@ -366,7 +366,7 @@ class Attribute(_StringMixin):
     :meth:`delb.TagNode.attributes` documentation for capabilities.
     """
 
-    __slots__ = ("_element", "_key")
+    __slots__ = ("_attributes", "_element", "_key")
 
     def __init__(self, attributes: "TagAttributes", key: str):
         self._attributes = attributes
