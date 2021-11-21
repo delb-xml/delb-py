@@ -54,7 +54,7 @@ from _delb.utils import (
 )
 from _delb.xpath import LocationStep, XPathExpression
 
-if TYPE_CHECKING:  # pragma: nocover
+if TYPE_CHECKING:
     from delb import Document  # noqa: F401
 
 
@@ -189,29 +189,29 @@ class _TagDefinition(NamedTuple):
 
 
 @overload
-def tag(local_name: str):  # pragma: nocover
+def tag(local_name: str):  # pragma: no cover
     ...
 
 
 @overload
-def tag(local_name: str, attributes: Mapping[str, str]):  # pragma: nocover
+def tag(local_name: str, attributes: Mapping[str, str]):  # pragma: no cover
     ...
 
 
 @overload
-def tag(local_name: str, child: NodeSource):  # pragma: nocover
+def tag(local_name: str, child: NodeSource):  # pragma: no cover
     ...
 
 
 @overload
-def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: nocover
+def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
     ...
 
 
 @overload
 def tag(
     local_name: str, attributes: Mapping[str, str], child: NodeSource
-):  # pragma: nocover
+):  # pragma: no cover
 
     ...
 
@@ -219,7 +219,7 @@ def tag(
 @overload
 def tag(
     local_name: str, attributes: Mapping[str, str], children: Sequence[NodeSource]
-):  # pragma: nocover
+):  # pragma: no cover
     ...
 
 
