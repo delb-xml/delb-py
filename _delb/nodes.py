@@ -39,7 +39,6 @@ from typing import (
     Tuple,
     Union,
 )
-from weakref import WeakValueDictionary
 
 from lxml import etree
 
@@ -369,9 +368,13 @@ class Attribute(_StringMixin):
 
     __slots__ = ("_element", "_key")
 
-    def __init__(self, element: _Element, key: str):
-        self._element = element
+    def __init__(self, attributes: "TagAttributes", key: str):
+        self._attributes = attributes
+        self._element = attributes._element
         self._key = key
+
+    def __repr__(self):
+        return repr(self.value)
 
     def _set_new_key(self, namespace, name):
         old_key = self._key
@@ -382,9 +385,8 @@ class Attribute(_StringMixin):
             new_key = f"{{{namespace}}}{name}"
 
         if new_key != old_key:
-            attrib = self._element.attrib
-            attrib[new_key] = self.value
-            attrib.__delitem__(old_key)
+            self._attributes[new_key] = self.value
+            del self._attributes[old_key]
             self._key = new_key
 
     @property
@@ -455,7 +457,7 @@ class TagAttributes(MutableMapping):
     )
 
     def __init__(self, element: _Element):
-        self._attributes: WeakValueDictionary[str, Attribute] = WeakValueDictionary()
+        self._attributes: Dict[str, Attribute] = {}
         self._element = element
 
     def __delitem__(self, key: Union[str, slice]):
@@ -485,7 +487,7 @@ class TagAttributes(MutableMapping):
         if key in self._element.attrib:
             result = self._attributes.get(key)
             if result is None:
-                result = Attribute(self._element, key)
+                result = Attribute(self, key)
                 self._attributes[key] = result
             return result
         else:
@@ -505,6 +507,7 @@ class TagAttributes(MutableMapping):
         else:
             raise TypeError
         self._element.attrib[key] = value
+        self._attributes[key] = Attribute(self, key)
 
     def __str__(self):
         return str(self.as_dict_with_strings())
