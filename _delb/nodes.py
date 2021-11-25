@@ -499,13 +499,15 @@ class TagAttributes(MutableMapping):
     def __len__(self) -> int:
         return len(self._element.attrib)
 
-    def __setitem__(self, key: Union[str, slice], value: str):
+    def __setitem__(self, key: Union[str, slice], value: Union[str, Attribute]):
         if isinstance(key, str):
             pass
         elif isinstance(key, slice):
             key = f"{{{key.start}}}{key.stop}"
         else:
             raise TypeError
+        if isinstance(value, Attribute):
+            value = value.value
         self._element.attrib[key] = value
         self._attributes[key] = Attribute(self, key)
 

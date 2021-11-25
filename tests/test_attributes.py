@@ -69,6 +69,12 @@ def test_delete_namespaced_attribute():
     assert len(node.attributes) == 1
 
 
+def test_update():
+    root = Document("<root><node foo='0'/><node bar='1'/></root>").root
+    root.first_child.attributes.update(root.last_child.attributes)
+    assert root.first_child.attributes == {"foo": "0", "bar": "1"}
+
+
 def test_various_attribute_operations(sample_document):
     # une assemblage from back in the days
     milestone = sample_document.root[1][0]
