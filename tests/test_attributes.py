@@ -69,6 +69,15 @@ def test_delete_namespaced_attribute():
     assert len(node.attributes) == 1
 
 
+def test_detach_sustains_attributes():
+    node = Document(
+        "<root xmlns='https://default.ns'><node foo='bar'/></root>"
+    ).root.first_child
+    assert node._etree_obj is node.attributes._element
+    node.detach()
+    assert node._etree_obj is node.attributes._element
+
+
 def test_update():
     root = Document("<root><node foo='0'/><node bar='1'/></root>").root
     root.first_child.attributes.update(root.last_child.attributes)

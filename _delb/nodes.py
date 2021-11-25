@@ -1690,6 +1690,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 attrib=dict(self._etree_obj.attrib),  # type: ignore
                 nsmap=parent.namespaces,
             )
+            self._attributes = TagAttributes(self._etree_obj)
             self._wrapper_cache[id(self._etree_obj)] = self
 
         if retain_child_nodes:
