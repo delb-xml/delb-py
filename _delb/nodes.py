@@ -2776,14 +2776,14 @@ def is_text_node(node: NodeBase) -> bool:
     return isinstance(node, TextNode)
 
 
-def not_(filter: Filter) -> Filter:
+def not_(*filter: Filter) -> Filter:
     """
     A node filter wrapper that matches when the given filter is not matching,
     like a boolean ``not``.
     """
 
     def not_wrapper(node: NodeBase) -> bool:
-        return not filter(node)
+        return not all(f(node) for f in filter)
 
     return not_wrapper
 
