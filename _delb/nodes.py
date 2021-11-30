@@ -997,6 +997,8 @@ class NodeBase(ABC):
 class _ChildLessNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""
 
+    __slots__ = ()
+
     first_child = last_child = last_descendant = None
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
@@ -1043,6 +1045,8 @@ class _ChildLessNode(NodeBase):
 
 
 class _ElementWrappingNode(NodeBase):
+    __slots__ = ("_etree_obj", "_tail_node")
+
     def __init__(self, etree_element: _Element, cache: _WrapperCache):
         super().__init__(wrapper_cache=cache)
         self._etree_obj = etree_element
@@ -1233,7 +1237,7 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     To instantiate new nodes use :func:`new_comment_node`.
     """
 
-    __slots__ = ("_etree_obj", "_tail_node")
+    __slots__ = ()
 
     def __eq__(self, other) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
@@ -1263,7 +1267,7 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     To instantiate new nodes use :func:`new_processing_instruction_node`.
     """
 
-    __slots__ = ("_etree_obj", "_tail_node")
+    __slots__ = ()
 
     def __eq__(self, other) -> bool:
         return (
@@ -1373,8 +1377,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         "_attributes",
         "_data_node",
         "__document__",
-        "_etree_obj",
-        "_tail_node",
     )
 
     def __init__(self, etree_element: _Element, cache: _WrapperCache):

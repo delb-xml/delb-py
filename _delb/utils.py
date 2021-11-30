@@ -48,6 +48,8 @@ css_translator = GenericTranslator()
 class _StringMixin:  # pragma: no cover
     # copied from CPython 3.10.0's stdlib collections.UserString and adjusted
 
+    __slots__ = ()
+
     def __str__(self):
         return str(self.data)
 

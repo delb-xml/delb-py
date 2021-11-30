@@ -73,6 +73,8 @@ _plugin_manager.load_plugins()
 
 
 class _RootSiblingsContainer(ABC, MutableSequence):
+    __slots__ = ("_document",)
+
     def __init__(self, document: "Document"):
         self._document = document
 

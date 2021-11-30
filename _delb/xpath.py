@@ -415,6 +415,8 @@ class PredicateExpression(ABC):
 
 
 class AttributePredicate(PredicateExpression):
+    __slots__ = ("name", "value")
+
     def __init__(self, name: str, value: Optional[str]):
         self.name = name
         self.value = value
@@ -461,6 +463,8 @@ class AttributePredicate(PredicateExpression):
 
 
 class BooleanPredicate(PredicateExpression):
+    __slots__ = ("operator", "left_operand", "right_operand")
+
     def __init__(
         self,
         operator: str,
@@ -523,6 +527,8 @@ class BooleanPredicate(PredicateExpression):
 
 
 class FunctionExpression(PredicateExpression):
+    __slots__ = ("arguments", "name")
+
     def __init__(self, expression: str):
         self.name, rest = expression.split("(", maxsplit=1)
         assert rest.endswith(")")
@@ -537,6 +543,8 @@ class FunctionExpression(PredicateExpression):
 
 
 class IndexPredicate(PredicateExpression):
+    __slots__ = ("index",)
+
     def __init__(self, index: str):
         self.index = int(index)
 
@@ -545,6 +553,8 @@ class IndexPredicate(PredicateExpression):
 
 
 class Literal(PredicateExpression):
+    __slots__ = ("value",)
+
     def __init__(self, expression: str):
         assert expression.endswith(expression[0])
         self.value = expression[1:-1]
@@ -556,6 +566,8 @@ class Literal(PredicateExpression):
 
 
 class UnsupportedPredicate(PredicateExpression):
+    __slots__ = ("expression",)
+
     def __init__(self, expression: str):
         self.expression = expression
 
