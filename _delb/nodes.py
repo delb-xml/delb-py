@@ -1116,7 +1116,7 @@ class _ElementWrappingNode(NodeBase):
             previous._add_next_node(node)
 
     def clone(
-        self, deep: bool = False, quick_and_unsafe=False
+        self, deep: bool = False, quick_and_unsafe: bool = False
     ) -> "_ElementWrappingNode":
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
@@ -1568,7 +1568,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             current_node = current_node.next_node()
 
     @altered_default_filters()
-    def clone(self, deep: bool = False, quick_and_unsafe=False) -> "TagNode":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "TagNode":
         # a faster implementation may be to not clear a cloned element's children and
         # to clone appended text nodes afterwards
 
@@ -2337,7 +2337,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(self, deep: bool = False, quick_and_unsafe=False) -> "NodeBase":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "NodeBase":
         assert self.content is not None
         return self.__class__(self.content, cache={})
 
