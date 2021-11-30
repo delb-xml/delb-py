@@ -19,6 +19,7 @@ The ``core_loaders`` module provides a set loaders to retrieve documents from va
 data sources.
 """
 
+from __future__ import annotations
 
 from copy import deepcopy
 from io import IOBase, UnsupportedOperation

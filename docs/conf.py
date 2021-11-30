@@ -211,6 +211,13 @@ autodoc_default_options = {
     "members": True,
 }
 
+autodoc_type_aliases = {
+    "Filter": "_delb.typing.Filter",
+    "LoaderResult": "_delb.typing.LoaderResult",
+    # FIXME this yields error: `unhashable type: 'TypeAliasForwardRef'`
+    # "NodeSource": "_delb.typing.NodeSource",
+    "_WrapperCache": "_delb.typing._WrapperCache",
+}
 
 class SectionBase(Section):
     def _find_attrs(self):
