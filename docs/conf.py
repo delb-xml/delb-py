@@ -123,7 +123,7 @@ html_domain_indices = False
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "lxml-domeqsquedoc"
+htmlhelp_basename = "delbdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -149,8 +149,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "lxml-domeqsque.tex",
-        "lxml-domeqsque Documentation",
+        "delb.tex",
+        "delb Documentation",
         "Frank Sachsenheim",
         "manual",
     ),
@@ -162,7 +162,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, "lxml-domeqsque", "lxml-domeqsque Documentation", [author], 1)
+    (master_doc, "delb", "delb Documentation", [author], 1)
 ]
 
 
@@ -174,10 +174,10 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        "lxml-domeqsque",
-        "lxml-domeqsque Documentation",
+        "delb",
+        "delb Documentation",
         author,
-        "lxml-domeqsque",
+        "delb",
         "One line description of project.",
         "Miscellaneous",
     ),

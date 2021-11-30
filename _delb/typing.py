@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
 from lxml import etree
 
 if TYPE_CHECKING:
-    from _delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition  # noqa: F401
+    from _delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition
 
 
 Filter = Callable[["NodeBase"], bool]

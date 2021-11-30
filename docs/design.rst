@@ -190,16 +190,9 @@ complicated function would look like:
        """ Removes the given nodes from its tree. Unless ``keep_children`` is
             passed as ``True``, its children vanish with it into void. """
 
-       for node in nodes:
-          parent = node.parent
-          index = node.index
-          node.detach()
-          if keep_children:
-              with altered_default_filters():
-                  parent.insert_node(
-                      index,
-                      *tuple(x.detach() for x in node.child_nodes())
-                  )
+       with altered_default_filters():
+           for node in nodes:
+              node.detach(retain_child_nodes=keep_children)
 
 
 .. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/
