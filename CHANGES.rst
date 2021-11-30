@@ -38,6 +38,7 @@ News
 - ⚠ :meth:`TagNode.qualified_name` is marked deprecated and the same property
   is now available as :meth:`TagNode.universal_name`.
 - Adds support for Python 3.9 & 3.10.
+- ⚠️ Drops support for Python 3.6
 - Uses GitHub actions for CI checks.
 
 Fixes
