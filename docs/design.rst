@@ -1,5 +1,5 @@
-Design
-======
+About the design
+================
 
 tl;dr
 -----
@@ -19,9 +19,9 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 - Comment and processing instruction nodes are shadowed by default, see
   :func:`delb.altered_default_filters` on how to make them accessible.
 - CDATA nodes are not accessible at all, but are retained and appear in
-  serializations; unless you **[DANGER ZONE]** manipulate the tree (and you want
-  that often). Depending on your actions you might encounter no alterations or a
-  complete loss of these nodes within the root node. **[/DANGER ZONE]**
+  serializations; unless you **[DANGER ZONE]** manipulate the tree. Depending on
+  your actions you might encounter no alterations or a complete loss of these
+  nodes within the root node. **[/DANGER ZONE]**
 
 If you need to apply bad practices anyway, you can fall back to tinker with the
 lxml objects that are bound to :attr:`TagNode._etree_obj`.
@@ -41,7 +41,7 @@ application events, various metadata and so on.
 Python is a high-level, general programming language with a vast ecosystem,
 notably including diverse scientific communities and tools. As such it is well
 suited to solve and cause problems in the humanities related field of Research
-Software Engineering by programmers with different educational background and
+Software Engineering by programmers with diverse educational background and
 expertise.
 
 The commonly used Python library to parse and interact with a representation
@@ -52,21 +52,23 @@ least these two share significant design aspects of Java APIs which is perceived
 as weird and clumsy in Python code.
 lxml is a wrapper around libxml2_ which was developed by the GNOME_ developers
 for other data than text documents. Data that is strictly structured and
-expectable. Text documents are different in these regards as the encoding mixes
-different abstracted encapsulations of logical and physical text fragments. And
-they are formulated and structured for human consumers, and often printing
-devices.
+expectable. Text documents are different in these regards as natural languages
+and variety of media allow and lead to unprecedented manifestations for which an
+encoding mixes different abstracted encapsulations of text fragments. And they
+are formulated and structured for human consumers, and often printing devices.
 
 So, what's wrong with lxml? Not much, it's a rock-solid, fast API for XML
 documents with known issues and known workarounds that represents the full glory
-of what a full-fledged specification implies - of which a lot is not of concern
-for the problems at hand and occasionally make solutions complicated. The one
-aspect that's very wrong in the context of text processing is unfortunately its
-central model of elements and data/text. In particular the notion of an element
-*tail* makes the whole enchilada tricky to traverse / navigate. The existence
-of this attribute is due to the insignificance of these fragments of an XML
-stream in the aforementioned, common uses of XML. Now it is time for an example,
-given this document snippet:
+of what a full-fledged family of specification implies - of which a lot is not
+of concern for the problems at hand and occasionally make solutions complicated.
+The one aspect that's very wrong in the context of text processing is
+unfortunately its central model of elements and data/text that is attached to it
+in two different relations. In particular the notion of an element *tail* makes
+the whole enchilada tricky to traverse / navigate. The existence of this
+attribute is due to the insignificance of these fragments of an XML stream in
+the aforementioned, common uses of XML.
+
+Now it is time for an example, given this document snippet:
 
 .. code-block:: xml
 
@@ -97,14 +99,16 @@ concatenate broken words would need a function that removes the element objects
 in question while preserving the text fragments in its meaningful sequence
 attached to the ``text`` and ``tail`` properties. In case these have no content,
 their value of ``None`` leads to different operations to concatenate strings.
-Here's a working implementation from the inxs_ library that is used by a variety
-of more specific functions:
+Here's a working implementation from the inxs_ library for that data model:
 
 .. code-block:: python
 
-   def remove_elements(*elements: etree.ElementBase, keep_children=False,
-                       preserve_text=False,
-                       preserve_tail=False) -> None:
+   def remove_elements(
+       *elements: etree.ElementBase,
+       keep_children=False,
+       preserve_text=False,
+       preserve_tail=False
+    ) -> None:
        """ Removes the given elements from its tree. Unless ``keep_children`` is
            passed as ``True``, its children vanish with it into void. If
            ``preserve_text`` is ``True``, the text and tail of a deleted element
@@ -171,7 +175,8 @@ solid model for text documents is the `DOM API`_ that is even implemented in the
 standard library's :mod:`xml.dom.minidom` module. But it lacks an XPath
 interface and rumours say it's slow. To illustrate the more accessible model
 with a better locatability, here's another graphical representation of the
-markup example from above with two different types of nodes:
+markup example from above with text content in an emancipated, dedicated node
+type:
 
 .. image:: images/dom-model-example.png
 
@@ -182,17 +187,16 @@ paradigmatic inspiration, looks and behaves pythonic while keeping the wrapped
 powers accessible.
 
 Now with that API at hand, this is what an equivalent of the horribly
-complicated function would look like:
+complicated function seen above would look like:
 
 .. code-block:: python
 
+   @altered_default_filters()
    def remove_nodes(*nodes: NodeBase, keep_children=False):
        """ Removes the given nodes from its tree. Unless ``keep_children`` is
             passed as ``True``, its children vanish with it into void. """
-
-       with altered_default_filters():
-           for node in nodes:
-              node.detach(retain_child_nodes=keep_children)
+       for node in nodes:
+           node.detach(retain_child_nodes=keep_children)
 
 
 .. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/
