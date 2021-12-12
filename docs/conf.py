@@ -18,10 +18,14 @@
 import abc
 
 import pkg_resources
-
 import sphinx_readable_theme
-from autoclasstoc import is_data_attr, is_public, PublicMethods, Section
-
+from autoclasstoc import (
+    is_data_attr,
+    is_public,
+    Section,
+    is_special,
+)
+from _delb.utils import _StringMixin
 
 # -- Project information -----------------------------------------------------
 
@@ -161,9 +165,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, "delb", "delb Documentation", [author], 1)
-]
+man_pages = [(master_doc, "delb", "delb Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -219,19 +221,27 @@ autodoc_type_aliases = {
     "_WrapperCache": "_delb.typing._WrapperCache",
 }
 
+
+# -- Options for autoclasstoc extension --------------------------------------
+
+
+def is_really_public(name: str) -> bool:
+    return is_public(name) and not is_special(name)
+
+
 class SectionBase(Section):
     def _find_attrs(self):
         result = {}
         for base_class in reversed(self.cls.__mro__):
-            if base_class not in (object, abc.ABC):
+            if base_class not in (object, abc.ABC, _StringMixin):
                 result.update(base_class.__dict__)
-        return result
+        return {k: result[k] for k in sorted(result)}
 
     def _find_inherited_attrs(self):
         return {}
 
     def predicate(self, name, attr, meta):
-        return meta.get("category") == self.key
+        return meta.get("category") == self.key and is_really_public(name)
 
 
 for key, title in (
@@ -249,14 +259,19 @@ class Property(SectionBase):
     title = "Properties"
 
     def predicate(self, name, attr, meta):
-        return is_data_attr(name, attr) and is_public(name)
+        return is_data_attr(name, attr) and is_really_public(name)
 
 
-class UncategorizedMembers(PublicMethods, SectionBase):
+class PublicMethods(SectionBase):
+    key = "public-methods"  # to override autoclasstoc's PublicMethods
     title = "Uncategorized methods"
 
     def predicate(self, name, attr, meta):
-        return super().predicate(name, attr, meta) and not meta.get("category")
+        return (
+            not is_data_attr(name, attr)
+            and meta.get("category") is None
+            and is_really_public(name)
+        )
 
 
 autoclasstoc_sections = [
@@ -266,6 +281,7 @@ autoclasstoc_sections = [
     "query-nodes",
     "add-nodes",
     "remove-node",
+    "public-methods",
 ]
 
 

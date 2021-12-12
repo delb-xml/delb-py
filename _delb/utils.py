@@ -199,8 +199,6 @@ class _StringMixin:  # pragma: no cover
     def lstrip(self, chars=None):
         return self.data.lstrip(chars)
 
-    maketrans = str.maketrans
-
     def partition(self, sep):
         return self.data.partition(sep)
 
