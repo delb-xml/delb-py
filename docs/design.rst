@@ -207,3 +207,56 @@ complicated function seen above would look like:
 .. _lxml: http://lxml.de/
 .. _open document format: http://opendocumentformat.org/
 .. _xml-tei: http://tei-c.org
+
+
+Frequently Asked Questions
+--------------------------
+
+Isn't XML an obsolete format for text encoding, invented by boomers and
+cynically held up by their Generation X apologists? Why don't you put your
+efforts in developing new approaches such as storing text in a graph database?
+
+   We think that XML-based encodings are actually very well suited for long-term
+   usable text representations with a broad potential for granularity of
+   capturing and semantic annotations. Not only is the data format simple enough
+   to hold a full artifact in a self-contained file, but we also consider the
+   duality of a format that can be handled both as stream and as tree as a
+   helpful feature to address the physical and logical dimensions of a text and
+   its manifestation. That is advantageous over depending on a heavy-weight
+   database system.
+   We acknowledge unquestionably that the specifications in the XML universe are
+   often over-engineered, partly stuck in the times of their genesis and thus
+   (euphemistically put) `no fun`_. As a direct result of that the availability
+   of implementations for contemporary development contexts and their ergonomics
+   are poor, if available at all for a platform. That is what *delb* is
+   addressing.
+
+
+What are your long-term goals with this project?
+
+   Currently we want to flesh out a concluded user interface that let's
+   developers concentrate on their tasks and not on the shortcomings and
+   idiosyncrasies of available tools in the Pythoniverse. Later we'd like to
+   port the sound, settled data model and API to a Rust implementation (of which
+   a proof-of-concept prototype exists) and replace the current *lxml* wrapper
+   for Python with bindings to that as well as provide such for TypeScript.
+   Currently that's the aim for a non-beta release.
+   Eventually we'd like to re-conquer the world wide web and make unagitated,
+   long texts and Stooges clips its predominant content again. On that occasion,
+   fuck you Mark, fuck off Jeff, go fuck yourself Peter and all the other
+   fucknut character masks. What a disgusting misery it is that the capital
+   created from Tim's ideas.
+
+
+Why is your XPath support so poor?
+
+   While exploring the potential extent of the API we got excited about the
+   :meth:`_delb.TagNode.fetch_or_create_by_xpath` feature. In order to include
+   it, we had to implement a native XPath expression parser. As a release was
+   overdue and we don't know yet to which extent the XPath specification shall
+   be supported eventually, we opted for releasing a shaky solution. Figuring
+   out a fitting one for *delb*  will be that main piece of the next release,
+   so watch and get involved if that interests you.
+
+
+.. _no fun: https://www.youtube.com/watch?v=5sSKH0iXWo8
