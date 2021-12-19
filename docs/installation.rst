@@ -13,10 +13,9 @@ management tool like pipenv_ or poetry_, or still use pip_::
 At the moment there's only one optional dependency to enable document loading
 via `https`, to include it use::
 
+    pip install delb[https-loader]
     # in a poetry managed project
     poetry add --extras=https-loader delb
-    # otherwise
-    pip install delb[https-loader]
 
 
 From source
@@ -24,9 +23,8 @@ From source
 
 Prerequisites:
 
-- poetry_ is available (``pip install --user poetry`` should often work)
 - a virtual environment of your project is activated
-- that virtual environment houses an interpreter for Python 3.6 or later
+- that virtual environment houses an interpreter for Python 3.7 or later
 
 Obtain the code with roughly one of:
 
@@ -37,8 +35,10 @@ To install it regularly::
 
     …/delb $ pip install .
 
-For developing purposes of ``delb`` itself, poetry_ should be used which
-install the library in editable_ mode and all employed development tools::
+For developing purposes of ``delb`` itself, poetry_ (we recommend installing it
+with pipx_, but ``pip install --user poetry`` should often work too) should be
+used which install the library in editable_ mode and all employed development
+tools::
 
     …/delb $ poetry install
 
@@ -52,5 +52,6 @@ install the library in editable_ mode and all employed development tools::
 
 .. _editable: https://packaging.python.org/guides/distributing-packages-using-setuptools/#working-in-development-mode
 .. _pip: https://pypi.org/project/pip/
+.. _pipx: https://pypa.github.io/pipx/
 .. _pipenv: https://pypi.org/project/pipenv/
 .. _poetry: https://poetry.eustace.io/docs/
