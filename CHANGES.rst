@@ -17,7 +17,7 @@ News
 ~~~~
 
 - Adds the :meth:`delb.TagNode.fetch_or_create_by_xpath` method.
-    - ⚠️ Because of that a pre-mature parser of XPath expressions has been
+    - ⚠️Because of that a pre-mature parser of XPath expressions has been
       implemented and you can expect some expressions to cause failures, e.g.
       with functions that take more than one argument.
 - Subclasses of :class:`delb.Document` can claim to be the default class based
@@ -31,11 +31,11 @@ News
   :func:`classmethod` and now also takes the config namespace as first argument.
 - Adds :meth:`delb.Document.collapse_whitespace` and the initialization option
   for :class:`delb.Document` instances with the same name.
-- Adds the ``retain_child_node`` argument to :meth:`delb.NodeBase.detach`.
+- Adds the ``retain_child_nodes`` argument to :meth:`delb.NodeBase.detach`.
 - Adds the :attr:`delb.NodeBase.last_descendant` property.
 - Adds the :attr:`delb.TagNode.id` property.
 - Adds the :meth:`delb.TagNode.parse` method.
-- ⚠ :meth:`TagNode.qualified_name` is marked deprecated and the same property
+- ⚠️ :meth:`TagNode.qualified_name` is marked deprecated and the same property
   is now available as :meth:`TagNode.universal_name`.
 - Adds support for Python 3.9 & 3.10.
 - ⚠️ Drops support for Python 3.6
