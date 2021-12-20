@@ -50,15 +50,6 @@ Kurt Raschke `noted in 2010`_::
 .. _snakesist: https://pypi.org/project/snakesist/
 .. _noted in 2010: https://web.archive.org/web/20190316214219/https://kurtraschke.com/2010/09/lxml-inserting-elements-in-text/
 
-ROADMAPish
-----------
-
-- gain insights from usage experience
-- implement the API in Rust
-- provide bindings for Python and Javascript to the Rust implementation, while
-  nurturing the lxml-based implementation as reference for some time
-- be finished before the Digital Humanities community realizes how to foster a
-  viable software ecosystem and fund such efforts
 
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square
