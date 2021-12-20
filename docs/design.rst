@@ -255,7 +255,7 @@ Why is your XPath support so poor?
    it, we had to implement a native XPath expression parser. As a release was
    overdue and we don't know yet to which extent the XPath specification shall
    be supported eventually, we opted for releasing a shaky solution. Figuring
-   out a fitting one for *delb*  will be that main piece of the next release,
+   out a fitting one for *delb*  will be the main piece of the next release,
    so watch and get involved if that interests you.
 
 
