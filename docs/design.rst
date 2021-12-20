@@ -234,7 +234,7 @@ efforts in developing new approaches such as storing text in a graph database?
 
 What are your long-term goals with this project?
 
-   Currently we want to flesh out a concluded user interface that let's
+   Currently we want to flesh out a concluded user interface that lets
    developers concentrate on their tasks and not on the shortcomings and
    idiosyncrasies of available tools in the Pythoniverse. Later we'd like to
    port the sound, settled data model and API to a Rust implementation (of which
