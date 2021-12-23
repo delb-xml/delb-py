@@ -1060,6 +1060,9 @@ class _ElementWrappingNode(NodeBase):
     def __deepcopy__(self, memodict=None) -> "_ElementWrappingNode":
         return self.clone(deep=True)
 
+    def __str__(self) -> str:
+        return str(self._etree_obj)
+
     def _add_next_node(self, node: "NodeBase"):
         if isinstance(node, _ElementWrappingNode):
             my_old_tail = self._tail_node
@@ -1244,9 +1247,6 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     def __eq__(self, other) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
 
-    def __str__(self) -> str:
-        return str(self._etree_obj)
-
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}("{self.content}") [{hex(id(self))}]>'
 
@@ -1277,9 +1277,6 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
             and self.target == other.target
             and self.content == other.content
         )
-
-    def __str__(self) -> str:
-        return str(self._etree_obj)
 
     def __repr__(self) -> str:
         return (
