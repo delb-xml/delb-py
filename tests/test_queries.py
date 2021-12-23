@@ -189,10 +189,6 @@ def test_results_as_other_type():
     assert isinstance(as_tuple, tuple)
     assert len(as_tuple) == 4
 
-    as_set = results.as_set()
-    assert isinstance(as_set, set)
-    assert len(as_list) == 4
-
 
 def test_results_filtered_by():
     def has_n_attribute(node):
