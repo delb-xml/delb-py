@@ -2441,6 +2441,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 f"A TextNode._position must not be set to {self._position}"
             )
 
+        self._appended_text_node = None
         self._bound_to = None
         self._wrapper_cache = {}
         self._position = DETACHED
