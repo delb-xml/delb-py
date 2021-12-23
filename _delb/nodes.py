@@ -37,7 +37,6 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Union,
 )
@@ -1438,9 +1437,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         raise TypeError
 
-    def __hash__(self) -> int:
-        return hash(self._etree_obj)
-
     def __len__(self) -> int:
         i = 0
         for _ in self.child_nodes(recurse=False):
@@ -2681,10 +2677,6 @@ class QueryResults(Sequence[TagNode]):
     def as_list(self) -> List[TagNode]:
         """The contained nodes as a new :class:`list`."""
         return list(self.__items)
-
-    def as_set(self) -> Set[TagNode]:
-        """The contained nodes as a new :class:`set`."""
-        return set(self.__items)
 
     @property
     def as_tuple(self) -> Tuple[TagNode, ...]:
