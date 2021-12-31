@@ -82,8 +82,11 @@ def test_contains():
     document_a = Document("<root><a/></root>")
     document_b = Document("<root><a/></root>")
 
-    assert document_a.root[0] in document_a
-    assert document_a.root[0] not in document_b
+    a = document_a.root[0]
+    gc.collect()
+
+    assert a in document_a
+    assert a not in document_b
 
 
 def test_css_select():
@@ -120,27 +123,6 @@ def test_mro():
         DocumentMixinHooks,
         object,
     )
-
-
-def test_object_persistance():
-    document = Document(
-        "<eegohchivahgahsheiyeelooreepiaphahvaikohdaecobeavepaeyoicuevasan/>"
-    )
-    document_id = id(document)
-    root = document.root
-
-    del document
-    gc.collect()
-    assert root.document is not None
-
-    del root
-    gc.collect()
-    for obj in gc.get_objects():
-        if id(obj) == document_id and isinstance(obj, Document):
-            assert (
-                obj.root.local_name
-                != "eegohchivahgahsheiyeelooreepiaphahvaikohdaecobeavepaeyoicuevasan"
-            )
 
 
 def test_set_root():

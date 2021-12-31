@@ -15,12 +15,12 @@
 
 from inspect import isclass
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterable, Type, Union
+from typing import Any, Callable, Dict, Iterable, Type
 from warnings import warn
 
 import pkg_resources
 
-from _delb.typing import Loader
+from _delb.typing import Loader, LoaderConstraint
 
 
 class DocumentMixinHooks:
@@ -58,9 +58,6 @@ class DocumentExtensionHooks(DocumentMixinHooks):
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)
-
-
-LoaderConstraint = Union[Loader, Iterable[Loader], None]
 
 
 class PluginManager:
