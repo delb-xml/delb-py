@@ -8,18 +8,6 @@ from delb import Document, InvalidOperation, is_tag_node, tag
 DELB_VERSION = pkg_resources.get_distribution("delb").parsed_version.release
 
 
-sample_document = Document(
-    """\
-<root>
-    <node n="1"/>
-    <node n="2"/>
-    <node/>
-    <node n="3"/>
-</root>
-"""
-)
-
-
 def test_css_considers_xml_namespace(files_path):
     document = Document("<root><xml:node/><node/></root>")
     assert document.css_select("xml|node").size == 1
@@ -178,8 +166,8 @@ def test_quotes_in_css_selector():
         assert document.css_select('a[href$="123"]').size == 1
 
 
-def test_results_as_other_type():
-    results = sample_document.css_select("node")
+def test_results_as_other_type(queries_sample):
+    results = queries_sample.css_select("node")
 
     as_list = results.as_list()
     assert isinstance(as_list, list)
@@ -190,17 +178,17 @@ def test_results_as_other_type():
     assert len(as_tuple) == 4
 
 
-def test_results_filtered_by():
+def test_results_filtered_by(queries_sample):
     def has_n_attribute(node):
         return node.attributes.get("n") is not None
 
-    assert sample_document.css_select("node").filtered_by(has_n_attribute).size == 3
+    assert queries_sample.css_select("node").filtered_by(has_n_attribute).size == 3
 
 
-def test_results_first_and_last():
-    assert sample_document.css_select("node").first.attributes["n"] == "1"
-    assert sample_document.css_select("node").last.attributes["n"] == "3"
+def test_results_first_and_last(queries_sample):
+    assert queries_sample.css_select("node").first.attributes["n"] == "1"
+    assert queries_sample.css_select("node").last.attributes["n"] == "3"
 
 
-def test_results_size():
-    assert sample_document.css_select("node").size == 4
+def test_results_size(queries_sample):
+    assert queries_sample.css_select("node").size == 4

@@ -3,6 +3,7 @@ import pytest
 from delb import (
     altered_default_filters,
     is_tag_node,
+    is_text_node,
     new_tag_node,
     tag,
     Document,
@@ -89,6 +90,64 @@ def test_insert_issue_in_a_more_complex_situation():
     assert str(document) == "<root><div1><div2/> </div1></root>"
 
 
+def test_wrapper_consistency():
+    # this test is the result of an investigation that asked why
+    # `test_insert_issue_in_a_more_complex_situation` failed.
+    # as a result, the way how node wrapper are tracked has been refactored.
+    # so this test is looking on under-the-hood-expectations for aspects of the
+    # mentioned test. when maintaining this requires effort, it should rather be
+    # dropped.
+    def node_ids():
+        return {
+            "root": id(root),
+            "foo": id(foo),
+            "div1": id(div1),
+            "div2": id(div2),
+            "text": id(text),
+        }
+
+    document = Document("<root><foo><div1><div2/>text</div1></foo></root>")
+
+    root = document.root
+    foo = root.first_child
+    div1 = foo.first_child
+    div2 = div1.first_child
+    text = div1.last_child
+
+    original_ids = node_ids()
+
+    div1.detach()
+    foo = root.first_child
+    div2 = div1.first_child
+    text = div1.last_child
+    assert node_ids() == original_ids
+
+    foo.detach()
+    assert node_ids() == original_ids
+
+    root.insert_child(0, div1)
+    div1 = root.first_child
+    div2 = div1.first_child
+    text = div1.last_child
+    assert node_ids() == original_ids
+
+    other_doc = Document(str(document))
+    div1 = other_doc.css_select("div1").first
+    div2 = other_doc.css_select("div2").first
+    div2.detach()
+    div1.insert_child(0, div2)
+
+    div1 = document.css_select("div1").first
+    div2 = document.css_select("div2").first
+
+    div2.detach()
+    div1 = root.first_child
+    text = div1.first_child
+    assert node_ids() == original_ids
+
+    div1.insert_child(0, div2)
+
+
 def test_invalid_operations():
     document_1 = Document("<root/>")
     document_2 = Document("<root><replacement/>parts</root>")
@@ -112,19 +171,21 @@ def test_iter_next_node_over_long_stream(files_path):
     node = root.next_node_in_stream(lambda _: False)
     assert node is None
 
-    all_node_ids = {
-        id(root),
-    }
-    for node in root.child_nodes(recurse=True):
-        all_node_ids.add(id(node))
-    encountered_node_ids = {
-        id(root),
-    }
-    for node in root.iterate_next_nodes_in_stream():
-        _id = id(node)
-        assert _id not in encountered_node_ids
-        encountered_node_ids.add(_id)
-    assert encountered_node_ids == all_node_ids
+    all_node_locations = set()
+    for node in root.child_nodes(is_tag_node, recurse=True):
+        all_node_locations.add(node.location_path)
+    encountered_location_paths = set()
+    for node in root.iterate_next_nodes_in_stream(is_tag_node):
+        location_path = node.location_path
+        assert location_path not in encountered_location_paths
+        encountered_location_paths.add(location_path)
+    assert encountered_location_paths == all_node_locations
+
+    expected_text = root.full_text  # operates in tree dimension
+    collected_text = ""
+    for node in root.iterate_next_nodes_in_stream(is_text_node):
+        collected_text += node.content
+    assert collected_text == expected_text
 
 
 def test_no_next_node_in_stream():

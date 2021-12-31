@@ -21,16 +21,11 @@ def test_first():
         first({})
 
 
-@pytest.mark.parametrize(
-    "obj",
-    (
-        Document("<pb n='[III]'/>").root["n"],
-        Document("<root>[III]</root>").root.first_child,
-    ),
-)
-def test_value_strip(obj):
-    assert obj == "[III]"
-    assert obj.startswith("[")
-    assert "III" in obj
-    assert obj.strip("[]") == "III"
-    assert obj[1:-1] == "III"
+def test_value_strip():
+    root = Document("<root n='[III]'>[III]</root>").root
+    for obj in (root["n"], root.first_child):
+        assert obj == "[III]"
+        assert obj.startswith("[")
+        assert "III" in obj
+        assert obj.strip("[]") == "III"
+        assert obj[1:-1] == "III"

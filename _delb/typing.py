@@ -15,20 +15,20 @@
 
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union
 
 from lxml import etree
 
 if TYPE_CHECKING:
-    from _delb.nodes import _ElementWrappingNode, NodeBase, _TagDefinition
+    from _delb.nodes import NodeBase, _TagDefinition
 
 
 Filter = Callable[["NodeBase"], bool]
 NodeSource = Union[str, "NodeBase", "_TagDefinition"]
-_WrapperCache = Dict[int, "_ElementWrappingNode"]
 
-LoaderResult = Union[Tuple[Optional[etree._ElementTree], _WrapperCache], str]
+LoaderResult = Union[Optional[etree._ElementTree], str]
 Loader = Callable[[Any, SimpleNamespace], LoaderResult]
+LoaderConstraint = Union[Loader, Iterable[Loader], None]
 
 
 __all__ = (
