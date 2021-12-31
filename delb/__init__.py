@@ -30,8 +30,8 @@ from _delb.plugins import (
     plugin_manager as _plugin_manager,
 )
 from _delb.nodes import (
-    _get_or_create_element_wrapper,
     _is_tag_or_text_node,
+    _wrapper_cache,
     altered_default_filters,
     any_of,
     is_comment_node,
@@ -306,18 +306,18 @@ class Document(metaclass=DocumentMeta):
             except Exception as e:
                 loader_excuses[loader] = e
             else:
-                if isinstance(loader_result, tuple):
-                    loaded_tree, wrapper_cache = loader_result
+                if isinstance(loader_result, etree._ElementTree):
+                    loaded_tree = loader_result
                     break
                 else:
+                    assert isinstance(loader_result, str)
                     loader_excuses[loader] = loader_result
         else:
             raise FailedDocumentLoading(source, loader_excuses)
 
         assert isinstance(loaded_tree, etree._ElementTree)
-        assert isinstance(wrapper_cache, dict)
 
-        root = _get_or_create_element_wrapper(loaded_tree.getroot(), wrapper_cache)
+        root = _wrapper_cache(loaded_tree.getroot())
         assert isinstance(root, TagNode)
 
         return root
@@ -427,7 +427,7 @@ class Document(metaclass=DocumentMeta):
     @property
     def root(self) -> "TagNode":
         """The root node of a document tree."""
-        return getattr(self, "__root_node__")
+        return self.__root_node__
 
     @root.setter
     def root(self, node: "TagNode"):
@@ -447,10 +447,10 @@ class Document(metaclass=DocumentMeta):
         current_root = getattr(self, "__root_node__", None)
         if current_root is not None:
             _copy_root_siblings(current_root._etree_obj, node._etree_obj)
-            delattr(current_root, "__document__")
+            current_root.__document__ = None
 
-        setattr(node, "__document__", self)
-        setattr(self, "__root_node__", node)
+        self.__root_node__ = node
+        node.__document__ = self
 
     def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
         """

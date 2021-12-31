@@ -8,6 +8,12 @@ from delb import (
 )
 
 
+def test_appended_text_node():
+    document = Document("<root><!-- c -->tail</root>")
+    document.root.last_child.add_next("|appended")
+    assert str(document) == "<root><!-- c -->tail|appended</root>"
+
+
 def test_comment_node():
     document = Document("<root><tag/><!-- comment -->text</root>")
     root = document.root

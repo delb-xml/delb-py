@@ -45,7 +45,7 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         root = data.clone(deep=True)
         tree._setroot(root._etree_obj)
         utils._copy_root_siblings(data._etree_obj, root._etree_obj)
-        return tree, root._wrapper_cache
+        return tree
     return "The input value is not a TagNode instance."
 
 
@@ -56,9 +56,9 @@ def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     :class:`lxml.etree._ElementTree` instances.
     """
     if isinstance(data, etree._ElementTree):
-        return deepcopy(data), {}
+        return deepcopy(data)
     if isinstance(data, etree._Element):
-        return etree.ElementTree(element=deepcopy(data), parser=config.parser), {}
+        return etree.ElementTree(element=deepcopy(data), parser=config.parser)
     return "The input value is neither an etree.Element or …Tree instance."
 
 
@@ -86,7 +86,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
             data.seek(0)
         except UnsupportedOperation:
             pass
-        return etree.parse(cast(IO, data), parser=config.parser), {}
+        return etree.parse(cast(IO, data), parser=config.parser)
     return "The input value is no buffer object."
 
 
@@ -98,7 +98,7 @@ def ftp_http_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     if isinstance(data, str) and data.lower().startswith(("http://", "ftp://")):
         config.source_url = data
-        return etree.parse(data, parser=config.parser), {}
+        return etree.parse(data, parser=config.parser)
     return "The input value is not an URL with the ftp or http scheme."
 
 
@@ -111,7 +111,7 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
         data = data.encode()
     if isinstance(data, bytes):
         root = etree.fromstring(data, config.parser)
-        return etree.ElementTree(element=root), {}
+        return etree.ElementTree(element=root)
     return "The input value is not a byte sequence."
 
 
