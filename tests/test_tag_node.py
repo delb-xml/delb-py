@@ -420,17 +420,15 @@ def test_make_node_with_children():
     result = new_tag_node(
         "infocard", children=[tag("label", {"updated": "never"}, "Monty Python")]
     )
-    assert (
-        str(result) == '<infocard><label updated="never">Monty '
-        "Python</label></infocard>"
+    assert str(result) == (
+        '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
     result = new_tag_node(
         "infocard", children=[tag("label", {"updated": "never"}, ("Monty ", "Python"))]
     )
-    assert (
-        str(result) == '<infocard><label updated="never">Monty '
-        "Python</label></infocard>"
+    assert str(result) == (
+        '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
     register_namespace("foo", "https://foo.org")
