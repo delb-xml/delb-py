@@ -2645,7 +2645,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return candidate.previous_node(*filter)
 
     @property
-    def _tail_sequence_head(self):
+    def _tail_sequence_head(self) -> TextNode:
         if self._position in (DATA, TAIL):
             return self
         elif self._position is APPENDED:
