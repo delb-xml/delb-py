@@ -2267,9 +2267,11 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             head = self._tail_sequence_head
             assert head._position in (DATA, TAIL)
             if head._position is DATA:
+                assert isinstance(head._bound_to, _Element)
                 head._bound_to.insert(0, node._etree_obj)
             elif head._position is TAIL:
                 head_anchor = head._bound_to
+                assert isinstance(head_anchor, _Element)
                 head_content = head.content
 
                 head_anchor.addnext(node._etree_obj)
@@ -2533,7 +2535,9 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
+        assert isinstance(head._bound_to, _Element)
         if head._position is DATA:
+            assert head.parent is not None
             if len(head.parent._etree_obj):
                 return _get_or_create_element_wrapper(
                     head.parent._etree_obj[0], self._wrapper_cache
@@ -2649,6 +2653,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         if self._position in (DATA, TAIL):
             return self
         elif self._position is APPENDED:
+            assert isinstance(self._bound_to, TextNode)
             return self._bound_to._tail_sequence_head
         else:
             raise InvalidCodePath
