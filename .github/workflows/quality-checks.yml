@@ -68,4 +68,11 @@ jobs:
       - run: poetry install
       - run: poetry run make ${{ matrix.target }}
 
+  citation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: validate CITATION.cff
+        uses: LutrisEng/validate-cff@v1.0.0
+
 ...

@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+type: software
+message: >
+  If you cite this software, please use these metadata.
+title: delb
+authors:
+  - family-names: Sachsenheim
+    given-names: Frank
+    email: funkyfuture@riseup.net
+license: AGPL-3.0
+version: "0.3"
+repository-code: "https://github.com/funkyfuture/delb"
+#  vim: set ts=2 sw=2 tw=500 et ft=yaml :
