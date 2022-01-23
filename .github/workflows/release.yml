@@ -1,0 +1,27 @@
+---
+
+name: create release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: register date variable
+        id: registry
+        run: echo "::set-output name=date::$(date '+%Y-%m-%d')"
+      - uses: cuchi/jinja2-action@v1.2.0
+        with:
+          template: .github/templates/CITATION.cff.j2
+          output_file: CITATION.cff
+          variables: |
+            release_date=${{ steps.registry.outputs.date }}
+      - uses: LutrisEng/validate-cff@v1.0.0
+
+...
