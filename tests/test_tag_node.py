@@ -256,8 +256,7 @@ def test_getitem():
     root = document.root
 
     assert root["ham"] == "spam"
-    with pytest.raises(KeyError):
-        root["foo"]
+    assert root["foo"] is None
 
     assert root[-1].local_name == "d"
 

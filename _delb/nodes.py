@@ -461,6 +461,9 @@ class TagAttributes(MutableMapping):
         self._attributes: Dict[str, Attribute] = {}
         self._element = element
 
+    def __contains__(self, item: Any) -> bool:
+        return self[item] is not None
+
     def __delitem__(self, key: Union[str, slice]):
         if isinstance(key, str):
             pass
@@ -472,7 +475,7 @@ class TagAttributes(MutableMapping):
         del self._element.attrib[key]
         self._attributes.pop(key, None)
 
-    def __getitem__(self, item: Union[str, slice]) -> Attribute:
+    def __getitem__(self, item: Union[str, slice]) -> Optional[Attribute]:
         if isinstance(item, str):
             namespace, name = _deconstruct_clark_notation(item)
         elif isinstance(item, slice):
@@ -492,7 +495,7 @@ class TagAttributes(MutableMapping):
                 self._attributes[key] = result
             return result
         else:
-            raise KeyError
+            return None
 
     def __iter__(self) -> Iterator[str]:
         yield from self._element.attrib  # type: ignore
@@ -520,6 +523,10 @@ class TagAttributes(MutableMapping):
     def as_dict_with_strings(self) -> Dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
         return {str(k): str(v) for k, v in self._element.attrib.items()}
+
+    def get(self, key, default=None):
+        result = self[key]
+        return default if result is None else result
 
     def pop(  # type: ignore
         self, key: str, default: Optional[str] = None
@@ -1402,7 +1409,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     @overload
-    def __getitem__(self, item: str) -> Attribute:
+    def __getitem__(self, item: str) -> Optional[Attribute]:
         ...
 
     @overload
@@ -1430,9 +1437,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise IndexError
 
         elif isinstance(item, slice):
-            if any(isinstance(x, str) for x in (item.start, item.stop)):
-                return self.attributes.__getitem__(item)
-            else:
+            if all(isinstance(x, str) for x in (item.start, item.stop)):
+                return self.attributes[item]
+            elif all(
+                (isinstance(x, int) or x is None) for x in (item.start, item.stop)
+            ):
                 return list(self.child_nodes(recurse=False))[item]
 
         raise TypeError
@@ -1533,6 +1542,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> print(node)
         <node xmlns:ns0="http://namespace" ns0:bar="1"/>
 
+        Unlike with typical Python mappings, requesting a non-existing attribute
+        doesn't evoke a :exc:`KeyError`, instead ``None`` is returned.
         """
         return self._attributes
 
