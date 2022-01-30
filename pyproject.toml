@@ -23,7 +23,7 @@ packages = [
     {include = "delb"},
     {include = "_delb"},
 ]
-include = ["_delb/py.typed", "delb/py.typed"]
+include = ["CITATION.cff", "_delb/py.typed", "delb/py.typed"]
 
 [tool.poetry.extras]
 https-loader = ["requests"]
