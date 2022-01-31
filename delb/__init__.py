@@ -227,7 +227,7 @@ class Document(metaclass=DocumentMeta):
     """
 
     _loaders: Tuple[Loader, ...]
-    __slots__ = ("__root_node__", "head_nodes", "source_url", "tail_nodes")
+    __slots__ = ("__root_node__", "config", "head_nodes", "source_url", "tail_nodes")
 
     def __new__(
         cls,
