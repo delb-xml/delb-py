@@ -1,0 +1,16 @@
+name: Check documentation's hyperlinks
+
+on:
+  schedule:
+    - cron: "41 2 5 */3 *"
+
+jobs:
+  linkcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.9
+      - uses: abatilo/actions-poetry@v2.1.4
+      - run: cd docs && make linkcheck
