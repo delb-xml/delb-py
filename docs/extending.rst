@@ -46,7 +46,7 @@ with that name.
     specification changed.
 
 There's a repository that outlines the mechanics as developer reference:
-https://github.com/funkyfuture/delb-reference-plugins
+https://github.com/delb-xml/delb-py-reference-plugins
 
 There's also the snakesist_ project that implements both plugin types to
 interact with eXist-db_ as storage.

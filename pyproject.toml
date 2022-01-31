@@ -10,7 +10,7 @@ authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
 license = "AGPL-3.0"
 readme = "README.rst"
 documentation = "https://delb.readthedocs.io/"
-repository = "https://github.com/funkyfuture/delb"
+repository = "https://github.com/delb-xml/delb-py"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

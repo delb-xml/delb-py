@@ -28,8 +28,8 @@ Prerequisites:
 
 Obtain the code with roughly one of:
 
-- ``git clone git@github.com:funkyfuture/delb.git``
-- ``curl -LosS https://github.com/funkyfuture/delb/archive/main.tar.gz | tar xzf -``
+- ``git clone git@github.com:delb-xml/delb-py.git``
+- ``curl -LosS https://github.com/delb-xml/delb-py/archive/main.tar.gz | tar xzf -``
 
 To install it regularly::
 

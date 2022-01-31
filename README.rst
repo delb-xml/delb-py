@@ -60,7 +60,7 @@ Kurt Raschke `noted in 2010`_::
    :target: https://pypi.org/project/delb
 .. |license| image:: https://img.shields.io/pypi/l/delb.svg?style=flat-square
    :alt: License
-   :target: https://github.com/funkyfuture/delb/blob/main/LICENSE.txt
+   :target: https://github.com/delb-xml/delb-py/blob/main/LICENSE.txt
 .. |python-support| image:: https://img.shields.io/pypi/pyversions/delb.svg?style=flat-square
    :alt: Python versions
 .. |rtd| image:: https://img.shields.io/badge/RTD-Docs-informational.svg?style=flat-square

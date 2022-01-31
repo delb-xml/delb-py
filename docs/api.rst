@@ -24,7 +24,7 @@ are attempted, you can change the
 :class:`list`. Its state is reflected in your whole application. Please refer to
 `this issue`_ when you require finer controls over these aspects.
 
-.. _this issue: https://github.com/funkyfuture/delb/issues/9
+.. _this issue: https://github.com/delb-xml/delb-py/issues/9
 
 Core
 ~~~~
