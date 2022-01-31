@@ -2782,6 +2782,12 @@ class QueryResults(Sequence[TagNode]):
     def __init__(self, results: Iterator[_ElementWrappingNode]):
         self.__items = cast(Tuple[TagNode], tuple(results))
 
+    def __eq__(self, other):
+        if not isinstance(other, QueryResults):
+            raise TypeError
+
+        return self.__items == other.__items
+
     def __getitem__(self, item):
         return self.__items[item]
 

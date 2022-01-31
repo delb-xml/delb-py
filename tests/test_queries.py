@@ -178,6 +178,35 @@ def test_results_as_other_type(queries_sample):
     assert len(as_tuple) == 4
 
 
+def test_results_euqality():
+    document = Document(
+        """\
+        <root>
+            <s corresp="src:tlaIBUBd4DTggLNoE2MvPgWWka2UdY">
+                <w corresp="src:tlaIBUBdzQ3wWIW60TVhNy3cRxYmgg"><unclear/></w>
+                <w corresp="src:tlaIBUBd7n0fy1OPU1DjVU66j2B4Qc"><unclear/></w>
+                <w corresp="src:tlaIBUBdzMdqTkhlEFpidr4rYPFyro"><unclear/></w>
+                <w corresp="src:tlaIBUBd8yCk7rXFEayk6Xvs3N1jXE"><unclear/></w>
+                <w corresp="src:tlaIBUBdyjtg3DJX0rwjyrdHZc26is"><unclear/></w>
+                <w corresp="src:tlaIBUBd7UZxeumekGAks0Y5ht3nvs"><unclear/></w>
+                <w corresp="src:tlaIBUBd4NQUh0FikJ0stCGrcxq9wk"><unclear/></w>
+                <w corresp="src:tlaIBUBd7VHAfkj20bDsv3QzaQ4eoo"><unclear/></w>
+                <w corresp="src:tlaIBUBd5L0JpJVZUOWoGFGhqXAfqc"><unclear/></w>
+                <w corresp="src:tlaIBUBd9zrhmbxrkyqpG7t84kiw2s"><unclear/></w>
+                <w corresp="src:tlaIBUBd18UraAwdkCUgzqNsZplqIw"><unclear/></w>
+                <w corresp="src:tlaIBUBd8EjhpjvSERfoCg6pz5qYxc"><unclear/></w>
+                <w corresp="src:tlaIBUBdQbsUzWoU0ZAg6KyIT74EPU"><unclear/></w>
+                <w corresp="src:tlaIBUBd4C0OAENyE3Ti62GjqGFmto"><unclear/></w>
+                <w corresp="src:tlaIBUBd8XAOdLv8k7WiQ1f7ZFe3IQ"><unclear/></w>
+                <w corresp="src:tlaIBUBd37vHGdUYkiYqNF8ExKiO6M"><unclear/></w>
+            </s>
+        </root>
+        """
+    )
+    words = document.css_select("s w")
+    assert words == words.filtered_by(lambda n: True)
+
+
 def test_results_filtered_by(queries_sample):
     def has_n_attribute(node):
         return node.attributes.get("n") is not None
