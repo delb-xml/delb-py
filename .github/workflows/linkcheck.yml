@@ -13,4 +13,4 @@ jobs:
         with:
             python-version: 3.9
       - uses: abatilo/actions-poetry@v2.1.4
-      - run: cd docs && make linkcheck
+      - run: make -C docs linkcheck
