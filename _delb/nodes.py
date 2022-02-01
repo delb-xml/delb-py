@@ -18,7 +18,7 @@ from __future__ import annotations
 import gc
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import MutableMapping
+from collections.abc import Collection, MutableMapping
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from warnings import warn
@@ -2780,7 +2780,13 @@ class QueryResults(Sequence[TagNode]):
     """
 
     def __init__(self, results: Iterator[_ElementWrappingNode]):
-        self.__items = cast(Tuple[TagNode], tuple(results))
+        self.__items = cast(Tuple[TagNode, ...], tuple(results))
+
+    def __eq__(self, other):
+        if not isinstance(other, Collection):
+            raise TypeError
+
+        return len(self.__items) == len(other) and all(x in other for x in self.__items)
 
     def __getitem__(self, item):
         return self.__items[item]
