@@ -66,3 +66,4 @@ tests: black check-formatting mypy pytest doctest
 .PHONY: update-citation-file
 update-citation-file:
 	jinja -D release_date $(DATE) -D release_tag $(VERSION) templates/CITATION.cff.j2 > CITATION.cff
+	cffconvert --validate

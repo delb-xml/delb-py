@@ -37,6 +37,7 @@ cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21", optional = true}
 setuptools = "*"
+cffconvert = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 autoclasstoc = "^1.1.1"
