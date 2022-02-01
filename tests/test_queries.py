@@ -178,7 +178,7 @@ def test_results_as_other_type(queries_sample):
     assert len(as_tuple) == 4
 
 
-def test_results_euqality():
+def test_results_equality():
     document = Document(
         """\
         <root>
@@ -203,8 +203,11 @@ def test_results_euqality():
         </root>
         """
     )
-    words = document.css_select("s w")
-    assert words == words.filtered_by(lambda n: True)
+    word_nodes = document.css_select("s w")
+    assert word_nodes == word_nodes.filtered_by(lambda n: True)
+    assert word_nodes == word_nodes.as_list()
+    assert word_nodes == tuple(reversed(word_nodes.as_list()))
+    assert word_nodes != 2 * word_nodes.as_list()
 
 
 def test_results_filtered_by(queries_sample):
