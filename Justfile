@@ -4,6 +4,7 @@
 default: tests
 
 
+date := `date '+%Y-%m-%d'`
 version := `poetry version --short`
 
 
@@ -47,3 +48,9 @@ showdocs: docs
 # run all tests on normalized code
 tests: black check-formatting mypy pytest doctest
 	poetry check
+
+# Generates and validates CITATION.cff
+update-citation-file:
+	jinja -D release_date {{date}} -D release_tag {{version}} templates/CITATION.cff.j2 \
+	    > CITATION.cff
+	cffconvert --validate
