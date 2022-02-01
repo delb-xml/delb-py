@@ -4,6 +4,21 @@
 default: tests
 
 
+citation_template := """
+    cff-version: 1.2.0
+    type: software
+    message: >
+      If you cite this software, please use these metadata.
+    title: delb
+    authors:
+      - family-names: Sachsenheim
+        given-names: Frank
+        email: funkyfuture@riseup.net
+    license: AGPL-3.0
+    version: _VERSION_
+    repository-code: "https://github.com/funkyfuture/delb"
+    date-released: _DATE_
+"""
 date := `date '+%Y-%m-%d'`
 version := `poetry version --short`
 
@@ -51,6 +66,6 @@ tests: black check-formatting mypy pytest doctest
 
 # Generates and validates CITATION.cff
 update-citation-file:
-	jinja -D release_date {{date}} -D release_tag {{version}} templates/CITATION.cff.j2 \
-	    > CITATION.cff
-	cffconvert --validate
+    # TODO see https://github.com/casey/just/issues/876#issuecomment-1027022978
+    @echo "{{ replace(replace(citation_template, "_DATE_", date), "_VERSION_", version) }}" > CITATION.cff
+    cffconvert --validate
