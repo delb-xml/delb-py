@@ -18,7 +18,7 @@ from __future__ import annotations
 import gc
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import Collection, Container, MutableMapping, Sized
+from collections.abc import Collection, MutableMapping
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from warnings import warn
