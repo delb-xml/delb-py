@@ -37,7 +37,7 @@ pytest:
 release: tests
 	git tag -f {{version}}
 	git push origin main
-	git push -f origin $(VERSION)
+	git push -f origin {{version}}
 	poetry publish --build
 
 # build and open HTML documentation
