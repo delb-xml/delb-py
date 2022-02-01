@@ -10,7 +10,7 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.3 (unreleased)
+0.3 (2022-01-31)
 ----------------
 
 News
