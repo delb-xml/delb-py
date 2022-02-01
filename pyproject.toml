@@ -37,11 +37,11 @@ cssselect = "*"
 lxml = "*"
 requests = {version = "^2.21", optional = true}
 setuptools = "*"
-cffconvert = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 autoclasstoc = "^1.1.1"
 black = "*"
+cffconvert = "^2.0.0"
 flake8-black = "*"
 jinja-cli = "^1.2.2"
 lxml-stubs = "*"
@@ -55,3 +55,4 @@ types-requests = "^2.21"
 types-setuptools = "*"
 typing-extensions = "*"
 xmldiff = "*"
+
