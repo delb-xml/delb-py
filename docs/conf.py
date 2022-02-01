@@ -30,7 +30,7 @@ from _delb.utils import _StringMixin
 # -- Project information -----------------------------------------------------
 
 project = "delb"
-copyright = "2018-2021, Frank Sachsenheim"
+copyright = "2018-2022, Frank Sachsenheim"
 author = "Frank Sachsenheim"
 
 # The full version, including alpha/beta/rc tags
