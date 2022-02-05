@@ -61,7 +61,7 @@ from _delb.utils import (
     last,
     _random_unused_prefix,
 )
-from _delb.xpath import LocationStep, XPathExpression
+from _delb.xpath import LegacyLocationStep, LegacyXPathExpression
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -1873,8 +1873,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         _expression = (
             expression
-            if isinstance(expression, XPathExpression)
-            else XPathExpression(expression)
+            if isinstance(expression, LegacyXPathExpression)
+            else LegacyXPathExpression(expression)
         )
 
         if not _expression.is_unambiguously_locatable():
@@ -1893,7 +1893,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         return self._create_by_xpath(_expression.location_paths[0].location_steps[1:])
 
-    def _create_by_xpath(self, steps: Iterable[LocationStep]) -> "TagNode":
+    def _create_by_xpath(self, steps: Iterable[LegacyLocationStep]) -> "TagNode":
         namespace: Optional[str]
         node = self
         for i, step in enumerate(steps):
@@ -2238,7 +2238,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
         compat_namespaces: etree._DictAnyStr
-        xpath_expression = XPathExpression(expression)
+        xpath_expression = LegacyXPathExpression(expression)
 
         if None in namespaces:
             has_default_namespace = True
