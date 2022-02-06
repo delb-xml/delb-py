@@ -13,22 +13,44 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" This is not an XPath implementation. """
+# TODO the solutions to these issues must be available:
+# https://github.com/we-like-parsers/pegen/issues/53
+
+from __future__ import annotations
 
 from abc import ABC
 from collections import UserString
 from functools import lru_cache
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Set
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+)
+
+from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
     from delb import TagNode
 
 
+def evaluate(node: TagNode, expression: str) -> Iterable[TagNode, ...]:
+    return parse(expression).evaluate([node])
+
+
+__all__ = (evaluate.__name__, parse.__name__)
+
+
 # REMOVE:
 
 ####  L E G A C Y  ####
 
+
+""" This is not an XPath implementation. """
 
 # ordered by alphabet
 AXIS_NAMES = (
@@ -360,22 +382,24 @@ class LegacyPredicateExpression(ABC):
     @lru_cache(64)
     def parse(expression: str) -> "LegacyPredicateExpression":
         """
-        Parse string expression into ``PredicateExpression`` subclass instance.
+                Parse string expression into ``PredicateExpression`` subclass instance.
 
-        >>> isinstance(LegacyPredicateExpression.parse('[(@foo)]'),
-        LegacyAttributePredicate)
-        True
+        import _delb.xpath.parser        >>> isinstance(_delb.xpath.parser.parse('[(@foo)]'),
+                LegacyAttributePredicate)
+                True
 
-        >>> isinstance(LegacyPredicateExpression.parse('[@a="1" or @b="2"]'),
-        BooleanPredicate) # noqa: E501
-        True
+        import _delb.xpath.parser        >>> isinstance(_delb.xpath.parser.parse('[@a="1" or
+        @b="2"]'),
+                BooleanPredicate) # noqa: E501
+                True
 
-        >>> isinstance(LegacyPredicateExpression.parse('[1]'), LegacyIndexPredicate)
-        True
+        import _delb.xpath.parser        >>> isinstance(_delb.xpath.parser.parse('[1]'),
+        LegacyIndexPredicate)
+                True
 
-        >>> str(LegacyPredicateExpression.parse(
-        ...     '[@href and starts-with(@href, "https://")]'))
-        '(@href and starts-with(@href,"https://"))'
+        import _delb.xpath.parser        >>> str(_delb.xpath.parser.parse(
+                ...     '[@href and starts-with(@href, "https://")]'))
+                '(@href and starts-with(@href,"https://"))'
 
         """
         if expression.startswith("["):
@@ -434,14 +458,14 @@ class LegacyAttributePredicate(LegacyPredicateExpression):
     # related: https://github.com/python/mypy/issues/5107
     def parse(expression: str) -> "LegacyAttributePredicate":  # type: ignore
         """
-        Parse an xpath predicate string expression into an ``AttributePredicate``
-        instance.
+                Parse an xpath predicate string expression into an ``AttributePredicate``
+                instance.
 
-        >>> isinstance(
-        ...     LegacyAttributePredicate.parse('@type="translation"'),
-        LegacyAttributePredicate
-        ... )
-        True
+        import _delb.xpath.parser        >>> isinstance(
+                ...     _delb.xpath.parser.parse('@type="translation"'),
+                LegacyAttributePredicate
+                ... )
+                True
 
         """
         if expression.startswith("attribute::"):
