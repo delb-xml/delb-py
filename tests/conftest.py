@@ -1,4 +1,17 @@
 from pathlib import Path
+from subprocess import run
+
+
+XPATH_MODULE_PATH = Path(__file__).parent / ".." / "_delb" / "xpath"
+if (XPATH_MODULE_PATH / "xpath.gram").stat().st_mtime > (
+    XPATH_MODULE_PATH / "parser.py"
+).stat().st_mtime:
+    run(
+        "just generate-xpath-parser",
+        shell=True,
+        check=True,
+    )
+
 
 from pytest import fixture
 

@@ -25,6 +25,10 @@ check-formatting:
 doctest:
 	make -C docs doctest
 
+# generate the XPath parser module
+generate-xpath-parser:
+    python -m pegen _delb/xpath/xpath.gram -o _delb/xpath/parser.py
+
 # run static type checks with mypy
 mypy:
 	mypy _delb delb

@@ -13,22 +13,40 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" This is not an XPath implementation. """
+# TODO the solutions to these issues must be available:
+# https://github.com/we-like-parsers/pegen/issues/53
 
 from abc import ABC
 from collections import UserString
 from functools import lru_cache
+from io import StringIO
+from tokenize import generate_tokens
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Set
+
+from pegen.tokenizer import Tokenizer
+
+from _delb.xpath.ast import XPathExpression
+from _delb.xpath.parser import XPathParser
 
 
 if TYPE_CHECKING:
     from delb import TagNode
 
 
+@lru_cache(64)
+def parse(expression: str):
+    tokenizer = Tokenizer(generate_tokens(StringIO(expression).readline))
+    result = XPathParser(tokenizer).start()
+    assert isinstance(result, XPathExpression)
+    return result
+
+
 # REMOVE:
 
 ####  L E G A C Y  ####
 
+
+""" This is not an XPath implementation. """
 
 # ordered by alphabet
 AXIS_NAMES = (

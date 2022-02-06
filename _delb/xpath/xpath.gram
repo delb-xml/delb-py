@@ -1,0 +1,21 @@
+@class XPathParser
+
+@subheader """
+from _delb.xpath.ast import *
+"""
+
+@trailer ""
+
+
+#
+
+
+start: paths="|".location_path+ { XPathExpression(paths) }
+
+location_path: steps="/".location_step+ { LocationPath(steps) }
+
+location_step: name_test=name_test { LocationStep(name_test) }
+
+name_test:
+  | pattern=NAME { NameTest(pattern) }
+  | pattern="."  { NameTest(".") }
