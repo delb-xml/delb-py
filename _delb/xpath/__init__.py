@@ -16,12 +16,14 @@
 # TODO the solutions to these issues must be available:
 # https://github.com/we-like-parsers/pegen/issues/53
 
+from __future__ import annotations
+
 from abc import ABC
 from collections import UserString
 from functools import lru_cache
 from io import StringIO
 from tokenize import generate_tokens
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Set
+from typing import Iterable, TYPE_CHECKING, Dict, Iterator, List, Optional, Set
 
 from pegen.tokenizer import Tokenizer
 
@@ -31,6 +33,10 @@ from _delb.xpath.parser import XPathParser
 
 if TYPE_CHECKING:
     from delb import TagNode
+
+
+def evaluate(node: TagNode, expression: str) -> Iterable[TagNode, ...]:
+    return parse(expression).evaluate([node])
 
 
 @lru_cache(64)

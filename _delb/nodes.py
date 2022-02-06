@@ -56,6 +56,7 @@ from _delb.utils import (
     _random_unused_prefix,
 )
 from _delb.xpath import LegacyLocationStep, LegacyXPathExpression
+from _delb.xpath import evaluate
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -2234,7 +2235,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: query-nodes
         """
+        result = QueryResults(evaluate(self, expression))
+        assert result == self._etree_xpath(expression), (
+            "Please report that the native XPath evaluator seems faulty with the "
+            f"expression `{expression}` at https://github.com/delb-xml/delb-py/issues"
+        )
+        return result
 
+    def _etree_xpath(self, expression: str) -> "QueryResults":
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
         compat_namespaces: etree._DictAnyStr
