@@ -41,8 +41,13 @@ def evaluate(node: TagNode, expression: str) -> Iterable[TagNode, ...]:
 
 @lru_cache(64)
 def parse(expression: str):
+    # FIXME the problem is that the tokenizer tears axis names with "-" apart.
+    #       the solution seems to be to implement an adaption of generate_token,
+    #       that can then be shortened a lot and let it eat string objects,
+    #       also "/ shouldn't be considered as operator, or should it?
+    #       and there's "*" in name tests.
     tokenizer = Tokenizer(generate_tokens(StringIO(expression).readline))
-    result = XPathParser(tokenizer).start()
+    result = XPathParser(tokenizer, verbose=True).start()
     assert isinstance(result, XPathExpression)
     return result
 

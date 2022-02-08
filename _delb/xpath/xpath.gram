@@ -10,12 +10,29 @@ from _delb.xpath.ast import *
 #
 
 
-start: paths="|".location_path+ { XPathExpression(paths) }
+start: paths="|".location_path+  { XPathExpression(paths) }
 
-location_path: steps="/".location_step+ { LocationPath(steps) }
+location_path:
+  | "/" steps="/".location_step+  { LocationPath(steps, True) }
+  | steps="/".location_step+      { LocationPath(steps, False) }
 
-location_step: name_test=name_test { LocationStep(name_test) }
+location_step:
+  | "."        { LocationStep(Axis("self"), None) }
+  | ".."       { LocationStep(Axis("parent")) }
+  | step=step  { step }
 
-name_test:
-  | pattern=NAME { NameTest(pattern) }
-  | pattern="."  { NameTest(".") }
+step:
+  | axis=axis_specifier name_test=name_test { LocationStep(axis, name_test) }
+  | name_test=name_test                     { LocationStep(Axis("child"), name_test) }
+
+axis_specifier:
+  | axis=axis_name "::"  { Axis(axis) }
+  | "/"                  { Axis("descendant_or_self") }
+
+axis_name:
+  # the both do not yield usable results
+  | "descendant" OP "or" OP "self"  { Axis("descendant_or_self") }
+  | parts="-".NAME+  { "_".join(ti.string for ti in parts) }
+
+
+name_test: pattern=NAME  { NameTest(pattern) }

@@ -6,44 +6,56 @@ from _delb.xpath import parse
 from _delb.xpath.ast import *
 
 
-# fake _delb.xpath.ast.…
-_NameTest = NameTest
-
-
-def NameTest(pattern):
-    return _NameTest(TokenInfo(0, pattern, (1, 0), (1, len(pattern)), pattern))
-
-
-#
-
-
 @mark.parametrize(
-    ("expression", "ast"),
+    ("expression", "paths"),
     (
         (
+            "/foo",
+            [
+                LocationPath(
+                    [LocationStep(Axis("child"), NameTest("foo"))], absolute=True
+                )
+            ],
+        ),
+        (
             "foo",
-            XPathExpression([LocationPath([LocationStep(NameTest("foo"))])]),
+            [
+                LocationPath(
+                    [LocationStep(Axis("child"), NameTest("foo"))],
+                )
+            ],
         ),
         (
             "./foo",
-            XPathExpression(
-                [
-                    LocationPath(
-                        [LocationStep(NameTest(".")), LocationStep(NameTest("foo"))]
-                    )
-                ]
-            ),
+            [
+                LocationPath(
+                    [
+                        LocationStep(Axis("self"), None),
+                        LocationStep(Axis("child"), NameTest("foo")),
+                    ]
+                )
+            ],
         ),
         (
-            "foo|bar",
-            XPathExpression(
-                [
-                    LocationPath([LocationStep(NameTest("foo"))]),
-                    LocationPath([LocationStep(NameTest("bar"))]),
-                ]
-            ),
+            "/foo|bar",
+            [
+                LocationPath(
+                    [LocationStep(Axis("child"), NameTest("foo"))], absolute=True
+                ),
+                LocationPath([LocationStep(Axis("child"), NameTest("bar"))]),
+            ],
+        ),
+        (
+            "descendant-or-self::matrix",
+            [
+                LocationPath(
+                    [LocationStep(Axis("descendant_or_self"), NameTest("matrix"))]
+                )
+            ],
         ),
     ),
 )
-def test_parse(expression, ast):
-    assert parse(expression) == ast
+def test_parse(expression, paths):
+    result = parse(expression)
+    assert isinstance(result, XPathExpression)
+    assert result.location_paths == paths

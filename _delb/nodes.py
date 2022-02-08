@@ -2236,6 +2236,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :meta category: query-nodes
         """
         result = QueryResults(evaluate(self, expression))
+        # TODO keep this for the 0.4 release, for the 0.5 release implement this
+        #      functionality as mock for the test suite
         assert result == self._etree_xpath(expression), (
             "Please report that the native XPath evaluator seems faulty with the "
             f"expression `{expression}` at https://github.com/delb-xml/delb-py/issues"
