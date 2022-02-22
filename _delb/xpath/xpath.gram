@@ -10,29 +10,23 @@ from _delb.xpath.ast import *
 #
 
 
-start: paths="|".location_path+  { XPathExpression(paths) }
+start: paths="|".location_path+ ENDMARKER  { XPathExpression(paths) }
 
 location_path:
-  | "/" steps="/".location_step+  { LocationPath(steps, True) }
-  | steps="/".location_step+      { LocationPath(steps, False) }
+  | "/" steps="/".location_step+  { LocationPath(steps, absolute=True) }
+  | steps="/".location_step+      { LocationPath(steps, absolute=False) }
 
 location_step:
-  | "."        { LocationStep(Axis("self"), None) }
-  | ".."       { LocationStep(Axis("parent")) }
+  | "."        { LocationStep(Axis("self"), name_test=None) }
+  | ".."       { LocationStep(Axis("parent"), name_test=None) }
   | step=step  { step }
 
 step:
-  | axis=axis_specifier name_test=name_test { LocationStep(axis, name_test) }
-  | name_test=name_test                     { LocationStep(Axis("child"), name_test) }
+  | axis=axis_specifier name_test=name_test  { LocationStep(axis, name_test) }
+  | name_test=name_test                      { LocationStep(Axis("child"), name_test) }
 
 axis_specifier:
-  | axis=axis_name "::"  { Axis(axis) }
+  | axis=NAME "::"       { Axis(axis) }
   | "/"                  { Axis("descendant_or_self") }
-
-axis_name:
-  # the both do not yield usable results
-  | "descendant" OP "or" OP "self"  { Axis("descendant_or_self") }
-  | parts="-".NAME+  { "_".join(ti.string for ti in parts) }
-
 
 name_test: pattern=NAME  { NameTest(pattern) }

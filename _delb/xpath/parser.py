@@ -15,9 +15,9 @@ from _delb.xpath.ast import *
 class XPathParser(Parser):
     @memoize
     def start(self) -> Optional[Any]:
-        # start: "|".location_path+
+        # start: "|".location_path+ $
         mark = self._mark()
-        if paths := self._gather_1():
+        if (paths := self._gather_1()) and (_endmarker := self.expect("ENDMARKER")):
             return XPathExpression(paths)
         self._reset(mark)
         return None
@@ -63,31 +63,13 @@ class XPathParser(Parser):
 
     @memoize
     def axis_specifier(self) -> Optional[Any]:
-        # axis_specifier: axis_name "::" | "/"
+        # axis_specifier: NAME "::" | "/"
         mark = self._mark()
-        if (axis := self.axis_name()) and (literal := self.expect("::")):
+        if (axis := self.name()) and (literal := self.expect("::")):
             return Axis(axis)
         self._reset(mark)
         if literal := self.expect("/"):
             return Axis("descendant_or_self")
-        self._reset(mark)
-        return None
-
-    @memoize
-    def axis_name(self) -> Optional[Any]:
-        # axis_name: "descendant" OP "or" OP "self" | "-".NAME+
-        mark = self._mark()
-        if (
-            (literal := self.expect("descendant"))
-            and (op := self.op())
-            and (literal_1 := self.expect("or"))
-            and (op_1 := self.op())
-            and (literal_2 := self.expect("self"))
-        ):
-            return Axis("descendant_or_self")
-        self._reset(mark)
-        if parts := self._gather_7():
-            return "_".join(ti.string for ti in parts)
         self._reset(mark)
         return None
 
@@ -166,25 +148,5 @@ class XPathParser(Parser):
         self._reset(mark)
         return None
 
-    @memoize
-    def _loop0_8(self) -> Optional[Any]:
-        # _loop0_8: "-" NAME
-        mark = self._mark()
-        children = []
-        while (literal := self.expect("-")) and (elem := self.name()):
-            children.append(elem)
-            mark = self._mark()
-        self._reset(mark)
-        return children
-
-    @memoize
-    def _gather_7(self) -> Optional[Any]:
-        # _gather_7: NAME _loop0_8
-        mark = self._mark()
-        if (elem := self.name()) is not None and (seq := self._loop0_8()) is not None:
-            return [elem] + seq
-        self._reset(mark)
-        return None
-
     KEYWORDS = ()
-    SOFT_KEYWORDS = ("descendant", "self", "or")
+    SOFT_KEYWORDS = ()

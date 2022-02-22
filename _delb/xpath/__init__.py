@@ -21,14 +21,13 @@ from __future__ import annotations
 from abc import ABC
 from collections import UserString
 from functools import lru_cache
-from io import StringIO
-from tokenize import generate_tokens
 from typing import Iterable, TYPE_CHECKING, Dict, Iterator, List, Optional, Set
 
 from pegen.tokenizer import Tokenizer
 
 from _delb.xpath.ast import XPathExpression
 from _delb.xpath.parser import XPathParser
+from _delb.xpath.tokenize import tokenize
 
 
 if TYPE_CHECKING:
@@ -46,7 +45,7 @@ def parse(expression: str):
     #       that can then be shortened a lot and let it eat string objects,
     #       also "/ shouldn't be considered as operator, or should it?
     #       and there's "*" in name tests.
-    tokenizer = Tokenizer(generate_tokens(StringIO(expression).readline))
+    tokenizer = Tokenizer(tokenize(expression))
     result = XPathParser(tokenizer, verbose=True).start()
     assert isinstance(result, XPathExpression)
     return result
