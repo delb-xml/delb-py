@@ -1015,7 +1015,12 @@ class NodeBase(ABC):
             tag = QName(local_name)
 
         result = _wrapper_cache(
-            context.makeelement(tag.text, attrib=attributes, nsmap=context.nsmap),
+            context.makeelement(
+                tag.text,
+                attrib=attributes,
+                # TODO https://github.com/lxml/lxml-stubs/issues/62
+                nsmap=context.nsmap,  # type: ignore
+            ),
         )
         assert isinstance(result, TagNode)
 
@@ -1821,7 +1826,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self._etree_obj = parent._etree_obj.makeelement(
                 etree.QName(self._etree_obj),
                 attrib=dict(self._etree_obj.attrib),  # type: ignore
-                nsmap=parent.namespaces,
+                # TODO https://github.com/lxml/lxml-stubs/issues/62
+                nsmap=parent.namespaces,  # type: ignore
             )
             self._attributes = TagAttributes(self._etree_obj)
             _wrapper_cache.wrappers[self._etree_obj] = self
@@ -2280,7 +2286,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     if ":" not in node_test.data:
                         node_test.data = prefix + ":" + node_test.data
 
-        _results = etree_obj.xpath(str(xpath_expression), namespaces=compat_namespaces)
+        _results = etree_obj.xpath(
+            str(xpath_expression),
+            # TODO https://github.com/lxml/lxml-stubs/issues/62
+            namespaces=compat_namespaces,  # type: ignore
+        )
         if not (
             isinstance(_results, list)
             and all(isinstance(x, _Element) for x in _results)
