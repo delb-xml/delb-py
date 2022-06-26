@@ -47,6 +47,19 @@ class InvalidOperation(Exception):
     pass
 
 
+class XPathParsingError(Exception):
+    pass
+
+
+class InvalidXPathToken(XPathParsingError):
+    def __init__(self, index: int, token: str):
+        self.index = index
+        self.token = token
+
+    def __str__(self):
+        return f"Unrecognizable token at position {self.index}: {self.token}"
+
+
 __all__ = (
     FailedDocumentLoading.__name__,
     InvalidCodePath.__name__,

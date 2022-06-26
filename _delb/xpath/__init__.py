@@ -13,8 +13,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# TODO the solutions to these issues must be available:
-# https://github.com/we-like-parsers/pegen/issues/53
+"""
+TODO describe the scope of this implementation
+"""
 
 from __future__ import annotations
 
