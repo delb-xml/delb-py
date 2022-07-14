@@ -43,8 +43,8 @@ resources.
 Kurt Raschke `noted in 2010`_::
 
   In a DOM-based implementation, it would be relatively easy […]
-  But lxml doesn't use text nodes; instead it uses and properties to hold text
-  content.
+  But lxml doesn't use text nodes; instead it uses [``text``] and [``tail``]
+  properties to hold text content.
 
 
 .. _snakesist: https://pypi.org/project/snakesist/
