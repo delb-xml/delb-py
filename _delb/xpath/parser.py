@@ -4,11 +4,15 @@ from functools import lru_cache
 from typing import Sequence
 
 from _delb.xpath.ast import XPathExpression
-from _delb.xpath.tokenizer import tokenize, Token
+from _delb.xpath.tokenizer import (
+    tokenize,
+    Token,
+    TokenType,
+)
 
 
 class XPathParser:
-    def __int__(self):
+    def __init__(self):
         raise NotImplementedError
 
     def __call__(self, tokens: Sequence[Token]) -> XPathExpression:

@@ -101,6 +101,7 @@ def test_tokenize(_in, out):
         ("f.oo", TokenType.NAME),
         ("🔥", TokenType.NAME),
         ("/", TokenType.SLASH),
+        ("//", TokenType.SLASH_SLASH),
         ("*", TokenType.ASTERISK),
         ("::", TokenType.AXIS_SEPARATOR),
         (":", TokenType.COLON),

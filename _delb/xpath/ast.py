@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional
 if TYPE_CHECKING:
     from delb import TagNode
 
+Predicates: TypeAlias = List[Predicate]
 
 # base classes for nodes
 
@@ -71,9 +72,15 @@ class LocationPath(AggregationNode):
 
 
 class LocationStep(AggregationNode):
-    def __init__(self, axis: Axis, name_test: Optional[NameTest]):
+    def __init__(
+        self,
+        axis: Axis,
+        name_test: Optional[NameTest],
+        predicates: Optional[Predicates] = None,
+    ):
         self.axis = axis
         self.name_test = name_test
+        self.predicates = predicates or []
 
     def evaluate(self, node_set: Iterable[TagNode]) -> Iterator[TagNode]:
         candidates = self.axis.evaluate(node_set)
@@ -110,6 +117,14 @@ class Axis(AggregationNode):
 
     def self(self, node_set: Iterable[TagNode]) -> Iterator[TagNode]:
         yield from node_set
+
+
+class Predicate(AggregationNode):
+    def __init__(self, expr: str):
+        self.expr = expr
+
+    def evaluate(self, node_set: Iterable[TagNode]) -> Iterator[TagNode]:
+        raise NotImplementedError
 
 
 class NameTest(FilterNode):
