@@ -1,6 +1,5 @@
 import pkg_resources
 import pytest
-from lxml.etree import XPathEvalError
 
 from delb import Document, InvalidOperation, is_tag_node, tag
 
@@ -61,7 +60,7 @@ def test_fetch_or_create_by_xpath_with_prefix():
         "</root>"
     )
 
-    with pytest.raises(XPathEvalError):
+    with pytest.raises(RuntimeError):
         root.fetch_or_create_by_xpath("./unknwn:test")
 
 
@@ -147,6 +146,7 @@ def test_location_path_and_xpath_concordance(files_path):
     for doc_path in files_path.glob("*.xml"):
         document = Document(doc_path)
 
+        assert document.xpath(document.root.location_path).first is document.root
         for node in document.root.child_nodes(is_tag_node, recurse=True):
             queried_nodes = document.xpath(node.location_path)
             assert queried_nodes.size == 1
@@ -158,12 +158,8 @@ def test_quotes_in_css_selector():
     assert document.css_select('a[href^="https://super.test/"]').size == 1
     assert document.css_select('a[href|="https://super.test/123"]').size == 1
     assert document.css_select('a[href*="super"]').size == 1
-
-    # TODO
-    if DELB_VERSION >= (0, 4):
-        assert document.css_select('a:not([href|="https"])').size == 1
-        # TODO specify an `ends-with` function for XPath
-        assert document.css_select('a[href$="123"]').size == 1
+    # TODO re-activate when TagNode._etree_xpath was dropped
+    # assert document.css_select('a:not([href|="https"])').size == 1
 
 
 def test_results_as_other_type(queries_sample):

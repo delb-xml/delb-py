@@ -18,7 +18,7 @@ from __future__ import annotations
 import gc
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import Collection, MutableMapping
+from collections.abc import MutableMapping
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from warnings import warn
@@ -57,12 +57,16 @@ from _delb.utils import (
     DEFAULT_PARSER,
     _StringMixin,
     _crunch_whitespace,
-    _css_to_xpath,
     last,
     _random_unused_prefix,
 )
-from _delb.xpath import LegacyLocationStep, LegacyXPathExpression
-from _delb.xpath import evaluate
+from _delb.xpath import (
+    LegacyLocationStep,
+    LegacyXPathExpression,
+    QueryResults,
+    _css_to_xpath,
+)
+from _delb.xpath import evaluate as evaluate_xpath
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -1772,6 +1776,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def css_select(self, expression: str) -> "QueryResults":
         """
+        TODO
+
         Namespace prefixes are delimited with a ``|`` before a name test, for example
         ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
         to the default namespace or have no namespace and whose name is ``metadata``
@@ -1786,6 +1792,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def depth(self) -> int:
+        if self.parent is None:
+            return 0
         return self.location_path.count("/")
 
     @altered_default_filters()
@@ -1845,6 +1853,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             root_node = cast(TagNode, last(self.ancestors()))
         return root_node.__document__
 
+    # TODO
     def fetch_or_create_by_xpath(self, expression: str) -> "TagNode":
         """
         Fetches a single node that is locatable by the provided XPath expression. If
@@ -2061,17 +2070,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         An unambiguous XPath location path that points to this node from its tree root.
         """
-        steps = []
+        if self.parent is None:
+            return "/."
 
-        node = self
         with altered_default_filters(is_tag_node):
-            while node.parent is not None:
-                index = node.index
-                assert isinstance(index, int)
-                steps.append(index + 1)
-                node = node.parent
-
-        return "." + "".join(f"/*[{i}]" for i in reversed(steps))
+            steps = list(self.ancestors())
+            steps.pop()  # root
+            steps.reverse()
+            steps.append(self)
+            return "".join(f"/*[{n.index+1}]" for n in steps)  # type: ignore
 
     @altered_default_filters()
     def merge_text_nodes(self):
@@ -2205,7 +2212,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "Not all node types can be added as siblings to a root node."
             )
 
-    def xpath(self, expression: str) -> "QueryResults":
+    @altered_default_filters()
+    def xpath(
+        # TODO add a kwarg to disable the comparison w/ the etree implementation
+        self,
+        expression: str,
+        namespaces: Optional[Namespaces] = None,
+    ) -> "QueryResults":
         """
         Returns all :term:`tag node` s that match the evaluation of an XPath expression.
 
@@ -2232,16 +2245,23 @@ class TagNode(_ElementWrappingNode, NodeBase):
         https://github.com/lxml/lxml/pull/236
 
         :param expression: An XPath 1.0 location path.
+        :param namespaces: TODO
 
         :meta category: query-nodes
         """
-        result = QueryResults(evaluate(self, expression))
-        assert result == self._etree_xpath(expression), (
-            "Please report that the native XPath evaluator seems faulty with the "
-            f"expression `{expression}` at https://github.com/delb-xml/delb-py/issues"
+        result = QueryResults(  # TODO wrap in xpath
+            evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
         )
+        if __debug__ and all(isinstance(n, TagNode) for n in result):
+            etree_result = self._etree_xpath(expression)
+            assert result == etree_result, (
+                "Please report that the native XPath evaluator seems faulty with the "
+                f"expression `{expression}` at "
+                "https://github.com/delb-xml/delb-py/issues"
+            )
         return result
 
+    # REMOVE eventually, then see test_queries::test_quotes_in_css_selector
     def _etree_xpath(self, expression: str) -> "QueryResults":
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
@@ -2265,21 +2285,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
             compat_namespaces = cast("etree._DictAnyStr", namespaces)
 
         for location_path in xpath_expression.location_paths:
-            # TODO prepend self::node() if missing?
-
-            last_step = location_path.location_steps[-1]
-
-            if last_step.axis == "attribute":
-                raise InvalidOperation(
-                    "XPath expressions that point to attributes are not supported."
-                )
-            if last_step.node_test.type == "type_test":
-                raise InvalidOperation(
-                    "Other node tests than names tests are not supported for now. "
-                    "If you require to retrieve other nodes than tag nodes, please "
-                    "open an issue with a description of your use-case."
-                )
-
             if has_default_namespace:
                 for location_step in location_path.location_steps:
                     node_test = location_step.node_test
@@ -2290,16 +2295,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         _results = etree_obj.xpath(
             str(xpath_expression),
-            # TODO https://github.com/lxml/lxml-stubs/issues/62
             namespaces=compat_namespaces,  # type: ignore
         )
-        if not (
-            isinstance(_results, list)
-            and all(isinstance(x, _Element) for x in _results)
-        ):
-            raise InvalidOperation(
-                "Only XPath expressions that target tag nodes are supported."
-            )
+        assert isinstance(_results, Iterable)
         return QueryResults(
             (_wrapper_cache(cast(_Element, element)) for element in _results)
         )
@@ -2780,74 +2778,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self._bound_to._tail_sequence_head
         else:
             raise InvalidCodePath
-
-
-# query results container
-
-
-class QueryResults(Sequence[TagNode]):
-    """
-    A sequence with the results of a CSS or XPath query with some helpers for readable
-    Python expressions.
-    """
-
-    def __init__(self, results: Iterator[_ElementWrappingNode]):
-        self.__items = cast(Tuple[TagNode, ...], tuple(results))
-
-    def __eq__(self, other):
-        if not isinstance(other, Collection):
-            raise TypeError
-
-        return len(self.__items) == len(other) and all(x in other for x in self.__items)
-
-    def __getitem__(self, item):
-        return self.__items[item]
-
-    def __len__(self) -> int:
-        return len(self.__items)
-
-    def __repr__(self):
-        return str([repr(x) for x in self.__items])
-
-    def as_list(self) -> List[TagNode]:
-        """The contained nodes as a new :class:`list`."""
-        return list(self.__items)
-
-    @property
-    def as_tuple(self) -> Tuple[TagNode, ...]:
-        """The contained nodes in a :class:`tuple`."""
-        return self.__items
-
-    def filtered_by(self, *filters: Filter) -> "QueryResults":
-        """
-        Returns another :class:`QueryResults` instance that contains all nodes filtered
-        by the provided :term:`filter` s.
-        """
-        items = self.__items
-        for filter in filters:
-            items = (x for x in items if filter(x))  # type: ignore
-        return self.__class__(items)  # type: ignore
-
-    @property
-    def first(self) -> Optional[TagNode]:
-        """The first node from the results or ``None`` if there are none."""
-        if len(self.__items):
-            return self.__items[0]
-        else:
-            return None
-
-    @property
-    def last(self) -> Optional[TagNode]:
-        """The last node from the results or ``None`` if there are none."""
-        if len(self.__items):
-            return self.__items[-1]
-        else:
-            return None
-
-    @property
-    def size(self) -> int:
-        """The amount of contained nodes."""
-        return len(self.__items)
 
 
 # contributed node filters and filter wrappers

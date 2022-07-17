@@ -481,7 +481,7 @@ def test_names(sample_document):
 
 def test_next_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
-    page_breaks = document.xpath(".//pb").as_list()
+    page_breaks = document.xpath("//pb").in_document_order().as_list()
 
     cursor = page_breaks.pop(0)
     while len(page_breaks) > 1:
@@ -516,7 +516,7 @@ def test_prepend_child():
 
 def test_previous_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
-    page_breaks = document.xpath(".//pb").as_list()
+    page_breaks = document.xpath(".//pb").in_document_order().as_list()
 
     cursor = page_breaks.pop()
     while len(page_breaks) > 1:

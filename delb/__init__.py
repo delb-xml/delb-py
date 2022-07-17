@@ -24,12 +24,12 @@ from typing import IO as IOType
 from lxml import etree
 
 from _delb.exceptions import FailedDocumentLoading, InvalidOperation
-from _delb.names import Namespaces
 from _delb.plugins import (
     core_loaders,
     DocumentMixinHooks,
     plugin_manager as _plugin_manager,
 )
+from _delb.names import Namespaces
 from _delb.nodes import (
     _is_tag_or_text_node,
     _wrapper_cache,
@@ -48,7 +48,6 @@ from _delb.nodes import (
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
-    QueryResults,
     TagNode,
     TextNode,
 )
@@ -62,6 +61,7 @@ from _delb.utils import (
     last,
     register_namespace,
 )
+from _delb.xpath import QueryResults, register_xpath_function  # TODO docs
 
 
 # plugin loading
@@ -479,13 +479,15 @@ class Document(metaclass=DocumentMeta):
             file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
         )
 
-    def xpath(self, expression: str) -> QueryResults:
+    def xpath(
+        self, expression: str, namespaces: Optional[Namespaces] = None
+    ) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.xpath` method of the document's
         :attr:`root <Document.root>` node.
         """
 
-        return self.root.xpath(expression)
+        return self.root.xpath(expression=expression, namespaces=namespaces)
 
     def xslt(self, transformation: etree.XSLT) -> "Document":
         """
@@ -519,6 +521,7 @@ __all__ = (
     new_comment_node.__name__,
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
+    register_xpath_function.__name__,
     register_namespace.__name__,
     tag.__name__,
 )

@@ -15,8 +15,14 @@ TokenType = Enum(
 )
 
 
+COMPLEMENTING_TOKEN_TYPES = {
+    TokenType.OPEN_BRACKET: TokenType.CLOSE_BRACKET,
+    TokenType.OPEN_PARENS: TokenType.CLOSE_PARENS,
+}
+
+
 class Token(NamedTuple):
-    index: int
+    position: int
     string: str
     type: TokenType
 
@@ -79,8 +85,9 @@ grab_token = re.compile(
         named_group("CLOSE_PARENS", r"\)"),
         named_group("COMMA", ","),
         named_group("PASEQ", r"\|"),
-        named_group("OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">")),
-        named_group("EQUALS", "="),
+        named_group(
+            "OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">", "=")
+        ),
         # https://www.w3.org/TR/REC-xml/#NT-S
         named_group("WHITESPACE", "[ \n\t]+"),
         named_group("ERROR", ".*"),
@@ -99,19 +106,28 @@ def tokenize(expression: str) -> Sequence[Token]:
     end = len(expression)
 
     while index < end:
-        match = grab_token(expression, index)
+        match = grab_token(expression, pos=index)
+        assert match is not None
 
         if (token := match.groupdict().get("ERROR")) is not None:
             raise InvalidXPathToken(index, token)
 
-        for type_name, token_type in TokenType.__members__.items():
-            if (token := match.groupdict().get(type_name)) is not None:
-                result.append(Token(index=index, string=token, type=token_type))
+        for token_type, value in match.groupdict().items():
+            if value is not None:
                 break
+        else:
+            raise RuntimeError
+
+        token = match[token_type]
+        assert isinstance(token, str)
+
+        result.append(
+            Token(position=index, string=token, type=getattr(TokenType, token_type))
+        )
 
         index += len(token)
 
     return result
 
 
-__all__ = (tokenize.__name__,)
+__all__ = (tokenize.__name__,)  # type: ignore

@@ -13,8 +13,32 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# TODO ^ in all files ! ^
+
 """
-TODO describe the scope of this implementation
+This implementation is not compliant with one of the XPath specifications.
+It mostly covers the XPath 1.0 specs (TODO link
+https://www.w3.org/TR/1999/REC-xpath-19991116/), but focuses on the querying via path
+with simple constraints while it omits computations (for which there are programming
+languages) and has therefore these intended deviations from that standard:
+
+- Default namespaces can be addressed, by simply using no prefix.
+- The attribute and namespaces axes are not supported in location steps.
+- In Predicates, only the attribute axis form can be used in its abbreviated
+  form (``@name``).
+- Path evaluations within predicates are not available.
+- Only these functions are provided and tested:
+    - ``bool``
+    - ``concat``
+    - ``contains``
+    - ``last``
+    - ``not``
+    - ``position``
+    - ``starts-with``
+    - Please refrain from extension requests without a proper, concrete implementation
+      proposal.
+
+TODO describe user defined functions
 """
 
 from __future__ import annotations
@@ -24,31 +48,137 @@ from collections import UserString
 from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
+    Collection,
     Dict,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
+    Sequence,
     Set,
+    Tuple,
 )
 
+from cssselect import GenericTranslator  # type: ignore
+
+from _delb.names import Namespaces
+from _delb.typing import Filter
+from _delb.xpath.functions import register_xpath_function
 from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from delb import TagNode
+    from delb import NodeBase, TagNode
 
 
-def evaluate(node: TagNode, expression: str) -> Iterable[TagNode, ...]:
-    return parse(expression).evaluate([node])
+_css_translator = GenericTranslator()
 
 
-__all__ = (evaluate.__name__, parse.__name__)
+class QueryResults(Sequence["NodeBase"]):
+    """
+    A sequence with the results of a CSS or XPath query with some helpers for readable
+    Python expressions.
+    """
+
+    def __init__(self, results: Iterable[NodeBase]):
+        self.__items = tuple(results)
+
+    def __eq__(self, other):
+        if not isinstance(other, Collection):
+            raise TypeError
+
+        return len(self.__items) == len(other) and all(x in other for x in self.__items)
+
+    def __getitem__(self, item):
+        return self.__items[item]
+
+    def __len__(self) -> int:
+        return len(self.__items)
+
+    def __repr__(self):
+        return str([repr(x) for x in self.__items])
+
+    def as_list(self) -> List[NodeBase]:
+        """The contained nodes as a new :class:`list`."""
+        return list(self.__items)
+
+    @property
+    def as_tuple(self) -> Tuple[NodeBase, ...]:
+        """The contained nodes in a :class:`tuple`."""
+        return self.__items
+
+    def filtered_by(self, *filters: Filter) -> "QueryResults":
+        """
+        Returns another :class:`QueryResults` instance that contains all nodes filtered
+        by the provided :term:`filter` s.
+        """
+        items = self.__items
+        for filter in filters:
+            items = (x for x in items if filter(x))  # type: ignore
+        return self.__class__(items)  # type: ignore
+
+    @property
+    def first(self) -> Optional[NodeBase]:
+        """The first node from the results or ``None`` if there are none."""
+        if len(self.__items):
+            return self.__items[0]
+        else:
+            return None
+
+    def in_document_order(self) -> QueryResults:
+        """
+        Returns a new object where the contained nodes are sorted in document order.
+        """
+        raise NotImplementedError
+
+    @property
+    def last(self) -> Optional[NodeBase]:
+        """The last node from the results or ``None`` if there are none."""
+        if len(self.__items):
+            return self.__items[-1]
+        else:
+            return None
+
+    @property
+    def size(self) -> int:
+        """The amount of contained nodes."""
+        return len(self.__items)
+
+
+# TODO make cachesize configurable via environment variable?
+@lru_cache(maxsize=64)
+def _css_to_xpath(expression: str) -> str:
+    return _css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
+
+
+def evaluate(
+    node: TagNode,
+    expression: str,
+    namespaces: Optional[Mapping[Optional[str], str]] = None,
+) -> Iterable[NodeBase]:
+    # TODO if user-defined functions are implemented, the full evaluation context as
+    #      defined in the XPath spec (see intro section) must be passed and managed
+    #      through
+    if namespaces is None:
+        namespaces = node.namespaces
+    elif not isinstance(namespaces, Namespaces):
+        namespaces = Namespaces(namespaces)
+    return parse(expression).evaluate(node, namespaces)
+
+
+__all__ = (
+    _css_to_xpath.__name__,  # type:ignore
+    evaluate.__name__,
+    parse.__name__,  # type: ignore
+    register_xpath_function.__name__,
+    QueryResults.__name__,
+)
 
 
 # REMOVE:
 
-####  L E G A C Y  ####
+#  L E G A C Y  #
 
 
 """ This is not an XPath implementation. """
@@ -157,7 +287,7 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
                 current_term += character
                 function_args = True
         elif character == ")":
-            raise AssertionError
+            pass
         elif character == " ":
             result.append(current_term)
             current_term = ""
@@ -279,7 +409,7 @@ class LegacyXPathExpression(UserString):
         >>> LegacyXPathExpression('./root/node[@a="1"][@b="2"]').is_unambiguously_locatable()
         True
 
-        """
+        """  # noqa: E501
         if len(self.location_paths) != 1:
             return False
 
@@ -306,7 +436,10 @@ class LegacyLocationPath:
     __slots__ = ("location_steps",)
 
     def __init__(self, expression: str):
-        self.location_steps = [LegacyLocationStep(x) for x in _split(expression, "/")]
+        step_expressions = list(_split(expression, "/"))
+        if not step_expressions[0]:
+            step_expressions = step_expressions[1:]
+        self.location_steps = [LegacyLocationStep(x) for x in step_expressions]
 
     def __str__(self):
         return "/".join(str(x) for x in self.location_steps)
@@ -468,7 +601,7 @@ class LegacyAttributePredicate(LegacyPredicateExpression):
                 ... )
                 True
 
-        """
+        """  # noqa: E501
         if expression.startswith("attribute::"):
             raise NotImplementedError
         assert expression.startswith("@")
@@ -566,7 +699,6 @@ class LegacyFunctionExpression(LegacyPredicateExpression):
 
     def __init__(self, expression: str):
         self.name, rest = expression.split("(", maxsplit=1)
-        assert rest.endswith(")")
         # FIXME this fails where an argument itself is a function call,
         #       _split would have to consider brackets as it does with quotes
         self.arguments = tuple(

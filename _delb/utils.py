@@ -12,12 +12,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 
 import re
 import sys
 from copy import copy
-from functools import lru_cache, partial
+from functools import partial
 from string import ascii_lowercase
 from typing import (
     TYPE_CHECKING,
@@ -29,7 +29,6 @@ from typing import (
     Sequence,
 )
 
-from cssselect import GenericTranslator  # type: ignore
 from lxml import etree
 
 from _delb.typing import Filter
@@ -42,7 +41,6 @@ DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
-css_translator = GenericTranslator()
 
 
 class _StringMixin:  # pragma: no cover
@@ -275,12 +273,6 @@ def _copy_root_siblings(source: etree._Element, target: etree._Element):
         target.addnext(copy(stack.pop()))
 
 
-# TODO make cachesize configurable via environment variable?
-@lru_cache(maxsize=64)
-def _css_to_xpath(expression: str) -> str:
-    return css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
-
-
 def first(iterable: Iterable) -> Optional[Any]:
     """
     Returns the first item of the given :term:`iterable` or ``None`` if it's empty.
@@ -324,6 +316,13 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
     return result
 
 
+def _is_node_of_type(node: NodeBase, type_name: str) -> bool:
+    return (
+        node.__class__.__module__ == f"{__package__}.nodes"
+        and node.__class__.__qualname__ == type_name
+    )
+
+
 def last(iterable: Iterable) -> Optional[Any]:
     """
     Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
@@ -340,6 +339,7 @@ def last(iterable: Iterable) -> Optional[Any]:
         raise TypeError
 
 
+# REMOVE eventually
 def _random_unused_prefix(namespaces: "etree._NSMap") -> str:
     for prefix in ascii_lowercase:
         if prefix not in namespaces:

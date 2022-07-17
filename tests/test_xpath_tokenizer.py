@@ -110,7 +110,7 @@ def test_tokenize(_in, out):
         ("[", TokenType.OPEN_BRACKET),
         ("]", TokenType.CLOSE_BRACKET),
         ("@", TokenType.STRUDEL),
-        ("=", TokenType.EQUALS),
+        ("=", TokenType.OTHER_OPS),
         ("(", TokenType.OPEN_PARENS),
         (")", TokenType.CLOSE_PARENS),
         (",", TokenType.COMMA),

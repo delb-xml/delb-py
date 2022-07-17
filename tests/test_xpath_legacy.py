@@ -21,8 +21,6 @@ DELB_VERSION = get_distribution("delb").parsed_version.release
 
 
 def test_function():
-    with pytest.raises(AssertionError):
-        LegacyPredicateExpression.parse(")")
     predicates = LegacyPredicateExpression.parse("starts-with(@foo,'a(b(c)')")
 
     assert isinstance(predicates, LegacyFunctionExpression)

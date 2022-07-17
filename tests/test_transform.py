@@ -60,16 +60,16 @@ class ResolveCopyOf(Transformation):
 class ResolveItemList(Transformation):
     def transform(self):
         for i, node in enumerate(self.root.xpath("//ul/li")):
-            source_node = self.origin_document.css_select(
-                f"item:nth-of-type({i + 1}) > name"
-            ).first
+            source_node = self.origin_document.xpath(f"//item[{i+1}]/name").first
             node.append_child(source_node.full_text)
 
 
 class ResolveItems(Transformation):
     def transform(self):
         ul = self.root.css_select("body > ul").first
-        for node in self.origin_document.xpath("//name[text()]"):
+        for node in (
+            n for n in self.origin_document.xpath("//name") if n.full_text.strip()
+        ):
             ul.append_child(tag("li"))
             cloned_node = node.clone(deep=True)
             node.replace_with(tag("item", cloned_node))
