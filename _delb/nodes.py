@@ -645,7 +645,7 @@ class TagAttributes(MutableMapping):
             return None
 
     def __iter__(self) -> Iterator[str]:
-        yield from self._element.attrib  # type: ignore
+        return iter(self._element.attrib)  # type: ignore
 
     def __len__(self) -> int:
         return len(self._element.attrib)
