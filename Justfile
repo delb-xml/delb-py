@@ -36,7 +36,7 @@ pytest:
 	python -m pytest --cov-config .coveragerc --cov=_delb --cov=delb tests
 
 # release the current version on github & the PyPI
-release: tests
+release: 
     test "{{trim_end_match(version, '-dev')}}" -eq {{version}} || false
     {{just_executable()}} -f {{justfile()}} update-citation-file
     git add CITATION.cff
