@@ -23,7 +23,7 @@ packages = [
     {include = "delb"},
     {include = "_delb"},
 ]
-include = ["_delb/py.typed", "delb/py.typed"]
+include = ["CITATION.cff", "_delb/py.typed", "delb/py.typed"]
 
 [tool.poetry.extras]
 https-loader = ["requests"]
@@ -41,6 +41,7 @@ setuptools = "*"
 [tool.poetry.dev-dependencies]
 autoclasstoc = "^1.1.1"
 black = "*"
+cffconvert = "^2.0.0"
 flake8-black = "*"
 lxml-stubs = "*"
 mypy = "*"
