@@ -4,21 +4,7 @@
 default: tests
 
 
-citation_template := """
-    cff-version: 1.2.0
-    type: software
-    message: >
-      If you cite this software, please use these metadata.
-    title: delb
-    authors:
-      - family-names: Sachsenheim
-        given-names: Frank
-        email: funkyfuture@riseup.net
-    license: AGPL-3.0
-    version: _VERSION_
-    repository-code: "https://github.com/funkyfuture/delb"
-    date-released: _DATE_
-"""
+citation_template := `cat CITATION.cff.tmpl`
 date := `date '+%Y-%m-%d'`
 version := `poetry version --short`
 
@@ -51,21 +37,24 @@ pytest:
 
 # release the current version on github & the PyPI
 release: tests
-	git tag -f {{version}}
-	git push origin main
-	git push -f origin {{version}}
-	poetry publish --build
+    test "{{trim_end_match(version, '-dev')}}" -eq {{version}} || false
+    {{just_executable()}} -f {{justfile()}} update-citation-file
+    git add CITATION.cff
+    git commit -m "Updates CITATION.cff"
+    # git tag -f {{version}}
+    # git push origin main
+    # git push -f origin {{version}}
+    # poetry publish --build
 
 # build and open HTML documentation
 showdocs: docs
-	xdg-open docs/build/html/index.html
+    xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
 tests: black check-formatting mypy pytest doctest
-	poetry check
+    poetry check
 
 # Generates and validates CITATION.cff
 update-citation-file:
-    # TODO see https://github.com/casey/just/issues/876#issuecomment-1027022978
     @echo "{{ replace(replace(citation_template, "_DATE_", date), "_VERSION_", version) }}" > CITATION.cff
     cffconvert --validate
