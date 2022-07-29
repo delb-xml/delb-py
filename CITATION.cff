@@ -9,7 +9,7 @@ authors:
     given-names: Frank
 license: AGPL-3.0
 version: 0.3.0
-repository-code: https://github.com/delb-py/delb
+repository-code: https://github.com/delb-xml/delb-py
 date-released: 2022-01-31
 
 ...
