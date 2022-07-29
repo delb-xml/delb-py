@@ -1,5 +1,3 @@
 # reduce noise by and about generated files
 poetry.lock -diff -merge
 poetry.lock linguist-generated=true
-CITATION.cff -diff -merge
-CITATION.cff linguist-generated=true
