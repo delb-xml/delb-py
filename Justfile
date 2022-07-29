@@ -41,10 +41,10 @@ release:
     {{just_executable()}} -f {{justfile()}} update-citation-file
     git add CITATION.cff
     git commit -m "Updates CITATION.cff"
-    # git tag -f {{version}}
-    # git push origin main
-    # git push -f origin {{version}}
-    # poetry publish --build
+    git tag -f {{version}}
+    git push origin main
+    git push -f origin {{version}}
+    poetry publish --build
 
 # build and open HTML documentation
 showdocs: docs
