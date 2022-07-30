@@ -8,8 +8,13 @@ authors:
   - family-names: Sachsenheim
     given-names: Frank
 license: AGPL-3.0
+contact:
+  - email: delb-project@posteo.net
+    website: https://github.com/delb-xml
+license: AGPL-3.0-only
+repository-code: https://github.com/delb-xml/delb-py/releaes/tag/0.3.0
+url: https://delb.readthedocs.io/en/0.3.0/
 version: 0.3.0
-repository-code: https://github.com/delb-xml/delb-py
 date-released: 2022-01-31
 
 ...
