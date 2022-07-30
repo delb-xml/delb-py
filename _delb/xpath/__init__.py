@@ -64,6 +64,7 @@ from cssselect import GenericTranslator  # type: ignore
 
 from _delb.names import Namespaces
 from _delb.typing import Filter
+from _delb.utils import sort_nodes_in_document_order
 from _delb.xpath.functions import register_xpath_function
 from _delb.xpath.parser import parse
 
@@ -130,7 +131,7 @@ class QueryResults(Sequence["NodeBase"]):
         """
         Returns a new object where the contained nodes are sorted in document order.
         """
-        raise NotImplementedError
+        return QueryResults(sort_nodes_in_document_order(self))
 
     @property
     def last(self) -> Optional[NodeBase]:

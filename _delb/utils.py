@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import re
 import sys
+from collections import defaultdict
 from copy import copy
 from functools import partial
 from string import ascii_lowercase
 from typing import (
     TYPE_CHECKING,
+    cast,
     Any,
     Iterable,
     Iterator,
@@ -34,13 +36,34 @@ from lxml import etree
 from _delb.typing import Filter
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase
+    from _delb.nodes import NodeBase, TagNode
 
 
 DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
+
+
+class _Nodes_Sorter:
+    def __init__(self):
+        self.__node = None
+        self.__items = defaultdict(_Nodes_Sorter)
+
+    def add(self, path: Sequence[int], node: NodeBase):
+        assert node is not None
+        if not _is_node_of_type(node, "TagNode"):
+            raise NotImplementedError
+        if path:
+            self.__items[path[0]].add(path[1:], node)
+        else:
+            self.__node = node
+
+    def emit(self) -> Iterator[NodeBase]:
+        if (node := self.__node) is not None:
+            yield node
+        for index in sorted(self.__items):
+            yield from self.__items[index].emit()
 
 
 class _StringMixin:  # pragma: no cover
@@ -365,6 +388,23 @@ def register_namespace(prefix: str, namespace: str):
     etree.register_namespace(prefix, namespace)
 
 
+def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
+    sorter = _Nodes_Sorter()
+    for node in nodes:
+        if not _is_node_of_type(node, "TagNode"):
+            raise NotImplementedError(
+                "Support for sorting other node types than TagNodes isn't scheduled"
+                "yet."
+            )
+        node = cast("TagNode", node)
+        if node.parent is None:
+            path = []
+        else:
+            path = [int(x[2:-1]) for x in node.location_path.split("/")[1:]]
+        sorter.add(path, node)
+    yield from sorter.emit()
+
+
 # tree traversers
 
 
@@ -393,4 +433,5 @@ __all__ = (
     get_traverser.__name__,
     last.__name__,
     register_namespace.__name__,
+    sort_nodes_in_document_order.__name__,
 )
