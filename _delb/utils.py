@@ -51,7 +51,6 @@ class _Nodes_Sorter:
         self.__items = defaultdict(_Nodes_Sorter)
 
     def add(self, path: Sequence[int], node: NodeBase):
-        assert node is not None
         if not _is_node_of_type(node, "TagNode"):
             raise NotImplementedError
         if path:
@@ -60,8 +59,8 @@ class _Nodes_Sorter:
             self.__node = node
 
     def emit(self) -> Iterator[NodeBase]:
-        if (node := self.__node) is not None:
-            yield node
+        if self.__node is not None:
+            yield self.__node
         for index in sorted(self.__items):
             yield from self.__items[index].emit()
 

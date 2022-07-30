@@ -213,7 +213,8 @@ class LocationStep(Node):
         yielded_nodes: set[int] = set()
         for node in node_set:
             for result in self._evaluate(node=node, namespaces=namespaces):
-                if _id := id(result) not in yielded_nodes:
+                _id = id(result)
+                if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
                     yield result
 
@@ -263,7 +264,8 @@ class XPathExpression(Node):
         yielded_nodes: set[int] = set()
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):
-                if _id := id(result) not in yielded_nodes:
+                _id = id(result)
+                if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
                     yield result
 

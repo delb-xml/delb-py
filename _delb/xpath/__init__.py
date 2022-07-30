@@ -158,9 +158,6 @@ def evaluate(
     expression: str,
     namespaces: Optional[Mapping[Optional[str], str]] = None,
 ) -> Iterable[NodeBase]:
-    # TODO if user-defined functions are implemented, the full evaluation context as
-    #      defined in the XPath spec (see intro section) must be passed and managed
-    #      through
     if namespaces is None:
         namespaces = node.namespaces
     elif not isinstance(namespaces, Namespaces):

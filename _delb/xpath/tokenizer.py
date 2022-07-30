@@ -109,8 +109,8 @@ def tokenize(expression: str) -> Sequence[Token]:
         match = grab_token(expression, pos=index)
         assert match is not None
 
-        if (token := match.groupdict().get("ERROR")) is not None:
-            raise InvalidXPathToken(index, token)
+        if match.groupdict().get("ERROR") is not None:
+            raise InvalidXPathToken(index, match.groupdict()["ERROR"])
 
         for token_type, value in match.groupdict().items():
             if value is not None:
