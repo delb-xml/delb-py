@@ -24,7 +24,9 @@ if TYPE_CHECKING:
 xpath_functions = {}
 
 
+# TODO move to PluginManager
 def register_xpath_function(arg: Union[Callable, str]) -> Callable:
+    """TODO"""
     if isinstance(arg, str):
 
         def wrapper(func):

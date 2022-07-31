@@ -15,15 +15,14 @@
 
 """
 This implementation is not compliant with one of the XPath specifications.
-It mostly covers the XPath 1.0 specs (TODO link
-https://www.w3.org/TR/1999/REC-xpath-19991116/), but focuses on the querying via path
-with simple constraints while it omits computations (for which there are programming
+It mostly covers the `XPath 1.0 specs`_ , but focuses on the querying via path with
+simple constraints while it omits computations (for which there are programming
 languages) and has therefore these intended deviations from that standard:
 
 - Default namespaces can be addressed, by simply using no prefix.
 - The attribute and namespaces axes are not supported in location steps.
-- In Predicates, only the attribute axis form can be used in its abbreviated
-  form (``@name``).
+- In Predicates only the attribute axis form can be used in its abbreviated form
+  (``@name``).
 - Path evaluations within predicates are not available.
 - Only these functions are provided and tested:
     - ``bool``
@@ -36,8 +35,31 @@ languages) and has therefore these intended deviations from that standard:
     - Please refrain from extension requests without a proper, concrete implementation
       proposal.
 
-TODO describe user defined functions
-"""
+Custom functions can be defined as shown in the follwing example. The first argument is
+always the evaluation context which holds the properties ``node``, ``position``,
+``size`` and ``namespaces``.
+
+.. testcode::
+
+    from delb import register_xpath_function, Document
+    from _delb.xpath.ast import EvaluationContext
+
+
+    @register_xpath_function("is-last")
+    def is_last(context: EvaluationContext) -> bool:
+        return context.position == context.size
+
+    @register_xpath_function
+    def lowercase(_, string: str) -> str:
+        return string.lower()
+
+
+    document = Document("<root><node foo='BAR'/></root>")
+    assert document.xpath("/*[is-last() and lower(@foo)='bar']").size == 1
+
+
+.. _XPath 1.0 specs: https://www.w3.org/TR/1999/REC-xpath-19991116/
+"""  # TODO include in docs
 
 from __future__ import annotations
 

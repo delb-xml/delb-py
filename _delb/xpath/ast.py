@@ -76,6 +76,7 @@ def nested_repr(obj: Any) -> str:
 
 
 class EvaluationContext(NamedTuple):
+    node: NodeBase
     position: int
     size: int
     namespaces: Namespaces
@@ -253,7 +254,7 @@ class LocationStep(Node):
             if predicate.evaluate(
                 node=candidate,
                 context=EvaluationContext(
-                    position=position, size=size, namespaces=namespaces
+                    node=candidate, position=position, size=size, namespaces=namespaces
                 ),
             ):
                 yield candidate
