@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# TODO ^ in all files ! ^
-
 """
 This implementation is not compliant with one of the XPath specifications.
 It mostly covers the XPath 1.0 specs (TODO link
