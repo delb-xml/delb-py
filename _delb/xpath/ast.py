@@ -86,7 +86,7 @@ class EvaluationContext(NamedTuple):
 
 
 class Node:
-    # TODO create object per definition
+    # TODO create one object per definition
 
     def __eq__(self, other):
         return type(self) is type(other) and all(

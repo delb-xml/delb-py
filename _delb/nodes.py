@@ -2244,8 +2244,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
         of default namespace support. It is extensively described in this lxml issue:
         https://github.com/lxml/lxml/pull/236
 
-        :param expression: An XPath 1.0 location path.
-        :param namespaces: TODO
+        :param expression: An XPath 1.0 expression that containe one or more location
+                           paths.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's defintion is used.
 
         :meta category: query-nodes
         """

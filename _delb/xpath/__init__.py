@@ -194,7 +194,7 @@ __all__ = (
 )
 
 
-# REMOVE:
+# REMOVE as much as possible, but retain the TagNode._etree_xpath functionality
 
 #  L E G A C Y  #
 

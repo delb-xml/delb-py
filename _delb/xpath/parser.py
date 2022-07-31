@@ -114,24 +114,23 @@ def expand_axes(tokens: TokenSequence) -> TokenSequence:
     return result
 
 
-# TODO rename
-def group_bracketed_expressions(tokens: TokenSequence) -> TokenSequence:
+def group_enclosed_expressions(tokens: TokenSequence) -> TokenSequence:
     result = []
-    opened_brackets = []  # TODO rename
+    openers = []
 
     for i, token in enumerate(tokens):
 
         if token.type in (TokenType.OPEN_BRACKET, TokenType.OPEN_PARENS):
-            opened_brackets.append((i, token))
+            openers.append((i, token))
 
         elif token.type in (TokenType.CLOSE_BRACKET, TokenType.CLOSE_PARENS):
-            start_pos, start_token = opened_brackets.pop()
+            start_pos, start_token = openers.pop()
 
             if token.type is not COMPLEMENTING_TOKEN_TYPES[start_token.type]:
                 raise NotImplementedError
 
-            if not opened_brackets:
-                contents = group_bracketed_expressions(tokens[start_pos + 1 : i])
+            if not openers:
+                contents = group_enclosed_expressions(tokens[start_pos + 1 : i])
                 if contents:
                     result.extend(
                         [
@@ -143,10 +142,10 @@ def group_bracketed_expressions(tokens: TokenSequence) -> TokenSequence:
                 else:
                     result.extend((start_token, token))
 
-        elif not opened_brackets:
+        elif not openers:
             result.append(token)
 
-    if opened_brackets:
+    if openers:
         raise NotImplementedError
 
     return result
@@ -342,7 +341,7 @@ def partition_tokens(
 
 @lru_cache(64)  # TODO? configurable
 def parse(expression: str) -> XPathExpression:
-    tokens = group_bracketed_expressions(tokenize(expression))
+    tokens = group_enclosed_expressions(tokenize(expression))
     if TokenType.PASEQ in (x.type for x in tokens if isinstance(x, Token)):
         return XPathExpression(
             [parse_location_path(x) for x in partition_tokens(TokenType.PASEQ, tokens)]
