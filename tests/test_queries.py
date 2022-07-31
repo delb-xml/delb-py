@@ -154,8 +154,7 @@ def test_quotes_in_css_selector():
     assert document.css_select('a[href^="https://super.test/"]').size == 1
     assert document.css_select('a[href|="https://super.test/123"]').size == 1
     assert document.css_select('a[href*="super"]').size == 1
-    # TODO re-activate when TagNode._etree_xpath was dropped
-    # assert document.css_select('a:not([href|="https"])').size == 1
+    assert document.css_select('a:not([href|="https"])').size == 1
 
 
 def test_results_as_other_type(queries_sample):

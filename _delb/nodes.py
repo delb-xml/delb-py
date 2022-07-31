@@ -2214,7 +2214,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @altered_default_filters()
     def xpath(
-        # TODO add a kwarg to disable the comparison w/ the etree implementation
         self,
         expression: str,
         namespaces: Optional[Namespaces] = None,
@@ -2255,12 +2254,17 @@ class TagNode(_ElementWrappingNode, NodeBase):
             evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
         )
         if __debug__ and all(isinstance(n, TagNode) for n in result):
-            etree_result = self._etree_xpath(expression)
-            assert result == etree_result, (
-                "Please report that the native XPath evaluator seems faulty with the "
-                f"expression `{expression}` at "
-                "https://github.com/delb-xml/delb-py/issues"
-            )
+            try:
+                etree_result = self._etree_xpath(expression)
+            except etree.XPathEvalError:
+                # might stem from flaws in LegacyXPathExpression
+                pass
+            else:
+                assert result == etree_result, (
+                    "Please report that the native XPath evaluator seems faulty with "
+                    f"the expression `{expression}` at "
+                    "https://github.com/delb-xml/delb-py/issues"
+                )
         return result
 
     # REMOVE eventually, then see test_queries::test_quotes_in_css_selector
