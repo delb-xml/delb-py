@@ -43,7 +43,7 @@ resources.
 Kurt Raschke `noted in 2010`_::
 
   In a DOM-based implementation, it would be relatively easy […]
-  But lxml doesn't use text nodes; instead it uses [``text``] and [``tail``]
+  But lxml doesn't use text nodes; instead it uses [text] and [tail]
   properties to hold text content.
 
 
