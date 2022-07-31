@@ -210,16 +210,10 @@ class LocationStep(Node):
     def evaluate(
         self, node_set: Iterable[NodeBase], namespaces: Namespaces
     ) -> Iterator[NodeBase]:
-        yielded_nodes: set[int] = set()
         for node in node_set:
-            for result in self._evaluate(node=node, namespaces=namespaces):
-                _id = id(result)
-                if _id not in yielded_nodes:
-                    yielded_nodes.add(_id)
-                    yield result
+            yield from self._evaluate(node=node, namespaces=namespaces)
 
     def _evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
-        axis = self.axis
         node_test = self.node_test
         predicate = self.predicate
 
@@ -228,7 +222,7 @@ class LocationStep(Node):
         if predicate is None:
             yield from (
                 n
-                for n in axis.evaluate(node=node, namespaces=namespaces)
+                for n in self.axis.evaluate(node=node, namespaces=namespaces)
                 if node_test.evaluate(node=n, namespaces=namespaces)
             )
             return
@@ -236,7 +230,7 @@ class LocationStep(Node):
         assert isinstance(predicate, EvaluationNode)
         candidates = [
             n
-            for n in axis.evaluate(node=node, namespaces=namespaces)
+            for n in self.axis.evaluate(node=node, namespaces=namespaces)
             if node_test.evaluate(node=n, namespaces=namespaces)
         ]
         size = len(candidates)
@@ -260,7 +254,6 @@ class XPathExpression(Node):
         return nested_repr(self)
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
-        # TODO optimize for one location path
         yielded_nodes: set[int] = set()
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):

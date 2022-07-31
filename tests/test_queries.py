@@ -1,10 +1,6 @@
-import pkg_resources
 import pytest
 
 from delb import Document, InvalidOperation, is_tag_node, tag
-
-
-DELB_VERSION = pkg_resources.get_distribution("delb").parsed_version.release
 
 
 def test_css_considers_xml_namespace(files_path):
