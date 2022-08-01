@@ -1774,7 +1774,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
         for child_node in self.child_nodes(is_tag_node, recurse=False):
             cast(TagNode, child_node)._collapse_whitespace(normalize_space)
 
-    def css_select(self, expression: str) -> "QueryResults":
+    def css_select(
+        self, expression: str, namespaces: Optional[Namespaces] = None
+    ) -> "QueryResults":
         """
         TODO
 
@@ -1784,11 +1786,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         and have a namespace that is mapped to the ``svg`` prefix.
 
         :param expression: A CSS selector expression.
-        :return: A list of matching :term:`tag node` s.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's definition is used.
+        :return: A sequence of matching nodes.
 
         :meta category: query-nodes
         """
-        return self.xpath(_css_to_xpath(expression))
+        return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
     @property
     def depth(self) -> int:
