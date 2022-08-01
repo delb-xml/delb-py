@@ -1778,7 +1778,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self, expression: str, namespaces: Optional[Namespaces] = None
     ) -> "QueryResults":
         """
-        TODO
+        See `Queries with XPath & CSS`_ regarding the extent of the supported grammar.
 
         Namespace prefixes are delimited with a ``|`` before a name test, for example
         ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
@@ -2223,34 +2223,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         namespaces: Optional[Namespaces] = None,
     ) -> "QueryResults":
         """
-        Returns all :term:`tag node` s that match the evaluation of an XPath expression.
+        See `Queries with XPath & CSS`_ for details on the extent of the XPath
+        implementation.
 
-        Mind to start any the expression with a ``.`` when the node you call it on is
-        supposed to be the initial context node in the path evaluation.
-
-        As this API is for a real programming language, the full XPath specification is
-        not intended to be supported. For example, instead of querying attributes with
-        an XPath expression, one must use a comprehension like:
-
-        >>> [ x.attributes["target"] for x in root.xpath(".//foo")
-        ...   if "target" in x.attributes ]  # doctest: +SKIP
-
-        Instead of:
-
-        >>> root.xpath(".//foo/@target")  # doctest: +SKIP
-
-        Having that said, implementing retrieval of attributes may actually happen if
-        there are convincing user stories. But other things like addressing processing
-        instructions and higher level operations are out of scope.
-
-        This method includes a workaround for a bug in XPath 1.0 that concerns its lack
-        of default namespace support. It is extensively described in this lxml issue:
-        https://github.com/lxml/lxml/pull/236
-
-        :param expression: An XPath 1.0 expression that containe one or more location
-                           paths.
+        :param expression: A supported XPath 1.0 expression that contains one or more
+                           location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. If omitted, the node's defintion is used.
+                           namespaces. If omitted, the node's definition is used.
+        :return: All nodes that match the evaluation of an XPath expression.
 
         :meta category: query-nodes
         """

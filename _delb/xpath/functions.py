@@ -26,7 +26,30 @@ xpath_functions = {}
 
 # TODO move to PluginManager
 def register_xpath_function(arg: Union[Callable, str]) -> Callable:
-    """TODO"""
+    """
+    Custom functions can be defined as shown in the following example. The first
+    argument to a function is always the evaluation context which holds the properties
+    ``node``, ``position``, ``size`` and ``namespaces``; followed by the expression's
+    arguments.
+
+    .. testcode::
+
+        from delb import register_xpath_function, Document
+        from _delb.xpath.ast import EvaluationContext
+
+
+        @register_xpath_function("is-last")
+        def is_last(context: EvaluationContext) -> bool:
+            return context.position == context.size
+
+        @register_xpath_function
+        def lowercase(_, string: str) -> str:
+            return string.lower()
+
+
+        document = Document("<root><node/><node foo='BAR'/></root>")
+        assert document.xpath("/*[is-last() and lowercase(@foo)='bar']").size == 1
+    """
     if isinstance(arg, str):
 
         def wrapper(func):

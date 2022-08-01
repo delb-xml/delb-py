@@ -14,18 +14,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-This implementation is not compliant with one of the XPath specifications.
+*delb* allows querying of nodes with CSS and XPath expressions. CSS expressions are
+converted to XPath expressions before evaluation with a third-party library and
+they are only supported as far as their XPath equivalents are supported by
+*delb*'s very own XPath implementation.
+
+This implementation is not fully compliant with one of the W3C's XPath specifications.
 It mostly covers the `XPath 1.0 specs`_ , but focuses on the querying via path with
-simple constraints while it omits computations (for which there are programming
-languages) and has therefore these intended deviations from that standard:
+simple constraints while it omits a broad employment of  computations (that's what
+programming languages are for) and has therefore these intended deviations from that
+standard:
 
 - Default namespaces can be addressed, by simply using no prefix.
-- The attribute and namespaces axes are not supported in location steps.
-- In Predicates only the attribute axis form can be used in its abbreviated form
-  (``@name``).
+- The attribute and namespace axes are not supported in location steps (see also below).
+- In predicates only the attribute axis can be used in its abbreviated form (``@name``).
 - Path evaluations within predicates are not available.
 - Only these functions are provided and tested:
-    - ``bool``
+    - ``boolean``
     - ``concat``
     - ``contains``
     - ``last``
@@ -35,31 +40,21 @@ languages) and has therefore these intended deviations from that standard:
     - Please refrain from extension requests without a proper, concrete implementation
       proposal.
 
-Custom functions can be defined as shown in the follwing example. The first argument is
-always the evaluation context which holds the properties ``node``, ``position``,
-``size`` and ``namespaces``.
+If you're accustomed to retrieve attribute values with XPath expressions, employ the
+functionality of the higher programming language at hand like this:
 
-.. testcode::
+    >>> [x.attributes["target"] for x in root.xpath(".//foo")
+    ...  if "target" in x.attributes ]
 
-    from delb import register_xpath_function, Document
-    from _delb.xpath.ast import EvaluationContext
+Instead of:
 
+    >>> root.xpath(".//foo/@target")  # doctest: +SKIP
 
-    @register_xpath_function("is-last")
-    def is_last(context: EvaluationContext) -> bool:
-        return context.position == context.size
-
-    @register_xpath_function
-    def lowercase(_, string: str) -> str:
-        return string.lower()
-
-
-    document = Document("<root><node foo='BAR'/></root>")
-    assert document.xpath("/*[is-last() and lower(@foo)='bar']").size == 1
-
+See :func:`_delb.xpath.functions.register_xpath_function` regarding the use of custom
+functions.
 
 .. _XPath 1.0 specs: https://www.w3.org/TR/1999/REC-xpath-19991116/
-"""  # TODO include in docs
+"""
 
 from __future__ import annotations
 
