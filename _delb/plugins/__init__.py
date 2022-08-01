@@ -71,6 +71,7 @@ class PluginManager:
         """
         Loads all modules that are registered as entrypoint in the ``delb`` group.
         """
+        # TODO use importlib.metadata.entrypoints when support for Python 3.9 is dropped
         for entrypoint in pkg_resources.iter_entry_points("delb"):
             entrypoint.load()
 

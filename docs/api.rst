@@ -65,9 +65,7 @@ Tag attribute
 ~~~~~~~~~~~~~
 
 .. autoclass:: delb.nodes.Attribute
-
-   .. autoclasstoc::
-      :exclude-members: data
+   :exclude-members: data
 
 
 Text

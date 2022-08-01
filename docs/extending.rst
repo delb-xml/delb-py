@@ -22,7 +22,7 @@ These extension types are currently available:
 they can they return a parsed document.
 
 *Mixin classes* add functionality / attributes to the :class:`delb.Document`
-class as (instead of inheriting from it). That allows applications to rely
+class (instead of inheriting from it). That allows applications to rely
 optionally on the availability of plugins and to combine various extensions.
 
 *Subclasses* can be used to provide distinct models of arbitrary aspects for
@@ -39,7 +39,8 @@ with that name.
     A module that contains plugins and any module it is explicitly or implicitly
     importing **must not** import anything from the :mod:`delb` module itself,
     because that would initiate the collection of plugin implementations. And
-    these wouldn't have been completely registered at that point.
+    these wouldn't have been completely registered at that point. Import from
+    the :mod:`_delb` module instead.
 
 .. caution::
 
@@ -49,8 +50,8 @@ with that name.
 There's a repository that outlines the mechanics as developer reference:
 https://github.com/delb-xml/delb-py-reference-plugins
 
-There's also the snakesist_ project that implements both plugin types to
-interact with eXist-db_ as storage.
+There's also the snakesist_ project that implements the loader and document
+mixin plugin types to interact with eXist-db_ as storage.
 
 
 Document loaders

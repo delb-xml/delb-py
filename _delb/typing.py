@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from _delb.nodes import NodeBase, _TagDefinition
 
 
+# TODO annotate as TypeAlias(es) when support for Python 3.9 is dropped
+
+
 Filter = Callable[["NodeBase"], bool]
 NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 
@@ -34,6 +37,7 @@ LoaderConstraint = Union[Loader, Iterable[Loader], None]
 __all__ = (
     "Filter",
     "Loader",
+    "LoaderConstraint",
     "LoaderResult",
     "NodeSource",
 )
