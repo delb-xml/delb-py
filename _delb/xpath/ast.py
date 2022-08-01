@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Sequence,
 )
 
 from _delb.names import Namespaces
@@ -211,17 +212,17 @@ class LocationPath(Node):
 
 
 class LocationStep(Node):
-    __slots__ = ("axis", "node_test", "predicate")
+    __slots__ = ("axis", "node_test", "predicates")
 
     def __init__(
         self,
         axis: Axis,
         node_test: NodeTestNode,
-        predicate: EvaluationNode = None,
+        predicates: Sequence[EvaluationNode] = (),
     ):
         self.axis = axis
         self.node_test = node_test
-        self.predicate = predicate
+        self.predicates = tuple(predicates)
 
     def evaluate(
         self, node_set: Iterable[NodeBase], namespaces: Namespaces
@@ -231,11 +232,12 @@ class LocationStep(Node):
 
     def _evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
         node_test = self.node_test
-        predicate = self.predicate
+        predicates = self.predicates
 
-        # TODO set default_filters per node_test
+        # TODO set default_filters per node_test; that is only possible when the xpath
+        #      module was moved to the `delb` package
 
-        if predicate is None:
+        if not predicates:
             yield from (
                 n
                 for n in self.axis.evaluate(node=node, namespaces=namespaces)
@@ -243,21 +245,28 @@ class LocationStep(Node):
             )
             return
 
-        assert isinstance(predicate, EvaluationNode)
         candidates = [
             n
             for n in self.axis.evaluate(node=node, namespaces=namespaces)
             if node_test.evaluate(node=n, namespaces=namespaces)
         ]
-        size = len(candidates)
-        for position, candidate in enumerate(candidates, start=1):
-            if predicate.evaluate(
-                node=candidate,
-                context=EvaluationContext(
-                    node=candidate, position=position, size=size, namespaces=namespaces
-                ),
-            ):
-                yield candidate
+        for predicate in predicates:
+            size = len(candidates)
+            next_candidates = []
+            for position, candidate in enumerate(candidates, start=1):
+                if predicate.evaluate(
+                    node=candidate,
+                    context=EvaluationContext(
+                        node=candidate,
+                        position=position,
+                        size=size,
+                        namespaces=namespaces,
+                    ),
+                ):
+                    next_candidates.append(candidate)
+            candidates = next_candidates
+
+        yield from candidates
 
 
 class XPathExpression(Node):
@@ -384,7 +393,7 @@ class BooleanOperator(EvaluationNode):
 class Function(EvaluationNode):
     __slots__ = ("arguments", "function")
 
-    def __init__(self, name: str, arguments: Iterable[EvaluationNode]):
+    def __init__(self, name: str, arguments: Sequence[EvaluationNode]):
         self.function = xpath_functions[name]
         self.arguments = tuple(arguments)
 

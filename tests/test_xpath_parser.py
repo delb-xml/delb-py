@@ -93,7 +93,7 @@ from _delb.xpath.ast import (
                             LocationStep(
                                 Axis("child"),
                                 NameMatchTest(None, "foo"),
-                                HasAttribute(None, "bar"),
+                                [HasAttribute(None, "bar")],
                             )
                         ],
                         absolute=False,
@@ -110,7 +110,7 @@ from _delb.xpath.ast import (
                             LocationStep(
                                 Axis("child"),
                                 NameMatchTest(None, "foo"),
-                                HasAttribute("p", "bar"),
+                                [HasAttribute("p", "bar")],
                             )
                         ],
                         absolute=False,
@@ -127,11 +127,13 @@ from _delb.xpath.ast import (
                             LocationStep(
                                 Axis("child"),
                                 NameStartTest(None, ""),
-                                BooleanOperator(
-                                    operator.eq,
-                                    AttributeValue(None, "lang"),
-                                    AnyValue("zw"),
-                                ),
+                                [
+                                    BooleanOperator(
+                                        operator.eq,
+                                        AttributeValue(None, "lang"),
+                                        AnyValue("zw"),
+                                    )
+                                ],
                             )
                         ]
                     )
@@ -147,10 +149,12 @@ from _delb.xpath.ast import (
                             LocationStep(
                                 Axis("child"),
                                 NameStartTest(None, ""),
-                                Function(
-                                    "starts-with",
-                                    (AttributeValue("xml", "id"), AnyValue("🔥")),
-                                ),
+                                [
+                                    Function(
+                                        "starts-with",
+                                        (AttributeValue("xml", "id"), AnyValue("🔥")),
+                                    )
+                                ],
                             )
                         ]
                     )
@@ -166,25 +170,50 @@ from _delb.xpath.ast import (
                             LocationStep(
                                 Axis("child"),
                                 NameStartTest(None, ""),
-                                BooleanOperator(
-                                    operator.and_,
-                                    HasAttribute(None, "href"),
+                                [
                                     BooleanOperator(
-                                        operator.or_,
+                                        operator.and_,
+                                        HasAttribute(None, "href"),
                                         BooleanOperator(
-                                            operator.eq,
-                                            AttributeValue(None, "href"),
-                                            AnyValue("zw"),
-                                        ),
-                                        Function(
-                                            "starts-with",
-                                            (
+                                            operator.or_,
+                                            BooleanOperator(
+                                                operator.eq,
                                                 AttributeValue(None, "href"),
-                                                AnyValue("zw-"),
+                                                AnyValue("zw"),
+                                            ),
+                                            Function(
+                                                "starts-with",
+                                                (
+                                                    AttributeValue(None, "href"),
+                                                    AnyValue("zw-"),
+                                                ),
                                             ),
                                         ),
+                                    )
+                                ],
+                            )
+                        ]
+                    )
+                ]
+            ),
+        ),
+        (
+            "*[@lang][1]",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [
+                            LocationStep(
+                                Axis("child"),
+                                NameStartTest(None, ""),
+                                [
+                                    HasAttribute(None, "lang"),
+                                    BooleanOperator(
+                                        operator.eq,
+                                        Function("position", ()),
+                                        AnyValue(1),
                                     ),
-                                ),
+                                ],
                             )
                         ]
                     )

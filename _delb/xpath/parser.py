@@ -217,27 +217,22 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
         # TODO raise UnsupportedXPathFeature(…)
         raise InvalidOperation
 
-    else:
-
-        raise NotImplementedError
-
     # predicates
-    # TODO implement the plural
 
-    if match(TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET):
-        predicate = parse_evaluation_expression(tokens[1])
-        if isinstance(predicate, AnyValue) and isinstance(predicate.value, int):
-            predicate = BooleanOperator(
-                OPERATORS["="], Function("position", ()), predicate
-            )
-        tokens = tokens[3:]
-    else:
-        predicate = None
+    predicates = []
+    while tokens:
+        if match(TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET):
+            predicate = parse_evaluation_expression(tokens[1])
+            if isinstance(predicate, AnyValue) and isinstance(predicate.value, int):
+                predicate = BooleanOperator(
+                    OPERATORS["="], Function("position", ()), predicate
+                )
+            predicates.append(predicate)
+            tokens = tokens[3:]
+        else:
+            raise NotImplementedError
 
-    if tokens:
-        raise AssertionError(tokens)
-
-    return LocationStep(axis=axis, node_test=node_test, predicate=predicate)
+    return LocationStep(axis=axis, node_test=node_test, predicates=predicates)
 
 
 def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noqa: C901
@@ -277,12 +272,8 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
                     AttributeValue(prefix=argument.prefix, name=argument.local_name)
                 )
             else:
-                assert isinstance(argument, EvaluationNode)
                 arguments.append(argument)
-        return Function(
-            tokens[0].string,
-            tuple(arguments),
-        )
+        return Function(tokens[0].string, arguments)
 
     if match(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS, strict=True):
         return parse_evaluation_expression(tokens[1])
@@ -305,7 +296,6 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
                 left = parse_evaluation_expression(tokens[:i])
                 right = parse_evaluation_expression(tokens[i + 1 :])
 
-                # TODO move this to __init__?
                 if token[1] not in ("and", "or"):
                     if isinstance(left, HasAttribute):
                         left = AttributeValue(left.prefix, left.local_name)
