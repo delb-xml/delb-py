@@ -227,10 +227,15 @@ class LocationStep(Node):
     def evaluate(
         self, node_set: Iterable[NodeBase], namespaces: Namespaces
     ) -> Iterator[NodeBase]:
+        yielded_nodes = set()
         for node in node_set:
-            yield from self._evaluate(node=node, namespaces=namespaces)
+            for result_node in self._evaluate(node=node, namespaces=namespaces):
+                _id = id(result_node)
+                if _id not in yielded_nodes:
+                    yielded_nodes.add(_id)
+                    yield result_node
 
-    def _evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
+    def _evaluate(self, node: NodeBase, namespaces: Namespaces) -> Sequence[NodeBase]:
         node_test = self.node_test
         predicates = self.predicates
 
@@ -238,12 +243,11 @@ class LocationStep(Node):
         #      module was moved to the `delb` package
 
         if not predicates:
-            yield from (
+            return tuple(
                 n
                 for n in self.axis.evaluate(node=node, namespaces=namespaces)
                 if node_test.evaluate(node=n, namespaces=namespaces)
             )
-            return
 
         candidates = [
             n
@@ -266,7 +270,7 @@ class LocationStep(Node):
                     next_candidates.append(candidate)
             candidates = next_candidates
 
-        yield from candidates
+        return candidates
 
 
 class XPathExpression(Node):
