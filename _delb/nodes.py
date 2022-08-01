@@ -2256,7 +2256,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if __debug__ and all(isinstance(n, TagNode) for n in result):
             try:
                 etree_result = self._etree_xpath(expression)
-            except etree.XPathEvalError:
+            except NotImplementedError:
                 # might stem from flaws in LegacyXPathExpression
                 pass
             else:
@@ -2298,6 +2298,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                         continue
                     if ":" not in node_test.data:
                         node_test.data = prefix + ":" + node_test.data
+
+        if str(xpath_expression) != expression:
+            raise NotImplementedError
 
         _results = etree_obj.xpath(
             str(xpath_expression),
