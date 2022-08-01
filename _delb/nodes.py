@@ -1143,6 +1143,8 @@ class NodeBase(ABC):
                 "Not all node types can be added as siblings to a root node."
             )
 
+    # TODO xpath
+
 
 class _ChildLessNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""

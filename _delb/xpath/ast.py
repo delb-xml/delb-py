@@ -76,6 +76,7 @@ def nested_repr(obj: Any) -> str:
     return result
 
 
+# TODO? move to typing, so that users import from delb.typing
 class EvaluationContext(NamedTuple):
     node: NodeBase
     position: int
@@ -400,6 +401,7 @@ class Function(EvaluationNode):
     def __init__(self, name: str, arguments: Sequence[EvaluationNode]):
         self.function = xpath_functions[name]
         self.arguments = tuple(arguments)
+        # TODO verify whether the expected amount of arguments is given
 
     def __eq__(self, other):
         return (
