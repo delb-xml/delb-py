@@ -61,7 +61,7 @@ from _delb.utils import (
     last,
     register_namespace,
 )
-from _delb.xpath import QueryResults, register_xpath_function  # TODO docs
+from _delb.xpath import QueryResults
 
 
 # plugin loading
@@ -521,7 +521,6 @@ __all__ = (
     new_comment_node.__name__,
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
-    register_xpath_function.__name__,
     register_namespace.__name__,
     tag.__name__,
 )

@@ -50,8 +50,8 @@ Instead of:
 
     >>> root.xpath(".//foo/@target")  # doctest: +SKIP
 
-See :func:`_delb.xpath.functions.register_xpath_function` regarding the use of custom
-functions.
+See :func:`_delb.plugins.PluginManager.register_xpath_function` regarding the use of
+custom functions.
 
 .. _XPath 1.0 specs: https://www.w3.org/TR/1999/REC-xpath-19991116/
 """
@@ -80,7 +80,7 @@ from cssselect import GenericTranslator  # type: ignore
 from _delb.names import Namespaces
 from _delb.typing import Filter
 from _delb.utils import sort_nodes_in_document_order
-from _delb.xpath.functions import register_xpath_function
+from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
 
 
@@ -184,7 +184,6 @@ __all__ = (
     _css_to_xpath.__name__,  # type:ignore
     evaluate.__name__,
     parse.__name__,  # type: ignore
-    register_xpath_function.__name__,
     QueryResults.__name__,
 )
 

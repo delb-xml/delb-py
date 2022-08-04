@@ -16,6 +16,7 @@ These extension types are currently available:
 - document loaders
 - document mixin classes
 - document subclasses
+- XPath functions
 
 *Loaders* are functions that try to make sense of any given input value, and if
 they can they return a parsed document.
@@ -126,6 +127,15 @@ The recommendations as laid out for :meth:`DocumentMixinHooks._init_config
 <_delb.plugins.DocumentMixinHooks._init_config>` also apply for subclasses who
 would process configuration arguments in their ``__init__`` method before
 calling the super class' one.
+
+
+XPath functions
+---------------
+
+Custom XPath functions are registered with this decorator:
+
+.. autofunction:: _delb.plugins.plugin_manager.register_xpath_function
+
 
 
 .. _eXist-db: https://exist-db.org/

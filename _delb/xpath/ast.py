@@ -31,11 +31,14 @@ from typing import (
 )
 
 from _delb.names import Namespaces
-from _delb.xpath.functions import xpath_functions
+from _delb.plugins import plugin_manager
 from _delb.utils import _is_node_of_type, last
 
 if TYPE_CHECKING:
     from delb import NodeBase, TagNode
+
+
+xpath_functions = plugin_manager.plugins.xpath_functions
 
 
 # helper
