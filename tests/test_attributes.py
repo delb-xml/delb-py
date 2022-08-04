@@ -73,9 +73,13 @@ def test_detach_sustains_attributes():
     node = Document(
         "<root xmlns='https://default.ns'><node foo='bar'/></root>"
     ).root.first_child
-    assert node._etree_obj is node.attributes._element
+    attributes = node.attributes
+    attributes_copy = dict(attributes)
+
     node.detach()
-    assert node._etree_obj is node.attributes._element
+
+    assert node.attributes is attributes
+    assert node.attributes == attributes_copy
 
 
 def test_update():

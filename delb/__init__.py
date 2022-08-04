@@ -18,12 +18,13 @@ from collections.abc import MutableSequence
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, Union
 from typing import IO as IOType
 
 from lxml import etree
 
 from _delb.exceptions import FailedDocumentLoading, InvalidOperation
+from _delb.names import Namespaces
 from _delb.plugins import (
     core_loaders,
     DocumentMixinHooks,
@@ -333,7 +334,7 @@ class Document(metaclass=DocumentMeta):
 
     def cleanup_namespaces(
         self,
-        namespaces: Optional["etree._NSMap"] = None,
+        namespaces: Optional[Mapping[Optional[str], str]] = None,
         retain_prefixes: Optional[Iterable[str]] = None,
     ):
         """
@@ -363,7 +364,8 @@ class Document(metaclass=DocumentMeta):
         """
         etree.cleanup_namespaces(
             self.root._etree_obj.getroottree(),
-            top_nsmap=namespaces,
+            # TODO https://github.com/lxml/lxml-stubs/issues/62
+            top_nsmap=namespaces,  # type: ignore
             keep_ns_prefixes=retain_prefixes,
         )
 
@@ -404,7 +406,7 @@ class Document(metaclass=DocumentMeta):
         self.root.merge_text_nodes()
 
     @property
-    def namespaces(self) -> Dict[Optional[str], str]:
+    def namespaces(self) -> Namespaces:
         """
         The namespace mapping of the document's :attr:`root <Document.root>` node.
         """
@@ -498,6 +500,7 @@ class Document(metaclass=DocumentMeta):
 __all__ = (
     CommentNode.__name__,
     Document.__name__,
+    Namespaces.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagNode.__name__,
