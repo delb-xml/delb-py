@@ -49,7 +49,7 @@ def test_tei_subclass(files_path, filename):
     document = Document(files_path / filename)
 
     if isinstance(document, DTABfDocument):
-        assert document.text_characters == 74737
+        assert document.text_characters == 74738
         assert document.title == "Manifest der Kommunistischen Partei"
 
     elif isinstance(document, TEIDocument):
