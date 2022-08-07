@@ -79,7 +79,9 @@ def nested_repr(obj: Any) -> str:
     return result
 
 
-# TODO? move to typing, so that users import from delb.typing
+# structs
+
+
 class EvaluationContext(NamedTuple):
     node: NodeBase
     position: int

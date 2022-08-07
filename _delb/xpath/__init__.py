@@ -80,6 +80,7 @@ from cssselect import GenericTranslator  # type: ignore
 from _delb.names import Namespaces
 from _delb.typing import Filter
 from _delb.utils import sort_nodes_in_document_order
+from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
 
@@ -184,6 +185,7 @@ __all__ = (
     _css_to_xpath.__name__,  # type:ignore
     evaluate.__name__,
     parse.__name__,  # type: ignore
+    EvaluationContext.__name__,
     QueryResults.__name__,
 )
 

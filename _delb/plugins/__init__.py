@@ -204,7 +204,7 @@ class PluginManager:
 
             from delb import Document
             from _delb.plugins import plugin_manager
-            from _delb.xpath.ast import EvaluationContext
+            from _delb.xpath import EvaluationContext
 
 
             @plugin_manager.register_xpath_function("is-last")
