@@ -2253,7 +2253,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 )
         return result
 
-    # REMOVE eventually, then see test_queries::test_quotes_in_css_selector
+    # REMOVE eventually
     def _etree_xpath(self, expression: str) -> "QueryResults":
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap

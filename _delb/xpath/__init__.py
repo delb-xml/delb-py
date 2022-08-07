@@ -289,7 +289,6 @@ def _partition_terms(expression: str) -> List[str]:  # noqa: C901
                     continue
                 function_args = function_args and bool(bracket_level)
             current_term += character
-        # TODO escaped characters
         elif character in ("'", '"'):
             quote = character
             current_term += character
@@ -476,7 +475,6 @@ class LegacyLocationStep:
             self.node_test = LegacyNodeTest("node()")
         else:
             if "[" in expression:
-                # FIXME mind quotes:
                 expression, predicates_part = expression.split("[", maxsplit=1)
                 assert predicates_part[-1] == "]", predicates_part
                 self.predicates = LegacyPredicateExpression.parse("[" + predicates_part)
@@ -711,8 +709,6 @@ class LegacyFunctionExpression(LegacyPredicateExpression):
 
     def __init__(self, expression: str):
         self.name, rest = expression.split("(", maxsplit=1)
-        # FIXME this fails where an argument itself is a function call,
-        #       _split would have to consider brackets as it does with quotes
         self.arguments = tuple(
             LegacyPredicateExpression.parse(e) for e in _split(rest[:-1], ",")
         )

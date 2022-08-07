@@ -91,8 +91,6 @@ class EvaluationContext(NamedTuple):
 
 
 class Node:
-    # TODO create one object per definition
-
     def __eq__(self, other):
         return type(self) is type(other) and all(
             getattr(self, x) == getattr(other, x) for x in self.__slots__
