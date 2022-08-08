@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @plugin_manager.register_xpath_function
-def concat(*strings: str) -> str:
+def concat(_, *strings: str) -> str:
     return "".join(strings)
 
 

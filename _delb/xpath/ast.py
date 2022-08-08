@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import inspect
 from functools import wraps
 from textwrap import indent
 from typing import (
@@ -401,9 +402,16 @@ class Function(EvaluationNode):
     __slots__ = ("arguments", "function")
 
     def __init__(self, name: str, arguments: Sequence[EvaluationNode]):
-        self.function = xpath_functions[name]
+        function = xpath_functions[name]
+        parameters = inspect.signature(function).parameters
+        if (
+            not len(parameters) > 1
+            and tuple(parameters.values())[-1].kind != inspect.Parameter.VAR_POSITIONAL
+            and len(parameters) != len(arguments) + 1
+        ):
+            raise NotImplementedError
+        self.function = function
         self.arguments = tuple(arguments)
-        # TODO verify whether the expected amount of arguments is given
 
     def __eq__(self, other):
         return (
