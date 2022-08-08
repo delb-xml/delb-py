@@ -168,18 +168,16 @@ def parse_location_path(tokens: TokenSequence) -> LocationPath:
 
 
 def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
-    def match(*pattern: Optional[TokenType], strict: bool = False) -> bool:
-        # TODO is strict ever used?
-        if (strict and token_count != len(pattern)) or len(tokens) < len(pattern):
-            return False
-        return all(x.type is y for x, y in zip(tokens, pattern) if y is not None)
+    def start_matches(*pattern: Optional[TokenType]) -> bool:
+        return len(tokens) >= len(pattern) and all(
+            x.type is y for x, y in zip(tokens, pattern) if y is not None
+        )
 
     node_test: NodeTestNode
-    token_count = len(tokens)
 
     # axis
 
-    if match(TokenType.NAME, TokenType.AXIS_SEPARATOR):
+    if start_matches(TokenType.NAME, TokenType.AXIS_SEPARATOR):
         axis = Axis(tokens[0].string)
         tokens = tokens[2:]
     else:
@@ -187,7 +185,7 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
 
     # name test's prefix
 
-    if match(TokenType.NAME, TokenType.COLON, TokenType.NAME):
+    if start_matches(TokenType.NAME, TokenType.COLON, TokenType.NAME):
         prefix = tokens[0].string
         tokens = tokens[2:]
     else:
@@ -195,25 +193,25 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
 
     # node test
 
-    if match(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
+    if start_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
         node_test = NodeTypeTest(NODE_TYPE_TEST_MAPPING[tokens[0].string])
         tokens = tokens[3:]
 
-    elif match(TokenType.NAME, TokenType.ASTERISK):
+    elif start_matches(TokenType.NAME, TokenType.ASTERISK):
         node_test = NameStartTest(prefix, tokens[0].string)
         tokens = tokens[2:]
 
-    elif match(TokenType.ASTERISK):
+    elif start_matches(TokenType.ASTERISK):
         node_test = NameStartTest(prefix, "")
         tokens = tokens[1:]
 
-    elif match(TokenType.NAME):
+    elif start_matches(TokenType.NAME):
         node_test = NameMatchTest(prefix, tokens[0].string)
         tokens = tokens[1:]
 
     # other
 
-    elif match(TokenType.STRUDEL, TokenType.NAME):
+    elif start_matches(TokenType.STRUDEL, TokenType.NAME):
         # TODO raise UnsupportedXPathFeature(…)
         raise InvalidOperation
 
@@ -221,7 +219,7 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
 
     predicates = []
     while tokens:
-        if match(TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET):
+        if start_matches(TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET):
             predicate = parse_evaluation_expression(tokens[1])
             if isinstance(predicate, AnyValue) and isinstance(predicate.value, int):
                 predicate = BooleanOperator(
@@ -236,32 +234,27 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
 
 
 def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noqa: C901
-    def match(*pattern: Optional[TokenType], strict: bool = False) -> bool:
-        # TODO is strict always True?!
-        if (strict and token_count != len(pattern)) or len(tokens) < len(pattern):
-            return False
-        return all(x.type is y for x, y in zip(tokens, pattern) if y is not None)
+    def all_matches(*pattern: Optional[TokenType]) -> bool:
+        return len(pattern) == token_count and all(
+            x.type is y for x, y in zip(tokens, pattern) if y is not None
+        )
 
     tokens = strip_whitespace_tokens(tokens)
     token_count = len(tokens)
 
-    if match(TokenType.NUMBER, strict=True):
+    if all_matches(TokenType.NUMBER):
         return AnyValue(int(tokens[0].string))
 
-    if match(TokenType.STRING, strict=True):
+    if all_matches(TokenType.STRING):
         return AnyValue(tokens[0].string[1:-1])
 
-    if match(TokenType.STRUDEL, TokenType.NAME, strict=True):
+    if all_matches(TokenType.STRUDEL, TokenType.NAME):
         return HasAttribute(prefix=None, local_name=tokens[1].string)
 
-    if match(
-        TokenType.STRUDEL, TokenType.NAME, TokenType.COLON, TokenType.NAME, strict=True
-    ):
+    if all_matches(TokenType.STRUDEL, TokenType.NAME, TokenType.COLON, TokenType.NAME):
         return HasAttribute(prefix=tokens[1].string, local_name=tokens[3].string)
 
-    if match(
-        TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS, strict=True
-    ):
+    if all_matches(TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
         arguments: List[EvaluationNode] = []
         for argument in (
             parse_evaluation_expression(x)
@@ -275,7 +268,7 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
                 arguments.append(argument)
         return Function(tokens[0].string, arguments)
 
-    if match(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS, strict=True):
+    if all_matches(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
         return parse_evaluation_expression(tokens[1])
 
     for _operator in (
