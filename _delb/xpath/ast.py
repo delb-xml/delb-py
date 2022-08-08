@@ -118,7 +118,6 @@ class NodeTestNode(Node):
 # aggregators
 
 
-# TODO unit test
 class Axis(Node):
     __slots__ = ("generator",)
 
@@ -155,7 +154,7 @@ class Axis(Node):
         yield from node.child_nodes(recurse=True)
 
     def following(self, node: NodeBase) -> Iterator[NodeBase]:
-        raise NotImplementedError
+        yield from node.iterate_next_nodes_in_stream()
 
     def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_next_nodes()
@@ -166,7 +165,7 @@ class Axis(Node):
             yield parent
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
-        raise NotImplementedError
+        yield from node.iterate_previous_nodes_in_stream()
 
     def preceding_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_previous_nodes()
