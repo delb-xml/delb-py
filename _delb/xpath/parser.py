@@ -281,22 +281,24 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
         (TokenType.OTHER_OPS, ">="),
         (TokenType.OTHER_OPS, ">"),
     ):
-        for i, token in enumerate(
-            (x.type, x.string) for x in tokens if isinstance(x, Token)
-        ):
-            if token == _operator:
+        for i, token in enumerate(tokens):
+            if not isinstance(token, Token):
+                assert token is None or isinstance(token, list)
+                continue
 
+            if (token.type, token.string) == _operator:
+                assert 0 < i < len(tokens) - 1
                 left = parse_evaluation_expression(tokens[:i])
                 right = parse_evaluation_expression(tokens[i + 1 :])
 
-                if token[1] not in ("and", "or"):
+                if token.string not in ("and", "or"):
                     if isinstance(left, HasAttribute):
                         left = AttributeValue(left.prefix, left.local_name)
                     if isinstance(right, HasAttribute):
                         right = AttributeValue(right.prefix, right.local_name)
 
                 return BooleanOperator(
-                    OPERATORS[token[1]],
+                    OPERATORS[token.string],
                     left,
                     right,
                 )

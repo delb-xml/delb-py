@@ -220,6 +220,31 @@ from _delb.xpath.ast import (
                 ]
             ),
         ),
+        (
+            "*[concat('a', 'b') = 'ab']",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [
+                            LocationStep(
+                                Axis("child"),
+                                NameStartTest(None, ""),
+                                [
+                                    BooleanOperator(
+                                        operator.eq,
+                                        Function(
+                                            "concat", (AnyValue("a"), AnyValue("b"))
+                                        ),
+                                        AnyValue("ab"),
+                                    )
+                                ],
+                            )
+                        ],
+                        absolute=False,
+                    )
+                ]
+            ),
+        ),
     ),
 )
 def test_parse(_in, out):
