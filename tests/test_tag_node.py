@@ -394,6 +394,17 @@ def test_last_descendant():
     assert c.last_descendant is None
 
 
+def test_location_path_and_xpath_concordance(files_path):
+    for doc_path in files_path.glob("*.xml"):
+        document = Document(doc_path)
+
+        assert document.xpath(document.root.location_path).first is document.root
+        for node in document.root.child_nodes(is_tag_node, recurse=True):
+            queried_nodes = document.xpath(node.location_path)
+            assert queried_nodes.size == 1
+            assert queried_nodes.first is node
+
+
 def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
     node = document.new_tag_node("node")
@@ -479,6 +490,7 @@ def test_names(sample_document):
     assert text.universal_name == "{https://space.name}text"
 
 
+# FIXME this can't rely on xpath (latest when validation against etree is dropped)
 def test_next_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     page_breaks = document.xpath("//pb").in_document_order().as_list()
@@ -514,6 +526,7 @@ def test_prepend_child():
     assert str(document) == "<root><a/><b/></root>"
 
 
+# FIXME this can't rely on xpath (latest when validation against etree is dropped)
 def test_previous_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     page_breaks = document.xpath(".//pb").in_document_order().as_list()
