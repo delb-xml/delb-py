@@ -1778,7 +1778,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def css_select(
         self, expression: str, namespaces: Optional[Namespaces] = None
-    ) -> "QueryResults":
+    ) -> QueryResults:
         """
         See `Queries with XPath & CSS`_ regarding the extent of the supported grammar.
 
@@ -2223,7 +2223,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self,
         expression: str,
         namespaces: Optional[Namespaces] = None,
-    ) -> "QueryResults":
+    ) -> QueryResults:
         """
         See `Queries with XPath & CSS`_ for details on the extent of the XPath
         implementation.
@@ -2236,9 +2236,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: query-nodes
         """
-        result = QueryResults(  # TODO wrap in xpath
-            evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
-        )
+        result = evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
         if __debug__ and all(isinstance(n, TagNode) for n in result):
             try:
                 etree_result = self._etree_xpath(expression)
@@ -2254,7 +2252,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return result
 
     # REMOVE eventually
-    def _etree_xpath(self, expression: str) -> "QueryResults":
+    def _etree_xpath(self, expression: str) -> QueryResults:
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
         compat_namespaces: etree._DictAnyStr

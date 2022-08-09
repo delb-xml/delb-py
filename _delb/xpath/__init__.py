@@ -125,7 +125,7 @@ class QueryResults(Sequence["NodeBase"]):
         """The contained nodes in a :class:`tuple`."""
         return self.__items
 
-    def filtered_by(self, *filters: Filter) -> "QueryResults":
+    def filtered_by(self, *filters: Filter) -> QueryResults:
         """
         Returns another :class:`QueryResults` instance that contains all nodes filtered
         by the provided :term:`filter` s.
@@ -173,12 +173,12 @@ def evaluate(
     node: TagNode,
     expression: str,
     namespaces: Optional[Mapping[Optional[str], str]] = None,
-) -> Iterable[NodeBase]:
+) -> QueryResults:
     if namespaces is None:
         namespaces = node.namespaces
     elif not isinstance(namespaces, Namespaces):
         namespaces = Namespaces(namespaces)
-    return parse(expression).evaluate(node, namespaces)
+    return QueryResults(parse(expression).evaluate(node, namespaces))
 
 
 __all__ = (
