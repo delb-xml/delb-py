@@ -61,12 +61,12 @@ from _delb.utils import (
     _random_unused_prefix,
 )
 from _delb.xpath import (
-    LegacyLocationStep,
     LegacyXPathExpression,
     QueryResults,
     _css_to_xpath,
 )
-from _delb.xpath import evaluate as evaluate_xpath
+from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
+from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -1859,100 +1859,112 @@ class TagNode(_ElementWrappingNode, NodeBase):
             root_node = cast(TagNode, last(self.ancestors()))
         return root_node.__document__
 
-    # TODO
-    def fetch_or_create_by_xpath(self, expression: str) -> "TagNode":
+    def fetch_or_create_by_xpath(
+        self,
+        expression: str,
+        namespaces: Union[Namespaces, None, Mapping[Optional[str], str]] = None,
+    ) -> "TagNode":
         """
         Fetches a single node that is locatable by the provided XPath expression. If
-        the node doesn't exist, the non-existing branch will be created. All location
-        steps in the expression must therefore:
+        the node doesn't exist, the non-existing branch will be created. These rules
+        are imperative in your endeavour:
 
-        - use the child axis (``/``).
-        - have a name test.
-        - only use attribute tests as predicates that define a value and,
-          if applicable, are contained in an ``and`` conjunction.
-
-        All expressions must start with a ``./``.
+        - All location steps must use the child axis.
+        - Each step needs to provide a name test.
+        - Attributes must be compared against a literal.
+        - Multiple attribute comparisons must be joined with the `and` operator and / or
+          more than one predicate expression.
+        - The logical validity of multiple attribute comparisons isn't checked. E.g.
+          one could provide ``foo[@p="her"][@p="him"]``, but expect an undefined
+          behaviour.
+        - Other contents in predicate expressions are invalid.
 
         >>> document = Document("<root/>")
         >>> grandchild = document.root.fetch_or_create_by_xpath(
-        ...     "./child[@a='b']/grandchild"
+        ...     "child[@a='b']/grandchild"
         ... )
         >>> grandchild is document.root.fetch_or_create_by_xpath(
-        ...     "./child[@a='b']/grandchild"
+        ...     "child[@a='b']/grandchild"
         ... )
         True
         >>> str(document)
         '<root><child a="b"><grandchild/></child></root>'
 
-        This is an *experimental* feature. Its behaviour may change significantly or it
-        may be removed altogether in the future.
-        """
-        _expression = (
-            expression
-            if isinstance(expression, LegacyXPathExpression)
-            else LegacyXPathExpression(expression)
-        )
+        :param expression: An XPath expression that can unambiguously locate a
+                           descending node in a tree that has any state.
+        :param namespaces: An optional mapping of prefixes to namespaces. As default the
+                           node's one is used.
 
-        if not _expression.is_unambiguously_locatable():
+        :return: The existing or freshly created node descibed with ``expression``.
+        """
+        ast = parse_xpath(expression)
+        if not ast._is_unambiguously_locatable:
             raise InvalidOperation(
                 "The XPath expression doesn't determine a distinct branch."
             )
 
-        query_result = self.xpath(str(_expression))
+        if namespaces is None:
+            namespaces = self.namespaces
+        elif not isinstance(namespaces, Namespaces):
+            namespaces = Namespaces(namespaces)
+
+        query_result = self.xpath(expression, namespaces)
+
         if query_result.size == 1:
-            return query_result[0]
+            result = query_result.first
+            assert isinstance(result, TagNode)
+            return result
 
         if query_result:
             raise InvalidOperation(
                 f"The tree already contains {query_result.size} matching branches."
             )
 
-        return self._create_by_xpath(_expression.location_paths[0].location_steps[1:])
+        return self._create_by_xpath(ast, namespaces)
 
-    def _create_by_xpath(self, steps: Iterable[LegacyLocationStep]) -> "TagNode":
-        namespace: Optional[str]
+    def _create_by_xpath(
+        self,
+        ast: XPathExpression,
+        namespaces: Namespaces,
+    ) -> "TagNode":
+
         node = self
-        for i, step in enumerate(steps):
-            candidates = node.xpath(f"./{step}")
+
+        for i, step in enumerate(ast.location_paths[0].location_steps):
+            candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
 
             if len(candidates) == 0:
-                assert step.axis == "child"
-                assert step.node_test.type == "name_test"
-
-                name = step.node_test.data
-                if ":" in name:
-                    prefix, name = name.split(":")
-                    namespace = str(self._etree_obj.nsmap[prefix])  # type: ignore
+                node_test = step.node_test
+                assert isinstance(node_test, NameMatchTest)
+                prefix = node_test.prefix
+                if prefix is None:
+                    namespace = namespaces.get(None)
                 else:
-                    namespace = None
+                    namespace = namespaces[prefix]
 
-                if step.predicates is not None:
-                    attributes = cast(
-                        Dict[str, str],
-                        step._derive_attributes(),
-                    )
-                    for a_name in tuple(attributes):
-                        if ":" in a_name:
-                            prefix, a_name = a_name.split(":")
-                            a_namespace = node._etree_obj.nsmap[prefix]  # type: ignore
-                            assert isinstance(a_namespace, str)
-                            attributes[f"{{{a_namespace}}}{a_name}"] = attributes.pop(
-                                f"{prefix}:{a_name}"
-                            )
-                else:
-                    attributes = {}
+                new_node = node.new_tag_node(
+                    local_name=node_test.local_name,
+                    attributes=None,
+                    namespace=namespace,
+                )
 
-                new_node = node.new_tag_node(name, attributes, namespace)
+                for prefix, local_name, value in step._derived_attributes:
+                    if prefix is None and None not in namespaces:
+                        new_node.attributes[local_name] = value
+                    else:
+                        new_node.attributes[
+                            namespaces[prefix] : local_name  # type: ignore
+                        ] = value
+
                 node.append_child(new_node)
                 node = new_node
 
             elif len(candidates) == 1:
-                node = candidates[0]
+                node = cast("TagNode", candidates[0])
 
             else:
                 raise InvalidOperation(
-                    "The tree has multiple possible branches at "
-                    f"{'/'.join(steps[:i])}"  # type: ignore
+                    f"The tree has multiple possible branches at location step {i}."
                 )
         return node
 

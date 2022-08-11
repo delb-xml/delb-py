@@ -16,7 +16,8 @@
 from __future__ import annotations
 
 import inspect
-from functools import wraps
+import operator
+from functools import cached_property, wraps
 from textwrap import indent
 from typing import (
     TYPE_CHECKING,
@@ -29,8 +30,10 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
 )
 
+from _delb.exceptions import InvalidCodePath
 from _delb.names import Namespaces
 from _delb.plugins import plugin_manager
 from _delb.utils import _is_node_of_type, last
@@ -109,6 +112,13 @@ class Node:
 class EvaluationNode(Node):
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:
         raise NotImplementedError
+
+    @property
+    def _derived_attributes(self):
+        raise InvalidCodePath
+
+    def _is_unambiguously_locatable(self) -> bool:
+        return False
 
 
 class NodeTestNode(Node):
@@ -214,6 +224,9 @@ class LocationPath(Node):
                 node_set=(node,), namespaces=namespaces
             )
 
+    def _is_unambiguously_locatable(self) -> bool:
+        return all(s._is_unambiguously_locatable() for s in self.location_steps)
+
 
 class LocationStep(Node):
     __slots__ = ("axis", "node_test", "predicates")
@@ -227,6 +240,28 @@ class LocationStep(Node):
         self.axis = axis
         self.node_test = node_test
         self.predicates = tuple(predicates)
+
+    @cached_property
+    def _anders_predicates(self) -> "BooleanOperator":
+        predicates = list(self.predicates)
+
+        right = predicates.pop()
+        while predicates:
+            left = predicates.pop()
+            right = BooleanOperator(operator=operator.and_, left=left, right=right)
+
+        assert isinstance(right, BooleanOperator)
+        return right
+
+    @cached_property
+    def _derived_attributes(self) -> List[Tuple[Optional[str], str, str]]:
+        predicates_count = len(self.predicates)
+        if predicates_count == 0:
+            return []
+        elif predicates_count == 1:
+            return self.predicates[0]._derived_attributes
+        else:
+            return self._anders_predicates._derived_attributes
 
     def evaluate(
         self, node_set: Iterable[NodeBase], namespaces: Namespaces
@@ -276,6 +311,21 @@ class LocationStep(Node):
 
         return candidates
 
+    def _is_unambiguously_locatable(self) -> bool:
+        if not (
+            self.axis.generator.__name__ == "child"
+            and isinstance(self.node_test, NameMatchTest)
+        ):
+            return False
+
+        predicates_count = len(self.predicates)
+        if predicates_count == 0:
+            return True
+        elif predicates_count == 1:
+            return self.predicates[0]._is_unambiguously_locatable()
+        else:
+            return self._anders_predicates._is_unambiguously_locatable()
+
 
 class XPathExpression(Node):
     __slots__ = ("location_paths",)
@@ -294,6 +344,13 @@ class XPathExpression(Node):
                 if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
                     yield result
+
+    @cached_property
+    def _is_unambiguously_locatable(self) -> bool:
+        return (
+            len(self.location_paths) == 1
+            and self.location_paths[0]._is_unambiguously_locatable()
+        )
 
 
 # node tests
@@ -391,11 +448,51 @@ class BooleanOperator(EvaluationNode):
         self.left = left
         self.right = right
 
+    @property
+    def _derived_attributes(self) -> List[Tuple[Optional[str], str, str]]:
+        if self.operator is operator.and_:
+            return self.left._derived_attributes + self.right._derived_attributes
+
+        elif self.operator is operator.eq:
+            left, right = self.left, self.right
+            if isinstance(left, AttributeValue):
+                assert isinstance(right, AnyValue)
+                return [
+                    (left.prefix, left.local_name, right.value),
+                ]
+            else:
+                assert isinstance(left, AnyValue) and isinstance(right, AttributeValue)
+                return [
+                    (right.prefix, right.local_name, left.value),
+                ]
+
+        raise InvalidCodePath
+
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> Any:
         return self.operator(
             self.left.evaluate(node=node, context=context),
             self.right.evaluate(node=node, context=context),
         )
+
+    def _is_unambiguously_locatable(self) -> bool:
+        if self.operator is operator.and_:
+            return (
+                self.left._is_unambiguously_locatable()
+                and self.right._is_unambiguously_locatable()
+            )
+        elif self.operator is operator.eq:
+            return (
+                isinstance(self.left, AttributeValue)
+                and (
+                    isinstance(self.right, AnyValue)
+                    and isinstance(self.right.value, str)
+                )
+            ) or (
+                (isinstance(self.left, AnyValue) and isinstance(self.left.value, str))
+                and isinstance(self.right, AttributeValue)
+            )
+        else:
+            return False
 
 
 class Function(EvaluationNode):
