@@ -1,8 +1,7 @@
 from pytest import mark
 
-from _delb.nodes import altered_default_filters, is_tag_node
 from _delb.xpath.ast import Axis
-from delb import Document
+from delb import altered_default_filters, is_tag_node, Document, TextNode
 
 
 @mark.parametrize(
@@ -55,6 +54,18 @@ def test_axes_order(name, start_name, expected_order):
         assert node.local_name == start_name
         result = "".join(n.local_name for n in axis.evaluate(node, {}))
         assert result == expected_order
+
+
+def test_evaluation_from_text_node():
+    root = Document("<text><p>Elle dit: <hi>Ooh lala.</hi></p></text>").root
+    p = root[0]
+    node = p[1][0]
+    assert isinstance(node, TextNode)
+    assert "lala" in node
+
+    result = node.xpath("ancestor::p")
+    assert result.size == 1
+    assert result.first is p
 
 
 def test_multiple_identical_location_paths():

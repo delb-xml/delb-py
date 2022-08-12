@@ -968,6 +968,14 @@ class NodeBase(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def namespaces(self):
+        """
+        The prefix to namespace :term:`mapping` of the node.
+        """
+        pass
+
     @abstractmethod
     def new_tag_node(
         self,
@@ -1143,7 +1151,25 @@ class NodeBase(ABC):
                 "Not all node types can be added as siblings to a root node."
             )
 
-    # TODO xpath
+    @altered_default_filters()
+    def xpath(
+        self,
+        expression: str,
+        namespaces: Optional[Namespaces] = None,
+    ) -> QueryResults:
+        """
+        See `Queries with XPath & CSS`_ for details on the extent of the XPath
+        implementation.
+
+        :param expression: A supported XPath 1.0 expression that contains one or more
+                           location paths.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's definition is used.
+        :return: All nodes that match the evaluation of an XPath expression.
+
+        :meta category: query-nodes
+        """
+        return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
 
 class _ChildLessNode(NodeBase):
@@ -1309,6 +1335,10 @@ class _ElementWrappingNode(NodeBase):
     @property
     def full_text(self) -> str:
         return ""
+
+    @property
+    def namespaces(self) -> Namespaces:
+        return Namespaces(self._etree_obj.nsmap)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
@@ -2120,13 +2150,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def namespace(self, value: Optional[str]):
         self._etree_obj.tag = QName(value, self.local_name).text
 
-    @property
-    def namespaces(self) -> Namespaces:
-        """
-        The prefix to namespace :term:`mapping` of the node.
-        """
-        return Namespaces(self._etree_obj.nsmap)
-
     def new_tag_node(
         self,
         local_name: str,
@@ -2230,6 +2253,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "Not all node types can be added as siblings to a root node."
             )
 
+    # REMOVE eventually
     @altered_default_filters()
     def xpath(
         self,
@@ -2248,7 +2272,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: query-nodes
         """
-        result = evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
+        result = super().xpath(expression=expression, namespaces=namespaces)
         if __debug__ and all(isinstance(n, TagNode) for n in result):
             try:
                 etree_result = self._etree_xpath(expression)
@@ -2635,6 +2659,13 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
         assert isinstance(self.content, str)
         assert isinstance(node.content, str)
+
+    @property
+    def namespaces(self):
+        if self.parent:
+            return self.parent.namespaces
+        else:
+            raise InvalidOperation("A lonely text node has no namespace context.")
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         if self._position is DETACHED:

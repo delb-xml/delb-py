@@ -82,7 +82,7 @@ from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from delb import NodeBase, TagNode
+    from delb import NodeBase
 
 
 _css_translator = GenericTranslator()
@@ -166,7 +166,7 @@ def _css_to_xpath(expression: str) -> str:
 
 
 def evaluate(
-    node: TagNode,
+    node: NodeBase,
     expression: str,
     namespaces: Optional[Mapping[Optional[str], str]] = None,
 ) -> QueryResults:

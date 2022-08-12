@@ -50,9 +50,8 @@ class _Nodes_Sorter:
         self.__node = None
         self.__items = defaultdict(_Nodes_Sorter)
 
-    def add(self, path: Sequence[int], node: NodeBase):
-        if not _is_node_of_type(node, "TagNode"):
-            raise NotImplementedError
+    def add(self, path: Sequence[int], node: TagNode):
+        assert _is_node_of_type(node, "TagNode")
         if path:
             self.__items[path[0]].add(path[1:], node)
         else:
