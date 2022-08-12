@@ -16,6 +16,16 @@ GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 
 
 def deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
+    """ deconstructs an expression in Clark notation and returns the
+    extracted namespace and tagname as a tuple.
+
+    >>> deconstruct_clark_notation('{tei}text')
+    ('tei', 'text')
+
+    >>> deconstruct_clark_notation('div')
+    (None, 'div')
+
+    """
     if name.startswith("{"):
         a, b = name.split("}", maxsplit=1)
         return a[1:], b
