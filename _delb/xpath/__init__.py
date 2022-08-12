@@ -65,7 +65,6 @@ from typing import (
     Iterable,
     Iterator,
     List,
-    Mapping,
     Optional,
     Sequence,
     Tuple,
@@ -168,13 +167,11 @@ def _css_to_xpath(expression: str) -> str:
 def evaluate(
     node: NodeBase,
     expression: str,
-    namespaces: Optional[Mapping[Optional[str], str]] = None,
+    namespaces: Namespaces = None,
 ) -> QueryResults:
     if namespaces is None:
         namespaces = node.namespaces
-    elif not isinstance(namespaces, Namespaces):
-        namespaces = Namespaces(namespaces)
-    return QueryResults(parse(expression).evaluate(node, namespaces))
+    return QueryResults(parse(expression).evaluate(node=node, namespaces=namespaces))
 
 
 __all__ = (
