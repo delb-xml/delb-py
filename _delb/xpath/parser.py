@@ -19,7 +19,7 @@ import operator
 from functools import lru_cache
 from typing import Iterator, List, Optional, Sequence, Union
 
-from _delb.exceptions import InvalidOperation
+from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath.ast import (
     AnyValue,
     AttributeValue,
@@ -127,7 +127,12 @@ def group_enclosed_expressions(tokens: TokenSequence) -> TokenSequence:
             start_pos, start_token = openers.pop()
 
             if token.type is not COMPLEMENTING_TOKEN_TYPES[start_token.type]:
-                raise NotImplementedError
+                raise XPathParsingError(
+                    position=token.position,
+                    message=f"Closing `{token.string}` doesn't match opening "
+                    f"`{start_token.string}` at position "
+                    f"{start_token.position}.",
+                )
 
             if not openers:
                 contents = group_enclosed_expressions(tokens[start_pos + 1 : i])
@@ -146,12 +151,18 @@ def group_enclosed_expressions(tokens: TokenSequence) -> TokenSequence:
             result.append(token)
 
     if openers:
-        raise NotImplementedError
+        token = openers[-1][1]
+        raise XPathParsingError(
+            position=token.position, message=f"`{token.string}` is never closed."
+        )
 
     return result
 
 
 def parse_location_path(tokens: TokenSequence) -> LocationPath:
+    if not tokens:
+        raise XPathParsingError(message="Missing location path.")
+
     tokens = expand_axes(tokens)
     absolute = tokens[0].type is TokenType.SLASH
 
@@ -174,14 +185,26 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
         )
 
     node_test: NodeTestNode
+    all_tokens = tuple(tokens)
 
     # axis
 
     if start_matches(TokenType.NAME, TokenType.AXIS_SEPARATOR):
-        axis = Axis(tokens[0].string)
+        try:
+            axis = Axis(tokens[0].string)
+        except XPathParsingError as e:
+            e.position = tokens[0].position
+            raise e
         tokens = tokens[2:]
     else:
         axis = Axis("child")
+
+    if not tokens:
+        last_token = all_tokens[-1]
+        raise XPathParsingError(
+            message="Missing node test.",
+            position=last_token.position + len(last_token.string),
+        )
 
     # name test's prefix
 
@@ -212,8 +235,12 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
     # other
 
     elif start_matches(TokenType.STRUDEL, TokenType.NAME):
-        # TODO raise UnsupportedXPathFeature(…)
-        raise InvalidOperation
+        raise XPathUnsupportedStandardFeature("Attribute lookup")
+
+    else:
+        raise XPathParsingError(
+            message="Unrecognized node test.", position=tokens[0].position
+        )
 
     # predicates
 
@@ -228,7 +255,9 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
             predicates.append(predicate)
             tokens = tokens[3:]
         else:
-            raise NotImplementedError
+            raise XPathParsingError(
+                position=tokens[-1].position, message="Unrecognized expression."
+            )
 
     return LocationStep(axis=axis, node_test=node_test, predicates=predicates)
 
@@ -266,7 +295,11 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
                 )
             else:
                 arguments.append(argument)
-        return Function(tokens[0].string, arguments)
+        try:
+            return Function(tokens[0].string, arguments)
+        except XPathParsingError as e:
+            e.position = tokens[0].position
+            raise e
 
     if all_matches(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
         return parse_evaluation_expression(tokens[1])
@@ -303,8 +336,9 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
                     right,
                 )
 
-    # TODO
-    raise AssertionError(tokens)
+    raise XPathParsingError(
+        position=tokens[0].position, message="Unrecognized predicate expression."
+    )
 
 
 def partition_tokens(
@@ -326,13 +360,22 @@ def partition_tokens(
 
 @lru_cache(64)  # TODO? configurable
 def parse(expression: str) -> XPathExpression:
-    tokens = group_enclosed_expressions(tokenize(expression))
-    if TokenType.PASEQ in (x.type for x in tokens if isinstance(x, Token)):
-        return XPathExpression(
-            [parse_location_path(x) for x in partition_tokens(TokenType.PASEQ, tokens)]
-        )
-    else:
-        return XPathExpression([parse_location_path(tokens)])
+    try:
+        tokens = group_enclosed_expressions(tokenize(expression))
+        if TokenType.PASEQ in (x.type for x in tokens if isinstance(x, Token)):
+            return XPathExpression(
+                [
+                    parse_location_path(x)
+                    for x in partition_tokens(TokenType.PASEQ, tokens)
+                ]
+            )
+        else:
+            return XPathExpression([parse_location_path(tokens)])
+    except XPathParsingError as e:
+        e.expression = expression
+        if e.position is None:
+            e.position = 0
+        raise e
 
 
 __all__ = (parse.__name__,)  # type: ignore

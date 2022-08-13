@@ -1,6 +1,7 @@
 import pytest
 
-from delb import tag, Document, InvalidOperation
+from delb import tag, Document
+from delb.exceptions import InvalidOperation, XPathEvaluationError
 
 
 def test_fetch_or_create_by_xpath():
@@ -51,13 +52,11 @@ def test_fetch_or_create_by_xpath_with_attributes():
         "root/node/descendant-or-self::node()",
         "body/div[@hidden]",
         "root/node/child/../node",
-        "root[foo]",
     ),
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
     node = Document("<node/>").root
-    # TODO remove AssertionError when error handling is implemented
-    with pytest.raises((AssertionError, InvalidOperation)):
+    with pytest.raises(InvalidOperation):
         node.fetch_or_create_by_xpath(expression)
 
 
@@ -73,7 +72,7 @@ def test_fetch_or_create_by_xpath_with_prefix():
         "</root>"
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(XPathEvaluationError):
         root.fetch_or_create_by_xpath("unknwn:test")
 
 

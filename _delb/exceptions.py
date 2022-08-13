@@ -47,21 +47,60 @@ class InvalidOperation(Exception):
     pass
 
 
+class XPathEvaluationError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class XPathParsingError(Exception):
-    pass
-
-
-class InvalidXPathToken(XPathParsingError):
-    def __init__(self, index: int, token: str):
-        self.index = index
-        self.token = token
+    def __init__(
+        self, expression: str = None, position: int = None, message: str = None
+    ):
+        self.expression = expression
+        self.position = position
+        self.message = message
 
     def __str__(self):
-        return f"Unrecognizable token at position {self.index}: {self.token}"
+        expression = self.expression
+        assert expression is not None
+        assert self.message is not None
+        position = self.position
+        assert self.position is not None
+
+        expression_length = len(expression)
+        snippet_end = min(position + 16, expression_length)
+
+        if expression_length > snippet_end:
+            snippet = f"`{expression[position:snippet_end]}…`"
+        else:
+            snippet = f"`{expression[position:snippet_end]}`"
+
+        if len(snippet) > 2:
+            return (
+                f"XPath parsing error at character {position} ({snippet}): "
+                f"{self.message}"
+            )
+        else:
+            return f"XPath parsing error at character {position}: {self.message}"
+
+
+# TODO does this make sense? as not all unsupported features are recognized as such,
+#      they may just appear as XPathParsingError
+class XPathUnsupportedStandardFeature(Exception):
+    def __init__(self, feature_description: str):
+        self.feature_description = feature_description
+
+    def __str__(self):
+        return (
+            f"{self.feature_description} is not supported with intention. "
+            "Please consult the documentation regarding the XPath implementation."
+        )
 
 
 __all__ = (
     FailedDocumentLoading.__name__,
     InvalidCodePath.__name__,
     InvalidOperation.__name__,
+    XPathEvaluationError.__name__,
+    XPathParsingError.__name__,
 )

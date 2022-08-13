@@ -18,9 +18,10 @@ from enum import Enum
 from functools import lru_cache
 from typing import NamedTuple, Sequence
 
+from _delb.exceptions import XPathParsingError
+
 
 # constants & data structures
-from _delb.exceptions import InvalidXPathToken
 
 TokenType = Enum(
     "TokenType",
@@ -125,7 +126,7 @@ def tokenize(expression: str) -> Sequence[Token]:
         assert match is not None
 
         if match.groupdict().get("ERROR") is not None:
-            raise InvalidXPathToken(index, match.groupdict()["ERROR"])
+            raise XPathParsingError(position=index, message="Unrecognized token.")
 
         for token_type, value in match.groupdict().items():
             if value is not None:

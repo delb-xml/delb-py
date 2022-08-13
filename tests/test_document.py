@@ -180,11 +180,3 @@ def test_xpath(files_path):
         assert page_break.attributes["n"] == "I"
 
     assert j == 0
-
-
-# def test_invalid_xpath(files_path):
-#     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
-#
-#     # TODO
-#     with pytest.raises(XPathExpressionError):
-#         tuple(document.xpath(".//pb/@facs"))

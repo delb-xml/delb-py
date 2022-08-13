@@ -1,7 +1,8 @@
 import operator
 
-from pytest import mark
+from pytest import mark, raises
 
+from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath import parse
 from _delb.xpath.ast import (
     AnyValue,
@@ -17,6 +18,32 @@ from _delb.xpath.ast import (
     NodeTypeTest,
     XPathExpression,
 )
+
+
+@mark.parametrize(
+    ("expression", "string"),
+    (
+        ("", " 0: Missing location path."),
+        ("ancestors::node()", r" 0 .*…`\): Invalid axis specifier\."),
+        ("ancestor::", r" 10: Missing node test\."),
+        ("::", r"0 \(`::`\): Unrecognized node test\."),
+        ("::🔥", r"0 \(`::🔥`\): Unrecognized node test\."),
+        ("*[5*6]", r" 2 .*: Unrecognized predicate expression\."),
+        (
+            "*[parent::node()/@id]='5446'",
+            r" 2 .*…`\): Unrecognized predicate expression\.",
+        ),
+        (
+            "*[last()=string(1*1*(1)]",
+            r" 23 \(`]`\): Closing `]` doesn't match opening `\(` at position 15\.",
+        ),
+        ("[@xml:id]", r" 0 \(`\[@xml:id\]`\): Unrecognized node test\."),
+        ("root[foo]", r" 5 \(`foo]`\): Unrecognized predicate expression\."),
+    ),
+)
+def test_invalid_expressions(expression, string):
+    with raises(XPathParsingError, match=string):
+        parse(expression)
 
 
 # TODO processing-instruction(foo)
@@ -272,6 +299,11 @@ def test_parse_predicates(_in, out):
     assert parse(f"*{_in}") == XPathExpression(
         [LocationPath([LocationStep(Axis("child"), NameStartTest(None, ""), out)])]
     ), parse(_in)
+
+
+def test_unsupported_feature():
+    with raises(XPathUnsupportedStandardFeature, match="^Attribute lookup "):
+        parse("//pb/@facs")
 
 
 # TODO throw in a bunch of CSS expressions to ensure that cssselect's results are usable

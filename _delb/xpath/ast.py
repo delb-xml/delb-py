@@ -33,7 +33,7 @@ from typing import (
     Tuple,
 )
 
-from _delb.exceptions import InvalidCodePath
+from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.names import Namespaces
 from _delb.plugins import plugin_manager
 from _delb.utils import _is_node_of_type, last
@@ -59,8 +59,7 @@ def ensure_prefix(func):
             namespaces = kwargs["namespaces"]
 
         if prefix is not None and prefix not in namespaces:
-            # TODO XPathEvaluationError
-            raise RuntimeError(
+            raise XPathEvaluationError(
                 f"The namespace prefix `{prefix}` is unknown in the the evaluation "
                 "context."
             )
@@ -133,7 +132,10 @@ class Axis(Node):
     __slots__ = ("generator",)
 
     def __init__(self, name: str):
-        self.generator = getattr(self, name.replace("-", "_"))
+        generator = getattr(self, name.replace("-", "_"), None)
+        if generator is None:
+            raise XPathParsingError(message="Invalid axis specifier.")
+        self.generator = generator
 
     def __eq__(self, other):
         return (
@@ -506,7 +508,9 @@ class Function(EvaluationNode):
             and tuple(parameters.values())[-1].kind != inspect.Parameter.VAR_POSITIONAL
             and len(parameters) != len(arguments) + 1
         ):
-            raise NotImplementedError
+            raise XPathParsingError(
+                message=f"Arguments to function `{name}` don't match its signature."
+            )
         self.function = function
         self.arguments = tuple(arguments)
 
