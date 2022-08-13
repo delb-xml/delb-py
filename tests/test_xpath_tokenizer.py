@@ -44,9 +44,7 @@ def test_string_pattern(_in, out):
                 "[",
                 "@",
                 "href",
-                " ",
                 "and",
-                " ",
                 "not",
                 "(",
                 "starts-with",
@@ -54,7 +52,6 @@ def test_string_pattern(_in, out):
                 "@",
                 "href",
                 ",",
-                " ",
                 '"https://"',
                 ")",
                 ")",
@@ -97,6 +94,7 @@ def test_tokenize(_in, out):
     (
         ("'foo'", TokenType.STRING),
         ("foo", TokenType.NAME),
+        (" foo", TokenType.NAME),
         ("f-o-o", TokenType.NAME),
         ("f.oo", TokenType.NAME),
         ("🔥", TokenType.NAME),
@@ -112,24 +110,29 @@ def test_tokenize(_in, out):
         ("@", TokenType.STRUDEL),
         ("=", TokenType.OTHER_OPS),
         ("(", TokenType.OPEN_PARENS),
+        (" (", TokenType.OPEN_PARENS),
         (")", TokenType.CLOSE_PARENS),
         (",", TokenType.COMMA),
+        (", ", TokenType.COMMA),
         ("|", TokenType.PASEQ),
         ("+", TokenType.OTHER_OPS),
         ("-", TokenType.OTHER_OPS),
         ("!=", TokenType.OTHER_OPS),
+        (" != ", TokenType.OTHER_OPS),
         ("<", TokenType.OTHER_OPS),
         (">", TokenType.OTHER_OPS),
         ("<=", TokenType.OTHER_OPS),
         (">=", TokenType.OTHER_OPS),
         ("0", TokenType.NUMBER),
         ("99", TokenType.NUMBER),
-        (" ", TokenType.WHITESPACE),
-        ("\t ", TokenType.WHITESPACE),
-        ("\n", TokenType.WHITESPACE),
     ),
 )
 def test_type_detection(_in, out):
     result = tokenize(_in)
     assert len(result) == 1, result
     assert result[0].type is out
+
+
+@mark.parametrize("_in", (" ", "\t", "\n"))
+def test_ignored_whitespace(_in):
+    assert not tokenize(_in)

@@ -137,9 +137,10 @@ def tokenize(expression: str) -> Sequence[Token]:
         token = match[token_type]
         assert isinstance(token, str)
 
-        result.append(
-            Token(position=index, string=token, type=getattr(TokenType, token_type))
-        )
+        if token_type != "WHITESPACE":
+            result.append(
+                Token(position=index, string=token, type=getattr(TokenType, token_type))
+            )
 
         index += len(token)
 

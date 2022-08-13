@@ -61,14 +61,6 @@ OPERATORS = {
 }
 
 
-def strip_whitespace_tokens(tokens: TokenSequence) -> TokenSequence:
-    if tokens[0].type is TokenType.WHITESPACE:
-        tokens = tokens[1:]
-    if tokens[-1].type is TokenType.WHITESPACE:
-        tokens = tokens[:-1]
-    return tokens
-
-
 def expand_axes(tokens: TokenSequence) -> TokenSequence:
     result: List[Token] = []
 
@@ -268,7 +260,6 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
             x.type is y for x, y in zip(tokens, pattern) if y is not None
         )
 
-    tokens = strip_whitespace_tokens(tokens)
     token_count = len(tokens)
 
     if all_matches(TokenType.NUMBER):
@@ -350,12 +341,12 @@ def partition_tokens(
     for token in tokens:
         if isinstance(token, Token) and token.type is separator:
             if current_partition:
-                yield strip_whitespace_tokens(current_partition)
+                yield current_partition
                 current_partition = []
         else:
             current_partition.append(token)
 
-    yield strip_whitespace_tokens(current_partition)
+    yield current_partition
 
 
 @lru_cache(64)  # TODO? configurable
