@@ -1,4 +1,4 @@
-import pytest
+from pytest import mark, raises
 
 from delb import tag, Document
 from delb.exceptions import InvalidOperation, XPathEvaluationError
@@ -18,10 +18,10 @@ def test_fetch_or_create_by_xpath():
 
     root.append_child(tag("intermediate"))
 
-    with pytest.raises(InvalidOperation):
+    with raises(InvalidOperation):
         root.fetch_or_create_by_xpath("intermediate")
 
-    with pytest.raises(InvalidOperation):
+    with raises(InvalidOperation):
         root.fetch_or_create_by_xpath("intermediate/test")
 
 
@@ -43,7 +43,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
     )
 
 
-@pytest.mark.parametrize(
+@mark.parametrize(
     "expression",
     (
         "child[0]",
@@ -56,7 +56,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
     node = Document("<node/>").root
-    with pytest.raises(InvalidOperation):
+    with raises(InvalidOperation):
         node.fetch_or_create_by_xpath(expression)
 
 
@@ -72,24 +72,22 @@ def test_fetch_or_create_by_xpath_with_prefix():
         "</root>"
     )
 
-    with pytest.raises(XPathEvaluationError):
+    with raises(XPathEvaluationError):
         root.fetch_or_create_by_xpath("unknwn:test")
 
 
-def test_fetch_or_create_by_xpath_with_multiple_attributes():
+@mark.parametrize(
+    "expression",
+    (
+        'entry/sense/cit[@type="translation" and "en"=@lang]',
+        'entry/sense/cit[@type="translation"]["en"=@lang]',
+    ),
+)
+def test_fetch_or_create_by_xpath_with_multiple_attributes(expression):
     root = Document("<root/>").root
-
-    cit = root.fetch_or_create_by_xpath(
-        'entry/sense/cit[@type="translation" and @lang="en"]'
-    )
+    cit = root.fetch_or_create_by_xpath(expression)
     assert str(cit) == '<cit type="translation" lang="en"/>'
-
-    assert (
-        root.fetch_or_create_by_xpath(
-            'entry/sense/cit[@type="translation"][@lang="en"]'
-        )
-        is cit
-    )
+    assert root.fetch_or_create_by_xpath(expression) is cit
 
 
 def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():

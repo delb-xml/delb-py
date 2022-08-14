@@ -101,3 +101,5 @@ def test_processing_instruction():
     result = document.xpath("//processing-instruction('delb')")
     assert result.size == 2
     assert all(x.content == "yes" for x in result)
+
+    assert not document.xpath("//processing-instruction()[@lang]")

@@ -131,7 +131,7 @@ def tokenize(expression: str) -> Sequence[Token]:
         for token_type, value in match.groupdict().items():
             if value is not None:
                 break
-        else:
+        else:  # pragma: no cover
             raise RuntimeError
 
         token = match[token_type]

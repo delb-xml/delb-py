@@ -62,6 +62,14 @@ def test_css_selectors(selector):
         ),
         ("[@xml:id]", r" 0 \(`\[@xml:id\]`\): Unrecognized node test\."),
         ("root[foo]", r" 5 \(`foo]`\): Unrecognized predicate expression\."),
+        (
+            "*[starts-with('nada')]",
+            r" 2 .*…`\): Arguments to function `starts-with` don't match its "
+            r"signature.",
+        ),
+        ("*[@lang", r" 1 \(`\[@lang`\): `\[` is never closed\."),
+        ("*.", r" 1 \(`\.`\): Unrecognized expression\."),
+        ("*[~lang]", r" 2 \(`~lang\]`\): Unrecognized token\."),
     ),
 )
 def test_invalid_expressions(expression, string):

@@ -54,6 +54,9 @@ def test_first_and_last(queries_sample):
     assert queries_sample.css_select("node").first.attributes["n"] == "1"
     assert queries_sample.css_select("node").last.attributes["n"] == "3"
 
+    assert queries_sample.css_select("note").first is None
+    assert queries_sample.css_select("note").last is None
+
 
 def test_size(queries_sample):
     assert queries_sample.css_select("node").size == 4

@@ -227,7 +227,7 @@ def _reduce_whitespace(expression: str) -> str:
     return result
 
 
-def _split(expression: str, separator: str) -> Iterator[str]:
+def _split(expression: str, separator: str) -> Iterator[str]:  # pragma: no cover
     """
     Split expression at occurrences of specified seperator, except
     where within quotation marks.
@@ -291,7 +291,7 @@ class LegacyLocationPath:
         return "/".join(str(x) for x in self.location_steps)
 
 
-class LegacyLocationStep:
+class LegacyLocationStep:  # pragma: no cover
     __slots__ = ("axis", "node_test", "predicates")
 
     def __init__(self, expression: str):

@@ -68,7 +68,7 @@ def ensure_prefix(func):
     return wrapper
 
 
-def nested_repr(obj: Any) -> str:
+def nested_repr(obj: Any) -> str:  # pragma: no cover
     result = f"{obj.__class__.__name__}(\n"
     for name, value in ((x, getattr(obj, x)) for x in obj.__slots__):
         result += f"  {name}="
@@ -515,7 +515,7 @@ class Function(EvaluationNode):
         function = xpath_functions[name]
         parameters = inspect.signature(function).parameters
         if (
-            not len(parameters) > 1
+            len(parameters) > 1
             and tuple(parameters.values())[-1].kind != inspect.Parameter.VAR_POSITIONAL
             and len(parameters) != len(arguments) + 1
         ):
