@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import inspect
 import operator
-from functools import cached_property, wraps
+import sys
+from functools import wraps
 from textwrap import indent
 from typing import (
     TYPE_CHECKING,
@@ -37,6 +38,13 @@ from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsing
 from _delb.names import Namespaces
 from _delb.plugins import plugin_manager
 from _delb.utils import _is_node_of_type, last
+
+# REMOVE when support for Python 3.7 is dropped
+if sys.version_info < (3, 8):
+    cached_property = property
+else:
+    from functools import cached_property
+
 
 if TYPE_CHECKING:
     from delb import NodeBase, ProcessingInstructionNode, TagNode
