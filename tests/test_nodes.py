@@ -188,6 +188,26 @@ def test_iter_next_node_over_long_stream(files_path):
     assert collected_text == expected_text
 
 
+def test_namespaces():
+    node = Document("<node/>").root
+    namespaces = node.namespaces
+
+    namespaces["xmpl"] = "https:example.org"
+    assert "xmpl" in namespaces
+
+    assert len(namespaces) == 3
+    assert set(namespaces.keys()) == {"xml", "xmlns", "xmpl"}
+
+    namespaces.pop("xmpl")
+    assert "xmpl" not in namespaces
+
+    namespaces.pop("xml")
+    assert "xml" in namespaces
+
+    with pytest.raises(InvalidOperation):
+        namespaces["xml"] = "something completely different"
+
+
 def test_no_next_node_in_stream():
     document = Document("<root><a/></root>")
     assert document.root[0].next_node_in_stream() is None
