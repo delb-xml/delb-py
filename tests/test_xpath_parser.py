@@ -345,9 +345,7 @@ def test_parse(_in, out):
     ),
 )
 def test_parse_predicates(_in, out):
-    assert parse(f"*{_in}") == XPathExpression(
-        [LocationPath([LocationStep(Axis("child"), NameStartTest(None, ""), out)])]
-    ), parse(_in)
+    assert parse(f"*{_in}").location_paths[0].location_steps[0].predicates == tuple(out)
 
 
 def test_unsupported_feature():
