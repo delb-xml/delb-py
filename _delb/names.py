@@ -16,15 +16,17 @@ GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 
 
 def deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
-    """ deconstructs an expression in Clark notation and returns the
-    extracted namespace and tagname as a tuple.
+    """
+    Deconstructs a name in Clark notation, thay may or may not include a namespace.
 
-    >>> deconstruct_clark_notation('{tei}text')
-    ('tei', 'text')
+    :param name: An attribute's or tag node's name.
+    :return: A tuple with the extracted namespace and local name.
+
+    >>> deconstruct_clark_notation('{http://www.tei-c.org/ns/1.0}text')
+    ('http://www.tei-c.org/ns/1.0', 'text')
 
     >>> deconstruct_clark_notation('div')
     (None, 'div')
-
     """
     if name.startswith("{"):
         a, b = name.split("}", maxsplit=1)
@@ -34,7 +36,12 @@ def deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
 
 
 class Namespaces(MutableMapping):
-    # implements https://www.w3.org/TR/xml-names/#xmlReserved
+    """
+    A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
+    are available and unchanged.
+    """
+
+    # https://www.w3.org/TR/xml-names/#xmlReserved
 
     __slots__ = ("data",)
 
