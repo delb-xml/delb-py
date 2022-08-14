@@ -2,8 +2,10 @@ import pytest
 
 from delb import Document
 
+from tests.utils import assert_nodes_are_in_document_order
 
-def test_results_as_sequences(queries_sample):
+
+def test_as_sequences(queries_sample):
     results = queries_sample.css_select("node")
 
     as_list = results.as_list()
@@ -15,7 +17,12 @@ def test_results_as_sequences(queries_sample):
     assert len(as_tuple) == 4
 
 
-def test_results_equality():
+def test_document_order(files_path):
+    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    assert_nodes_are_in_document_order(*document.xpath("//pb").in_document_order())
+
+
+def test_equality():
     document = Document(
         """\
         <root>
@@ -36,17 +43,17 @@ def test_results_equality():
         document.css_select("root") == document.root
 
 
-def test_results_filtered_by(queries_sample):
+def test_filtered_by(queries_sample):
     def has_n_attribute(node):
         return node.attributes.get("n") is not None
 
     assert queries_sample.css_select("node").filtered_by(has_n_attribute).size == 3
 
 
-def test_results_first_and_last(queries_sample):
+def test_first_and_last(queries_sample):
     assert queries_sample.css_select("node").first.attributes["n"] == "1"
     assert queries_sample.css_select("node").last.attributes["n"] == "3"
 
 
-def test_results_size(queries_sample):
+def test_size(queries_sample):
     assert queries_sample.css_select("node").size == 4
