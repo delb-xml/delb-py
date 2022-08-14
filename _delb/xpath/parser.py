@@ -34,6 +34,7 @@ from _delb.xpath.ast import (
     NameStartTest,
     NodeTestNode,
     NodeTypeTest,
+    ProcessingInstructionTest,
     XPathExpression,
 )
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
@@ -208,7 +209,16 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
 
     # node test
 
-    if start_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
+    if start_matches(
+        TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS
+    ):
+        assert tokens[0].string == "processing-instruction"
+        target_name = tokens[2][0]
+        assert isinstance(target_name, Token)
+        node_test = ProcessingInstructionTest(target_name.string[1:-1])
+        tokens = tokens[4:]
+
+    elif start_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
         node_test = NodeTypeTest(NODE_TYPE_TEST_MAPPING[tokens[0].string])
         tokens = tokens[3:]
 

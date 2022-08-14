@@ -16,6 +16,7 @@ from _delb.xpath.ast import (
     NameMatchTest,
     NameStartTest,
     NodeTypeTest,
+    ProcessingInstructionTest,
     XPathExpression,
 )
 
@@ -68,7 +69,6 @@ def test_invalid_expressions(expression, string):
         parse(expression)
 
 
-# TODO processing-instruction(foo)
 @mark.parametrize(
     ("_in", "out"),
     (
@@ -160,6 +160,21 @@ def test_invalid_expressions(expression, string):
                                 Axis("child"),
                                 NameMatchTest(None, "foo"),
                                 [HasAttribute("p", "bar")],
+                            )
+                        ],
+                        absolute=False,
+                    )
+                ]
+            ),
+        ),
+        (
+            "processing-instruction('foo')",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [
+                            LocationStep(
+                                Axis("child"), ProcessingInstructionTest("foo"), []
                             )
                         ],
                         absolute=False,

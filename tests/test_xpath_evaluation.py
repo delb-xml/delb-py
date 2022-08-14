@@ -80,3 +80,24 @@ def test_multiple_predicates():
     result = document.xpath("/n[@a][2]")
     assert result.size == 1
     assert result.first["x"] == "3"
+
+
+def test_processing_instruction():
+    document = Document(
+        """\
+        <root>
+          <header>
+            <?delb yes?>
+            <?delb-delb no?>
+            <?delb yes?>
+          </header>
+        </root>
+    """
+    )
+
+    result = document.xpath("//processing-instruction()")
+    assert result.size == 3
+
+    result = document.xpath("//processing-instruction('delb')")
+    assert result.size == 2
+    assert all(x.content == "yes" for x in result)

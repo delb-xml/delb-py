@@ -39,7 +39,7 @@ from _delb.plugins import plugin_manager
 from _delb.utils import _is_node_of_type, last
 
 if TYPE_CHECKING:
-    from delb import NodeBase, TagNode
+    from delb import NodeBase, ProcessingInstructionNode, TagNode
 
 
 xpath_functions = plugin_manager.plugins.xpath_functions
@@ -404,6 +404,20 @@ class NodeTypeTest(NodeTestNode):
 
     def evaluate(self, node: NodeBase, namespaces) -> bool:
         return _is_node_of_type(node, self.type_name)
+
+
+class ProcessingInstructionTest(NodeTypeTest):
+    __slots__ = ("target", "type_name")
+
+    def __init__(self, target: str):
+        super().__init__("ProcessingInstructionNode")
+        self.target = target
+
+    def evaluate(self, node: NodeBase, namespaces) -> bool:
+        if not super().evaluate(node=node, namespaces=namespaces):
+            return False
+        assert _is_node_of_type(node, "ProcessingInstructionNode")
+        return cast("ProcessingInstructionNode", node).target == self.target
 
 
 # evaluation
