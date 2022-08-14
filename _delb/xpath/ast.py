@@ -280,9 +280,6 @@ class LocationStep(Node):
         node_test = self.node_test
         predicates = self.predicates
 
-        # TODO set default_filters per node_test; that is only possible when the xpath
-        #      module was moved to the `delb` package
-
         if not predicates:
             return tuple(
                 n
