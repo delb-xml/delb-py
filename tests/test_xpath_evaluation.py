@@ -56,6 +56,14 @@ def test_axes_order(name, start_name, expected_order):
         assert result == expected_order
 
 
+def test_custom_functions():
+    # this is used as example in the xpath module docstring
+    document = Document("<root><node/><node foo='BAR'/></root>")
+    result = document.xpath("/*[is-last() and lowercase(@foo)='bar']")
+    assert result.size == 1
+    assert result.first["foo"] == "BAR"
+
+
 def test_evaluation_from_text_node():
     root = Document("<text><p>Elle dit: <hi>Ooh lala.</hi></p></text>").root
     p = root[0]

@@ -44,7 +44,7 @@ If you're accustomed to retrieve attribute values with XPath expressions, employ
 functionality of the higher programming language at hand like this:
 
     >>> [x.attributes["target"] for x in root.xpath(".//foo")
-    ...  if "target" in x.attributes ]
+    ...  if "target" in x.attributes ]  # doctest: +SKIP
 
 Instead of:
 

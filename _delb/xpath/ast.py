@@ -445,7 +445,7 @@ class AttributeValue(EvaluationNode):
         result = node.attributes[
             context.namespaces.get(self.prefix) : self.local_name  # type: ignore
         ]
-        return None if result is None else result.value
+        return "" if result is None else result.value
 
 
 class BooleanOperator(EvaluationNode):

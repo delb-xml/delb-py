@@ -221,7 +221,7 @@ class PluginManager:
 
         .. testoutput::
 
-            <node foo='BAR'/>
+            <node foo="BAR"/>
         """
         if isinstance(arg, str):
 

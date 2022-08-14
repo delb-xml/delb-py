@@ -338,6 +338,10 @@ def test_parse(_in, out):
                 )
             ],
         ),
+        (
+            "[is-last()]",
+            [Function("is-last", ())],
+        ),
     ),
 )
 def test_parse_predicates(_in, out):

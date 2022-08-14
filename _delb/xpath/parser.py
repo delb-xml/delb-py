@@ -302,6 +302,9 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
             e.position = tokens[0].position
             raise e
 
+    if all_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
+        return Function(tokens[0].string, ())
+
     if all_matches(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
         return parse_evaluation_expression(tokens[1])
 
@@ -317,7 +320,7 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
     ):
         for i, token in enumerate(tokens):
             if not isinstance(token, Token):
-                assert token is None or isinstance(token, list)
+                assert isinstance(token, list)
                 continue
 
             if (token.type, token.string) == _operator:
