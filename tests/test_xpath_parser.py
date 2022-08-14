@@ -3,7 +3,7 @@ import operator
 from pytest import mark, raises
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
-from _delb.xpath import parse
+from _delb.xpath import _css_to_xpath, parse
 from _delb.xpath.ast import (
     AnyValue,
     AttributeValue,
@@ -18,6 +18,28 @@ from _delb.xpath.ast import (
     NodeTypeTest,
     XPathExpression,
 )
+
+
+@mark.parametrize(
+    "selector",
+    (
+        "*[copyOf]",
+        'fw[type="header"]',
+        "pb",
+        "titlePage,titlePart",
+        "cell lb,head lb,note lb,p lb,quote lb",
+        "table, table > row, table > supplied, table > supplied > row",
+        "*[__level__]",
+        "*[xml|id]",
+        "name[type]",
+        "section > head",
+        'figure,fw,note[type="editorial"]',
+    ),
+)
+def test_css_selectors(selector):
+    # just test that common css selector expressions translated by cssselect are
+    # parsable
+    parse(_css_to_xpath(selector))
 
 
 @mark.parametrize(
@@ -304,6 +326,3 @@ def test_parse_predicates(_in, out):
 def test_unsupported_feature():
     with raises(XPathUnsupportedStandardFeature, match="^Attribute lookup "):
         parse("//pb/@facs")
-
-
-# TODO throw in a bunch of CSS expressions to ensure that cssselect's results are usable
