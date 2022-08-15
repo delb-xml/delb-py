@@ -17,7 +17,7 @@ GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 
 def deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
     """
-    Deconstructs a name in Clark notation, thay may or may not include a namespace.
+    Deconstructs a name in Clark notation, that may or may not include a namespace.
 
     :param name: An attribute's or tag node's name.
     :return: A tuple with the extracted namespace and local name.
