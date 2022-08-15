@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import pytest
 from lxml import etree
 
-from _delb.nodes import XML_ATT_ID
+from _delb.names import XML_ATT_ID
 from delb import (
     Document,
     TagNode,
@@ -462,18 +462,18 @@ def test_names(sample_document):
     assert root.namespace == "https://name.space"
     assert root.local_name == "doc"
     assert root.universal_name == "{https://name.space}doc"
-    assert root.namespaces == {None: "https://name.space"}
+    assert root.namespaces[None] == "https://name.space"
 
     first_level_children = tuple(x for x in root.child_nodes())
     header, text = first_level_children[0], first_level_children[1]
 
     assert header.namespace == "https://name.space"
     assert header.local_name == "header"
-    assert header.namespaces == {None: "https://name.space"}
+    assert header.namespaces[None] == "https://name.space"
 
     assert text.namespace == "https://name.space"
     assert text.local_name == "text"
-    assert text.namespaces == {None: "https://name.space"}, root.namespaces
+    assert text.namespaces[None] == "https://name.space"
 
     text.namespace = "https://space.name"
     assert text.universal_name == "{https://space.name}text"
