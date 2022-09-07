@@ -40,8 +40,8 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 
-# https://github.com/python/mypy/issues/731
-TokenSequence = Sequence[Union[Token, "TokenSequence"]]  # type: ignore
+# TODO employ when released: https://github.com/python/mypy/pull/13297
+TokenTree = Sequence[Union[Token, "TokenTree"]]  # type: ignore
 
 
 NODE_TYPE_TEST_MAPPING = {
@@ -62,7 +62,7 @@ OPERATORS = {
 }
 
 
-def expand_axes(tokens: TokenSequence) -> TokenSequence:
+def expand_axes(tokens: TokenTree) -> TokenTree:
     result: List[Token] = []
 
     for token in tokens:
@@ -107,7 +107,7 @@ def expand_axes(tokens: TokenSequence) -> TokenSequence:
     return result
 
 
-def group_enclosed_expressions(tokens: TokenSequence) -> TokenSequence:
+def group_enclosed_expressions(tokens: TokenTree) -> TokenTree:
     result = []
     openers = []
 
@@ -152,7 +152,7 @@ def group_enclosed_expressions(tokens: TokenSequence) -> TokenSequence:
     return result
 
 
-def parse_location_path(tokens: TokenSequence) -> LocationPath:
+def parse_location_path(tokens: TokenTree) -> LocationPath:
     if not tokens:
         raise XPathParsingError(message="Missing location path.")
 
@@ -171,7 +171,7 @@ def parse_location_path(tokens: TokenSequence) -> LocationPath:
     )
 
 
-def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
+def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
     def start_matches(*pattern: Optional[TokenType]) -> bool:
         return len(tokens) >= len(pattern) and all(
             x.type is y for x, y in zip(tokens, pattern) if y is not None
@@ -264,7 +264,7 @@ def parse_location_step(tokens: TokenSequence) -> LocationStep:  # noqa: C901
     return LocationStep(axis=axis, node_test=node_test, predicates=predicates)
 
 
-def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noqa: C901
+def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C901
     def all_matches(*pattern: Optional[TokenType]) -> bool:
         return len(pattern) == token_count and all(
             x.type is y for x, y in zip(tokens, pattern) if y is not None
@@ -347,9 +347,9 @@ def parse_evaluation_expression(tokens: TokenSequence) -> EvaluationNode:  # noq
 
 def partition_tokens(
     separator: TokenType,
-    tokens: TokenSequence,
-) -> Iterator[Sequence[Union[Token, TokenSequence]]]:
-    current_partition: List[Union[Token, TokenSequence]] = []
+    tokens: TokenTree,
+) -> Iterator[Sequence[Union[Token, TokenTree]]]:
+    current_partition: List[Union[Token, TokenTree]] = []
 
     for token in tokens:
         if isinstance(token, Token) and token.type is separator:
