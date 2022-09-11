@@ -9,9 +9,13 @@ date := `date '+%Y-%m-%d'`
 version := `poetry version --short`
 
 
+# run benchmarks
+benchmarks:
+    python -m pytest --benchmark-autosave --benchmark-group-by=name --benchmark-timer=time.process_time benchmarks
+
 # normalize Python code
 black:
-    black _delb delb tests
+    black benchmarks _delb delb tests
 
 # generate Sphinx HTML documentation, including API docs
 docs:
@@ -20,8 +24,8 @@ docs:
 
 # code linting with black & flake8
 check-formatting:
-	black --check _delb delb tests
-	flake8 _delb delb tests
+	black --check benchmarks _delb delb tests
+	flake8 benchmarks _delb delb tests
 
 # test the code that is contained in the docs
 doctest:
