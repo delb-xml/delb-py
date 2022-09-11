@@ -59,6 +59,7 @@ else:
         """
         if isinstance(data, str) and data.lower().startswith("https://"):
             response = requests.get(data, stream=True)
+            response.raise_for_status()
             config.source_url = response.url
             return buffer_loader(HttpsStreamWrapper(response), config)
         return "The input value is not an URL with the https scheme."
