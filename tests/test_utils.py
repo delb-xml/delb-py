@@ -21,7 +21,7 @@ def test_first():
         first({})
 
 
-def test_value_strip():
+def test_string_methods_on_classes_with_text_capabilities():
     root = Document("<root n='[III]'>[III]</root>").root
     for obj in (root["n"], root.first_child):
         assert obj == "[III]"

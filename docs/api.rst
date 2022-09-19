@@ -67,6 +67,7 @@ Tag attribute
 .. autoclass:: delb.nodes.Attribute
 
    .. autoclasstoc::
+      :exclude-members: data
 
 
 Text
@@ -86,10 +87,10 @@ Node constructors
 
 .. autofunction:: delb.new_tag_node
 
-Query results
-~~~~~~~~~~~~~
+Queries with XPath & CSS
+------------------------
 
-.. autoclass:: delb.QueryResults
+.. automodule:: _delb.xpath
 
 
 .. _contributed-filters:

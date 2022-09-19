@@ -12,15 +12,17 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 
 import re
 import sys
+from collections import defaultdict
 from copy import copy
-from functools import lru_cache, partial
+from functools import partial
 from string import ascii_lowercase
 from typing import (
     TYPE_CHECKING,
+    cast,
     Any,
     Iterable,
     Iterator,
@@ -29,20 +31,37 @@ from typing import (
     Sequence,
 )
 
-from cssselect import GenericTranslator  # type: ignore
 from lxml import etree
 
 from _delb.typing import Filter
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase
+    from _delb.nodes import NodeBase, TagNode
 
 
 DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
 
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
-css_translator = GenericTranslator()
+
+
+class _Nodes_Sorter:
+    def __init__(self):
+        self.__node = None
+        self.__items = defaultdict(_Nodes_Sorter)
+
+    def add(self, path: Sequence[int], node: TagNode):
+        assert _is_node_of_type(node, "TagNode")
+        if path:
+            self.__items[path[0]].add(path[1:], node)
+        else:
+            self.__node = node
+
+    def emit(self) -> Iterator[NodeBase]:
+        if self.__node is not None:
+            yield self.__node
+        for index in sorted(self.__items):
+            yield from self.__items[index].emit()
 
 
 class _StringMixin:  # pragma: no cover
@@ -275,12 +294,6 @@ def _copy_root_siblings(source: etree._Element, target: etree._Element):
         target.addnext(copy(stack.pop()))
 
 
-# TODO make cachesize configurable via environment variable?
-@lru_cache(maxsize=64)
-def _css_to_xpath(expression: str) -> str:
-    return css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
-
-
 def first(iterable: Iterable) -> Optional[Any]:
     """
     Returns the first item of the given :term:`iterable` or ``None`` if it's empty.
@@ -324,6 +337,13 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
     return result
 
 
+def _is_node_of_type(node: NodeBase, type_name: str) -> bool:
+    return (
+        node.__class__.__module__ == f"{__package__}.nodes"
+        and node.__class__.__qualname__ == type_name
+    )
+
+
 def last(iterable: Iterable) -> Optional[Any]:
     """
     Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
@@ -340,6 +360,7 @@ def last(iterable: Iterable) -> Optional[Any]:
         raise TypeError
 
 
+# REMOVE eventually
 def _random_unused_prefix(namespaces: "etree._NSMap") -> str:
     for prefix in ascii_lowercase:
         if prefix not in namespaces:
@@ -363,6 +384,23 @@ def register_namespace(prefix: str, namespace: str):
     :param namespace: The targeted namespace.
     """
     etree.register_namespace(prefix, namespace)
+
+
+def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
+    sorter = _Nodes_Sorter()
+    for node in nodes:
+        if not _is_node_of_type(node, "TagNode"):
+            raise NotImplementedError(
+                "Support for sorting other node types than TagNodes isn't scheduled"
+                "yet."
+            )
+        node = cast("TagNode", node)
+        if node.parent is None:
+            path = []
+        else:
+            path = [int(x[2:-1]) for x in node.location_path.split("/")[1:]]
+        sorter.add(path, node)
+    yield from sorter.emit()
 
 
 # tree traversers
@@ -393,4 +431,5 @@ __all__ = (
     get_traverser.__name__,
     last.__name__,
     register_namespace.__name__,
+    sort_nodes_in_document_order.__name__,
 )

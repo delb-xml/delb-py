@@ -18,7 +18,7 @@ from __future__ import annotations
 import gc
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import Collection, MutableMapping
+from collections.abc import MutableMapping
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from warnings import warn
@@ -57,11 +57,16 @@ from _delb.utils import (
     DEFAULT_PARSER,
     _StringMixin,
     _crunch_whitespace,
-    _css_to_xpath,
     last,
     _random_unused_prefix,
 )
-from _delb.xpath import LocationStep, XPathExpression
+from _delb.xpath import (
+    LegacyXPathExpression,
+    QueryResults,
+    _css_to_xpath,
+)
+from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
+from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from delb import Document  # noqa: F401
@@ -963,6 +968,14 @@ class NodeBase(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def namespaces(self):
+        """
+        The prefix to namespace :term:`mapping` of the node.
+        """
+        pass
+
     @abstractmethod
     def new_tag_node(
         self,
@@ -1138,6 +1151,26 @@ class NodeBase(ABC):
                 "Not all node types can be added as siblings to a root node."
             )
 
+    @altered_default_filters()
+    def xpath(
+        self,
+        expression: str,
+        namespaces: Optional[Namespaces] = None,
+    ) -> QueryResults:
+        """
+        See `Queries with XPath & CSS`_ for details on the extent of the XPath
+        implementation.
+
+        :param expression: A supported XPath 1.0 expression that contains one or more
+                           location paths.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's definition is used.
+        :return: All nodes that match the evaluation of the provided XPath expression.
+
+        :meta category: query-nodes
+        """
+        return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
+
 
 class _ChildLessNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""
@@ -1302,6 +1335,10 @@ class _ElementWrappingNode(NodeBase):
     @property
     def full_text(self) -> str:
         return ""
+
+    @property
+    def namespaces(self) -> Namespaces:
+        return Namespaces(self._etree_obj.nsmap)
 
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
 
@@ -1769,22 +1806,31 @@ class TagNode(_ElementWrappingNode, NodeBase):
         for child_node in self.child_nodes(is_tag_node, recurse=False):
             cast(TagNode, child_node)._collapse_whitespace(normalize_space)
 
-    def css_select(self, expression: str) -> "QueryResults":
+    def css_select(
+        self, expression: str, namespaces: Optional[Namespaces] = None
+    ) -> QueryResults:
         """
+        See `Queries with XPath & CSS`_ regarding the extent of the supported grammar.
+
         Namespace prefixes are delimited with a ``|`` before a name test, for example
         ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
         to the default namespace or have no namespace and whose name is ``metadata``
         and have a namespace that is mapped to the ``svg`` prefix.
 
         :param expression: A CSS selector expression.
-        :return: A list of matching :term:`tag node` s.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's definition is used.
+        :return: All nodes that match the evaluation of the provided CSS selector
+                 expression.
 
         :meta category: query-nodes
         """
-        return self.xpath(_css_to_xpath(expression))
+        return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
     @property
     def depth(self) -> int:
+        if self.parent is None:
+            return 0
         return self.location_path.count("/")
 
     @altered_default_filters()
@@ -1844,99 +1890,112 @@ class TagNode(_ElementWrappingNode, NodeBase):
             root_node = cast(TagNode, last(self.ancestors()))
         return root_node.__document__
 
-    def fetch_or_create_by_xpath(self, expression: str) -> "TagNode":
+    def fetch_or_create_by_xpath(
+        self,
+        expression: str,
+        namespaces: Union[Namespaces, None, Mapping[Optional[str], str]] = None,
+    ) -> "TagNode":
         """
         Fetches a single node that is locatable by the provided XPath expression. If
-        the node doesn't exist, the non-existing branch will be created. All location
-        steps in the expression must therefore:
+        the node doesn't exist, the non-existing branch will be created. These rules
+        are imperative in your endeavour:
 
-        - use the child axis (``/``).
-        - have a name test.
-        - only use attribute tests as predicates that define a value and,
-          if applicable, are contained in an ``and`` conjunction.
-
-        All expressions must start with a ``./``.
+        - All location steps must use the child axis.
+        - Each step needs to provide a name test.
+        - Attributes must be compared against a literal.
+        - Multiple attribute comparisons must be joined with the `and` operator and / or
+          more than one predicate expression.
+        - The logical validity of multiple attribute comparisons isn't checked. E.g.
+          one could provide ``foo[@p="her"][@p="him"]``, but expect an undefined
+          behaviour.
+        - Other contents in predicate expressions are invalid.
 
         >>> document = Document("<root/>")
         >>> grandchild = document.root.fetch_or_create_by_xpath(
-        ...     "./child[@a='b']/grandchild"
+        ...     "child[@a='b']/grandchild"
         ... )
         >>> grandchild is document.root.fetch_or_create_by_xpath(
-        ...     "./child[@a='b']/grandchild"
+        ...     "child[@a='b']/grandchild"
         ... )
         True
         >>> str(document)
         '<root><child a="b"><grandchild/></child></root>'
 
-        This is an *experimental* feature. Its behaviour may change significantly or it
-        may be removed altogether in the future.
-        """
-        _expression = (
-            expression
-            if isinstance(expression, XPathExpression)
-            else XPathExpression(expression)
-        )
+        :param expression: An XPath expression that can unambiguously locate a
+                           descending node in a tree that has any state.
+        :param namespaces: An optional mapping of prefixes to namespaces. As default the
+                           node's one is used.
 
-        if not _expression.is_unambiguously_locatable():
+        :return: The existing or freshly created node descibed with ``expression``.
+        """
+        ast = parse_xpath(expression)
+        if not ast._is_unambiguously_locatable:
             raise InvalidOperation(
                 "The XPath expression doesn't determine a distinct branch."
             )
 
-        query_result = self.xpath(str(_expression))
+        if namespaces is None:
+            namespaces = self.namespaces
+        elif not isinstance(namespaces, Namespaces):
+            namespaces = Namespaces(namespaces)
+
+        query_result = self.xpath(expression, namespaces)
+
         if query_result.size == 1:
-            return query_result[0]
+            result = query_result.first
+            assert isinstance(result, TagNode)
+            return result
 
         if query_result:
             raise InvalidOperation(
                 f"The tree already contains {query_result.size} matching branches."
             )
 
-        return self._create_by_xpath(_expression.location_paths[0].location_steps[1:])
+        return self._create_by_xpath(ast, namespaces)
 
-    def _create_by_xpath(self, steps: Iterable[LocationStep]) -> "TagNode":
-        namespace: Optional[str]
+    def _create_by_xpath(
+        self,
+        ast: XPathExpression,
+        namespaces: Namespaces,
+    ) -> "TagNode":
+
         node = self
-        for i, step in enumerate(steps):
-            candidates = node.xpath(f"./{step}")
+
+        for i, step in enumerate(ast.location_paths[0].location_steps):
+            candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
 
             if len(candidates) == 0:
-                assert step.axis == "child"
-                assert step.node_test.type == "name_test"
-
-                name = step.node_test.data
-                if ":" in name:
-                    prefix, name = name.split(":")
-                    namespace = str(self._etree_obj.nsmap[prefix])  # type: ignore
+                node_test = step.node_test
+                assert isinstance(node_test, NameMatchTest)
+                prefix = node_test.prefix
+                if prefix is None:
+                    namespace = namespaces.get(None)
                 else:
-                    namespace = None
+                    namespace = namespaces[prefix]
 
-                if step.predicates is not None:
-                    attributes = cast(
-                        Dict[str, str],
-                        step._derive_attributes(),
-                    )
-                    for a_name in tuple(attributes):
-                        if ":" in a_name:
-                            prefix, a_name = a_name.split(":")
-                            a_namespace = node._etree_obj.nsmap[prefix]  # type: ignore
-                            assert isinstance(a_namespace, str)
-                            attributes[f"{{{a_namespace}}}{a_name}"] = attributes.pop(
-                                f"{prefix}:{a_name}"
-                            )
-                else:
-                    attributes = {}
+                new_node = node.new_tag_node(
+                    local_name=node_test.local_name,
+                    attributes=None,
+                    namespace=namespace,
+                )
 
-                new_node = node.new_tag_node(name, attributes, namespace)
+                for prefix, local_name, value in step._derived_attributes:
+                    if prefix is None and None not in namespaces:
+                        new_node.attributes[local_name] = value
+                    else:
+                        new_node.attributes[
+                            namespaces[prefix] : local_name  # type: ignore
+                        ] = value
+
                 node.append_child(new_node)
                 node = new_node
 
             elif len(candidates) == 1:
-                node = candidates[0]
+                node = cast("TagNode", candidates[0])
 
             else:
                 raise InvalidOperation(
-                    "The tree has multiple possible branches at "
-                    f"{'/'.join(steps[:i])}"  # type: ignore
+                    f"The tree has multiple possible branches at location step {i}."
                 )
         return node
 
@@ -2060,17 +2119,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         An unambiguous XPath location path that points to this node from its tree root.
         """
-        steps = []
+        if self.parent is None:
+            return "/."
 
-        node = self
         with altered_default_filters(is_tag_node):
-            while node.parent is not None:
-                index = node.index
-                assert isinstance(index, int)
-                steps.append(index + 1)
-                node = node.parent
-
-        return "." + "".join(f"/*[{i}]" for i in reversed(steps))
+            steps = list(self.ancestors())
+            steps.pop()  # root
+            steps.reverse()
+            steps.append(self)
+            return "".join(f"/*[{n.index+1}]" for n in steps)  # type: ignore
 
     @altered_default_filters()
     def merge_text_nodes(self):
@@ -2093,13 +2150,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @namespace.setter
     def namespace(self, value: Optional[str]):
         self._etree_obj.tag = QName(value, self.local_name).text
-
-    @property
-    def namespaces(self) -> Namespaces:
-        """
-        The prefix to namespace :term:`mapping` of the node.
-        """
-        return Namespaces(self._etree_obj.nsmap)
 
     def new_tag_node(
         self,
@@ -2204,41 +2254,46 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "Not all node types can be added as siblings to a root node."
             )
 
-    def xpath(self, expression: str) -> "QueryResults":
+    # REMOVE eventually
+    @altered_default_filters()
+    def xpath(
+        self,
+        expression: str,
+        namespaces: Optional[Namespaces] = None,
+    ) -> QueryResults:
         """
-        Returns all :term:`tag node` s that match the evaluation of an XPath expression.
+        See `Queries with XPath & CSS`_ for details on the extent of the XPath
+        implementation.
 
-        Mind to start any the expression with a ``.`` when the node you call it on is
-        supposed to be the initial context node in the path evaluation.
-
-        As this API is for a real programming language, the full XPath specification is
-        not intended to be supported. For example, instead of querying attributes with
-        an XPath expression, one must use a comprehension like:
-
-        >>> [ x.attributes["target"] for x in root.xpath(".//foo")
-        ...   if "target" in x.attributes ]  # doctest: +SKIP
-
-        Instead of:
-
-        >>> root.xpath(".//foo/@target")  # doctest: +SKIP
-
-        Having that said, implementing retrieval of attributes may actually happen if
-        there are convincing user stories. But other things like addressing processing
-        instructions and higher level operations are out of scope.
-
-        This method includes a workaround for a bug in XPath 1.0 that concerns its lack
-        of default namespace support. It is extensively described in this lxml issue:
-        https://github.com/lxml/lxml/pull/236
-
-        :param expression: An XPath 1.0 location path.
+        :param expression: A supported XPath 1.0 expression that contains one or more
+                           location paths.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces. If omitted, the node's definition is used.
+        :return: All nodes that match the evaluation of the provided XPath expression.
 
         :meta category: query-nodes
         """
+        result = super().xpath(expression=expression, namespaces=namespaces)
+        if __debug__ and all(isinstance(n, TagNode) for n in result):
+            try:
+                etree_result = self._etree_xpath(expression)
+            except NotImplementedError:
+                # might stem from flaws in LegacyXPathExpression
+                pass
+            else:
+                assert result == etree_result, (
+                    "Please report that the native XPath evaluator seems faulty with "
+                    f"the expression `{expression}` at "
+                    "https://github.com/delb-xml/delb-py/issues"
+                )
+        return result
 
+    # REMOVE eventually
+    def _etree_xpath(self, expression: str) -> QueryResults:
         etree_obj = self._etree_obj
         namespaces = etree_obj.nsmap
         compat_namespaces: etree._DictAnyStr
-        xpath_expression = XPathExpression(expression)
+        xpath_expression = LegacyXPathExpression(expression)
 
         if None in namespaces:
             has_default_namespace = True
@@ -2257,21 +2312,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
             compat_namespaces = cast("etree._DictAnyStr", namespaces)
 
         for location_path in xpath_expression.location_paths:
-            # TODO prepend self::node() if missing?
-
-            last_step = location_path.location_steps[-1]
-
-            if last_step.axis == "attribute":
-                raise InvalidOperation(
-                    "XPath expressions that point to attributes are not supported."
-                )
-            if last_step.node_test.type == "type_test":
-                raise InvalidOperation(
-                    "Other node tests than names tests are not supported for now. "
-                    "If you require to retrieve other nodes than tag nodes, please "
-                    "open an issue with a description of your use-case."
-                )
-
             if has_default_namespace:
                 for location_step in location_path.location_steps:
                     node_test = location_step.node_test
@@ -2280,18 +2320,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     if ":" not in node_test.data:
                         node_test.data = prefix + ":" + node_test.data
 
+        if str(xpath_expression) != expression:
+            raise NotImplementedError
+
         _results = etree_obj.xpath(
             str(xpath_expression),
-            # TODO https://github.com/lxml/lxml-stubs/issues/62
             namespaces=compat_namespaces,  # type: ignore
         )
-        if not (
-            isinstance(_results, list)
-            and all(isinstance(x, _Element) for x in _results)
-        ):
-            raise InvalidOperation(
-                "Only XPath expressions that target tag nodes are supported."
-            )
+        assert isinstance(_results, Iterable)
         return QueryResults(
             (_wrapper_cache(cast(_Element, element)) for element in _results)
         )
@@ -2625,6 +2661,13 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         assert isinstance(self.content, str)
         assert isinstance(node.content, str)
 
+    @property
+    def namespaces(self):
+        if self.parent:
+            return self.parent.namespaces
+        else:
+            raise InvalidOperation("A lonely text node has no namespace context.")
+
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         if self._position is DETACHED:
             return None
@@ -2772,74 +2815,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self._bound_to._tail_sequence_head
         else:
             raise InvalidCodePath
-
-
-# query results container
-
-
-class QueryResults(Sequence[TagNode]):
-    """
-    A sequence with the results of a CSS or XPath query with some helpers for readable
-    Python expressions.
-    """
-
-    def __init__(self, results: Iterator[_ElementWrappingNode]):
-        self.__items = cast(Tuple[TagNode, ...], tuple(results))
-
-    def __eq__(self, other):
-        if not isinstance(other, Collection):
-            raise TypeError
-
-        return len(self.__items) == len(other) and all(x in other for x in self.__items)
-
-    def __getitem__(self, item):
-        return self.__items[item]
-
-    def __len__(self) -> int:
-        return len(self.__items)
-
-    def __repr__(self):
-        return str([repr(x) for x in self.__items])
-
-    def as_list(self) -> List[TagNode]:
-        """The contained nodes as a new :class:`list`."""
-        return list(self.__items)
-
-    @property
-    def as_tuple(self) -> Tuple[TagNode, ...]:
-        """The contained nodes in a :class:`tuple`."""
-        return self.__items
-
-    def filtered_by(self, *filters: Filter) -> "QueryResults":
-        """
-        Returns another :class:`QueryResults` instance that contains all nodes filtered
-        by the provided :term:`filter` s.
-        """
-        items = self.__items
-        for filter in filters:
-            items = (x for x in items if filter(x))  # type: ignore
-        return self.__class__(items)  # type: ignore
-
-    @property
-    def first(self) -> Optional[TagNode]:
-        """The first node from the results or ``None`` if there are none."""
-        if len(self.__items):
-            return self.__items[0]
-        else:
-            return None
-
-    @property
-    def last(self) -> Optional[TagNode]:
-        """The last node from the results or ``None`` if there are none."""
-        if len(self.__items):
-            return self.__items[-1]
-        else:
-            return None
-
-    @property
-    def size(self) -> int:
-        """The amount of contained nodes."""
-        return len(self.__items)
 
 
 # contributed node filters and filter wrappers

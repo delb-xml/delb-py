@@ -15,7 +15,7 @@
 
 from inspect import isclass
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterable, Type
+from typing import Any, Callable, Dict, Iterable, Type, Union
 from warnings import warn
 
 import pkg_resources
@@ -63,8 +63,7 @@ class DocumentExtensionHooks(DocumentMixinHooks):
 class PluginManager:
     def __init__(self):
         self.plugins = SimpleNamespace(
-            document_extensions=[],
-            loaders=[],
+            document_extensions=[], loaders=[], xpath_functions={}
         )
 
     @staticmethod
@@ -193,6 +192,47 @@ class PluginManager:
             return loader
 
         return registrar
+
+    def register_xpath_function(self, arg: Union[Callable, str]) -> Callable:
+        """
+        Custom XPath functions can be defined as shown in the following example. The
+        first argument to a function is always an instance of
+        :class:`_delb.xpath.EvaluationContext` followed by the expression's arguments.
+
+        .. testcode::
+
+            from delb import Document
+            from _delb.plugins import plugin_manager
+            from _delb.xpath import EvaluationContext
+
+
+            @plugin_manager.register_xpath_function("is-last")
+            def is_last(context: EvaluationContext) -> bool:
+                return context.position == context.size
+
+            @plugin_manager.register_xpath_function
+            def lowercase(_, string: str) -> str:
+                return string.lower()
+
+
+            document = Document("<root><node/><node foo='BAR'/></root>")
+            print(document.xpath("/*[is-last() and lowercase(@foo)='bar']").first)
+
+        .. testoutput::
+
+            <node foo="BAR"/>
+        """
+        if isinstance(arg, str):
+
+            def wrapper(func):
+                self.plugins.xpath_functions[arg] = func
+                return func
+
+            return wrapper
+
+        if callable(arg):
+            self.plugins.xpath_functions[arg.__name__] = arg
+            return arg
 
 
 plugin_manager = PluginManager()

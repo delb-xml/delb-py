@@ -15,6 +15,8 @@ from delb import (
 )
 from delb.exceptions import InvalidOperation
 
+from tests.utils import assert_nodes_are_in_document_order
+
 
 def is_pagebreak(node):
     return isinstance(node, TagNode) and node.local_name == "pb"
@@ -394,6 +396,17 @@ def test_last_descendant():
     assert c.last_descendant is None
 
 
+def test_location_path_and_xpath_concordance(files_path):
+    for doc_path in files_path.glob("*.xml"):
+        document = Document(doc_path)
+
+        assert document.xpath(document.root.location_path).first is document.root
+        for node in document.root.child_nodes(is_tag_node, recurse=True):
+            queried_nodes = document.xpath(node.location_path)
+            assert queried_nodes.size == 1
+            assert queried_nodes.first is node
+
+
 def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
     node = document.new_tag_node("node")
@@ -481,13 +494,17 @@ def test_names(sample_document):
 
 def test_next_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
-    page_breaks = document.xpath(".//pb").as_list()
 
-    cursor = page_breaks.pop(0)
-    while len(page_breaks) > 1:
-        _next = page_breaks.pop(0)
-        assert cursor.next_node_in_stream(is_pagebreak) is _next
-        cursor = _next
+    result = []
+    for node in document.root.child_nodes(is_pagebreak, recurse=True):
+        break
+
+    while node is not None:
+        result.append(node)
+        node = node.next_node_in_stream(is_pagebreak)
+
+    assert len(result) == 23
+    assert_nodes_are_in_document_order(*result)
 
 
 def test_no_siblings_on_root():
@@ -516,13 +533,18 @@ def test_prepend_child():
 
 def test_previous_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
-    page_breaks = document.xpath(".//pb").as_list()
 
-    cursor = page_breaks.pop()
-    while len(page_breaks) > 1:
-        prev = page_breaks.pop()
-        assert cursor.previous_node_in_stream(is_pagebreak) is prev
-        cursor = prev
+    result = []
+    for node in document.root.child_nodes(is_pagebreak, recurse=True):
+        if isinstance(node, TagNode) and node.local_name == "pb":
+            pass
+
+    while node is not None:
+        result.append(node)
+        node = node.previous_node_in_stream(is_pagebreak)
+
+    assert len(result) == 23
+    assert_nodes_are_in_document_order(*reversed(result))
 
 
 def test_previous_node():

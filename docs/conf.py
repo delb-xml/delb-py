@@ -248,7 +248,7 @@ for key, title in (
     ("add-nodes", "Adding nodes"),
     ("fetch-node", "Fetching a single relative node"),
     ("iter-relatives", "Iterating over relative nodes"),
-    ("query-nodes", "Querying descending nodes"),
+    ("query-nodes", "Querying nodes"),
     ("remove-node", "Removing a node from its tree"),
 ):
     type("CategorySection", (SectionBase,), {"key": key, "title": title})
