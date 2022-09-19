@@ -134,8 +134,7 @@ XPath functions
 
 Custom XPath functions are registered with this decorator:
 
-.. autofunction:: _delb.plugins.plugin_manager.register_xpath_function
-
+.. autofunction:: _delb.plugins.PluginManager.register_xpath_function
 
 
 .. _eXist-db: https://exist-db.org/

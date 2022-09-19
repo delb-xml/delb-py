@@ -195,10 +195,9 @@ class PluginManager:
 
     def register_xpath_function(self, arg: Union[Callable, str]) -> Callable:
         """
-        Custom functions can be defined as shown in the following example. The first
-        argument to a function is always the evaluation context which holds the
-        properties ``node``, ``position``, ``size`` and ``namespaces``; followed by the
-        expression's arguments.
+        Custom XPath functions can be defined as shown in the following example. The
+        first argument to a function is always an instance of
+        :class:`_delb.xpath.EvaluationContext` followed by the expression's arguments.
 
         .. testcode::
 

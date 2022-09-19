@@ -94,10 +94,22 @@ def nested_repr(obj: Any) -> str:  # pragma: no cover
 
 
 class EvaluationContext(NamedTuple):
+    """
+    Instances of this type are passed to XPath functions in order to pass contextual
+    information.
+    """
+
     node: NodeBase
+    """ The node that is evaluated. """
     position: int
+    """
+    The node's position within all nodes that matched a location step's node test in
+    order of the step's axis' direction. The first position is 1.
+    """
     size: int
+    """ The number of all nodes all nodes that matched a location step's node test. """
     namespaces: Namespaces
+    """ A mapping of prefixes to namespaces that is used in the whole evaluation. """
 
 
 # base classes for nodes

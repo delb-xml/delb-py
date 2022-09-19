@@ -14,10 +14,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-*delb* allows querying of nodes with CSS and XPath expressions. CSS expressions are
-converted to XPath expressions before evaluation with a third-party library and
-they are only supported as far as their XPath equivalents are supported by
-*delb*'s very own XPath implementation.
+*delb* allows querying of nodes with CSS selector and XPath expressions. CSS selectors
+are converted to XPath expressions with a third-party library before evaluation and they
+are only supported as far as their computed XPath equivalents are supported by *delb*'s
+very own XPath implementation.
 
 This implementation is not fully compliant with one of the W3C's XPath specifications.
 It mostly covers the `XPath 1.0 specs`_ , but focuses on the querying via path with
@@ -50,7 +50,7 @@ Instead of:
 
     >>> root.xpath(".//foo/@target")  # doctest: +SKIP
 
-See :func:`_delb.plugins.PluginManager.register_xpath_function` regarding the use of
+See :meth:`_delb.plugins.PluginManager.register_xpath_function` regarding the use of
 custom functions.
 
 .. _XPath 1.0 specs: https://www.w3.org/TR/1999/REC-xpath-19991116/
@@ -89,8 +89,8 @@ _css_translator = GenericTranslator()
 
 class QueryResults(Sequence["NodeBase"]):
     """
-    A sequence with the results of a CSS or XPath query with some helpers for readable
-    Python expressions.
+    A container that includes the results of a CSS selector or XPath query with some
+    helpers for better readable Python expressions.
     """
 
     def __init__(self, results: Iterable[NodeBase]):
@@ -140,7 +140,8 @@ class QueryResults(Sequence["NodeBase"]):
 
     def in_document_order(self) -> QueryResults:
         """
-        Returns a new object where the contained nodes are sorted in document order.
+        Returns another :class:`QueryResults` instance where the contained nodes are
+        sorted in document order.
         """
         return QueryResults(sort_nodes_in_document_order(self))
 

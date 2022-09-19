@@ -1165,7 +1165,7 @@ class NodeBase(ABC):
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
                            namespaces. If omitted, the node's definition is used.
-        :return: All nodes that match the evaluation of an XPath expression.
+        :return: All nodes that match the evaluation of the provided XPath expression.
 
         :meta category: query-nodes
         """
@@ -1820,7 +1820,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :param expression: A CSS selector expression.
         :param namespaces: A mapping of prefixes that are used in the expression to
                            namespaces. If omitted, the node's definition is used.
-        :return: A sequence of matching nodes.
+        :return: All nodes that match the evaluation of the provided CSS selector
+                 expression.
 
         :meta category: query-nodes
         """
@@ -2268,7 +2269,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
                            namespaces. If omitted, the node's definition is used.
-        :return: All nodes that match the evaluation of an XPath expression.
+        :return: All nodes that match the evaluation of the provided XPath expression.
 
         :meta category: query-nodes
         """

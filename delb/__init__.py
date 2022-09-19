@@ -391,12 +391,14 @@ class Document(metaclass=DocumentMeta):
         with altered_default_filters():
             self.root._collapse_whitespace()
 
-    def css_select(self, expression: str) -> QueryResults:
+    def css_select(
+        self, expression: str, namespaces: Optional[Namespaces] = None
+    ) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.css_select` method of the document's
         :attr:`root <Document.root>` node.
         """
-        return self.root.css_select(expression)
+        return self.root.css_select(expression, namespaces=namespaces)
 
     def merge_text_nodes(self):
         """
