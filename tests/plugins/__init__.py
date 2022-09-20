@@ -1,11 +1,10 @@
 from types import SimpleNamespace
 
-from _delb.plugins import plugin_manager
+from _delb.plugins import plugin_manager, DocumentMixinBase
 from _delb.xpath import EvaluationContext
 
 
-@plugin_manager.register_document_mixin
-class TestDocumentExtension:
+class TestDocumentExtension(DocumentMixinBase):
     @classmethod
     def _init_config(cls, config, kwargs):
         config.test = SimpleNamespace(

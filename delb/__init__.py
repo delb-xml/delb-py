@@ -26,8 +26,8 @@ from lxml import etree
 from _delb.exceptions import FailedDocumentLoading, InvalidOperation
 from _delb.plugins import (
     core_loaders,
-    DocumentMixinHooks,
     plugin_manager as _plugin_manager,
+    DocumentMixinBase,
 )
 from _delb.names import Namespaces
 from _delb.nodes import (
@@ -179,7 +179,10 @@ class DocumentMeta(type):
                     (f"{x[0]}:\n\n{x[1]}" for x in extension_docs)
                 )
 
-        base_classes += extension_classes + (DocumentMixinHooks,)
+        # adding DocumentMixinBase unconditionally would lead to the registration of
+        # the bare Document class as mixin extension
+        if extension_classes:
+            base_classes += extension_classes + (DocumentMixinBase,)
 
         namespace["_loaders"] = (
             core_loaders.tag_node_loader,
@@ -294,7 +297,8 @@ class Document(metaclass=DocumentMeta):
     @classmethod
     def __process_config(cls, collapse_whitespace, parser, kwargs) -> SimpleNamespace:
         config = SimpleNamespace(collapse_whitespace=collapse_whitespace, parser=parser)
-        cls._init_config(config, kwargs)  # type: ignore
+        if DocumentMixinBase in cls.__mro__:
+            cls._init_config(config, kwargs)  # type: ignore
         return config
 
     @classmethod

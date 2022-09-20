@@ -65,14 +65,9 @@ Loaders are registered with this decorator:
 Document extensions
 -------------------
 
-Document mxin classes are registered with this :term:`decorator`:
+Document mixin classes are registered by subclassing them from this base class:
 
-.. autofunction:: _delb.plugins.plugin_manager.register_document_mixin
-
-They can implement methods that are called from builtin :class:`delb.Document`
-methods:
-
-.. autoclass:: _delb.plugins.DocumentMixinHooks
+.. autoclass:: _delb.plugins.DocumentMixinBase
    :private-members:
 
 

@@ -13,21 +13,51 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from inspect import isclass
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterable, Type, Union
-from warnings import warn
+from typing import Any, Callable, Dict, Iterable, Union
 
 import pkg_resources
 
 from _delb.typing import Loader, LoaderConstraint
 
 
-class DocumentMixinHooks:
+class DocumentMixinBase:
     """
-    This class acts as termination for methods that can be implemented by mixin classes.
-    Any implementation of a method must call a base class' one with :func:`super`.
+    By deriving a subclass from this one, a document extension class is registered as
+    plugin. These are supposed to add additional attributes to a document, e.g. derived
+    data or methods to interact with storage systems. All attributes of an extension
+    should share a common prefix that terminates with an underscore, e.g.
+    `storage_load`, `storage_save`, etc.
+
+    This base class also acts as termination for methods that can be implemented by
+    mixin classes. Any implementation of a method must call a base class' one, e.g.:
+
+    .. code-block::
+
+        from types import SimpleNamespace
+
+        from _delb.plugins import DocumentMixinBase
+        from magic_wonderland import play_disco
+
+
+        class MyExtension(DocumentMixinBase):
+
+            # this method can be implemented by any extension class
+            @classmethod
+            def _init_config(cls, config, kwargs):
+                config.my_extension = SimpleNamespace(conf=kwargs.pop(
+                    "my_extension_conf"))
+                super()._init_config(config, kwargs)
+
+            # this method is specific to this extension
+            def my_extension_makes_magic(self):
+                play_disco()
     """
+
+    def __init_subclass__(cls):
+        # ensure it is a direct subclass
+        if cls.__mro__[1] is DocumentMixinBase:
+            plugin_manager.plugins.document_extensions.append(cls)
 
     @classmethod
     def _init_config(cls, config: SimpleNamespace, kwargs: Dict[str, Any]):
@@ -50,18 +80,9 @@ class DocumentMixinHooks:
             )
 
 
-class DocumentExtensionHooks(DocumentMixinHooks):
-    def __init__(self, *args, **kwargs):
-        warn(
-            "DocumentExtensionHooks is deprecated, use DocumentMixinHooks instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
-
-
 class PluginManager:
     def __init__(self):
+        # TODO as direct members
         self.plugins = SimpleNamespace(
             document_extensions=[], loaders=[], xpath_functions={}
         )
@@ -74,31 +95,6 @@ class PluginManager:
         # TODO use importlib.metadata.entrypoints when support for Python 3.9 is dropped
         for entrypoint in pkg_resources.iter_entry_points("delb"):
             entrypoint.load()
-
-    def register_document_mixin(self, extension: Type) -> Type:
-        """
-        This decorator registers document extension classes which are supposed to add
-        additional attributes to a document, e.g. derived data or methods to interact
-        with storage systems. All attributes of an extension should share a common
-        prefix that terminates with an underscore, e.g. `storage_load`, `storage_save`,
-        etc.
-
-        There are hook methods that an extension can implement, they are declared in
-        :class:`_delb.plugins.DocumentMixinHooks`.
-        """
-
-        assert isclass(extension)
-        self.plugins.document_extensions.append(extension)
-        return extension
-
-    def register_document_extension(self, extension: Type) -> Type:
-        warn(
-            "register_document_extension is deprecated, use register_document_mixin "
-            "instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.register_document_mixin(extension)
 
     def register_loader(
         self, before: LoaderConstraint = None, after: LoaderConstraint = None
