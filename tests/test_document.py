@@ -12,7 +12,7 @@ from delb import (
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
 
-from tests.plugins import TestDocumentExtension
+from tests.plugins import PlaygroundDocumentExtension
 
 
 def test_cleanup_namespaces():
@@ -29,14 +29,14 @@ def test_cleanup_namespaces():
 
 
 def test_config_initialization():
-    document = Document("<root/>", test_property="foo")
+    document = Document("<root/>", playground_property="foo")
 
-    assert document.config.test.initialized is True
-    assert document.config.test.property == "foo"
+    assert document.config.playground.initialized is True
+    assert document.config.playground.property == "foo"
 
 
 def test_clone():
-    document = Document("<root/>", test_property="foo")
+    document = Document("<root/>", playground_property="foo")
     document.clone()
 
 
@@ -112,6 +112,11 @@ def test_invalid_document():
         Document(0)
 
 
+def test_mixin_method():
+    document = Document("<root/>", playground_property="foo")
+    assert document.playground_method() == "f00"
+
+
 def test_mro():
     class DocumentSubclass(Document):
         pass
@@ -119,7 +124,7 @@ def test_mro():
     assert DocumentSubclass.__mro__ == (
         DocumentSubclass,
         Document,
-        TestDocumentExtension,
+        PlaygroundDocumentExtension,
         DocumentMixinBase,
         object,
     )

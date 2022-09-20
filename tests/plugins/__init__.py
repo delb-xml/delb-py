@@ -4,13 +4,16 @@ from _delb.plugins import plugin_manager, DocumentMixinBase
 from _delb.xpath import EvaluationContext
 
 
-class TestDocumentExtension(DocumentMixinBase):
+class PlaygroundDocumentExtension(DocumentMixinBase):
     @classmethod
     def _init_config(cls, config, kwargs):
-        config.test = SimpleNamespace(
-            initialized=True, property=kwargs.pop("test_property", None)
+        config.playground = SimpleNamespace(
+            initialized=True, property=kwargs.pop("playground_property", None)
         )
         super()._init_config(config, kwargs)
+
+    def playground_method(self):
+        return self.config.playground.property.replace("o", "0")
 
 
 @plugin_manager.register_xpath_function("is-last")
