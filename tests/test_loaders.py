@@ -1,8 +1,15 @@
+from os import environ
 from pathlib import Path
 
 from lxml import etree
+from pytest import mark
 
 from delb import Document
+
+
+pytestmark = mark.skipif(
+    "TEST_LOADERS" not in environ, reason="For example we can reduce energy usage."
+)
 
 
 TEST_FILE = (

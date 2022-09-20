@@ -40,7 +40,7 @@ jobs:
       - run: python -m pip install --upgrade pip setuptools wheel
       - uses: abatilo/actions-poetry@v2.1.6
       - run: poetry install
-      - run: poetry run make pytest
+      - run: TEST_LOADERS=1 poetry run make pytest
 
   other-quality-checks:
     runs-on: ubuntu-latest

@@ -31,9 +31,13 @@ doctest:
 mypy:
 	mypy _delb delb
 
-# run the test suite
+# run most of the test suite, avoid network
 pytest:
-	python -m pytest --cov-config .coveragerc --cov=_delb --cov=delb tests
+	python -m pytest tests
+
+# run the complete testsuite
+pytest-all:
+    TEST_LOADERS=1 python -m pytest --cov-config .coveragerc --cov=_delb --cov=delb tests
 
 # release the current version on github & the PyPI
 release: tests
@@ -51,7 +55,7 @@ showdocs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-tests: black check-formatting mypy pytest doctest
+tests: black check-formatting mypy pytest-all doctest
     poetry check
 
 # Generates and validates CITATION.cff
