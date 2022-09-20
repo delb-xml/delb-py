@@ -761,8 +761,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
-        :param recurse: Also returns the children's children and so on in document order
-                        if ``True``.
+        :param recurse: Deprecated. Use :meth:`NodeBase.iterate_descendants`.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
 
         :meta category: iter-relatives
@@ -843,6 +842,18 @@ class NodeBase(ABC):
                 return index
 
         raise InvalidCodePath
+
+    @abstractmethod
+    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+                       yielded.
+        :return: A :term:`generator iterator` that yields the descending nodes of the
+                 node.
+
+        :meta category: iter-relatives
+        """
+        pass
 
     def iterate_next_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
@@ -1185,6 +1196,13 @@ class _ChildLessNode(NodeBase):
 
         :meta category: iter-relatives
         """
+        if recurse:
+            warn(
+                "The recurse argument is deprecated in favor for the "
+                "`iterate_descendants` method.",
+                category=DeprecationWarning,
+            )
+
         yield from ()
 
     @property
@@ -1197,6 +1215,9 @@ class _ChildLessNode(NodeBase):
         if parent is None:
             return None
         return parent.document
+
+    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+        yield from ()
 
     def new_tag_node(
         self,
@@ -1711,6 +1732,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self._attributes
 
     def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
+        if recurse:
+            warn(
+                "The recurse argument is deprecated in favor for the "
+                "`iterate_descendants` method.",
+                category=DeprecationWarning,
+            )
+            yield from self.iterate_descendants(*filter)
+            return
 
         current_node: Optional[NodeBase]
 
@@ -1728,9 +1757,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
             if all(f(current_node) for f in chain(default_filters[-1], filter)):
                 yield current_node
-
-            if recurse and isinstance(current_node, TagNode):
-                yield from current_node.child_nodes(*filter, recurse=True)
 
             current_node = current_node.next_node()
 
@@ -2085,6 +2111,17 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         if queue:
             self[index].add_next(*queue, clone=clone)
+
+    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+        with altered_default_filters():
+            child_nodes = list(self.child_nodes())
+
+        while child_nodes:
+            candidate = child_nodes.pop(0)
+            if all(f(candidate) for f in chain(default_filters[-1], filter)):
+                yield candidate
+            if isinstance(candidate, TagNode):
+                yield from candidate.iterate_descendants(*filter)
 
     @property
     def last_child(self) -> Optional[NodeBase]:
