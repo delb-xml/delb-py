@@ -36,7 +36,7 @@ from typing import (
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.names import Namespaces
-from _delb.plugins import plugin_manager
+from _delb.plugins import plugin_manager as _plugin_manager
 from _delb.utils import _is_node_of_type, last
 
 # REMOVE when support for Python 3.7 is dropped
@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     from delb import NodeBase, ProcessingInstructionNode, TagNode
 
 
-xpath_functions = plugin_manager.plugins.xpath_functions
+xpath_functions = _plugin_manager.xpath_functions
 
 
 # helper

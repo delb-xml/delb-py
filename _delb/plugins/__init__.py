@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, Union
 
@@ -57,7 +59,7 @@ class DocumentMixinBase:
     def __init_subclass__(cls):
         # ensure it is a direct subclass
         if cls.__mro__[1] is DocumentMixinBase:
-            plugin_manager.plugins.document_extensions.append(cls)
+            plugin_manager.document_mixins.append(cls)
 
     @classmethod
     def _init_config(cls, config: SimpleNamespace, kwargs: Dict[str, Any]):
@@ -82,10 +84,9 @@ class DocumentMixinBase:
 
 class PluginManager:
     def __init__(self):
-        # TODO as direct members
-        self.plugins = SimpleNamespace(
-            document_extensions=[], loaders=[], xpath_functions={}
-        )
+        self.document_mixins: list[type] = []
+        self.loaders: list[Loader] = []
+        self.xpath_functions: dict[str, Callable] = {}
 
     @staticmethod
     def load_plugins():
@@ -168,7 +169,7 @@ class PluginManager:
                 "a use-case description if you need to define both."
             )
 
-        registered_loaders = self.plugins.loaders
+        registered_loaders = self.loaders
 
         if before is not None:
             if not isinstance(before, Iterable):
@@ -222,13 +223,13 @@ class PluginManager:
         if isinstance(arg, str):
 
             def wrapper(func):
-                self.plugins.xpath_functions[arg] = func
+                self.xpath_functions[arg] = func
                 return func
 
             return wrapper
 
         if callable(arg):
-            self.plugins.xpath_functions[arg.__name__] = arg
+            self.xpath_functions[arg.__name__] = arg
             return arg
 
 

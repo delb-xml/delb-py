@@ -168,7 +168,7 @@ class _TailNodes(_RootSiblingsContainer):
 
 class DocumentMeta(type):
     def __new__(mcs, name, base_classes, namespace):
-        extension_classes = tuple(_plugin_manager.plugins.document_extensions)
+        extension_classes = tuple(_plugin_manager.document_mixins)
 
         if not base_classes:  # Document class is being constructed
             extension_docs = sorted(
@@ -186,7 +186,7 @@ class DocumentMeta(type):
 
         namespace["_loaders"] = (
             core_loaders.tag_node_loader,
-            *_plugin_manager.plugins.loaders,
+            *_plugin_manager.loaders,
         )
 
         return super().__new__(mcs, name, base_classes, namespace)
