@@ -85,6 +85,7 @@ class DocumentMixinBase:
 class PluginManager:
     def __init__(self):
         self.document_mixins: list[type] = []
+        self.document_subclasses: list[type] = []
         self.loaders: list[Loader] = []
         self.xpath_functions: dict[str, Callable] = {}
 

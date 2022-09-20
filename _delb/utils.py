@@ -26,7 +26,6 @@ from typing import (
     Any,
     Iterable,
     Iterator,
-    List,
     Optional,
     Sequence,
 )
@@ -268,12 +267,6 @@ class _StringMixin:  # pragma: no cover
 
     def zfill(self, width):
         return self.data.zfill(width)
-
-
-def _collect_subclasses(cls: type, classes: List[type]):
-    for subclass in cls.__subclasses__():
-        _collect_subclasses(subclass, classes)
-        classes.append(subclass)
 
 
 def _copy_root_siblings(source: etree._Element, target: etree._Element):

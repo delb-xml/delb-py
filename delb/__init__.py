@@ -54,7 +54,6 @@ from _delb.nodes import (
 from _delb.typing import Loader
 from _delb.utils import (
     DEFAULT_PARSER,
-    _collect_subclasses,
     _copy_root_siblings,
     first,
     get_traverser,
@@ -245,10 +244,7 @@ class Document(metaclass=DocumentMeta):
         root = cls.__load_source(source, config)
 
         if klass is None:
-            subclasses = list()
-            _collect_subclasses(cls, subclasses)
-
-            for subclass in subclasses:
+            for subclass in _plugin_manager.document_subclasses:
                 if hasattr(subclass, "__class_test__") and subclass.__class_test__(
                     root, config
                 ):
@@ -293,6 +289,10 @@ class Document(metaclass=DocumentMeta):
         A list-like accessor to the nodes that follow the document's root node.
         Note that nodes can't be removed or replaced.
         """
+
+    def __init_subclass__(cls):
+        assert cls not in _plugin_manager.document_mixins
+        _plugin_manager.document_subclasses.insert(0, cls)
 
     @classmethod
     def __process_config(cls, collapse_whitespace, parser, kwargs) -> SimpleNamespace:
