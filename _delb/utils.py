@@ -410,7 +410,7 @@ def traverse_df_ltr_btt(root: "NodeBase", *filters: Filter) -> Iterator["NodeBas
 
 def traverse_df_ltr_ttb(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
     yield root
-    yield from root.child_nodes(*filters, recurse=True)
+    yield from root.iterate_descendants(*filters)
 
 
 TRAVERSERS = {

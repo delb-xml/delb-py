@@ -172,7 +172,7 @@ def test_iter_next_node_over_long_stream(files_path):
     assert node is None
 
     all_node_locations = set()
-    for node in root.child_nodes(is_tag_node, recurse=True):
+    for node in root.iterate_descendants(is_tag_node):
         all_node_locations.add(node.location_path)
     encountered_location_paths = set()
     for node in root.iterate_next_nodes_in_stream(is_tag_node):

@@ -837,7 +837,7 @@ class NodeBase(ABC):
         if parent is None:
             return None
 
-        for index, node in enumerate(parent.child_nodes(recurse=False)):
+        for index, node in enumerate(parent.child_nodes()):
             if node is self:
                 return index
 
@@ -940,7 +940,7 @@ class NodeBase(ABC):
     @altered_default_filters()
     def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
         def iter_children(node: NodeBase) -> Iterator[NodeBase]:
-            for child_node in reversed(tuple(node.child_nodes(recurse=False))):
+            for child_node in reversed(tuple(node.child_nodes())):
                 yield from iter_children(child_node)
                 yield child_node
 
@@ -1577,7 +1577,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if isinstance(item, str):
             return item in self.attributes
         elif isinstance(item, NodeBase):
-            for child in self.child_nodes(recurse=False):
+            for child in self.child_nodes():
                 if child is item:
                     return True
             return False
@@ -1613,7 +1613,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 item = len(self) + item
 
             index = 0
-            for child_node in self.child_nodes(recurse=False):
+            for child_node in self.child_nodes():
                 if index == item:
                     return child_node
                 index += 1
@@ -1626,13 +1626,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
             elif all(
                 (isinstance(x, int) or x is None) for x in (item.start, item.stop)
             ):
-                return list(self.child_nodes(recurse=False))[item]
+                return list(self.child_nodes())[item]
 
         raise TypeError
 
     def __len__(self) -> int:
         i = 0
-        for _ in self.child_nodes(recurse=False):
+        for _ in self.child_nodes():
             i += 1
         return i
 
@@ -1779,9 +1779,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         assert not len(result)
 
         if deep:
-            for child_node in (
-                x.clone(deep=True) for x in self.child_nodes(recurse=False)
-            ):
+            for child_node in (x.clone(deep=True) for x in self.child_nodes()):
                 assert isinstance(child_node, NodeBase)
                 assert child_node.parent is None
                 if isinstance(child_node, _ElementWrappingNode):
@@ -1829,7 +1827,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         else:
             assert normalize_space == "preserve"
 
-        for child_node in self.child_nodes(is_tag_node, recurse=False):
+        for child_node in self.child_nodes(is_tag_node):
             cast(TagNode, child_node)._collapse_whitespace(normalize_space)
 
     def css_select(
@@ -2027,13 +2025,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def first_child(self) -> Optional[NodeBase]:
-        for result in self.child_nodes(recurse=False):
+        for result in self.child_nodes():
             return result
         return None
 
     @property
     def full_text(self) -> str:
-        return "".join(str(x) for x in self.child_nodes(is_text_node, recurse=True))
+        return "".join(str(x) for x in self.iterate_descendants(is_text_node))
 
     @property
     def id(self) -> Optional[str]:
@@ -2126,7 +2124,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def last_child(self) -> Optional[NodeBase]:
         result = None
-        for result in self.child_nodes(recurse=False):
+        for result in self.child_nodes():
             pass
         return result
 
@@ -2171,7 +2169,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         Merges all consecutive text nodes in the subtree into one.
         """
-        for node in self.child_nodes(is_text_node, recurse=True):
+        for node in self.iterate_descendants(is_text_node):
             node._merge_appended_text_nodes()
 
     @property

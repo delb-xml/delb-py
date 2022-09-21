@@ -401,7 +401,7 @@ def test_location_path_and_xpath_concordance(files_path):
         document = Document(doc_path)
 
         assert document.xpath(document.root.location_path).first is document.root
-        for node in document.root.child_nodes(is_tag_node, recurse=True):
+        for node in document.root.iterate_descendants(is_tag_node):
             queried_nodes = document.xpath(node.location_path)
             assert queried_nodes.size == 1
             assert queried_nodes.first is node
@@ -496,7 +496,7 @@ def test_next_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
 
     result = []
-    for node in document.root.child_nodes(is_pagebreak, recurse=True):
+    for node in document.root.iterate_descendants(is_pagebreak):
         break
 
     while node is not None:
@@ -535,7 +535,7 @@ def test_previous_in_stream(files_path):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
 
     result = []
-    for node in document.root.child_nodes(is_pagebreak, recurse=True):
+    for node in document.root.iterate_descendants(is_pagebreak):
         if isinstance(node, TagNode) and node.local_name == "pb":
             pass
 

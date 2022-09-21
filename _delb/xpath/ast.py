@@ -177,14 +177,14 @@ class Axis(Node):
         yield from self.generator(node)
 
     def child(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.child_nodes(recurse=False)
+        yield from node.child_nodes()
 
     def descendant(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.child_nodes(recurse=True)
+        yield from node.iterate_descendants()
 
     def descendant_or_self(self, node: NodeBase) -> Iterator[NodeBase]:
         yield node
-        yield from node.child_nodes(recurse=True)
+        yield from node.iterate_descendants()
 
     def following(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_next_nodes_in_stream()

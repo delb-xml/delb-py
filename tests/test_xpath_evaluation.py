@@ -47,7 +47,7 @@ def test_axes_order(name, start_name, expected_order):
         if start_name == "a":
             node = root
         else:
-            for node in root.child_nodes(recurse=True):
+            for node in root.iterate_descendants():
                 if node.local_name == start_name:
                     break
 

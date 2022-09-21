@@ -30,10 +30,10 @@ def test_referenced_appendees_sustain(long_term_references):
 def test_appended_text_contents_arent_lost():
     root = Document("<root><a><b><c><d/></c></b></a></root>").root
 
-    for node in tuple(root.child_nodes(is_tag_node, recurse=True)):
+    for node in tuple(root.iterate_descendants(is_tag_node)):
         node.prepend_child("D")
         node.add_next("T")
-    for node in tuple(root.child_nodes(is_text_node, recurse=True)):
+    for node in tuple(root.iterate_descendants(is_text_node)):
         node.add_next("Z")
 
     gc.collect()
