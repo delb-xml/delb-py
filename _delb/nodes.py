@@ -882,7 +882,6 @@ class NodeBase(ABC):
             if all(f(node) for f in chain(default_filters[-1], filter)):
                 yield node
 
-    @altered_default_filters()
     def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
         def next_sibling_of_an_ancestor(
             node: NodeBase,
@@ -890,7 +889,7 @@ class NodeBase(ABC):
             parent = node.parent
             if parent is None:
                 return None
-            parents_next = parent.next_node()
+            parents_next = parent._next_node()
             if parents_next is None:
                 return next_sibling_of_an_ancestor(parent)
             return parents_next
@@ -899,7 +898,7 @@ class NodeBase(ABC):
         while True:
             next_node = pointer.first_child
             if next_node is None:
-                next_node = pointer.next_node()
+                next_node = pointer._next_node()
 
             if next_node is None:
                 next_node = next_sibling_of_an_ancestor(pointer)
@@ -1049,7 +1048,6 @@ class NodeBase(ABC):
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
         return self.parent._new_tag_node_from_definition(definition)
 
-    @abstractmethod
     def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s.
@@ -1057,6 +1055,17 @@ class NodeBase(ABC):
 
         :meta category: fetch-node
         """
+        all_filters = default_filters[-1] + filter
+        candidate = self._next_node()
+        while candidate is not None:
+            if all(f(candidate) for f in all_filters):
+                return candidate
+            candidate = candidate._next_node()
+
+        return None
+
+    @abstractmethod
+    def _next_node(self):
         pass
 
     def next_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
@@ -1095,7 +1104,7 @@ class NodeBase(ABC):
             raise TypeError
 
         if not all(
-            x is None for x in (this.parent, this.next_node(), this.previous_node())
+            x is None for x in (this.parent, this._next_node(), this.previous_node())
         ):
             raise InvalidOperation(
                 "A node that shall be added to a tree must have neither a parent nor "
@@ -1361,23 +1370,14 @@ class _ElementWrappingNode(NodeBase):
     def namespaces(self) -> Namespaces:
         return Namespaces(self._etree_obj.nsmap)
 
-    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-
-        candidate: NodeBase
-
+    def _next_node(self) -> Optional[NodeBase]:
         if self._tail_node._exists:
-            candidate = self._tail_node
-        else:
-            next_etree_obj = self._etree_obj.getnext()
+            return self._tail_node
 
-            if next_etree_obj is None:
-                return None
-            candidate = _wrapper_cache(next_etree_obj)
-
-        if all(f(candidate) for f in chain(default_filters[-1], filter)):
-            return candidate
-        else:
-            return candidate.next_node(*filter)
+        next_etree_obj = self._etree_obj.getnext()
+        if next_etree_obj is None:
+            return None
+        return _wrapper_cache(next_etree_obj)
 
     @property
     def parent(self) -> Optional["TagNode"]:
@@ -1741,24 +1741,22 @@ class TagNode(_ElementWrappingNode, NodeBase):
             yield from self.iterate_descendants(*filter)
             return
 
-        current_node: Optional[NodeBase]
+        all_filters = default_filters[-1] + filter
+        candidate: Optional[NodeBase]
 
         assert isinstance(self._data_node, TextNode)
         if self._data_node._exists:
-            current_node = self._data_node
+            candidate = self._data_node
         elif len(self._etree_obj):
-            current_node = _wrapper_cache(self._etree_obj[0])
+            candidate = _wrapper_cache(self._etree_obj[0])
         else:
-            current_node = None
+            candidate = None
 
-        while current_node is not None:
+        while candidate is not None:
+            if all(f(candidate) for f in all_filters):
+                yield candidate
 
-            assert isinstance(default_filters[-1], tuple), default_filters[-1]
-
-            if all(f(current_node) for f in chain(default_filters[-1], filter)):
-                yield current_node
-
-            current_node = current_node.next_node()
+            candidate = candidate._next_node()
 
     @altered_default_filters()
     def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "TagNode":
@@ -2098,7 +2096,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     assert self[0] is this
                     assert self[1].previous_node() is this, self[1].previous_node()
                     assert isinstance(this, NodeBase)
-                    assert this.next_node() is self[1]
+                    assert this._next_node() is self[1]
             else:
                 self.__add_first_child(
                     self._prepare_new_relative((this,), clone=clone)[0]
@@ -2111,15 +2109,25 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self[index].add_next(*queue, clone=clone)
 
     def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+        all_filters = default_filters[-1] + filter
         with altered_default_filters():
-            child_nodes = list(self.child_nodes())
+            candidate = self.first_child
+            if candidate is None:
+                return
 
-        while child_nodes:
-            candidate = child_nodes.pop(0)
-            if all(f(candidate) for f in chain(default_filters[-1], filter)):
-                yield candidate
-            if isinstance(candidate, TagNode):
-                yield from candidate.iterate_descendants(*filter)
+            next_candidates: List[Optional[NodeBase]] = []
+            while candidate is not None:
+                if all(f(candidate) for f in all_filters):
+                    yield candidate
+
+                if isinstance(candidate, TagNode):
+                    next_candidates.append(candidate._next_node())
+                    candidate = candidate.first_child
+                else:
+                    candidate = candidate._next_node()
+
+                while candidate is None and next_candidates:
+                    candidate = next_candidates.pop()
 
     @property
     def last_child(self) -> Optional[NodeBase]:
@@ -2648,7 +2656,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.content = content
 
         assert self.parent is None
-        assert self.next_node() is None
+        assert self._next_node() is None
 
         return self
 
@@ -2703,38 +2711,28 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         else:
             raise InvalidOperation("A lonely text node has no namespace context.")
 
-    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
+    def _next_node(self) -> Optional[NodeBase]:
         if self._position is DETACHED:
             return None
 
-        candidate: Optional[NodeBase]
-
         if self._appended_text_node:
-            candidate = self._appended_text_node
+            return self._appended_text_node
 
         elif self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)
             if len(self._bound_to):
-                candidate = _wrapper_cache(self._bound_to[0])
+                return _wrapper_cache(self._bound_to[0])
             else:
                 return None
 
         elif self._position is TAIL:
-            candidate = self.__next_candidate_of_tail()
+            return self.__next_candidate_of_tail()
 
         elif self._position is APPENDED:  # and last in tail sequence
-            candidate = self.__next_candidate_of_last_appended()
+            return self.__next_candidate_of_last_appended()
 
-        if candidate is None:
-            return None
-
-        if all(f(candidate) for f in chain(default_filters[-1], filter)):
-            if isinstance(candidate, TextNode):
-                assert candidate._exists
-            return candidate
-        else:
-            return candidate.next_node(*filter)
+        raise InvalidCodePath
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
