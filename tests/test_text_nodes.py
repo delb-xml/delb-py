@@ -8,7 +8,7 @@ def test_add_tag_before_tail():
     document = Document("<root><a/>b</root>")
     root = document.root
 
-    root[1].add_previous(tag("c"))
+    root[1].add_preceding_siblings(tag("c"))
 
     assert str(document) == "<root><a/><c/>b</root>"
 
@@ -16,8 +16,8 @@ def test_add_tag_before_tail():
 def test_add_tag_after_tail_appended_text():
     document = Document("<root><a/>b</root>")
     root = document.root
-    root.append_child("c")
-    root.append_child(tag("d"))
+    root.append_children("c")
+    root.append_children(tag("d"))
     assert str(document) == "<root><a/>bc<d/></root>"
 
 
@@ -25,7 +25,7 @@ def test_add_tag_after_tail():
     document = Document("<root><node/>tail</root>")
     tail = document.root[1]
 
-    tail.add_next(tag("end"))
+    tail.add_following_siblings(tag("end"))
     assert str(document) == "<root><node/>tail<end/></root>"
 
 
@@ -33,12 +33,12 @@ def test_add_text_after_tag():
     document = Document("<root><tag/></root>")
     tag = document.root[0]
 
-    tag.add_next(TextNode("foo"))
+    tag.add_following_siblings(TextNode("foo"))
 
     assert tag._etree_obj.text is None
     assert tag._etree_obj.tail == "foo"
 
-    foo = tag.next_node()
+    foo = tag.fetch_following_sibling()
     assert isinstance(foo, TextNode)
     assert foo._position == TAIL
     assert foo.content == "foo"
@@ -51,9 +51,9 @@ def test_add_text_after_tail():
     foo = root[1]
 
     bar = TextNode("bar")
-    foo.add_next(bar)
+    foo.add_following_siblings(bar)
 
-    assert foo.next_node() is bar
+    assert foo.fetch_following_sibling() is bar
     assert len(root) == 3
 
     assert foo._appended_text_node is bar
@@ -75,9 +75,9 @@ def test_add_text_after_appended():
     foo = root[1]
 
     bar = TextNode("bar")
-    foo.add_next(bar)
+    foo.add_following_siblings(bar)
     peng = TextNode("peng")
-    bar.add_next(peng)
+    bar.add_following_siblings(peng)
 
     assert len(root) == 4
 
@@ -95,7 +95,7 @@ def test_add_text_after_appended():
 
     document.merge_text_nodes()
 
-    assert len(root) == 2, [x for x in root.child_nodes()]
+    assert len(root) == 2, [x for x in root.iterate_children()]
     assert root[0]._etree_obj.tail == "foobarpeng"
 
 
@@ -103,16 +103,16 @@ def test_add_tag_between_text_nodes_at_tail_position():
     document = Document("<root><a/>tail</root>")
     root = document.root
 
-    root[1].add_next("the")
-    root[2].add_next(" end")
-    root[1].add_next(tag("node"))
+    root[1].add_following_siblings("the")
+    root[2].add_following_siblings(" end")
+    root[1].add_following_siblings(tag("node"))
     assert len(document.root) == 5
     assert str(document) == "<root><a/>tail<node/>the end</root>"
 
 
 def test_add_text_before_data():
     document = Document("<root>data</root>")
-    document.root[0].add_previous("head ")
+    document.root[0].add_preceding_siblings("head ")
     assert len(document.root) == 2
     assert str(document) == "<root>head data</root>"
 
@@ -120,8 +120,8 @@ def test_add_text_before_data():
 def test_add_text_between_text_at_data_position():
     document = Document("<root>data</root>")
     node = document.root[0]
-    node.add_next(" tailing")
-    node.add_next(" more more more")
+    node.add_following_siblings(" tailing")
+    node.add_following_siblings(" more more more")
     assert len(document.root) == 3
     assert str(document) == "<root>data more more more tailing</root>"
 
@@ -129,17 +129,17 @@ def test_add_text_between_text_at_data_position():
 def test_add_tag_between_two_appended():
     document = Document("<root>data</root>")
     root = document.root
-    root.append_child("appended")
+    root.append_children("appended")
 
-    document.root[0].add_next(tag("node"))
+    document.root[0].add_following_siblings(tag("node"))
 
     assert str(document) == "<root>data<node/>appended</root>"
 
     document = Document("<root>data</root>")
     root = document.root
-    root.append_child("appended")
+    root.append_children("appended")
 
-    root[1].add_previous(tag("node"))
+    root[1].add_preceding_siblings(tag("node"))
 
     assert str(document) == "<root>data<node/>appended</root>"
 
@@ -148,10 +148,10 @@ def test_add_text_between_two_appended():
     document = Document("<root>data</root>")
     root = document.root
 
-    root[0].add_next(" appended_1")
-    root[1].add_next(" appended_2")
-    root[2].add_next(" appended_3")
-    root[1].add_next(tag("tag"))
+    root[0].add_following_siblings(" appended_1")
+    root[1].add_following_siblings(" appended_2")
+    root[2].add_following_siblings(" appended_3")
+    root[1].add_following_siblings(tag("tag"))
 
     assert len(document.root) == 5
     assert str(document) == "<root>data appended_1<tag/> appended_2 appended_3</root>"
@@ -162,22 +162,22 @@ def test_appended_text_nodes():
     tokens = ("How ", "much ", "is ", "the ", "fish", "?")
 
     root = document.root
-    root.append_child(*tokens)
+    root.append_children(*tokens)
 
     assert len(root) == 6, len(root)
 
-    for i, child in enumerate(root.child_nodes()):
+    for i, child in enumerate(root.iterate_children()):
         assert isinstance(child, TextNode)
         assert child.content == str(child) == tokens[i]
 
     document.merge_text_nodes()
-    assert len(root) == 1, [x for x in root.child_nodes()]
+    assert len(root) == 1, [x for x in root.iterate_children()]
     assert root[0].content == "How much is the fish?"
 
 
 def test_bindings(sample_document):
     p = sample_document.root[1][1]
-    text_nodes = tuple(x for x in p.child_nodes(is_text_node))
+    text_nodes = tuple(x for x in p.iterate_children(is_text_node))
 
     x, y = text_nodes[1], p[2]
     assert x is y
@@ -186,44 +186,44 @@ def test_bindings(sample_document):
 def test_construction():
     document = Document("<root><node>one</node> two </root>", collapse_whitespace=True)
     root = document.root
-    node, two = tuple(x for x in root.child_nodes())
+    node, two = tuple(x for x in root.iterate_children())
     one = node[0]
 
     assert one.content == "one"
     assert two.content == " two"
 
-    one.add_next(TextNode(" threehalfs"))
+    one.add_following_siblings(TextNode(" threehalfs"))
     assert str(document) == "<root><node>one threehalfs</node> two</root>"
 
     three = TextNode(" three")
-    two.add_next(three)
+    two.add_following_siblings(three)
     assert str(document) == "<root><node>one threehalfs</node> two three</root>"
 
-    three.add_next(" four")
+    three.add_following_siblings(" four")
     assert str(document) == "<root><node>one threehalfs</node> two three four</root>"
 
-    node.append_child(" sevenquarters")
+    node.append_children(" sevenquarters")
     assert (
         str(document)
         == "<root><node>one threehalfs sevenquarters</node> two three four</root>"
     )
 
     twoandahalf = TextNode(" twoandahalf")
-    three.add_previous(twoandahalf)
+    three.add_preceding_siblings(twoandahalf)
     assert (
         str(document)
         == "<root><node>one threehalfs sevenquarters</node> two twoandahalf three "
         "four</root>"
     )
 
-    twoandahalf.add_previous(" 2/3π")
+    twoandahalf.add_preceding_siblings(" 2/3π")
     assert (
         str(document)
         == "<root><node>one threehalfs sevenquarters</node> two 2/3π twoandahalf three "
         "four</root>"
     )
 
-    two.add_previous(" almosttwo")
+    two.add_preceding_siblings(" almosttwo")
     assert (
         str(document)
         == "<root><node>one threehalfs sevenquarters</node> almosttwo two 2/3π "
@@ -286,18 +286,18 @@ def test_detach_text_sandwiched_node():
     root = document.root
     data = root[0]
 
-    data.add_next(" tailing")
-    data.add_next(" more more more")
+    data.add_following_siblings(" tailing")
+    data.add_following_siblings(" more more more")
 
     more = document.root[1].detach()
     assert str(more) == " more more more"
     assert str(document) == "<root>data tailing</root>"
 
-    data.add_next(more)
+    data.add_following_siblings(more)
     data.detach()
     assert str(document) == "<root> more more more tailing</root>"
 
-    root.insert_child(0, tag("tag"))
+    root.insert_children(0, tag("tag"))
     more.detach()
     assert str(document) == "<root><tag/> tailing</root>"
 
@@ -305,7 +305,7 @@ def test_detach_text_sandwiched_node():
 def test_document():
     document = Document("<root>data<node/>tail</root>")
     root = document.root
-    root.append_child("more")
+    root.append_children("more")
     assert root[0].document is document
     assert root[2].document is document
     assert root[3].document is document
@@ -334,30 +334,30 @@ def test_none_content_wrapping():
         document.root[1]
 
     e1 = document.root[0]
-    assert e1.next_node() is None
+    assert e1.fetch_following_sibling() is None
 
-    e1.add_next(tag("e2"))
-    assert isinstance(e1.next_node(), TagNode)
+    e1.add_following_siblings(tag("e2"))
+    assert isinstance(e1.fetch_following_sibling(), TagNode)
 
 
-def test_previous_node():
+def test_fetch_preceding_sibling():
     document = Document("<root><a/>b</root>")
     root = document.root
-    root.append_child("c")
+    root.append_children("c")
 
-    b = root[2].previous_node()
+    b = root[2].fetch_preceding_sibling()
     assert b == "b"
 
     c = TextNode("c")
-    root[0].append_child(c)
+    root[0].append_children(c)
 
-    assert c.previous_node() is None
+    assert c.fetch_preceding_sibling() is None
 
 
 def test_sample_document_structure_and_content(sample_document):
     p = sample_document.root[1][1]
 
-    text_nodes = tuple(x for x in p.child_nodes(is_text_node))
+    text_nodes = tuple(x for x in p.iterate_children(is_text_node))
 
     assert all(isinstance(x, TextNode) for x in text_nodes)
 

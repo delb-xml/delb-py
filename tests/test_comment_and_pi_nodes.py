@@ -10,7 +10,7 @@ from delb import (
 
 def test_appended_text_node():
     document = Document("<root><!-- c -->tail</root>")
-    document.root.last_child.add_next("|appended")
+    document.root.last_child.add_following_siblings("|appended")
     assert str(document) == "<root><!-- c -->tail|appended</root>"
 
 
@@ -26,7 +26,7 @@ def test_comment_node():
     assert str(comment) == "<!-- comment -->"
 
     tag = root[0]
-    tag.append_child(new_comment_node("b"))
+    tag.append_children(new_comment_node("b"))
     comment.content = "comment"
     assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
 
@@ -41,8 +41,8 @@ def test_comment_node():
     with altered_default_filters():
         b = tag.first_child
 
-    b.add_previous(new_comment_node("a"))
-    b.add_next(new_comment_node("c"))
+    b.add_preceding_siblings(new_comment_node("a"))
+    b.add_following_siblings(new_comment_node("c"))
     assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
 
     b.detach()
@@ -50,15 +50,15 @@ def test_comment_node():
 
     text = root.last_child
     x = new_comment_node("x")
-    text.add_previous(x)
-    text.add_next(new_comment_node("y"))
+    text.add_preceding_siblings(x)
+    text.add_following_siblings(new_comment_node("y"))
     assert str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
 
     with altered_default_filters():
-        for node in [x for x in root.child_nodes()]:
+        for node in [x for x in root.iterate_children()]:
             node.detach()
-    root.add_previous(new_comment_node("before"))
-    root.add_next(new_comment_node("after"))
+    root.add_preceding_siblings(new_comment_node("before"))
+    root.add_following_siblings(new_comment_node("after"))
 
     assert str(document) == "<!--before--><root/><!--after-->"
 
@@ -66,7 +66,7 @@ def test_comment_node():
 def test_processing_instruction_node():
     root = Document("<root/>").root
 
-    root.append_child(new_processing_instruction_node("foo", "bar"))
+    root.append_children(new_processing_instruction_node("foo", "bar"))
 
     with altered_default_filters():
         pi = root.first_child

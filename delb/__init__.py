@@ -98,7 +98,9 @@ class _RootSiblingsContainer(ABC, MutableSequence):
             return self._get_first()
 
         with altered_default_filters():
-            for i, result in enumerate(self._get_first().iterate_next_nodes(), start=1):
+            for i, result in enumerate(
+                self._get_first().iterate_following_siblings(), start=1
+            ):
                 if i == index:
                     return result
 
@@ -121,9 +123,9 @@ class _RootSiblingsContainer(ABC, MutableSequence):
         if index == 0 and not length:
             self._add_first(node)
         elif index == length:
-            self[-1].add_next(node)
+            self[-1].add_following_siblings(node)
         else:
-            self[index].add_previous(node)
+            self[index].add_preceding_siblings(node)
 
     def prepend(self, node):
         self.insert(0, node)
@@ -143,26 +145,26 @@ class _RootSiblingsContainer(ABC, MutableSequence):
 
 class _HeadNodes(_RootSiblingsContainer):
     def _add_first(self, node):
-        self._document.root.add_previous(node)
+        self._document.root.add_preceding_siblings(node)
 
     def _get_first(self):
         return last(self._iter_all())
 
     def _iter_all(self):
         with altered_default_filters():
-            yield from self._document.root.iterate_previous_nodes()
+            yield from self._document.root.iterate_preceding_siblings()
 
 
 class _TailNodes(_RootSiblingsContainer):
     def _add_first(self, node):
-        self._document.root.add_next(node)
+        self._document.root.add_following_siblings(node)
 
     def _get_first(self):
         return first(self._iter_all())
 
     def _iter_all(self):
         with altered_default_filters():
-            yield from self._document.root.iterate_next_nodes()
+            yield from self._document.root.iterate_following_siblings()
 
 
 class DocumentMeta(type):
@@ -444,7 +446,12 @@ class Document(metaclass=DocumentMeta):
 
         with altered_default_filters(_is_tag_or_text_node):
             if not all(
-                x is None for x in (node.parent, node.previous_node(), node.next_node())
+                x is None
+                for x in (
+                    node.parent,
+                    node.fetch_preceding_sibling(),
+                    node.fetch_following_sibling(),
+                )
             ):
                 raise InvalidOperation(
                     "Only a detached node can be set as root. Use "

@@ -25,11 +25,11 @@ def test_significant_whitespace_is_saved(result_file):
     root = document.root
     hi = tag("hi")
 
-    root.append_child(hi)
-    root[0].append_child("Hello")
-    root.append_child(" ")
-    root.append_child(hi)
-    root[2].append_child("world!")
+    root.append_children(hi)
+    root[0].append_children("Hello")
+    root.append_children(" ")
+    root.append_children(hi)
+    root[2].append_children("world!")
 
     document.save(result_file)
     with result_file.open("rt") as result:

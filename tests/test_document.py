@@ -70,7 +70,7 @@ def test_collapse_whitespace():
 
     hi_1 = document.root.first_child
     assert hi_1._etree_obj.tail == " "
-    x = hi_1.next_node()
+    x = hi_1.fetch_following_sibling()
     assert isinstance(x, TextNode)
     assert x.content == " "
 

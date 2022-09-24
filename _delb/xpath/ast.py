@@ -167,17 +167,17 @@ class Axis(Node):
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
     def ancestor(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.ancestors()
+        yield from node.iterate_ancestors()
 
     def ancestor_or_self(self, node: NodeBase) -> Iterator[NodeBase]:
         yield node
-        yield from node.ancestors()
+        yield from node.iterate_ancestors()
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
         yield from self.generator(node)
 
     def child(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.child_nodes()
+        yield from node.iterate_children()
 
     def descendant(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_descendants()
@@ -187,10 +187,10 @@ class Axis(Node):
         yield from node.iterate_descendants()
 
     def following(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_next_nodes_in_stream()
+        yield from node.iterate_following()
 
     def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_next_nodes()
+        yield from node.iterate_following_siblings()
 
     def parent(self, node: NodeBase) -> Iterator[NodeBase]:
         parent = node.parent
@@ -198,10 +198,10 @@ class Axis(Node):
             yield parent
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_previous_nodes_in_stream()
+        yield from node.iterate_preceding()
 
     def preceding_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_previous_nodes()
+        yield from node.iterate_preceding_siblings()
 
     def self(self, node: NodeBase) -> Iterator[NodeBase]:
         yield node
@@ -236,7 +236,7 @@ class LocationPath(Node):
         elif self.absolute:
             first_node = node
             assert first_node is not None
-            root = last(first_node.ancestors()) or first_node
+            root = last(first_node.iterate_ancestors()) or first_node
             yield from self.location_steps[0].evaluate(
                 node_set=(root,), namespaces=namespaces
             )

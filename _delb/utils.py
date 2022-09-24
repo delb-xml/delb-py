@@ -435,7 +435,7 @@ def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase
 
 def traverse_df_ltr_btt(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
     def yield_children(node):
-        for child in tuple(node.child_nodes(*filters)):
+        for child in tuple(node.iterate_children(*filters)):
             yield from yield_children(child)
         yield node
 

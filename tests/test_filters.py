@@ -10,7 +10,9 @@ def test_anyof_filter():
 
     document = Document('<root><x a=""/><x b=""/><x c=""/></root>')
 
-    results = tuple(document.root.child_nodes(any_of(has_a_attribute, has_b_attribute)))
+    results = tuple(
+        document.root.iterate_children(any_of(has_a_attribute, has_b_attribute))
+    )
 
     assert len(results) == 2
     assert all("c" not in x.attributes for x in results)
@@ -26,12 +28,14 @@ def test_not_filter():
     document = Document('<root><x a=""/><x b=""/><x a="" b=""/><x c=""/></root>')
 
     results = tuple(
-        document.root.child_nodes(not_(any_of(has_a_attribute, has_b_attribute)))
+        document.root.iterate_children(not_(any_of(has_a_attribute, has_b_attribute)))
     )
 
     assert len(results) == 1
     assert "c" in results[0].attributes
 
-    results = tuple(document.root.child_nodes(not_(has_a_attribute, has_b_attribute)))
+    results = tuple(
+        document.root.iterate_children(not_(has_a_attribute, has_b_attribute))
+    )
 
     assert len(results) == 3

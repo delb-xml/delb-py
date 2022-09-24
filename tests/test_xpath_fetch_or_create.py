@@ -16,7 +16,7 @@ def test_fetch_or_create_by_xpath():
     assert str(root.fetch_or_create_by_xpath("intermediate/target")) == "<target/>"
     assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
 
-    root.append_child(tag("intermediate"))
+    root.append_children(tag("intermediate"))
 
     with raises(InvalidOperation):
         root.fetch_or_create_by_xpath("intermediate")

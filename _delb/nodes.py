@@ -321,7 +321,7 @@ def new_tag_node(
 
     for child in children:
         if isinstance(child, (str, NodeBase, _TagDefinition)):
-            result.append_child(child)
+            result.append_children(child)
         else:
             raise TypeError
 
@@ -412,7 +412,7 @@ def tag(*args):  # noqa: C901
     ... ])
     >>> str(root)
     '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
-    >>> root.append_child(tag("addendum"))
+    >>> root.append_children(tag("addendum"))
     >>> str(root)[-26:]
     '</items><addendum/></root>'
     """
@@ -486,7 +486,7 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     ...     '<root xmlns="foo"><a/><!--x--><b/><!--y--><c/></root>'
     ... ).root
     >>> with altered_default_filters(is_comment_node):
-    ...     print([x.content for x in root.child_nodes()])
+    ...     print([x.content for x in root.iterate_children()])
     ['x', 'y']
 
     As the default filters shadow comments and processing instructions by default,
@@ -865,7 +865,7 @@ class NodeBase(ABC):
         if parent is None:
             return None
 
-        for index, node in enumerate(parent.child_nodes()):
+        for index, node in enumerate(parent.iterate_children()):
             if node is self:
                 return index
 
@@ -1098,7 +1098,7 @@ class NodeBase(ABC):
         assert isinstance(result, TagNode)
 
         if children:
-            result.append_child(*children)
+            result.append_children(*children)
 
         return result
 
@@ -1129,7 +1129,12 @@ class NodeBase(ABC):
             raise TypeError
 
         if not all(
-            x is None for x in (this.parent, this._next_node(), this.previous_node())
+            x is None
+            for x in (
+                this.parent,
+                this._fetch_following_sibling(),
+                this.fetch_preceding_sibling(),
+            )
         ):
             raise InvalidOperation(
                 "A node that shall be added to a tree must have neither a parent nor "
@@ -1160,7 +1165,7 @@ class NodeBase(ABC):
                 "`root` property of a Document instance?"
             )
 
-        self.add_next(node, clone=clone)
+        self.add_following_siblings(node, clone=clone)
         return self.detach()
 
     def _validate_sibling_operation(self, node):
@@ -1370,12 +1375,12 @@ class _ElementWrappingNode(NodeBase):
                     last_text_candidate = parent._data_node
                     while last_text_candidate._appended_text_node is not None:
                         last_text_candidate = last_text_candidate._appended_text_node
-                    last_text_candidate._add_next_node(node)
+                    last_text_candidate._add_following_sibling(node)
                 else:
                     node._bind_to_data(parent)
 
         else:
-            previous._add_next_node(node)
+            previous._add_following_sibling(node)
 
     def clone(
         self, deep: bool = False, quick_and_unsafe: bool = False
@@ -1399,7 +1404,7 @@ class _ElementWrappingNode(NodeBase):
                 self._tail_node._bind_to_data(parent)
 
             else:
-                previous_node = self.previous_node()
+                previous_node = self.fetch_preceding_sibling()
                 if isinstance(previous_node, _ElementWrappingNode):
                     self._tail_node._bind_to_tail(previous_node)
                 elif isinstance(previous_node, TextNode):
@@ -1635,7 +1640,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if isinstance(item, str):
             return item in self.attributes
         elif isinstance(item, NodeBase):
-            for child in self.child_nodes():
+            for child in self.iterate_children():
                 if child is item:
                     return True
             return False
@@ -1671,7 +1676,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 item = len(self) + item
 
             index = 0
-            for child_node in self.child_nodes():
+            for child_node in self.iterate_children():
                 if index == item:
                     return child_node
                 index += 1
@@ -1684,13 +1689,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
             elif all(
                 (isinstance(x, int) or x is None) for x in (item.start, item.stop)
             ):
-                return list(self.child_nodes())[item]
+                return list(self.iterate_children())[item]
 
         raise TypeError
 
     def __len__(self) -> int:
         i = 0
-        for _ in self.child_nodes():
+        for _ in self.iterate_children():
             i += 1
         return i
 
@@ -1742,7 +1747,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             queue = node
 
         if queue:
-            last_child.add_next(*queue, clone=clone)
+            last_child.add_following_siblings(*queue, clone=clone)
 
     @property
     def attributes(self) -> TagAttributes:
@@ -1808,7 +1813,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         assert not len(result)
 
         if deep:
-            for child_node in (x.clone(deep=True) for x in self.child_nodes()):
+            for child_node in (x.clone(deep=True) for x in self.iterate_children()):
                 assert isinstance(child_node, NodeBase)
                 assert child_node.parent is None
                 if isinstance(child_node, _ElementWrappingNode):
@@ -1816,7 +1821,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 elif isinstance(child_node, TextNode):
                     assert child_node._position is DETACHED
 
-                result.append_child(child_node)
+                result.append_children(child_node)
 
         return result
 
@@ -1824,7 +1829,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         normalize_space = cast(str, self.attributes.get(XML_ATT_SPACE, normalize_space))
 
         if normalize_space == "default":
-            for child_node in self.child_nodes():
+            for child_node in self.iterate_children():
                 if not isinstance(child_node, TextNode):
                     continue
 
@@ -1856,7 +1861,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         else:
             assert normalize_space == "preserve"
 
-        for child_node in self.child_nodes(is_tag_node):
+        for child_node in self.iterate_children(is_tag_node):
             cast(TagNode, child_node)._collapse_whitespace(normalize_space)
 
     def css_select(
@@ -1907,7 +1912,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if not (parent_has_default_namespace or retain_child_nodes):
             return self
 
-        child_nodes = tuple(self.child_nodes())
+        child_nodes = tuple(self.iterate_children())
         for child_node in child_nodes:
             child_node.detach()
 
@@ -1929,9 +1934,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
             if child_nodes:
                 assert isinstance(parent, TagNode)
                 assert isinstance(index, int)
-                parent.insert_child(index, *child_nodes)
+                parent.insert_children(index, *child_nodes)
         else:
-            self.append_child(*child_nodes)
+            self.append_children(*child_nodes)
 
         return self
 
@@ -1940,7 +1945,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if self.parent is None:
             root_node = self
         else:
-            root_node = cast(TagNode, last(self.ancestors()))
+            root_node = cast(TagNode, last(self.iterate_ancestors()))
         return root_node.__document__
 
     def fetch_or_create_by_xpath(
@@ -2040,7 +2045,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                             namespaces[prefix] : local_name  # type: ignore
                         ] = value
 
-                node.append_child(new_node)
+                node.append_children(new_node)
                 node = new_node
 
             elif len(candidates) == 1:
@@ -2054,7 +2059,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def first_child(self) -> Optional[NodeBase]:
-        for result in self.child_nodes():
+        for result in self.iterate_children():
             return result
         return None
 
@@ -2075,7 +2080,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if value is None:
             self.attributes.pop(XML_ATT_ID, "")
         elif isinstance(value, str):
-            root = cast(TagNode, last(self.ancestors())) or self
+            root = cast(TagNode, last(self.iterate_ancestors())) or self
             if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
                 raise InvalidOperation(
                     "An id with that value is already assigned in the tree."
@@ -2118,23 +2123,25 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         if index == 0:
             if children_count:
-                self[0].add_previous(this, clone=clone)
+                self[0].add_preceding_siblings(this, clone=clone)
                 if not (
                     clone
                     or isinstance(node[0], (str, _TagDefinition))
                     or isinstance(self[1], TextNode)
                 ):
                     assert self[0] is this
-                    assert self[1].previous_node() is this, self[1].previous_node()
+                    assert self[1].fetch_preceding_sibling() is this, self[
+                        1
+                    ].fetch_preceding_sibling()
                     assert isinstance(this, NodeBase)
-                    assert this._next_node() is self[1]
+                    assert this._fetch_following_sibling() is self[1]
             else:
                 self.__add_first_child(
                     self._prepare_new_relative((this,), clone=clone)[0]
                 )
 
         else:
-            self[index - 1].add_next(this, clone=clone)
+            self[index - 1].add_following_siblings(this, clone=clone)
 
         if queue:
             self[index].add_following_siblings(*queue, clone=clone)
@@ -2181,10 +2188,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     yield candidate
 
                 if isinstance(candidate, TagNode):
-                    next_candidates.append(candidate._next_node())
+                    next_candidates.append(candidate._fetch_following_sibling())
                     candidate = candidate.first_child
                 else:
-                    candidate = candidate._next_node()
+                    candidate = candidate._fetch_following_sibling()
 
                 while candidate is None and next_candidates:
                     candidate = next_candidates.pop()
@@ -2192,7 +2199,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def last_child(self) -> Optional[NodeBase]:
         result = None
-        for result in self.child_nodes():
+        for result in self.iterate_children():
             pass
         return result
 
@@ -2226,7 +2233,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return "/."
 
         with altered_default_filters(is_tag_node):
-            steps = list(self.ancestors())
+            steps = list(self.iterate_ancestors())
             steps.pop()  # root
             steps.reverse()
             steps.append(self)
@@ -2603,11 +2610,11 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             elif self._position is TAIL:
 
                 assert isinstance(self._bound_to, _Element)
-                _wrapper_cache(self._bound_to)._add_next_node(node)
+                _wrapper_cache(self._bound_to)._add_following_sibling(node)
 
             elif self._position is APPENDED:
                 assert isinstance(self._bound_to, TextNode)
-                self._bound_to._add_next_node(node)
+                self._bound_to._add_following_sibling(node)
 
     def _bind_to_data(self, target: TagNode):
         target._etree_obj.text = self.content
@@ -2735,7 +2742,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.content = content
 
         assert self.parent is None
-        assert self._next_node() is None
+        assert self._fetch_following_sibling() is None
 
         return self
 

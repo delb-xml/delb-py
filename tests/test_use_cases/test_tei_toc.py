@@ -88,9 +88,7 @@ class TableOfContents:
         result = []
         for index, section_element in enumerate(node.xpath("./div")):
             pages_range = (
-                section_element.previous_node_in_stream(is_pagebreak).attributes.get(
-                    "n"
-                ),
+                section_element.fetch_preceding(is_pagebreak).attributes.get("n"),
                 self._find_sections_last_page(section_element),
             )
             result.append(
@@ -111,7 +109,7 @@ class TableOfContents:
         while sections_last_node.last_child is not None:
             sections_last_node = sections_last_node.last_child
 
-        pagebreak = sections_last_node.previous_node_in_stream(is_pagebreak)
+        pagebreak = sections_last_node.fetch_preceding(is_pagebreak)
 
         return pagebreak.attributes.get("n")
 

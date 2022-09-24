@@ -31,10 +31,10 @@ def test_appended_text_contents_arent_lost():
     root = Document("<root><a><b><c><d/></c></b></a></root>").root
 
     for node in tuple(root.iterate_descendants(is_tag_node)):
-        node.prepend_child("D")
-        node.add_next("T")
+        node.prepend_children("D")
+        node.add_following_siblings("T")
     for node in tuple(root.iterate_descendants(is_text_node)):
-        node.add_next("Z")
+        node.add_following_siblings("Z")
 
     gc.collect()
     assert str(root) == "<root><a>DZ<b>DZ<c>DZ<d>DZ</d>TZ</c>TZ</b>TZ</a>TZ</root>"
@@ -62,7 +62,7 @@ def test_wrapper_cache():
     root = Document("<root/>").root
     assert len(_wrapper_cache.wrappers) == 1
 
-    root.append_child(tag("node"))
+    root.append_children(tag("node"))
     assert len(_wrapper_cache.wrappers) == 2
 
     root.first_child.detach()
