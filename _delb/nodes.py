@@ -56,6 +56,8 @@ from _delb.typing import Filter, NodeSource
 from _delb.utils import (
     DEFAULT_PARSER,
     _StringMixin,
+    _better_call,
+    _better_yield,
     _crunch_whitespace,
     last,
     _random_unused_prefix,
@@ -689,7 +691,7 @@ class TagAttributes(MutableMapping):
 class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
-    def add_next(self, *node: NodeSource, clone: bool = False):
+    def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes to the right of the node this method is called on.
 
@@ -706,15 +708,15 @@ class NodeBase(ABC):
         if node:
             this, queue = self._prepare_new_relative(node, clone)
             self._validate_sibling_operation(this)
-            self._add_next_node(this)
+            self._add_following_sibling(this)
             if queue:
-                this.add_next(*queue, clone=clone)
+                this.add_following_siblings(*queue, clone=clone)
 
     @abstractmethod
-    def _add_next_node(self, node: "NodeBase"):
+    def _add_following_sibling(self, node: "NodeBase"):
         pass
 
-    def add_previous(self, *node: NodeSource, clone: bool = False):
+    def add_preceding_siblings(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes to the left of the node this method is called on.
 
@@ -731,41 +733,12 @@ class NodeBase(ABC):
         if node:
             this, queue = self._prepare_new_relative(node, clone)
             self._validate_sibling_operation(this)
-            self._add_previous_node(this)
+            self._add_preceding_sibling(this)
             if queue:
-                this.add_previous(*queue, clone=clone)
+                this.add_preceding_siblings(*queue, clone=clone)
 
     @abstractmethod
-    def _add_previous_node(self, node: "NodeBase"):
-        pass
-
-    def ancestors(self, *filter: Filter) -> Iterator["TagNode"]:
-        """
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
-                 to top.
-
-        :meta category: iter-relatives
-        """
-        parent = self.parent
-        if parent:
-            if all(f(parent) for f in filter):
-                yield parent
-            yield from parent.ancestors(*filter)
-
-    @abstractmethod
-    def child_nodes(
-        self, *filter: Filter, recurse: bool = False
-    ) -> Iterator["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s that a node must match to be
-                       yielded.
-        :param recurse: Deprecated. Use :meth:`NodeBase.iterate_descendants`.
-        :return: A :term:`generator iterator` that yields the child nodes of the node.
-
-        :meta category: iter-relatives
-        """
+    def _add_preceding_sibling(self, node: "NodeBase"):
         pass
 
     @abstractmethod
@@ -810,6 +783,61 @@ class NodeBase(ABC):
         """
         pass
 
+    def fetch_following(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s.
+        :return: The next node in document order that matches all filters or ``None``.
+
+        :meta category: fetch-node
+        """
+        try:
+            return next(self.iterate_following(*filter))
+        except StopIteration:
+            return None
+
+    def fetch_following_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s.
+        :return: The next sibling to the right that matches all filters or ``None``.
+
+        :meta category: fetch-node
+        """
+        all_filters = default_filters[-1] + filter
+        candidate = self._fetch_following_sibling()
+        while candidate is not None:
+            if all(f(candidate) for f in all_filters):
+                return candidate
+            candidate = candidate._fetch_following_sibling()
+
+        return None
+
+    @abstractmethod
+    def _fetch_following_sibling(self):
+        pass
+
+    def fetch_preceding(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s.
+        :return: The previous node in document order that matches all filters or
+                 ``None``.
+
+        :meta category: fetch-node
+        """
+        try:
+            return next(self.iterate_preceding(*filter))
+        except StopIteration:
+            return None
+
+    @abstractmethod
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s.
+        :return: The next sibling to the left that matches all filters or ``None``.
+
+        :meta category: fetch-node
+        """
+        pass
+
     @property
     @abstractmethod
     def first_child(self) -> Optional["NodeBase"]:
@@ -843,6 +871,35 @@ class NodeBase(ABC):
 
         raise InvalidCodePath
 
+    def iterate_ancestors(self, *filter: Filter) -> Iterator["TagNode"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
+                 to top.
+
+        :meta category: iter-relatives
+        """
+        parent = self.parent
+        if parent:
+            if all(f(parent) for f in filter):
+                yield parent
+            yield from parent.iterate_ancestors(*filter)
+
+    @abstractmethod
+    def iterate_children(
+        self, *filter: Filter, recurse: bool = False
+    ) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+                       yielded.
+        :param recurse: Deprecated. Use :meth:`NodeBase.iterate_descendants`.
+        :return: A :term:`generator iterator` that yields the child nodes of the node.
+
+        :meta category: iter-relatives
+        """
+        pass
+
     @abstractmethod
     def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
@@ -855,21 +912,7 @@ class NodeBase(ABC):
         """
         pass
 
-    def iterate_next_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :return: A :term:`generator iterator` that yields the siblings to the node's
-                 right.
-
-        :meta category: iter-relatives
-        """
-        next_node = self.next_node(*filter)
-        while next_node is not None:
-            yield next_node
-            next_node = next_node.next_node(*filter)
-
-    def iterate_next_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_following(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -878,18 +921,18 @@ class NodeBase(ABC):
 
         :meta category: iter-relatives
         """
-        for node in self._iterate_next_nodes_in_stream():
+        for node in self._iterate_following():
             if all(f(node) for f in chain(default_filters[-1], filter)):
                 yield node
 
-    def _iterate_next_nodes_in_stream(self) -> Iterator["NodeBase"]:
+    def _iterate_following(self) -> Iterator["NodeBase"]:
         def next_sibling_of_an_ancestor(
             node: NodeBase,
         ) -> Optional[_ElementWrappingNode]:
             parent = node.parent
             if parent is None:
                 return None
-            parents_next = parent._next_node()
+            parents_next = parent._fetch_following_sibling()
             if parents_next is None:
                 return next_sibling_of_an_ancestor(parent)
             return parents_next
@@ -898,7 +941,7 @@ class NodeBase(ABC):
         while True:
             next_node = pointer.first_child
             if next_node is None:
-                next_node = pointer._next_node()
+                next_node = pointer._fetch_following_sibling()
 
             if next_node is None:
                 next_node = next_sibling_of_an_ancestor(pointer)
@@ -909,21 +952,21 @@ class NodeBase(ABC):
             yield next_node
             pointer = next_node
 
-    def iterate_previous_nodes(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_following_siblings(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
-                 left.
+                 right.
 
         :meta category: iter-relatives
         """
-        previous_node = self.previous_node(*filter)
-        while previous_node is not None:
-            yield previous_node
-            previous_node = previous_node.previous_node(*filter)
+        next_node = self.fetch_following_sibling(*filter)
+        while next_node is not None:
+            yield next_node
+            next_node = next_node.fetch_following_sibling(*filter)
 
-    def iterate_previous_nodes_in_stream(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_preceding(self, *filter: Filter) -> Iterator["NodeBase"]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -932,14 +975,14 @@ class NodeBase(ABC):
 
         :meta category: iter-relatives
         """
-        for node in self._iterate_previous_nodes_in_stream():
+        for node in self._iterate_preceding():
             if all(f(node) for f in filter):
                 yield node
 
     @altered_default_filters()
-    def _iterate_previous_nodes_in_stream(self) -> Iterator["NodeBase"]:
+    def _iterate_preceding(self) -> Iterator["NodeBase"]:
         def iter_children(node: NodeBase) -> Iterator[NodeBase]:
-            for child_node in reversed(tuple(node.child_nodes())):
+            for child_node in reversed(tuple(node.iterate_children())):
                 yield from iter_children(child_node)
                 yield child_node
 
@@ -948,7 +991,7 @@ class NodeBase(ABC):
         last_yield: NodeBase = pointer
 
         while True:
-            pointer = pointer.previous_node()
+            pointer = pointer.fetch_preceding_sibling()
 
             if pointer is not None:
                 yield from iter_children(pointer)
@@ -961,6 +1004,20 @@ class NodeBase(ABC):
                     return
                 yield parent
                 pointer = last_yield = parent
+
+    def iterate_preceding_siblings(self, *filter: Filter) -> Iterator["NodeBase"]:
+        """
+        :param filter: Any number of :term:`filter` s that a node must match to be
+               yielded.
+        :return: A :term:`generator iterator` that yields the siblings to the node's
+                 left.
+
+        :meta category: iter-relatives
+        """
+        previous_node = self.fetch_preceding_sibling(*filter)
+        while previous_node is not None:
+            yield previous_node
+            previous_node = previous_node.fetch_preceding_sibling(*filter)
 
     @property
     @abstractmethod
@@ -1048,38 +1105,6 @@ class NodeBase(ABC):
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
         return self.parent._new_tag_node_from_definition(definition)
 
-    def next_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s.
-        :return: The next sibling to the right that matches all filters or ``None``.
-
-        :meta category: fetch-node
-        """
-        all_filters = default_filters[-1] + filter
-        candidate = self._next_node()
-        while candidate is not None:
-            if all(f(candidate) for f in all_filters):
-                return candidate
-            candidate = candidate._next_node()
-
-        return None
-
-    @abstractmethod
-    def _next_node(self):
-        pass
-
-    def next_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s.
-        :return: The next node in document order that matches all filters or ``None``.
-
-        :meta category: fetch-node
-        """
-        try:
-            return next(self.iterate_next_nodes_in_stream(*filter))
-        except StopIteration:
-            return None
-
     @property
     @abstractmethod
     def parent(self):
@@ -1113,29 +1138,6 @@ class NodeBase(ABC):
             )
 
         return this, queue
-
-    @abstractmethod
-    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s.
-        :return: The next sibling to the left that matches all filters or ``None``.
-
-        :meta category: fetch-node
-        """
-        pass
-
-    def previous_node_in_stream(self, *filter: Filter) -> Optional["NodeBase"]:
-        """
-        :param filter: Any number of :term:`filter` s.
-        :return: The previous node in document order that matches all filters or
-                 ``None``.
-
-        :meta category: fetch-node
-        """
-        try:
-            return next(self.iterate_previous_nodes_in_stream(*filter))
-        except StopIteration:
-            return None
 
     def replace_with(self, node: NodeSource, clone: bool = False) -> "NodeBase":
         """
@@ -1191,6 +1193,48 @@ class NodeBase(ABC):
         """
         return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
+    # deprecated members
+
+    @_better_call(add_following_siblings)
+    def add_next(self, *nodes):
+        pass
+
+    @_better_call(add_preceding_siblings)
+    def add_previous(self, *nodes):
+        pass
+
+    @_better_yield(iterate_ancestors)
+    def ancestors(self, *filter):
+        pass
+
+    @_better_yield(iterate_following_siblings)
+    def iterate_next_nodes(self, *filter):
+        pass
+
+    @_better_yield(iterate_following)
+    def iterate_next_nodes_in_stream(self, *filter):
+        pass
+
+    @_better_yield(iterate_preceding_siblings)
+    def iterate_previous_nodes(self, *filter):
+        pass
+
+    @_better_yield(iterate_preceding)
+    def iterate_previous_nodes_in_stream(self, *filter):
+        pass
+
+    @_better_call(fetch_following_sibling)
+    def next_node(self, *filter):
+        pass
+
+    @_better_call(fetch_following)
+    def next_node_in_stream(self, *filter):
+        pass
+
+    @_better_call(fetch_preceding)
+    def previous_node_in_stream(self, *filter):
+        pass
+
 
 class _ChildLessNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""
@@ -1199,7 +1243,20 @@ class _ChildLessNode(NodeBase):
 
     first_child = last_child = last_descendant = None
 
-    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
+    @property
+    def depth(self) -> int:
+        return cast(TagNode, self.parent).depth + 1
+
+    @property
+    def document(self) -> Optional["Document"]:
+        parent = self.parent
+        if parent is None:
+            return None
+        return parent.document
+
+    def iterate_children(
+        self, *filter: Filter, recurse: bool = False
+    ) -> Iterator[NodeBase]:
         """
         A :term:`generator iterator` that yields nothing.
 
@@ -1213,17 +1270,6 @@ class _ChildLessNode(NodeBase):
             )
 
         yield from ()
-
-    @property
-    def depth(self) -> int:
-        return cast(TagNode, self.parent).depth + 1
-
-    @property
-    def document(self) -> Optional["Document"]:
-        parent = self.parent
-        if parent is None:
-            return None
-        return parent.document
 
     def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
         yield from ()
@@ -1251,6 +1297,12 @@ class _ChildLessNode(NodeBase):
                 children=children,
             )
 
+    # deprecated
+
+    @_better_yield(iterate_children)
+    def child_nodes(self, *filter, recurse=False):
+        pass
+
 
 class _ElementWrappingNode(NodeBase):
     __slots__ = ("_etree_obj", "_tail_node")
@@ -1268,7 +1320,7 @@ class _ElementWrappingNode(NodeBase):
     def __str__(self) -> str:
         return str(self._etree_obj)
 
-    def _add_next_node(self, node: "NodeBase"):
+    def _add_following_sibling(self, node: "NodeBase"):
         if isinstance(node, _ElementWrappingNode):
             my_old_tail = self._tail_node
 
@@ -1302,8 +1354,8 @@ class _ElementWrappingNode(NodeBase):
             else:
                 node._bind_to_tail(self)
 
-    def _add_previous_node(self, node: NodeBase):
-        previous = self.previous_node()
+    def _add_preceding_sibling(self, node: NodeBase):
+        previous = self.fetch_preceding_sibling()
 
         if previous is None:
 
@@ -1362,15 +1414,7 @@ class _ElementWrappingNode(NodeBase):
 
         return self
 
-    @property
-    def full_text(self) -> str:
-        return ""
-
-    @property
-    def namespaces(self) -> Namespaces:
-        return Namespaces(self._etree_obj.nsmap)
-
-    def _next_node(self) -> Optional[NodeBase]:
+    def _fetch_following_sibling(self) -> Optional[NodeBase]:
         if self._tail_node._exists:
             return self._tail_node
 
@@ -1379,16 +1423,7 @@ class _ElementWrappingNode(NodeBase):
             return None
         return _wrapper_cache(next_etree_obj)
 
-    @property
-    def parent(self) -> Optional["TagNode"]:
-        etree_parent = self._etree_obj.getparent()
-        if etree_parent is None:
-            return None
-        result = _wrapper_cache(etree_parent)
-        assert isinstance(result, TagNode)
-        return result
-
-    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
 
         candidate: Optional[NodeBase] = None
 
@@ -1421,7 +1456,30 @@ class _ElementWrappingNode(NodeBase):
         if all(f(candidate) for f in chain(default_filters[-1], filter)):
             return candidate
         else:
-            return candidate.previous_node(*filter)
+            return candidate.fetch_preceding_sibling(*filter)
+
+    @property
+    def full_text(self) -> str:
+        return ""
+
+    @property
+    def namespaces(self) -> Namespaces:
+        return Namespaces(self._etree_obj.nsmap)
+
+    @property
+    def parent(self) -> Optional["TagNode"]:
+        etree_parent = self._etree_obj.getparent()
+        if etree_parent is None:
+            return None
+        result = _wrapper_cache(etree_parent)
+        assert isinstance(result, TagNode)
+        return result
+
+    # deprecated
+
+    @_better_call(fetch_preceding_sibling)
+    def previous_node(self, *filter):
+        pass
 
 
 class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
@@ -1654,7 +1712,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
 
-    def append_child(self, *node: NodeSource, clone: bool = False):
+    def append_children(self, *node: NodeSource, clone: bool = False):
         """
         Adds one or more nodes as child nodes after any existing to the child nodes of
         the node this method is called on.
@@ -1730,33 +1788,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         doesn't evoke a :exc:`KeyError`, instead ``None`` is returned.
         """
         return self._attributes
-
-    def child_nodes(self, *filter: Filter, recurse: bool = False) -> Iterator[NodeBase]:
-        if recurse:
-            warn(
-                "The recurse argument is deprecated in favor for the "
-                "`iterate_descendants` method.",
-                category=DeprecationWarning,
-            )
-            yield from self.iterate_descendants(*filter)
-            return
-
-        all_filters = default_filters[-1] + filter
-        candidate: Optional[NodeBase]
-
-        assert isinstance(self._data_node, TextNode)
-        if self._data_node._exists:
-            candidate = self._data_node
-        elif len(self._etree_obj):
-            candidate = _wrapper_cache(self._etree_obj[0])
-        else:
-            candidate = None
-
-        while candidate is not None:
-            if all(f(candidate) for f in all_filters):
-                yield candidate
-
-            candidate = candidate._next_node()
 
     @altered_default_filters()
     def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "TagNode":
@@ -2059,7 +2090,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return None
         return super().index
 
-    def insert_child(self, index: int, *node: NodeSource, clone: bool = False):
+    def insert_children(self, index: int, *node: NodeSource, clone: bool = False):
         """
         Inserts one or more child nodes.
 
@@ -2106,7 +2137,36 @@ class TagNode(_ElementWrappingNode, NodeBase):
             self[index - 1].add_next(this, clone=clone)
 
         if queue:
-            self[index].add_next(*queue, clone=clone)
+            self[index].add_following_siblings(*queue, clone=clone)
+
+    def iterate_children(
+        self, *filter: Filter, recurse: bool = False
+    ) -> Iterator[NodeBase]:
+        if recurse:
+            warn(
+                "The recurse argument is deprecated in favor for the "
+                "`iterate_descendants` method.",
+                category=DeprecationWarning,
+            )
+            yield from self.iterate_descendants(*filter)
+            return
+
+        all_filters = default_filters[-1] + filter
+        candidate: Optional[NodeBase]
+
+        assert isinstance(self._data_node, TextNode)
+        if self._data_node._exists:
+            candidate = self._data_node
+        elif len(self._etree_obj):
+            candidate = _wrapper_cache(self._etree_obj[0])
+        else:
+            candidate = None
+
+        while candidate is not None:
+            if all(f(candidate) for f in all_filters):
+                yield candidate
+
+            candidate = candidate._fetch_following_sibling()
 
     def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
         all_filters = default_filters[-1] + filter
@@ -2250,7 +2310,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 return prefix
         raise InvalidCodePath
 
-    def prepend_child(self, *node: NodeBase, clone: bool = False) -> None:
+    def prepend_children(self, *node: NodeBase, clone: bool = False) -> None:
         """
         Adds one or more nodes as child nodes before any existing to the child nodes of
         the node this method is called on.
@@ -2265,16 +2325,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: add-nodes
         """
-        self.insert_child(0, *node, clone=clone)
-
-    @property
-    def qualified_name(self):
-        warn(
-            "The property `TagNode.qualified_name` is now named `universal_name`. "
-            "The former will be removed in a future release.",
-            category=DeprecationWarning,
-        )
-        return self.universal_name
+        self.insert_children(0, *node, clone=clone)
 
     @property
     def universal_name(self) -> str:
@@ -2375,6 +2426,34 @@ class TagNode(_ElementWrappingNode, NodeBase):
             (_wrapper_cache(cast(_Element, element)) for element in _results)
         )
 
+    # deprecated
+
+    @_better_call(append_children)
+    def append_child(self, *node, clone=False):
+        pass
+
+    @_better_yield(iterate_children)
+    def child_nodes(self, *filter, recurse=False):
+        pass
+
+    @_better_call(insert_children)
+    def insert_child(self, *node, clone=False):
+        pass
+
+    @_better_call(prepend_children)
+    def prepend_child(self, *node, clone=False):
+        pass
+
+    @property
+    def qualified_name(self):
+        """:meta category: deprecated"""
+        warn(
+            "The property `TagNode.qualified_name` is now named `universal_name`. "
+            "The former will be removed in a future release.",
+            category=DeprecationWarning,
+        )
+        return self.universal_name
+
 
 class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     """
@@ -2442,7 +2521,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 f"<{self.__class__.__name__}(pos={self._position}) [{hex(id(self))}]>"
             )
 
-    def _add_next_node(self, node: NodeBase):
+    def _add_following_sibling(self, node: NodeBase):
         if isinstance(node, TextNode):
             self._insert_text_node_as_next_appended(node)
 
@@ -2501,7 +2580,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             if appended_text_node is not None:
                 appended_text_node._bind_to_tail(node)
 
-    def _add_previous_node(self, node: NodeBase):
+    def _add_preceding_sibling(self, node: NodeBase):
         if isinstance(node, TextNode):
             self._prepend_text_node(node)
 
@@ -2671,6 +2750,53 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         else:
             return True
 
+    def _fetch_following_sibling(self) -> Optional[NodeBase]:
+        if self._position is DETACHED:
+            return None
+
+        if self._appended_text_node:
+            return self._appended_text_node
+
+        elif self._position is DATA:
+
+            assert isinstance(self._bound_to, _Element)
+            if len(self._bound_to):
+                return _wrapper_cache(self._bound_to[0])
+            else:
+                return None
+
+        elif self._position is TAIL:
+            return self.__next_candidate_of_tail()
+
+        elif self._position is APPENDED:  # and last in tail sequence
+            return self.__next_candidate_of_last_appended()
+
+        raise InvalidCodePath
+
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+        candidate: Optional[NodeBase]
+
+        if self._position in (DATA, DETACHED):
+            return None
+        elif self._position is TAIL:
+            assert isinstance(self._bound_to, _Element)
+            candidate = _wrapper_cache(self._bound_to)
+        elif self._position is APPENDED:
+            assert isinstance(self._bound_to, TextNode)
+            candidate = self._bound_to
+        else:
+            raise ValueError(
+                f"A TextNode._position must not be set to {self._position}"
+            )
+
+        if candidate is None:
+            return None
+
+        if all(f(candidate) for f in chain(default_filters[-1], filter)):
+            return candidate
+        else:
+            return candidate.fetch_preceding_sibling(*filter)
+
     @property
     def full_text(self) -> str:
         return self.content or ""
@@ -2710,29 +2836,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self.parent.namespaces
         else:
             raise InvalidOperation("A lonely text node has no namespace context.")
-
-    def _next_node(self) -> Optional[NodeBase]:
-        if self._position is DETACHED:
-            return None
-
-        if self._appended_text_node:
-            return self._appended_text_node
-
-        elif self._position is DATA:
-
-            assert isinstance(self._bound_to, _Element)
-            if len(self._bound_to):
-                return _wrapper_cache(self._bound_to[0])
-            else:
-                return None
-
-        elif self._position is TAIL:
-            return self.__next_candidate_of_tail()
-
-        elif self._position is APPENDED:  # and last in tail sequence
-            return self.__next_candidate_of_last_appended()
-
-        raise InvalidCodePath
 
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
@@ -2815,30 +2918,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 f"A TextNode._position must not be set to {self._position}"
             )
 
-    def previous_node(self, *filter: Filter) -> Optional["NodeBase"]:
-        candidate: Optional[NodeBase]
-
-        if self._position in (DATA, DETACHED):
-            return None
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            candidate = _wrapper_cache(self._bound_to)
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
-            candidate = self._bound_to
-        else:
-            raise ValueError(
-                f"A TextNode._position must not be set to {self._position}"
-            )
-
-        if candidate is None:
-            return None
-
-        if all(f(candidate) for f in chain(default_filters[-1], filter)):
-            return candidate
-        else:
-            return candidate.previous_node(*filter)
-
     @property
     def _tail_sequence_head(self) -> TextNode:
         if self._position in (DATA, TAIL):
@@ -2848,6 +2927,12 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self._bound_to._tail_sequence_head
         else:
             raise InvalidCodePath
+
+    # deprecated
+
+    @_better_call(fetch_preceding_sibling)
+    def previous_node(self, *filter):
+        pass
 
 
 # contributed node filters and filter wrappers

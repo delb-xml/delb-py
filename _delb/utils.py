@@ -24,11 +24,14 @@ from typing import (
     TYPE_CHECKING,
     cast,
     Any,
+    Callable,
     Iterable,
     Iterator,
     Optional,
     Sequence,
+    Union,
 )
+from warnings import warn
 
 from lxml import etree
 
@@ -267,6 +270,37 @@ class _StringMixin:  # pragma: no cover
 
     def zfill(self, width):
         return self.data.zfill(width)
+
+
+def _better_call(f: Union[Callable, property]) -> Callable:
+    def decorator(d: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            """:meta category: deprecated"""
+            warn(
+                f"{d.__name__} is deprecated, use {f.__name__} instead.",
+                category=DeprecationWarning,
+            )
+            return f(*args, **kwargs)
+
+        d.__doc__ = ":meta: private"
+        return wrapper
+
+    return decorator
+
+
+def _better_yield(f: Callable) -> Callable:
+    def decorator(d: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            """:meta category: deprecated"""
+            warn(
+                f"{d.__name__} is deprecated, use {f.__name__} instead.",
+                category=DeprecationWarning,
+            )
+            yield from f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def _copy_root_siblings(source: etree._Element, target: etree._Element):

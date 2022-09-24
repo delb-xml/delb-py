@@ -301,3 +301,31 @@ def test_siblings_filter():
     spam.add_next("plate")
 
     assert isinstance(spam.next_node(is_tag_node), TagNode)
+
+
+def test_deprecated_methods():
+    root = Document("<root/>").root
+
+    assert root.qualified_name == "root"
+
+    root.append_child("c")
+    root.prepend_child("a")
+    root.insert_child(1, "b")
+    b = root[1]
+    b.add_next("_")
+    b.add_previous("_")
+
+    assert str(root) == "<root>a_b_c</root>"
+    assert tuple(b.ancestors()) == tuple(b.iterate_ancestors())
+    assert tuple(root.child_nodes()) == tuple(root.iterate_children())
+    assert tuple(root.iterate_children(recurse=True)) == tuple(
+        root.iterate_descendants()
+    )
+    assert tuple(b.iterate_next_nodes()) == tuple(b.iterate_following_siblings())
+    assert tuple(b.iterate_next_nodes_in_stream()) == tuple(b.iterate_following())
+    assert tuple(b.iterate_previous_nodes()) == tuple(b.iterate_preceding_siblings())
+    assert tuple(b.iterate_previous_nodes_in_stream()) == tuple(b.iterate_preceding())
+    assert b.next_node() is b.fetch_following_sibling()
+    assert b.next_node_in_stream() is b.fetch_following()
+    assert b.previous_node() is b.fetch_preceding_sibling()
+    assert b.previous_node_in_stream() is b.fetch_preceding()
