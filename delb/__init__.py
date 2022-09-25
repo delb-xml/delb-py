@@ -274,9 +274,6 @@ class Document(metaclass=DocumentMeta):
         Beside the used ``parser`` and ``collapsed_whitespace`` option, this property
         contains the namespaced data that extension classes and loaders may have stored.
         """
-        if collapse_whitespace:
-            self.collapse_whitespace()
-
         self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
         The source URL where a loader obtained the document's contents or ``None``.
@@ -291,6 +288,9 @@ class Document(metaclass=DocumentMeta):
         A list-like accessor to the nodes that follow the document's root node.
         Note that nodes can't be removed or replaced.
         """
+
+        if collapse_whitespace:
+            self.collapse_whitespace()
 
     def __init_subclass__(cls):
         assert cls not in _plugin_manager.document_mixins

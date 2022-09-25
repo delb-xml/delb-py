@@ -147,11 +147,14 @@ def test_detach_node_with_tail_1():
     root = document.root
 
     root[1].add_following_siblings("c")
+    assert str(document) == "<root><a>c<c/></a>bc<d/></root>"
     root[0].detach()
     assert str(document) == "<root>bc<d/></root>"
 
     root.append_children(tag("e"), "f")
+    assert str(document) == "<root>bc<d/><e/>f</root>"
     e = root[3]
+    assert e.local_name == "e"
     e.detach()
     assert str(document) == "<root>bc<d/>f</root>"
 
