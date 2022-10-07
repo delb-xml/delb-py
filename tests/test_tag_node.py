@@ -417,6 +417,7 @@ def test_make_node_namespace_inheritance():
     assert node.prefix == "pfx"
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_make_node_with_children():
     result = new_tag_node("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
@@ -451,6 +452,7 @@ def test_make_node_with_children():
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_make_node_outside_context():
     document = Document('<root xmlns="ham" />')
 

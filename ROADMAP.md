@@ -6,8 +6,6 @@
   - [here](https://github.com/delb-xml/delb-py/milestone/4)
   - [and here](https://github.com/delb-xml/delb-py/milestone/3)
 - deprecate these features provided by *lxml*:
-  - `_delb.utils.register_namespace`
-    - to be functionally replaced with `namespace_declarations` on `TagNode` instances
   - `_delb.plugins.http_ftp_loader`
     - the `_delb.plugins.https_loader.https_loader` becomes `.we_get_requests.http_s_loader`
   - the `parser` and `collapse_whitespace` argument to a `delb.Document`

@@ -410,6 +410,11 @@ def register_namespace(prefix: str, namespace: str):
     :param prefix: The prefix to register.
     :param namespace: The targeted namespace.
     """
+    warn(
+        "This function will be replaced with a different mechanism in a future version "
+        "without a backward-compatible facilitation through this function.",
+        category=DeprecationWarning,
+    )
     etree.register_namespace(prefix, namespace)
 
 
