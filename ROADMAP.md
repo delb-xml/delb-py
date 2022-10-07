@@ -20,7 +20,6 @@
       - `resolve_entities` (*various*)
         - later to be replaced with more specific control
       - `unplugged` (`no_network`)
-- include a first set of benchmarks
 
 ## 0.5
 
