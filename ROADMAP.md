@@ -6,8 +6,6 @@
   - [here](https://github.com/delb-xml/delb-py/milestone/4)
   - [and here](https://github.com/delb-xml/delb-py/milestone/3)
 - deprecate these features provided by *lxml*:
-  - `delb.Document.xslt`
-    - such feature would have to be implemented in a separate package
   - `_delb.utils.register_namespace`
     - to be functionally replaced with `namespace_declarations` on `TagNode` instances
   - `_delb.plugins.http_ftp_loader`

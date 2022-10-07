@@ -23,7 +23,6 @@ Features
 - Consistent design regarding names and callables' signatures.
 - Shadows comments and processing instructions by default.
 - Querying with XPath and CSS expressions.
-- Applying XSL Transformations.
 
 
 Development status

@@ -20,6 +20,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, Union
 from typing import IO as IOType
+from warnings import warn
 
 from lxml import etree
 
@@ -508,6 +509,12 @@ class Document(metaclass=DocumentMeta):
                                applied to the document.
         :return: A new instance with the transformation's result.
         """
+        warn(
+            "The interface to lxml's XSLT-processor will be removed in a future "
+            "version. If you want to apply XSLT to delb documents with later versions, "
+            "start implementing a processor now.",
+            category=DeprecationWarning,
+        )
         result = transformation(self.root._etree_obj.getroottree())
         return Document(result.getroot())
 
