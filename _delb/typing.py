@@ -15,7 +15,7 @@
 
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Union
 
 from lxml import etree
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 Filter = Callable[["NodeBase"], bool]
 NodeSource = Union[str, "NodeBase", "_TagDefinition"]
 
-LoaderResult = Union[Optional[etree._ElementTree], str]
+LoaderResult = Union[etree._ElementTree, str]
 Loader = Callable[[Any, SimpleNamespace], LoaderResult]
 LoaderConstraint = Union[Loader, Iterable[Loader], None]
 
