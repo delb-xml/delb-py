@@ -6,8 +6,6 @@
   - [here](https://github.com/delb-xml/delb-py/milestone/4)
   - [and here](https://github.com/delb-xml/delb-py/milestone/3)
 - deprecate these features provided by *lxml*:
-  - `_delb.plugins.http_ftp_loader`
-    - the `_delb.plugins.https_loader.https_loader` becomes `.we_get_requests.http_s_loader`
   - the `parser` and `collapse_whitespace` argument to a `delb.Document`
     - instead a `parser_options` argument is added that allows these arguments (for `lxml.etree.XMLParser` equivalents):
       - `cleanup_namespaces` (`ns_clean`)

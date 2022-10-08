@@ -32,18 +32,17 @@ def test_etree_loader():
     assert document.source_url is None
 
 
-def test_ftp_http_loader():
-    url = "http://textgridlab.org/1.0/tgcrud-public/rest/textgrid:mhpz.0/data"
-    document = Document(url)
-    assert document.source_url == url
-
-
-def test_https_loader():
-    url = (
+@mark.parametrize(
+    "url",
+    (
+        "http://textgridlab.org/1.0/tgcrud-public/rest/textgrid:mhpz.0/data",
         "https://raw.githubusercontent.com/delb-xml/delb-py/main/tests/files/"
-        "marx_manifestws_1848.TEI-P5.xml"
-    )
+        "marx_manifestws_1848.TEI-P5.xml",
+    ),
+)
+def test_https_loader(url):
     document = Document(url)
+    assert document.root.local_name == "TEI"
     assert document.source_url == url
 
 

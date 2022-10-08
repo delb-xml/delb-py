@@ -24,44 +24,73 @@ from __future__ import annotations
 
 from io import IOBase
 from types import SimpleNamespace
-from typing import Any, Tuple
+from typing import Any, Iterator, Optional
 
 from _delb.plugins import plugin_manager
-from _delb.plugins.core_loaders import buffer_loader, ftp_http_loader
+from _delb.plugins.core_loaders import buffer_loader, ftp_loader
 from _delb.typing import LoaderResult
 
 
 # TODO define as extra-depending plugin once this is solved:
 #      https://github.com/sdispater/poetry/issues/1454
 try:
-    import requests
+    import httpx  # noqa: F401
 except ImportError:
-    __all__: Tuple[str, ...] = ()
+    __all__: tuple[str, ...] = ()
 else:
+    DEFAULT_CLIENT = httpx.Client(follow_redirects=True, http2=True)
 
     class HttpsStreamWrapper(IOBase):
-        def __init__(self, response: requests.Response):
-            self._iterator = response.iter_content(
-                chunk_size=None, decode_unicode=False
-            )
+        __slots__ = ("_generator", "_response")
 
-        def read(self, _) -> bytes:
+        def __init__(self, response: httpx.Response):
+            self._generator: Optional[Iterator[bytes]] = None
+            self._response = response
+
+        def read(self, size: int = 4096) -> bytes:
+            if self._generator is None:
+                self._generator = self._response.iter_bytes(chunk_size=size)
+
             try:
-                return next(self._iterator)
+                return next(self._generator)
             except StopIteration:
                 return b""
 
-    @plugin_manager.register_loader(before=ftp_http_loader)
-    def https_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
+    @plugin_manager.register_loader(before=ftp_loader)
+    def https_loader(
+        data: Any, config: SimpleNamespace, client: httpx.Client = DEFAULT_CLIENT
+    ) -> LoaderResult:
         """
-        This loader loads a document from a URL with the ``https`` scheme. The URL will
-        be bound to ``source_url`` on the document's :attr:`Document.config` attribute.
-        """
-        if isinstance(data, str) and data.lower().startswith("https://"):
-            response = requests.get(data, stream=True)
-            response.raise_for_status()
-            config.source_url = response.url
-            return buffer_loader(HttpsStreamWrapper(response), config)
-        return "The input value is not an URL with the https scheme."
+        This loader loads a document from a URL with the ``http`` and ``https`` scheme.
+        Redirects are followed. The default httpx_-client follows redirects and can
+        partially be configured with `environment variables`_. The URL will be bound to
+        the name ``source_url`` on the document's :attr:`Document.config` attribute.
 
-    __all__ = ("https_loader",)
+        Loaders with specifically configured httpx-clients can build on this loader
+        like so:
+
+        .. testcode::
+
+            import httpx
+            from _delb.plugins import plugin_manager
+            from _delb.plugins.https_loader import https_loader
+
+
+            client = httpx.Client(follow_redirects=False, trust_env=False)
+
+            @plugin_manager.register_loader(before=https_loader)
+            def custom_https_loader(data, config):
+                return https_loader(data, config, client=client)
+
+        .. _environment variables: https://www.python-httpx.org/environment_variables/
+        .. _httpx: https://www.python-httpx.org/
+        """
+        if isinstance(data, str) and data.lower().startswith(("http://", "https://")):
+            with client.stream("get", url=data) as response:
+                response.raise_for_status()
+                result = buffer_loader(HttpsStreamWrapper(response), config)
+                config.source_url = data
+                return result
+        return "The input value is not an URL with the http or https scheme."
+
+    __all__ = (https_loader.__name__,)
