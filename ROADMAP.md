@@ -5,15 +5,6 @@
 - all currently planned changes
   - [here](https://github.com/delb-xml/delb-py/milestone/4)
   - [and here](https://github.com/delb-xml/delb-py/milestone/3)
-- deprecate these features provided by *lxml*:
-  - the `parser` and `collapse_whitespace` argument to a `delb.Document`
-    - instead a `parser_options` argument is added that allows these arguments (for `lxml.etree.XMLParser` equivalents):
-      - `cleanup_namespaces` (`ns_clean`)
-      - `collapse_whitespace`
-      - `remove_nodes_of_type`, a container with subclasses of `NodeBase` (*various*)
-      - `resolve_entities` (*various*)
-        - later to be replaced with more specific control
-      - `unplugged` (`no_network`)
 
 ## 0.5
 

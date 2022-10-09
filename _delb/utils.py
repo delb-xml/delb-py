@@ -40,10 +40,6 @@ from _delb.typing import Filter
 if TYPE_CHECKING:
     from _delb.nodes import NodeBase, TagNode
 
-
-DEFAULT_PARSER = etree.XMLParser(remove_blank_text=False)
-
-
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 
 

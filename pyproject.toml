@@ -55,3 +55,6 @@ types-requests = "^2.21"
 types-setuptools = "*"
 typing-extensions = "*"
 xmldiff = "*"
+
+[tool.pytest.ini_options]
+addopts = "-W error::DeprecationWarning"

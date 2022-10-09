@@ -8,7 +8,8 @@ from delb import Document, TagNode
 # this is also used as example in docs/extending.rst
 class TEIDocument(Document):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **{**kwargs, "collapse_whitespace": True})
+        super().__init__(*args, **kwargs)
+        self.collapse_whitespace()
         self.text_characters = len(self.root.full_text)
 
     @staticmethod

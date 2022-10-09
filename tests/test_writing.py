@@ -1,4 +1,4 @@
-from delb import tag, Document
+from delb import tag, Document, ParserOptions
 
 from tests.utils import assert_documents_are_semantical_equal, count_pis
 
@@ -48,7 +48,7 @@ def test_significant_whitespace_is_saved(result_file):
 
 def test_transparency(files_path, result_file):
     for file in (x for x in files_path.glob("[!tei_]*.xml")):
-        doc = Document(file, collapse_whitespace=False)
+        doc = Document(file, parser_options=ParserOptions(collapse_whitespace=False))
         doc.save(result_file)
 
         assert_documents_are_semantical_equal(file, result_file)

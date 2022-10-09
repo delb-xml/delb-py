@@ -37,6 +37,12 @@ Extra
 .. automodule:: _delb.plugins.https_loader
 
 
+Parser options
+--------------
+
+.. autoclass:: delb.ParserOptions
+
+
 Nodes
 -----
 

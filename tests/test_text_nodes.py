@@ -1,6 +1,6 @@
 import pytest
 
-from delb import Document, TagNode, TextNode, is_text_node, tag
+from delb import Document, ParserOptions, TagNode, TextNode, is_text_node, tag
 from _delb.nodes import TAIL, APPENDED
 
 
@@ -184,7 +184,10 @@ def test_bindings(sample_document):
 
 
 def test_construction():
-    document = Document("<root><node>one</node> two </root>", collapse_whitespace=True)
+    document = Document(
+        "<root><node>one</node> two </root>",
+        parser_options=ParserOptions(collapse_whitespace=True),
+    )
     root = document.root
     node, two = tuple(x for x in root.iterate_children())
     one = node[0]

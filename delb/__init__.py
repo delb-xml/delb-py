@@ -52,9 +52,9 @@ from _delb.nodes import (
     TagNode,
     TextNode,
 )
+from _delb.parser import _compat_get_parser, ParserOptions
 from _delb.typing import Loader
 from _delb.utils import (
-    DEFAULT_PARSER,
     _copy_root_siblings,
     first,
     get_traverser,
@@ -220,11 +220,11 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
-    :param collapse_whitespace: :meth:`Collapses the content's whitespace
-                                <delb.Document.collapse_whitespace>` after loading the
-                                document.
-    :param parser: An optional :class:`lxml.etree.XMLParser` instance that is used to
-                   parse a document stream.
+    :param collapse_whitespace: Deprecated. Use the argument with the same name on the
+                                ``parser_options`` object.
+    :param parser: Deprecated.
+    :param parser_options: A :class:`delb.ParserOptions` class to configure the used
+                           parser.
     :param klass: Explicitly define the initilized class. This can be useful for
                   applications that have :ref:`default document subclasses
                   <extending-subclasses>` in use.
@@ -238,11 +238,15 @@ class Document(metaclass=DocumentMeta):
     def __new__(
         cls,
         source,
-        collapse_whitespace=False,
-        parser=DEFAULT_PARSER,
+        collapse_whitespace=None,
+        parser=None,
+        parser_options=None,
         klass=None,
         **config,
     ):
+        parser, collapse_whitespace = _compat_get_parser(
+            parser, parser_options, collapse_whitespace
+        )
         config = cls.__process_config(collapse_whitespace, parser, config)
         root = cls.__load_source(source, config)
 
@@ -265,8 +269,9 @@ class Document(metaclass=DocumentMeta):
     def __init__(
         self,
         source: Any,
-        collapse_whitespace: bool = False,
-        parser: etree.XMLParser = DEFAULT_PARSER,
+        collapse_whitespace: Optional[bool] = None,
+        parser: Optional[etree.XMLParser] = None,
+        parser_options: ParserOptions = None,
         klass: Optional[Type["Document"]] = None,
         **config,
     ):
@@ -290,7 +295,7 @@ class Document(metaclass=DocumentMeta):
         Note that nodes can't be removed or replaced.
         """
 
-        if collapse_whitespace:
+        if self.config.collapse_whitespace:
             self.collapse_whitespace()
 
     def __init_subclass__(cls):
@@ -523,6 +528,7 @@ __all__ = (
     CommentNode.__name__,
     Document.__name__,
     Namespaces.__name__,
+    ParserOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagNode.__name__,

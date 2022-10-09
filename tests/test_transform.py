@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import pytest
 
-from delb import Document, tag
+from delb import Document, ParserOptions, tag
 from delb.transform import Transformation, TransformationSequence
 
 
@@ -99,7 +99,7 @@ def test_transformation_options():
             <choice><sic>taeteraetae</sic><corr>täterätä</corr></choice>
         </root>
         """,
-        collapse_whitespace=True,
+        parser_options=ParserOptions(collapse_whitespace=True),
     )
     transformation = ResolveChoice()
     result = transformation(document.root)
@@ -116,7 +116,7 @@ def test_transformation_sequence():
             <div copyOf="#d1"/>
         </root>
         """,
-        collapse_whitespace=True,
+        parser_options=ParserOptions(collapse_whitespace=True),
     )
     transformation = TransformationSequence(
         ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=False))
@@ -135,7 +135,7 @@ def test_transformation_sequence_sequence():
             <name>caro</name>
             <name>boudi</name>
         </cast>""",
-        collapse_whitespace=True,
+        parser_options=ParserOptions(collapse_whitespace=True),
     )
     root = Document("<body><ul/></body>").root
     transformation = TransformationSequence(
