@@ -1,5 +1,9 @@
 ---
 
+# If you use this software, please use this metadata.
+# You can consult this website for further information:
+# https://citation-file-format.github.io/
+
 cff-version: 1.2.0
 type: software
 message: 🔥🌍🔥
@@ -7,14 +11,13 @@ title: delb
 authors:
   - family-names: Sachsenheim
     given-names: Frank
-license: AGPL-3.0
 contact:
   - email: delb-project@posteo.net
     website: https://github.com/delb-xml
 license: AGPL-3.0-only
-repository-code: https://github.com/delb-xml/delb-py/releaes/tag/0.3.0
-url: https://delb.readthedocs.io/en/0.3.0/
-version: 0.3.0
-date-released: 2022-01-31
+repository-code: https://github.com/delb-xml/delb-py/tree/0.4.0-rc0
+url: https://delb.readthedocs.io/en/0.4.0-rc0/
+version: 0.4.0-rc0
+date-released: 2022-10-10
 
 ...
