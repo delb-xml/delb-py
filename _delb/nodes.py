@@ -1403,13 +1403,8 @@ class _ElementWrappingNode(NodeBase):
                 assert isinstance(node, TextNode)
                 parent = self.parent
                 assert parent is not None
-                if parent._data_node._exists:
-                    last_text_candidate = parent._data_node
-                    while last_text_candidate._appended_text_node is not None:
-                        last_text_candidate = last_text_candidate._appended_text_node
-                    last_text_candidate._add_following_sibling(node)
-                else:
-                    node._bind_to_data(parent)
+                assert not parent._data_node._exists
+                node._bind_to_data(parent)
 
         else:
             previous._add_following_sibling(node)
@@ -2166,17 +2161,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if index == 0:
             if children_count:
                 self[0].add_preceding_siblings(this, clone=clone)
-                if not (
-                    clone
-                    or isinstance(node[0], (str, _TagDefinition))
-                    or isinstance(self[1], TextNode)
-                ):
-                    assert self[0] is this
-                    assert self[1].fetch_preceding_sibling() is this, self[
-                        1
-                    ].fetch_preceding_sibling()
-                    assert isinstance(this, NodeBase)
-                    assert this._fetch_following_sibling() is self[1]
             else:
                 self.__add_first_child(
                     self._prepare_new_relative((this,), clone=clone)[0]

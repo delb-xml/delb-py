@@ -508,7 +508,7 @@ class Document(metaclass=DocumentMeta):
 
         return self.root.xpath(expression=expression, namespaces=namespaces)
 
-    def xslt(self, transformation: etree.XSLT) -> "Document":
+    def xslt(self, transformation: etree.XSLT) -> "Document":  # pragma: no cover
         """
         :param transformation: A :class:`lxml.etree.XSLT` instance that shall be
                                applied to the document.

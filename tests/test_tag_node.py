@@ -40,7 +40,7 @@ def test_add_following_sibling_text_node_before_text_sibling():
     assert str(document) == "<root><a/>bc</root>"
 
 
-def test_add_previous_node():
+def test_add_preceding_node():
     document = Document("<root><a/></root>")
     root = document.root
 

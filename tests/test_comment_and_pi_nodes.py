@@ -81,4 +81,7 @@ def test_processing_instruction_node():
 
     assert str(root) == "<root><?foo bar?></root>"
 
+    pi.target = "space"
+    assert str(root) == "<root><?space bar?></root>"
+
     assert pi.new_tag_node("ham").local_name == "ham"
