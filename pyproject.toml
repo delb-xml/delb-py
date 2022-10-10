@@ -42,7 +42,7 @@ classifiers = [
     "Natural Language :: English",
     "Topic :: Text Processing :: Markup :: XML",
 ]
-keywords = ["xml", "markup", "text processing"]  # TODO two more
+keywords = ["xml", "markup", "tei", "text processing"]  # TODO one more
 packages = [
     {include = "delb"},
     {include = "_delb"},
