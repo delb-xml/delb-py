@@ -2,6 +2,30 @@
 requires = ["poetry>=1"]
 build-backend = "poetry.masonry.api"
 
+[tool.coverage.run]
+source = ["_delb", "delb"]
+omit = [
+    "delb/exceptions.py",
+    "delb/names.py",
+    "delb/nodes.py",
+    "delb/parser.py",
+    "delb/typing.py",
+    "delb/utils.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "pass",
+    "pragma: no cover",
+    "raise InvalidCodePath",
+    "raise NotImplementedError",
+    "raise TypeError",
+    "raise ValueError"
+]
+fail_under = 97
+
 [tool.poetry]
 name = "delb"
 version = "0.3.0"
