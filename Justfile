@@ -27,6 +27,10 @@ check-formatting:
 	black --check benchmarks _delb delb tests
 	flake8 benchmarks _delb delb tests
 
+# runs tests (except loaders) and reports uncovered lines
+coverage-report:
+    python -m pytest --cov-report term-missing:skip-covered --cov=_delb --cov=delb tests
+
 # test the code that is contained in the docs
 doctest:
 	make -C docs doctest
