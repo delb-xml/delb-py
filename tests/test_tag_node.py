@@ -287,11 +287,11 @@ def test_id_property(files_path):
     with pytest.raises(TypeError):
         publisher.id = 1234
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(ValueError):
         publisher.parent.id = "foo"
 
     publisher.detach()
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(ValueError):
         a_tag_child_node = next(publisher.iterate_children(is_tag_node))
         a_tag_child_node.id = "foo"
 
@@ -515,10 +515,10 @@ def test_fetch_following(files_path):
 def test_no_siblings_on_root():
     document = Document("<root/>")
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         document.root.add_following_siblings("sibling")
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         document.root.add_preceding_siblings("sibling")
 
 

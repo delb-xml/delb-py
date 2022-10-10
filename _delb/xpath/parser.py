@@ -123,8 +123,7 @@ def group_enclosed_expressions(tokens: TokenTree) -> TokenTree:
                 raise XPathParsingError(
                     position=token.position,
                     message=f"Closing `{token.string}` doesn't match opening "
-                    f"`{start_token.string}` at position "
-                    f"{start_token.position}.",
+                    f"`{start_token.string}` at position {start_token.position}.",
                 )
 
             if not openers:
@@ -237,7 +236,10 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
     # other
 
     elif start_matches(TokenType.STRUDEL, TokenType.NAME):
-        raise XPathUnsupportedStandardFeature("Attribute lookup")
+        raise XPathUnsupportedStandardFeature(
+            position=tokens[0].position,
+            feature_description="Attribute lookup",
+        )
 
     else:
         raise XPathParsingError(

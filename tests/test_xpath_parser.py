@@ -349,5 +349,5 @@ def test_parse_predicates(_in, out):
 
 
 def test_unsupported_feature():
-    with raises(XPathUnsupportedStandardFeature, match="^Attribute lookup "):
+    with raises(XPathUnsupportedStandardFeature, match=" 5 .*: Attribute lookup "):
         parse("//pb/@facs")

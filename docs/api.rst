@@ -147,8 +147,4 @@ Various helpers
 Exceptions
 ----------
 
-.. autoexception:: delb.exceptions.InvalidCodePath
-   :exclude-members: with_traceback
-
-.. autoexception:: delb.exceptions.InvalidOperation
-   :exclude-members: with_traceback
+.. automodule:: delb.exceptions

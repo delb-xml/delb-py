@@ -45,7 +45,7 @@ from typing import (
 
 from lxml import etree
 
-from _delb.exceptions import InvalidCodePath, InvalidOperation
+from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
 from _delb.names import (
     XML_ATT_ID,
     XML_ATT_SPACE,
@@ -334,7 +334,10 @@ def new_tag_node(
         if isinstance(child, (str, NodeBase, _TagDefinition)):
             result.append_children(child)
         else:
-            raise TypeError
+            raise TypeError(
+                "Either node instances, strings or objects from :func:`delb.tag` must "
+                "be provided as children argument."
+            )
 
     return result
 
@@ -448,7 +451,10 @@ def tag(*args):  # noqa: C901
             if not all(
                 isinstance(x, (str, NodeBase, _TagDefinition)) for x in second_arg
             ):
-                raise TypeError
+                raise TypeError(
+                    "Either node instances, strings or objects from :func:`delb.tag` "
+                    "must be provided as children argument."
+                )
             return _TagDefinition(local_name=args[0], children=tuple(second_arg))
 
     if len(args) == 3:
@@ -463,7 +469,10 @@ def tag(*args):  # noqa: C901
             if not all(
                 isinstance(x, (str, NodeBase, _TagDefinition)) for x in third_arg
             ):
-                raise TypeError
+                raise TypeError(
+                    "Either node instances, strings or objects from :func:`delb.tag` "
+                    "must be provided as children argument."
+                )
             return _TagDefinition(
                 local_name=args[0],
                 attributes=prepare_attributes(args[1]),
@@ -628,7 +637,10 @@ class TagAttributes(MutableMapping):
         elif isinstance(key, slice) and self.namespaces.get(None) != key.start:
             key = f"{{{key.start}}}{key.stop}"
         else:
-            raise TypeError
+            raise TypeError(
+                "Either an attribute name or a :term:`py:slice` denoting a namespace "
+                "and an attribute name must be provided."
+            )
 
         del self._etree_attrib[key]
         self._attributes.pop(key, None)
@@ -639,7 +651,10 @@ class TagAttributes(MutableMapping):
         elif isinstance(item, slice):
             namespace, name = item.start, item.stop
         else:
-            raise TypeError
+            raise TypeError(
+                "Either an attribute name or a :term:`py:slice` denoting a namespace "
+                "and an attribute name must be provided."
+            )
 
         if namespace and not self.namespaces.get(None) == namespace:
             key = f"{{{namespace}}}{name}"
@@ -667,7 +682,10 @@ class TagAttributes(MutableMapping):
         elif isinstance(key, slice):
             key = f"{{{key.start}}}{key.stop}"
         else:
-            raise TypeError
+            TypeError(
+                "Either an attribute name or a :term:`py:slice` denoting a namespace "
+                "and an attribute name must be provided."
+            )
         if isinstance(value, Attribute):
             value = value.value
         self._etree_attrib[key] = value
@@ -1137,7 +1155,10 @@ class NodeBase(ABC):
         elif isinstance(this, _TagDefinition):
             this = self._new_tag_node_from_definition(this)
         else:
-            raise TypeError
+            raise TypeError(
+                "Either node instances, strings or objects from :func:`delb.tag` must "
+                "be provided as children argument."
+            )
 
         if not all(
             x is None
@@ -1656,7 +1677,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     return True
             return False
         else:
-            raise TypeError
+            raise TypeError(
+                "Argument must be a string for an attribute name or a node instance."
+            )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, TagNode):
@@ -1692,7 +1715,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     return child_node
                 index += 1
 
-            raise IndexError
+            raise IndexError("Node index out of range.")
 
         elif isinstance(item, slice):
             if all(isinstance(x, str) for x in (item.start, item.stop)):
@@ -1702,7 +1725,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
             ):
                 return list(self.iterate_children())[item]
 
-        raise TypeError
+        raise TypeError(
+            "Argument must be an integer as index for a child node, a string for an "
+            "attribute name or a :term:`slice` to denote an attribute's namespace and "
+            "name."
+        )
 
     def __len__(self) -> int:
         i = 0
@@ -2002,7 +2029,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         ast = parse_xpath(expression)
         if not ast._is_unambiguously_locatable:
-            raise InvalidOperation(
+            raise ValueError(
                 "The XPath expression doesn't determine a distinct branch."
             )
 
@@ -2019,7 +2046,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return result
 
         if query_result:
-            raise InvalidOperation(
+            raise AmbiguousTreeError(
                 f"The tree already contains {query_result.size} matching branches."
             )
 
@@ -2066,7 +2093,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 node = cast("TagNode", candidates[0])
 
             else:
-                raise InvalidOperation(
+                raise AmbiguousTreeError(
                     f"The tree has multiple possible branches at location step {i}."
                 )
         return node
@@ -2096,8 +2123,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(value, str):
             root = cast(TagNode, last(self.iterate_ancestors())) or self
             if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
-                raise InvalidOperation(
-                    "An id with that value is already assigned in the tree."
+                raise ValueError(
+                    "An xml:id-attribute with that value is already assigned in the "
+                    "tree."
                 )
             self.attributes[XML_ATT_ID] = value
         else:
@@ -2126,7 +2154,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :meta category: add-nodes
         """
         if index < 0:
-            raise ValueError
+            raise ValueError("Index must be zero or a positive integer.")
 
         children_count = len(self)
 
@@ -2375,7 +2403,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 or self.__document__ is not None
             )
         ):
-            raise InvalidOperation(
+            raise TypeError(
                 "Not all node types can be added as siblings to a root node."
             )
 

@@ -19,7 +19,6 @@ from collections import ChainMap
 from collections.abc import MutableMapping
 from typing import Mapping, Optional, Tuple
 
-from _delb.exceptions import InvalidOperation
 
 XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
@@ -82,7 +81,7 @@ class Namespaces(MutableMapping):
 
     def __setitem__(self, key, value):
         if key in GLOBAL_PREFIXES:
-            raise InvalidOperation(f"One must not override the prefix '{key}'.")
+            raise ValueError(f"One must not override the prefix '{key}'.")
         self.data[key] = value
 
     def __str__(self):

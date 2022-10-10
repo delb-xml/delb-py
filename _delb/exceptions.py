@@ -13,13 +13,28 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+""" These are the specific delb exceptions. """
 
 from typing import Any, Dict, Union
 
 from _delb.typing import Loader
 
 
-class FailedDocumentLoading(Exception):
+class DelbBaseException(Exception):
+    pass
+
+
+class AmbiguousTreeError(DelbBaseException):
+    """
+    Raised when a single node shall be fetched or created by an XPath expression in a
+    tree where the target position can't be clearly determined.
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class FailedDocumentLoading(DelbBaseException):
     def __init__(self, source: Any, excuses: Dict[Loader, Union[str, Exception]]):
         self.source = source
         self.excuses = excuses
@@ -28,10 +43,8 @@ class FailedDocumentLoading(Exception):
         return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
 
 
-class InvalidCodePath(RuntimeError):
-    """
-    Raised when a code path that is not expected to be executed is reached.
-    """
+class InvalidCodePath(DelbBaseException, RuntimeError):
+    """Raised when a code path that is not expected to be executed is reached."""
 
     def __init__(self):  # pragma: no cover
         super().__init__(
@@ -39,20 +52,20 @@ class InvalidCodePath(RuntimeError):
         )
 
 
-class InvalidOperation(Exception):
-    """
-    Raised when an invalid operation is attempted by the client code.
-    """
+class InvalidOperation(DelbBaseException):
+    """Raised when an invalid operation is attempted by the client code."""
 
     pass
 
 
-class XPathEvaluationError(Exception):
+class XPathEvaluationError(DelbBaseException):
     def __init__(self, message: str):
         super().__init__(message)
 
 
-class XPathParsingError(Exception):
+class XPathParsingError(DelbBaseException):
+    """Raised when an XPath expression can't be parsed."""
+
     def __init__(
         self, expression: str = None, position: int = None, message: str = None
     ):
@@ -84,23 +97,24 @@ class XPathParsingError(Exception):
             return f"XPath parsing error at character {position}: {self.message}"
 
 
-# TODO does this make sense? as not all unsupported features are recognized as such,
-#      they may just appear as XPathParsingError
-class XPathUnsupportedStandardFeature(Exception):
-    def __init__(self, feature_description: str):
-        self.feature_description = feature_description
+class XPathUnsupportedStandardFeature(XPathParsingError):
+    """Raised when an unsupported XPath expression feature is recognized."""
 
-    def __str__(self):
-        return (
-            f"{self.feature_description} is not supported with intention. "
-            "Please consult the documentation regarding the XPath implementation."
+    def __init__(self, position: int, feature_description: str):
+        super().__init__(
+            position=position,
+            message=f"{feature_description} is not supported with intention. "
+            "Please consult the documentation regarding the XPath implementation.",
         )
 
 
 __all__ = (
+    AmbiguousTreeError.__name__,
+    DelbBaseException.__name__,
     FailedDocumentLoading.__name__,
     InvalidCodePath.__name__,
     InvalidOperation.__name__,
     XPathEvaluationError.__name__,
     XPathParsingError.__name__,
+    XPathUnsupportedStandardFeature.__name__,
 )

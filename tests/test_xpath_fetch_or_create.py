@@ -1,7 +1,7 @@
 from pytest import mark, raises
 
 from delb import tag, Document
-from delb.exceptions import InvalidOperation, XPathEvaluationError
+from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
 
 
 def test_fetch_or_create_by_xpath():
@@ -18,10 +18,10 @@ def test_fetch_or_create_by_xpath():
 
     root.append_children(tag("intermediate"))
 
-    with raises(InvalidOperation):
+    with raises(AmbiguousTreeError):
         root.fetch_or_create_by_xpath("intermediate")
 
-    with raises(InvalidOperation):
+    with raises(AmbiguousTreeError):
         root.fetch_or_create_by_xpath("intermediate/test")
 
 
@@ -56,7 +56,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
     node = Document("<node/>").root
-    with raises(InvalidOperation):
+    with raises(ValueError):
         node.fetch_or_create_by_xpath(expression)
 
 

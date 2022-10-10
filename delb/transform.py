@@ -178,7 +178,10 @@ class TransformationSequence(TransformationBase):
             elif isinstance(transformation, TransformationBase):
                 self.transformations.append(transformation)
             else:
-                raise ValueError
+                raise TypeError(
+                    "Only subclasses of TransformationBase or instances of such are "
+                    "allowed."
+                )
 
     def __call__(self, root: TagNode, document: Document = None) -> TagNode:
         for transformation in self.transformations:

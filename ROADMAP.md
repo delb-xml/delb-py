@@ -2,9 +2,7 @@
 
 ## 0.4
 
-- all currently planned changes
-  - [here](https://github.com/delb-xml/delb-py/milestone/4)
-  - [and here](https://github.com/delb-xml/delb-py/milestone/3)
+- all currently planned changes [here](https://github.com/delb-xml/delb-py/milestone/3)
 
 ## 0.5
 

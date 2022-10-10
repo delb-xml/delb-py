@@ -208,7 +208,7 @@ def test_namespaces():
     namespaces.pop("xml")
     assert "xml" in namespaces
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(ValueError):
         namespaces["xml"] = "something completely different"
 
 
@@ -277,16 +277,16 @@ def test_replace_with_tag_definition():
 def test_root_takes_no_siblings():
     root = Document("<root/>").root
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         root.add_following_siblings(tag("x"))
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         root.add_following_siblings("x")
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         root.add_preceding_siblings(tag("x"))
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         root.add_preceding_siblings("x")
 
 

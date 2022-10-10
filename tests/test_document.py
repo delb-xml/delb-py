@@ -136,7 +136,7 @@ def test_set_root():
     assert str(document) == "<node/>"
 
     document_2 = Document("<root><replacement/>parts</root>")
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(ValueError):
         document.root = document_2.root[0]
 
 

@@ -147,5 +147,5 @@ def test_transformation_sequence_sequence():
         "<body><ul><li>abla fahita</li><li>caro</li><li>boudi</li></ul></body>"
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         TransformationSequence(transformation, None)

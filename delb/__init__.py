@@ -93,7 +93,7 @@ class _RootSiblingsContainer(ABC, MutableSequence):
             index = len(self) + index
 
         if len(self) <= index:
-            raise IndexError
+            raise IndexError("Node index out of range.")
 
         if index == 0:
             return self._get_first()
@@ -459,7 +459,7 @@ class Document(metaclass=DocumentMeta):
                     node.fetch_following_sibling(),
                 )
             ):
-                raise InvalidOperation(
+                raise ValueError(
                     "Only a detached node can be set as root. Use "
                     ":meth:`TagNode.clone` or :meth:`TagNode.detach` on the "
                     "designated root node."
