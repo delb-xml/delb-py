@@ -2326,7 +2326,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         warn(
             "This method will be replaced by another interface in a future version.",
-            category=DeprecationWarning,
+            category=PendingDeprecationWarning,
         )
         parser, collapse_whitespace = _compat_get_parser(
             parser, parser_options, collapse_whitespace
