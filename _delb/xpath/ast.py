@@ -532,7 +532,9 @@ class Function(EvaluationNode):
     __slots__ = ("arguments", "function")
 
     def __init__(self, name: str, arguments: Sequence[EvaluationNode]):
-        function = xpath_functions[name]
+        function = xpath_functions.get(name)
+        if function is None:
+            raise XPathParsingError(message=f"Unknown function: `{name}`")
         parameters = inspect.signature(function).parameters
         if (
             len(parameters) > 1
