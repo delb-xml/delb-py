@@ -37,6 +37,10 @@ standard:
     - ``not``
     - ``position``
     - ``starts-with``
+    - ``text``
+        - Behaves as if deployed as a single step location path that only tests for the
+          node type *text*. Hence it returns the contents of the context node's first
+          child node that is a text node or an empty string when there is none.
     - Please refrain from extension requests without a proper, concrete implementation
       proposal.
 

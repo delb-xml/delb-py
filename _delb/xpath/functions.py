@@ -18,8 +18,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from _delb.plugins import plugin_manager
+from _delb.utils import _is_node_of_type
 
 if TYPE_CHECKING:
+    from _delb.nodes import TextNode
     from _delb.xpath.ast import EvaluationContext
 
 
@@ -56,3 +58,15 @@ def position(context: EvaluationContext) -> int:
 @plugin_manager.register_xpath_function("starts-with")
 def starts_with(_, string: str, prefix: str) -> bool:
     return string.startswith(prefix)
+
+
+@plugin_manager.register_xpath_function
+def text(context: EvaluationContext) -> str:
+    for node in context.node.iterate_children():
+        if _is_node_of_type(node, "TextNode"):
+            break
+    else:
+        return ""
+    if TYPE_CHECKING:
+        assert isinstance(node, TextNode)
+    return node.content

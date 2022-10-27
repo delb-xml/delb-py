@@ -56,6 +56,13 @@ def test_axes_order(name, start_name, expected_order):
         assert result == expected_order
 
 
+def test_contributed_function_text():
+    document = Document("<root><a>foo</a><b>bar</b><c>f<x/>oo</c></root>")
+    result = document.xpath("/child::node()[text()='foo']")
+    assert result.size == 1
+    assert result.first.local_name == "a"
+
+
 def test_custom_functions():
     # this is used as example in the xpath module docstring
     document = Document("<root><node/><node foo='BAR'/></root>")

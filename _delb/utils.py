@@ -361,6 +361,13 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
 
 
 def _is_node_of_type(node: NodeBase, type_name: str) -> bool:
+    if type_name not in {
+        "CommentNode",
+        "ProcessingInstructionNode",
+        "TagNode",
+        "TextNode",
+    }:
+        raise ValueError
     return (
         node.__class__.__module__ == f"{__package__}.nodes"
         and node.__class__.__qualname__ == type_name
