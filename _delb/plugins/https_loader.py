@@ -31,8 +31,6 @@ from _delb.plugins.core_loaders import buffer_loader, ftp_loader
 from _delb.typing import LoaderResult
 
 
-# TODO define as extra-depending plugin once this is solved:
-#      https://github.com/sdispater/poetry/issues/1454
 try:
     import httpx  # noqa: F401
 except ImportError:

@@ -4,18 +4,15 @@ Installation
 From the Python Package Index
 -----------------------------
 
-Before you install the library manually you might consider to use a project
-management tool like pipenv_ or poetry_, or still use pip_::
+To install *delb* manually, not as dependency,  use pip_::
 
-    pip install delb
+    $ pip install delb
 
 
 At the moment there's only one optional dependency to enable document loading
-via `https`, to include it use::
+via `http` and `https`, to include it use::
 
-    pip install delb[https-loader]
-    # in a poetry managed project
-    poetry add --extras=https-loader delb
+    $ pip install delb[https-loader]
 
 
 From source
@@ -23,8 +20,8 @@ From source
 
 Prerequisites:
 
-- a virtual environment of your project is activated
-- that virtual environment houses an interpreter for Python 3.7 or later
+- A virtual environment of your project is activated.
+- That virtual environment houses an interpreter for Python 3.7 or later.
 
 Obtain the code with roughly one of:
 
@@ -33,14 +30,16 @@ Obtain the code with roughly one of:
 
 To install it regularly::
 
-    …/delb $ pip install .
+    …/delb-py $ pip install .
 
-For developing purposes of ``delb`` itself, poetry_ (we recommend installing it
-with pipx_, but ``pip install --user poetry`` should often work too) should be
-used which install the library in editable_ mode and all employed development
-tools::
+Again, to include the loading over *http(s)*::
 
-    …/delb $ poetry install
+    …/delb-py $ pip install .[https-loader]
+
+For developing purposes of ``delb`` itself, the library should be installed in
+editable_ mode::
+
+    …/delb-py $ pip install --editable .
 
 
 .. hint::
@@ -50,8 +49,43 @@ tools::
     done well.
 
 
+Developer toolbox
+-----------------
+
+The repository includes configurations so that beside a suited Python
+interpreter three tools need to be available globally. pipx_ is the recommended
+facilitation to install the Python implemented tools *black* and *hatch*.
+
+just
+~~~~
+
+just_ is a task runner that executes a variety of common *recipes*. This gives a
+list of all available ones::
+
+    …/delb-py $ just -list
+
+Before committing changes, run the complete suite of quality checks by invoking
+the default recipe::
+
+    …/delb-py $ just
+
+black
+~~~~~
+
+It's recommended to configure the used editors and IDEs to enforce black_'s code
+style, but it can also be applied with::
+
+    …/delb-py $ just black
+
+hatch
+~~~~~
+
+Many other of the *just* recipes rely on hatch_.
+
+
+.. _black: https://black.readthedocs.io/
 .. _editable: https://packaging.python.org/guides/distributing-packages-using-setuptools/#working-in-development-mode
-.. _pip: https://pypi.org/project/pip/
+.. _hatch: https://hatch.pypa.io/
+.. _just: https://just.systems/
+.. _pip: https://pip.pypa.io/
 .. _pipx: https://pypa.github.io/pipx/
-.. _pipenv: https://pypi.org/project/pipenv/
-.. _poetry: https://poetry.eustace.io/docs/
