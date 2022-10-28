@@ -1,6 +1,3 @@
-# this file is be used for evaluation of an alternative to Makefile
-# see https://github.com/casey/just for details
-
 default: tests
 
 

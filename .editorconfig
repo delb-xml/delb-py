@@ -18,6 +18,3 @@ indent_size = 2
 
 [Justfile]
 indent_style = space
-
-[Makefile]
-indent_style = tab
