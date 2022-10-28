@@ -15,10 +15,14 @@
 
 from __future__ import annotations
 
+import sys
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, Union
 
-import pkg_resources
+if sys.version_info < (3, 10):  # DROPWITH Python3.9
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 from _delb.typing import Loader, LoaderConstraint
 
@@ -94,8 +98,7 @@ class PluginManager:
         """
         Loads all modules that are registered as entrypoint in the ``delb`` group.
         """
-        # TODO use importlib.metadata.entrypoints when support for Python 3.9 is dropped
-        for entrypoint in pkg_resources.iter_entry_points("delb"):
+        for entrypoint in entry_points().select(group="delb"):
             entrypoint.load()
 
     def register_loader(
