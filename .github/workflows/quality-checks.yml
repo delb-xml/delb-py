@@ -32,15 +32,9 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v3.0.9
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: pip install poetry
-      - run: poetry install --extras https-loader
-      - run: TEST_LOADERS=1 poetry run make pytest
+      - run: sudo snap install --edge --classic just
+      - run: pip install hatch
+      - run: just pytest-all
 
   other-quality-checks:
     runs-on: ubuntu-latest
@@ -57,14 +51,8 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - uses: actions/cache@v3.0.9
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: pip install poetry
-      - run: poetry install --extras https-loader
-      - run: poetry run make ${{ matrix.target }}
+      - run: sudo snap install --edge --classic just
+      - run: pip install hatch
+      - run: just ${{ matrix.target }}
 
 ...

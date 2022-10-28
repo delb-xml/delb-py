@@ -6,46 +6,46 @@ default: tests
 
 citation_template := `cat CITATION.cff.tmpl`
 date := `date '+%Y-%m-%d'`
-version := `poetry version --short`
+version := `hatch version`
 
 
 # run benchmarks
 benchmarks:
-    python -m pytest --benchmark-autosave --benchmark-group-by=name --benchmark-timer=time.process_time benchmarks
+    hatch run benchmarks:run
 
 # normalize Python code
 black:
     black benchmarks _delb delb tests
 
-# generate Sphinx HTML documentation, including API docs
-docs:
-	make -C docs clean
-	make -C docs html
-
 # code linting with black & flake8
 check-formatting:
-	black --check benchmarks _delb delb tests
-	flake8 benchmarks _delb delb tests
+    hatch run linting:check
 
 # runs tests (except loaders) and reports uncovered lines
 coverage-report:
-    python -m pytest --cov-report term-missing:skip-covered --cov=_delb --cov=delb tests
+    hatch run unit-tests:coverage-report
 
-# test the code that is contained in the docs
+# generate Sphinx HTML documentation, including API docs
+docs:
+    hatch run docs:clean
+    hatch run docs:build-html
+
+# verifies testable code snippets in the HTML documentation
 doctest:
-	make -C docs doctest
+    hatch run docs:clean
+    hatch run docs:doctest
 
 # run static type checks with mypy
 mypy:
-	mypy _delb delb
+    hatch run mypy:check
 
 # run most of the test suite, avoid network
 pytest:
-	python -m pytest tests
+    hatch run unit-tests:check
 
 # run the complete testsuite
 pytest-all:
-    TEST_LOADERS=1 python -m pytest --cov=_delb --cov=delb tests
+    TEST_LOADERS=1 hatch run unit-tests:check
 
 # release the current version on github & the PyPI
 release: tests
@@ -56,7 +56,9 @@ release: tests
     git tag -f {{version}}
     git push origin main
     git push -f origin {{version}}
-    poetry publish --build
+    hatch clean
+    hatch build
+    hatch publish
 
 # build and open HTML documentation
 showdocs: docs
@@ -64,7 +66,6 @@ showdocs: docs
 
 # run all tests on normalized code
 tests: black check-formatting mypy pytest-all doctest
-    poetry check
 
 # Generates and validates CITATION.cff
 update-citation-file:

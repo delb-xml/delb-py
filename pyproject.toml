@@ -1,6 +1,45 @@
 [build-system]
-requires = ["poetry>=1"]
-build-backend = "poetry.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+#
+
+[project]
+name = "delb"
+version = "0.4.0-rc1"
+description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
+authors = [
+    { name = "Frank Sachsenheim", email = "delb-project@posteo.net" }
+]
+license = "AGPL-3.0-or-later"
+readme = "README.rst"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Topic :: Text Processing :: Markup :: XML",
+]
+keywords = ["xml", "markup", "tei", "text processing"]  # TODO one more
+dependencies = [
+    "cssselect",
+    "lxml"
+]
+
+[project.entry-points.delb]
+https-loader = "_delb.plugins.https_loader"
+
+[project.optional-dependencies]
+https-loader = ["httpx[brotli,http2]"]
+
+[project.urls]
+Changelog = "https://delb.readthedocs.io/en/latest/changes.html"
+Documentation = "https://delb.readthedocs.io/"
+"Issue tracker" = "https://github.com/delb-xml/delb-py/issues"
+Repository = "https://github.com/delb-xml/delb-py"
+
+#
 
 [tool.coverage.run]
 source = ["_delb", "delb"]
@@ -26,59 +65,70 @@ exclude_lines = [
 ]
 fail_under = 97
 
-[tool.poetry]
-name = "delb"
-version = "0.4.0-rc0"
-description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
-authors = ["Frank Sachsenheim <funkyfuture@riseup.net>"]
-license = "AGPL-3.0"
-readme = "README.rst"
-documentation = "https://delb.readthedocs.io/"
-repository = "https://github.com/delb-xml/delb-py"
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "Natural Language :: English",
-    "Topic :: Text Processing :: Markup :: XML",
+#
+
+[tool.hatch.build.targets.sdist]
+only-include = ["_delb", "delb", "CITATION.cff"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["_delb", "delb"]
+
+[tool.hatch.envs.default]
+features = ["https-loader"]
+
+[tool.hatch.envs.benchmarks]
+dependencies = [
+    "pytest-benchmark",
+    "xmldiff"
 ]
-keywords = ["xml", "markup", "tei", "text processing"]  # TODO one more
-packages = [
-    {include = "delb"},
-    {include = "_delb"},
+[tool.hatch.envs.benchmarks.scripts]
+run = """
+    python -m pytest \
+        --benchmark-autosave --benchmark-group-by=name \
+        --benchmark-timer=time.process_time benchmarks
+"""
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "autoclasstoc",
+    "sphinxcontrib-fulltoc",
+    "sphinx-readable-theme"
 ]
-include = ["CITATION.cff", "_delb/py.typed", "delb/py.typed"]
+[tool.hatch.envs.docs.scripts]
+build-html = "make -C docs html"
+clean = "make -C docs clean"
+doctest = "make -C docs doctest"
+linkcheck = "make -C docs linkcheck"
 
-[tool.poetry.extras]
-https-loader = ["httpx"]
+[tool.hatch.envs.linting]
+dependencies = ["flake8-black"]
+skip-install = true
+[tool.hatch.envs.linting.scripts]
+check = "flake8 benchmarks _delb delb tests"
 
-[tool.poetry.plugins.delb]
-https-loader = "_delb.plugins.https_loader"
+[tool.hatch.envs.mypy]
+dependencies = [
+    "lxml-stubs",
+    "mypy"
+]
+[tool.hatch.envs.mypy.scripts]
+check = "mypy _delb delb"
 
-[tool.poetry.dependencies]
-python = "^3.7"
-cssselect = "*"
-httpx = {version = "^0.23.0", optional = true, extras = ["brotli", "http2"]}
-lxml = "*"
-setuptools = "*"
+[tool.hatch.envs.unit-tests]
+dependencies = [
+    "pytest-cov",
+    "xmldiff"
+]
+[tool.hatch.envs.unit-tests.scripts]
+check = "python -m pytest --cov=_delb --cov=delb tests"
+coverage-report = """
+    python -m pytest \
+        --cov-report term-missing:skip-covered \
+        --cov=_delb --cov=delb \
+        tests
+"""
 
-[tool.poetry.dev-dependencies]
-autoclasstoc = "^1.1.1"
-black = "*"
-cffconvert = "^2.0.0"
-flake8-black = "*"
-lxml-stubs = "*"
-mypy = "*"
-pytest = "*"
-pytest-benchmark = "*"
-pytest-cov = "*"
-sphinx = "*"
-sphinxcontrib-fulltoc = "*"
-sphinx-readable-theme = "^1.3"
-types-requests = "^2.21"
-types-setuptools = "*"
-typing-extensions = "*"
-xmldiff = "*"
+#
 
 [tool.pytest.ini_options]
 addopts = "-W error::DeprecationWarning"
