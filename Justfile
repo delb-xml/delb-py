@@ -1,8 +1,6 @@
 default: tests
 
 
-citation_template := `cat CITATION.cff.tmpl`
-date := `date '+%Y-%m-%d'`
 version := `hatch version`
 
 
@@ -50,9 +48,9 @@ release: tests
     {{just_executable()}} -f {{justfile()}} update-citation-file
     git add CITATION.cff
     git commit -m "Updates CITATION.cff"
-    git tag -f {{version}}
+    git tag {{version}}
     git push origin main
-    git push -f origin {{version}}
+    git push origin {{version}}
     hatch clean
     hatch build
     hatch publish
@@ -66,5 +64,4 @@ tests: black check-formatting mypy pytest-all doctest
 
 # Generates and validates CITATION.cff
 update-citation-file:
-    @echo "{{ replace(replace(citation_template, "_DATE_", date), "_VERSION_", version) }}" > CITATION.cff
-    cffconvert --validate
+    hatch run citation-file:cff-from-621

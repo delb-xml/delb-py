@@ -42,6 +42,14 @@ Repository = "https://github.com/delb-xml/delb-py"
 
 #
 
+[tool.cff-from-621]
+order = ["title", "abstract", "version", "date-released"]
+
+[tool.cff-from-621.static]
+message = "🔥🌍🔥"
+
+#
+
 [tool.coverage.run]
 source = ["_delb", "delb"]
 omit = [
@@ -88,6 +96,10 @@ run = """
         --benchmark-autosave --benchmark-group-by=name \
         --benchmark-timer=time.process_time benchmarks
 """
+
+[tool.hatch.envs.citation-file]
+dependencies = ["cff-from-621"]
+skip-install = true
 
 [tool.hatch.envs.docs]
 dependencies = [
