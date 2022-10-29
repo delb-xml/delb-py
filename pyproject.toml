@@ -115,6 +115,7 @@ linkcheck = "make -C docs linkcheck"
 
 [tool.hatch.envs.linting]
 dependencies = ["flake8-black"]
+skip-install = true
 [tool.hatch.envs.linting.scripts]
 check = "flake8 benchmarks _delb delb tests"
 
