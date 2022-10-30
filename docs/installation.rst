@@ -80,7 +80,7 @@ style, but it can also be applied with::
 hatch
 ~~~~~
 
-Many other of the *just* recipes rely on hatch_.
+Several of the *just* recipes rely on hatch_.
 
 
 .. _black: https://black.readthedocs.io/
