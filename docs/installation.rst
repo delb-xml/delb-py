@@ -62,7 +62,7 @@ just
 just_ is a task runner that executes a variety of common *recipes*. This gives a
 list of all available ones::
 
-    …/delb-py $ just -list
+    …/delb-py $ just --list
 
 Before committing changes, run the complete suite of quality checks by invoking
 the default recipe::
