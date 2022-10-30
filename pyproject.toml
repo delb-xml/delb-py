@@ -144,4 +144,8 @@ coverage-report = """
 #
 
 [tool.pytest.ini_options]
-addopts = "-W error::DeprecationWarning"
+filterwarnings = [
+    "error::DeprecationWarning:_?delb\\.",
+    "ignore::PendingDeprecationWarning:_?delb\\."
+]
+
