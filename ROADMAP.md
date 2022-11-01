@@ -1,9 +1,5 @@
 # Roadmap for delb-py
 
-## 0.4
-
-- all currently planned changes [here](https://github.com/delb-xml/delb-py/milestone/3)
-
 ## 0.5
 
 - a native implementation of data serialization
@@ -16,7 +12,7 @@
 - add a node type for CDATA
 - move parsing to a separate module with a dummy parser that still uses lxml as backend
 - provide means to build a wheel with *mypyc*
-- don't publish any wheel of this version
+  - but don't publish a mypycified wheel yet
 
 ## 0.7
 
