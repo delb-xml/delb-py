@@ -99,7 +99,8 @@ concatenate broken words would need a function that removes the element objects
 in question while preserving the text fragments in its meaningful sequence
 attached to the ``text`` and ``tail`` properties. In case these have no content,
 their value of ``None`` leads to different operations to concatenate strings.
-Here's a working implementation from the inxs_ library for that data model:
+Here's a working implementation from the inxs_ library [#inxs]_ for that data
+model:
 
 .. code-block:: python
 
@@ -164,7 +165,7 @@ routine of its own. And these quirks come back to you steadily while actual
 markup is regularly more complex.
 
 Now obviously, the data model that lxml / libxml2 provides is not up to standard
-Python ergonomics to solve text encoding problems at hand.
+Python ergonomics to solve text encoding problems.
 
 There must be a better way.
 
@@ -186,7 +187,7 @@ So, the obvious (?) idea is to wrap lxml in a layer that takes the DOM API as
 paradigmatic inspiration, looks and behaves pythonic while keeping the wrapped
 powers accessible.
 
-Now with that API at hand, this is what an equivalent of the horribly
+Now with that API available, this is what an equivalent of the horribly
 complicated function seen above would look like:
 
 .. code-block:: python
@@ -197,16 +198,6 @@ complicated function seen above would look like:
             passed as ``True``, its children vanish with it into void. """
        for node in nodes:
            node.detach(retain_child_nodes=keep_children)
-
-
-.. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/
-.. _dom api: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model
-.. _gnome: https://www.gnome.org/
-.. _inxs: http://inxs.readthedocs.org/
-.. _libxml2: http://xmlsoft.org/
-.. _lxml: http://lxml.de/
-.. _open document format: http://opendocumentformat.org/
-.. _xml-tei: http://tei-c.org
 
 
 Frequently Asked Questions
@@ -236,11 +227,11 @@ What are your long-term goals with this project?
 
    Currently we want to flesh out a concluded user interface that lets
    developers concentrate on their tasks and not on the shortcomings and
-   idiosyncrasies of available tools in the Pythoniverse. Later we'd like to
-   port the sound, settled data model and API to a Rust implementation (of which
-   a proof-of-concept prototype exists) and replace the current *lxml* wrapper
-   for Python with bindings to that as well as provide such for TypeScript.
-   Currently that's the aim for a non-beta release.
+   idiosyncrasies of available tools in the Pythoniverse.
+   After modeling that API as a wrapper around lxml_ the aim is now to replace
+   it piece by piece with a Pure Python™ implementation that will later be
+   transpiled to C extension code with mypyc_.
+
    Eventually we'd like to re-conquer the world wide web and make unagitated,
    long texts and Stooges clips its predominant content again. On that occasion,
    fuck you Mark, fuck off Jeff, go fuck yourself Peter and all the other
@@ -248,15 +239,18 @@ What are your long-term goals with this project?
    created from Tim's ideas.
 
 
-Why is your XPath support so poor?
 
-   While exploring the potential extent of the API we got excited about the
-   :meth:`_delb.TagNode.fetch_or_create_by_xpath` feature. In order to include
-   it, we had to implement a native XPath expression parser. As a release was
-   overdue and we don't know yet to which extent the XPath specification shall
-   be supported eventually, we opted for releasing a shaky solution. Figuring
-   out a fitting one for *delb*  will be the main piece of the next release,
-   so watch and get involved if that interests you.
+.. [#inxs] The ``inxs`` library failed. Yet it made clear which layer in Python
+           XML Text handling needs to be fixed.
 
 
+.. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/
+.. _dom api: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model
+.. _gnome: https://www.gnome.org/
+.. _inxs: http://inxs.readthedocs.org/
+.. _libxml2: http://xmlsoft.org/
+.. _lxml: http://lxml.de/
+.. _mypyc: https://mypyc.readthedocs.io/
 .. _no fun: https://www.youtube.com/watch?v=5sSKH0iXWo8
+.. _open document format: http://opendocumentformat.org/
+.. _xml-tei: http://tei-c.org/
