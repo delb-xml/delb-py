@@ -615,7 +615,7 @@ class Attribute(_StringMixin):
             raise InvalidOperation("The attribute was removed from its node.")
 
     # for utils._StringMixin:
-    data = value
+    _data = value
 
 
 class TagAttributes(MutableMapping):
@@ -2019,8 +2019,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                            descending node in a tree that has any state.
         :param namespaces: An optional mapping of prefixes to namespaces. As default the
                            node's one is used.
-
         :return: The existing or freshly created node descibed with ``expression``.
+
+        :meta category: query-nodes
         """
         ast = parse_xpath(expression)
         if not ast._is_unambiguously_locatable:
@@ -2713,7 +2714,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self.__content = text
 
     # for utils._StringMixin:
-    data = content  # type: ignore
+    _data = content  # type: ignore
 
     @property
     def depth(self) -> int:

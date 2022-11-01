@@ -259,7 +259,11 @@ class Property(SectionBase):
     title = "Properties"
 
     def predicate(self, name, attr, meta):
-        return is_data_attr(name, attr) and is_really_public(name)
+        return (
+            is_data_attr(name, attr)
+            and is_really_public(name)
+            and name != "qualified_name"  # TODO remove when TagNode.qu… was
+        )
 
 
 class PublicMethods(SectionBase):
@@ -271,6 +275,8 @@ class PublicMethods(SectionBase):
             not is_data_attr(name, attr)
             and meta.get("category") is None
             and is_really_public(name)
+            # deprecation wrapper from 961b8b822ed9d8e33a4f9a63b71e64f30188cc67
+            and not attr.__qualname__.startswith("_better")
         )
 
 
