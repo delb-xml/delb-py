@@ -276,7 +276,7 @@ class PublicMethods(SectionBase):
             and meta.get("category") is None
             and is_really_public(name)
             # deprecation wrapper from 961b8b822ed9d8e33a4f9a63b71e64f30188cc67
-            and not attr.__qualname__.startswith("_better")
+            and not getattr(attr, "__qualname__", "").startswith("_better")
         )
 
 

@@ -1,5 +1,5 @@
-autoclasstoc>=1.1.1
-requests
-sphinx>=3
+autoclasstoc @ git+https://github.com/kalekundert/autoclasstoc.git@ba868daf4fecc72bd1a8957c565760d4c41eb71a
+httpx
+sphinx
 sphinxcontrib-fulltoc
 sphinx-readable-theme
