@@ -20,16 +20,17 @@ are only supported as far as their computed XPath equivalents are supported by *
 very own XPath implementation.
 
 This implementation is not fully compliant with one of the W3C's XPath specifications.
-It mostly covers the `XPath 1.0 specs`_ , but focuses on the querying via path with
-simple constraints while it omits a broad employment of  computations (that's what
-programming languages are for) and has therefore these intended deviations from that
-standard:
+It mostly covers the `XPath 1.0 specs`_, but focuses on the querying via path
+expressions with simple constraints while it omits a broad employment of  computations
+(that's what programming languages are for) and has therefore these intended deviations
+from that standard:
 
-- Default namespaces can be addressed, by simply using no prefix.
+- Default namespaces can be addressed in node and attribute names, by simply using no
+  prefix.
 - The attribute and namespace axes are not supported in location steps (see also below).
 - In predicates only the attribute axis can be used in its abbreviated form (``@name``).
 - Path evaluations within predicates are not available.
-- Only these functions are provided and tested:
+- Only these predicate functions are provided and tested:
     - ``boolean``
     - ``concat``
     - ``contains``

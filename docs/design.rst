@@ -99,7 +99,7 @@ concatenate broken words would need a function that removes the element objects
 in question while preserving the text fragments in its meaningful sequence
 attached to the ``text`` and ``tail`` properties. In case these have no content,
 their value of ``None`` leads to different operations to concatenate strings.
-Here's a working implementation from the inxs_ library [#inxs]_ for that data
+Here's a working implementation from the inxs_ library [#fn-inxs]_ for that data
 model:
 
 .. code-block:: python
@@ -240,8 +240,8 @@ What are your long-term goals with this project?
 
 
 
-.. [#inxs] The ``inxs`` library failed. Yet it made clear which layer in Python
-           XML Text handling needs to be fixed.
+.. [#fn-inxs] The ``inxs`` library failed. Yet it made clear which layer in
+              Python XML Text handling needs to be fixed.
 
 
 .. _BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/
