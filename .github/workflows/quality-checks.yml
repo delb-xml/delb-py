@@ -50,7 +50,8 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.10"  # DROPWITH autoclasstoc > 1.52
+#          python-version: "3.11"
       - run: sudo snap install --edge --classic just
       - run: pip install hatch
       - run: just ${{ matrix.target }}

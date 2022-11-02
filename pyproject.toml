@@ -107,7 +107,7 @@ dependencies = ["cff-from-621"]
 skip-install = true
 
 [tool.hatch.envs.docs]
-python = "3.10"  # TODO drop when a successor of 1.5.2 is released
+python = "3.10"  # TODO drop when a successor of 1.5.2 is released, also mind .github/workflows/quality-checks.yml
 dependencies = [
     # TODO switch to PyPI when this is fixed:
     "autoclasstoc @ git+https://github.com/kalekundert/autoclasstoc.git@ba868daf4fecc72bd1a8957c565760d4c41eb71a",
