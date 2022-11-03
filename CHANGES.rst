@@ -18,20 +18,20 @@ News
 
 - *delb* now uses its own XPath implementation, please investigate
   :mod:`_delb.xpath` for details.
-- ⚠️Many of the nodes' methods that relate to relative nodes have been renamed.
+- ⚠️ Many of the nodes' methods that relate to relative nodes have been renamed.
   Watch out for :py:class:`DeprecationWarning`\s!
-- ⚠️The method :meth:`delb.NodeBase.iterate_descendants` is added as a
+- ⚠️ The method :meth:`delb.NodeBase.iterate_descendants` is added as a
   replacement for the former :meth:`delb.NodeBase.child_nodes` invoked with the
   now deprecated argument ``recurse``.
-- ⚠️The ``https-loader`` extensions is now required for loading documents via
+- ⚠️ The ``https-loader`` extensions is now required for loading documents via
   plain and secured HTTP connections.
 - Under the hood httpx_ is now employed as HTTP/S client.
-- ⚠️The contributed loader for FTP connections is marked as deprecated.
-- ⚠️The ``parser`` argument to :class:`delb.Document` and
+- ⚠️ The contributed loader for FTP connections is marked as deprecated.
+- ⚠️ The ``parser`` argument to :class:`delb.Document` and
   :meth:`delb.TagNode.parse` is deprecated and replaced by ``parser_options``.
-- ⚠ :meth:`delb.Document.xslt` is marked as deprecated.
-- ⚠️Evoked exceptions changed in various places.
-- ⚠️Document mixin extensions are now facilitated by subclassing
+- ⚠️ :meth:`delb.Document.xslt` is marked as deprecated.
+- ⚠️ Evoked exceptions changed in various places.
+- ⚠️ Document mixin extensions are now facilitated by subclassing
   :class:`_delb.plugins.DocumentMixinBase`. It replaces
   :class:`_delb.plugins.DocumentExtensionHooks` and
   :meth:`_delb.plugins.PluginManager.register_document_mixin` without a
@@ -39,7 +39,7 @@ News
 - Support for the very good Python 3.10 and the even better 3.11 is added.
 - The code repository is now part of an umbrella namespace for related projects:
   https://github.com/delb-xml/
-- A ``CITATTION.cff`` is available in the repository and shipped with source
+- A ``CITATION.cff`` is available in the repository and shipped with source
   distributions for researchers that are citing_ their employed software.
 
 .. _citing: https://citation-file-format.github.io/
