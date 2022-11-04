@@ -41,7 +41,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - check-formatting
+          - code-lint
           - doctest
           - mypy
     steps:

@@ -12,13 +12,13 @@ benchmarks:
 black:
     black benchmarks _delb delb tests
 
-# code linting with black & flake8
-check-formatting:
-    hatch run linting:check
-
 # runs tests (except loaders) and reports uncovered lines
 coverage-report:
     hatch run unit-tests:coverage-report
+
+# code linting with flake8
+code-lint:
+    hatch run linting:check
 
 # generate Sphinx HTML documentation, including API docs
 docs:
@@ -60,7 +60,7 @@ showdocs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-tests: black check-formatting mypy pytest-all doctest
+tests: black code-lint mypy pytest-all doctest
 
 # Generates and validates CITATION.cff
 update-citation-file:

@@ -82,6 +82,15 @@ fail_under = 97
 
 #
 
+[tool.flake8]
+max-complexity = 10
+max-line-length = 88
+
+# https://github.com/PyCQA/pycodestyle/issues/373
+extend-ignore = ["E203"]
+
+#
+
 [tool.hatch.build.targets.sdist]
 only-include = ["_delb", "delb", "CITATION.cff"]
 
@@ -123,7 +132,13 @@ doctest = "make -C docs doctest"
 linkcheck = "make -C docs linkcheck"
 
 [tool.hatch.envs.linting]
-dependencies = ["flake8-black"]
+dependencies = [
+    "flake8-absolute-import",
+    "flake8-black",
+    "flake8-pyprojecttoml",
+    "flake8-use-fstring",
+    "flake8-use-pathlib"
+]
 skip-install = true
 [tool.hatch.envs.linting.scripts]
 check = "flake8 benchmarks _delb delb tests"
