@@ -282,7 +282,8 @@ class Document(metaclass=DocumentMeta):
         """
         self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
-        The source URL where a loader obtained the document's contents or ``None``.
+        The source URL where a loader obtained the document's contents or
+        :py:obj:`None`.
         """
         self.head_nodes = _HeadNodes(self)
         """
@@ -476,7 +477,7 @@ class Document(metaclass=DocumentMeta):
     def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
         """
         :param path: The path where the document shall be saved.
-        :param pretty: Adds indentation for human consumers when ``True``.
+        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
         :param cleanup_namespaces_args: Arguments that are a passed to
                                         :meth:`Document.cleanup_namespaces` before
                                         saving.
@@ -487,7 +488,7 @@ class Document(metaclass=DocumentMeta):
     def write(self, buffer: IOType, pretty: bool = False, **cleanup_namespaces_args):
         """
         :param buffer: A :term:`file-like object` that the document is written to.
-        :param pretty: Adds indentation for human consumers when ``True``.
+        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
         :param cleanup_namespaces_args: Arguments that are a passed to
                                         :meth:`Document.cleanup_namespaces` before
                                         writing.

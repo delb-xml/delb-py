@@ -319,8 +319,9 @@ def _copy_root_siblings(source: etree._Element, target: etree._Element):
 
 def first(iterable: Iterable) -> Optional[Any]:
     """
-    Returns the first item of the given :term:`iterable` or ``None`` if it's empty.
-    Note that the first item is consumed when the iterable is an :term:`iterator`.
+    Returns the first item of the given :term:`iterable` or :py:obj:`None` if it's
+    empty. Note that the first item is consumed when the iterable is an
+    :term:`iterator`.
     """
     if isinstance(iterable, Iterator):
         try:
@@ -345,13 +346,14 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
         def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
             ...
 
-    :param from_left: The traverser yields sibling nodes from left to right if ``True``,
-                      or starting from the right if ``False``.
+    :param from_left: The traverser yields sibling nodes from left to right if
+                      :py:obj:`True`, or starting from the right if :py:obj:`False`.
     :param depth_first: The child nodes resp. the parent node are yielded before the
-                        siblings of a node by a traverser if ``True``. Siblings are
-                        favored if ``False``.
+                        siblings of a node by a traverser if :py:obj:`True`. Siblings
+                        are favored if :py:obj:`False`.
     :param from_top: The traverser starts yielding nodes with the lowest depth if
-                     ``True``. When ``False``, again, the opposite is in effect.
+                     :py:obj:`True`. When :py:obj:`False`, again, the opposite is in
+                     effect.
     """
 
     result = TRAVERSERS.get((from_left, depth_first, from_top))
@@ -376,7 +378,7 @@ def _is_node_of_type(node: NodeBase, type_name: str) -> bool:
 
 def last(iterable: Iterable) -> Optional[Any]:
     """
-    Returns the last item of the given :term:`iterable` or ``None`` if it's empty.
+    Returns the last item of the given :term:`iterable` or :py:obj:`None` if it's empty.
     Note that the whole :term:`iterator` is consumed when such is given.
     """
     if isinstance(iterable, Iterator):

@@ -137,7 +137,7 @@ class QueryResults(Sequence["NodeBase"]):
 
     @property
     def first(self) -> Optional[NodeBase]:
-        """The first node from the results or ``None`` if there are none."""
+        """The first node from the results or :py:obj:`None` if there are none."""
         if len(self.__items):
             return self.__items[0]
         else:
@@ -152,7 +152,7 @@ class QueryResults(Sequence["NodeBase"]):
 
     @property
     def last(self) -> Optional[NodeBase]:
-        """The last node from the results or ``None`` if there are none."""
+        """The last node from the results or :py:obj:`None` if there are none."""
         if len(self.__items):
             return self.__items[-1]
         else:

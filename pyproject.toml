@@ -138,7 +138,8 @@ dependencies = [
     "flake8-eradicate",
     "flake8-pyprojecttoml",
     "flake8-use-fstring",
-    "flake8-use-pathlib"
+    "flake8-use-pathlib",
+    "flake8-sphinx-links"
 ]
 skip-install = true
 [tool.hatch.envs.linting.scripts]
