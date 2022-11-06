@@ -112,7 +112,7 @@ class _WrapperCache:
                 result = TagNode(element)
             self.wrappers[element] = result
             # turn on when running tests, turn off when using a debugger:
-            # assert getrefcount(result) == 3, getrefcount(result)
+            # assert getrefcount(result) == 3, getrefcount(result)  # noqa: E800
         return result
 
     def __enter__(self):
@@ -355,10 +355,7 @@ class _TagDefinition(NamedTuple):
 
     local_name: str
     attributes: Optional[Dict[str, str]] = None
-    children: Tuple = ()
-    # TODO use this notation when it is supported by Python, and only these versions
-    #      are supported by delb
-    # children: Tuple[Union[str, "_TagDefinition"], ...] = ()
+    children: tuple[NodeSource, ...] = ()
 
 
 @overload
