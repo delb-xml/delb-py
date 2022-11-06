@@ -140,6 +140,7 @@ dependencies = [
     "flake8-pyprojecttoml",
     "flake8-use-fstring",
     "flake8-use-pathlib",
+    "flake8-simplify",
     "flake8-sphinx-links"
 ]
 skip-install = true

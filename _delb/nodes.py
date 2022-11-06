@@ -653,7 +653,7 @@ class TagAttributes(MutableMapping):
                 "and an attribute name must be provided."
             )
 
-        if namespace and not self.namespaces.get(None) == namespace:
+        if namespace and self.namespaces.get(None) != namespace:
             key = f"{{{namespace}}}{name}"
         else:
             key = name
@@ -1668,10 +1668,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if isinstance(item, str):
             return item in self.attributes
         elif isinstance(item, NodeBase):
-            for child in self.iterate_children():
-                if child is item:
-                    return True
-            return False
+            return any(n is item for n in self.iterate_children())
         else:
             raise TypeError(
                 "Argument must be a string for an attribute name or a node instance."
@@ -1705,11 +1702,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
             if item < 0:
                 item = len(self) + item
 
-            index = 0
-            for child_node in self.iterate_children():
+            for index, child_node in enumerate(self.iterate_children()):
                 if index == item:
                     return child_node
-                index += 1
 
             raise IndexError("Node index out of range.")
 
@@ -1729,8 +1724,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def __len__(self) -> int:
         i = 0
-        for _ in self.iterate_children():
-            i += 1
+        for i, _ in enumerate(self.iterate_children(), start=1):
+            pass
         return i
 
     def __str__(self) -> str:

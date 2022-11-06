@@ -5,10 +5,10 @@ if sys.version_info < (3, 7):
     pytest.skip("Requires Python 3.7.", allow_module_level=True)
 
 
-from dataclasses import dataclass  # noqa: E402
-from typing import Optional, Tuple, Union  # noqa: E402
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
-from delb import Document, NodeBase, TagNode  # noqa: E402
+from delb import Document, NodeBase, TagNode
 
 
 def is_pagebreak(node: NodeBase) -> bool:
@@ -114,7 +114,7 @@ class TableOfContents:
         return pagebreak.attributes.get("n")
 
     @staticmethod
-    def _find_sections_title(element) -> Union[str, None]:
+    def _find_sections_title(element) -> Optional[str]:
         for xpath in ("./head", "./table/head"):
             head_elements = element.xpath(xpath)
             if head_elements:

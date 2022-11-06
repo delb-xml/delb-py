@@ -323,7 +323,7 @@ def test_entities():
 
 
 def test_equality():
-    assert not TextNode("1") == 1
+    assert TextNode("1") != 1
 
 
 def test_index():

@@ -21,6 +21,7 @@ data sources.
 
 from __future__ import annotations
 
+from contextlib import suppress
 from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
@@ -83,10 +84,8 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     This loader loads a document from a :term:`file-like object`.
     """
     if isinstance(data, IOBase):
-        try:
+        with suppress(UnsupportedOperation):
             data.seek(0)
-        except UnsupportedOperation:
-            pass
         return etree.parse(cast(IO, data), parser=config.parser)
     return "The input value is no buffer object."
 
