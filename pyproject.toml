@@ -167,6 +167,12 @@ coverage-report = """
 
 #
 
+[tool.mypy]
+# DROPWITH mypy 0.990
+enable_recursive_aliases = true
+
+#
+
 [tool.pytest.ini_options]
 filterwarnings = [
     "error::DeprecationWarning:_?delb\\.",

@@ -40,8 +40,8 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 
-# TODO employ when released: https://github.com/python/mypy/pull/13297
-TokenTree = Sequence[Union[Token, "TokenTree"]]  # type: ignore
+TokenPattern = Sequence[Optional[TokenType]]
+TokenTree = Sequence[Union[Token, "TokenTree"]]
 
 
 NODE_TYPE_TEST_MAPPING = {
@@ -62,8 +62,25 @@ OPERATORS = {
 }
 
 
+def all_tokens_match(tokens: TokenTree, pattern: TokenPattern) -> bool:
+    if len(tokens) != len(pattern):
+        return False
+    return compare_tokens_with_pattern(tokens=tokens, pattern=pattern)
+
+
+def compare_tokens_with_pattern(tokens: TokenTree, pattern: TokenPattern) -> bool:
+    for token, _type in zip(tokens, pattern):
+        if isinstance(token, Token):
+            if token.type != _type:
+                return False
+        else:
+            if _type is not None:
+                return False
+    return True
+
+
 def expand_axes(tokens: TokenTree) -> TokenTree:
-    result: List[Token] = []
+    result: list[Token | TokenTree] = []
 
     for token in tokens:
         if isinstance(token, Token):
@@ -107,8 +124,8 @@ def expand_axes(tokens: TokenTree) -> TokenTree:
     return result
 
 
-def group_enclosed_expressions(tokens: TokenTree) -> TokenTree:
-    result = []
+def group_enclosed_expressions(tokens: Sequence[Token]) -> TokenTree:
+    result: list[Token | TokenTree] = []
     openers = []
 
     for i, token in enumerate(tokens):
@@ -151,11 +168,19 @@ def group_enclosed_expressions(tokens: TokenTree) -> TokenTree:
     return result
 
 
+def initial_tokens_match(tokens: TokenTree, pattern: TokenPattern) -> bool:
+    if len(tokens) < len(pattern):
+        return False
+    return compare_tokens_with_pattern(tokens, pattern)
+
+
 def parse_location_path(tokens: TokenTree) -> LocationPath:
     if not tokens:
         raise XPathParsingError(message="Missing location path.")
 
     tokens = expand_axes(tokens)
+    if not isinstance(tokens[0], Token):
+        raise NotImplementedError
     absolute = tokens[0].type is TokenType.SLASH
 
     return LocationPath(
@@ -171,17 +196,13 @@ def parse_location_path(tokens: TokenTree) -> LocationPath:
 
 
 def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
-    def start_matches(*pattern: Optional[TokenType]) -> bool:
-        return len(tokens) >= len(pattern) and all(
-            x.type is y for x, y in zip(tokens, pattern) if y is not None
-        )
-
     node_test: NodeTestNode
     all_tokens = tuple(tokens)
 
     # axis
 
-    if start_matches(TokenType.NAME, TokenType.AXIS_SEPARATOR):
+    if initial_tokens_match(tokens, (TokenType.NAME, TokenType.AXIS_SEPARATOR)):
+        assert isinstance(tokens[0], Token)
         try:
             axis = Axis(tokens[0].string)
         except XPathParsingError as e:
@@ -193,6 +214,7 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
     if not tokens:
         last_token = all_tokens[-1]
+        assert isinstance(last_token, Token)
         raise XPathParsingError(
             message="Missing node test.",
             position=last_token.position + len(last_token.string),
@@ -200,7 +222,8 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
     # name test's prefix
 
-    if start_matches(TokenType.NAME, TokenType.COLON, TokenType.NAME):
+    if initial_tokens_match(tokens, (TokenType.NAME, TokenType.COLON, TokenType.NAME)):
+        assert isinstance(tokens[0], Token)
         prefix = tokens[0].string
         tokens = tokens[2:]
     else:
@@ -208,40 +231,48 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
     # node test
 
-    if start_matches(
-        TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS
+    if initial_tokens_match(
+        tokens, (TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS)
     ):
+        assert isinstance(tokens[0], Token)
         assert tokens[0].string == "processing-instruction"
         target_name = tokens[2][0]
         assert isinstance(target_name, Token)
         node_test = ProcessingInstructionTest(target_name.string[1:-1])
         tokens = tokens[4:]
 
-    elif start_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
+    elif initial_tokens_match(
+        tokens, (TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS)
+    ):
+        assert isinstance(tokens[0], Token)
         node_test = NodeTypeTest(NODE_TYPE_TEST_MAPPING[tokens[0].string])
         tokens = tokens[3:]
 
-    elif start_matches(TokenType.NAME, TokenType.ASTERISK):
+    elif initial_tokens_match(tokens, (TokenType.NAME, TokenType.ASTERISK)):
+        assert isinstance(tokens[0], Token)
         node_test = NameStartTest(prefix, tokens[0].string)
         tokens = tokens[2:]
 
-    elif start_matches(TokenType.ASTERISK):
+    elif initial_tokens_match(tokens, (TokenType.ASTERISK,)):
         node_test = NameStartTest(prefix, "")
         tokens = tokens[1:]
 
-    elif start_matches(TokenType.NAME):
+    elif initial_tokens_match(tokens, (TokenType.NAME,)):
+        assert isinstance(tokens[0], Token)
         node_test = NameMatchTest(prefix, tokens[0].string)
         tokens = tokens[1:]
 
     # other
 
-    elif start_matches(TokenType.STRUDEL, TokenType.NAME):
+    elif initial_tokens_match(tokens, (TokenType.STRUDEL, TokenType.NAME)):
+        assert isinstance(tokens[0], Token)
         raise XPathUnsupportedStandardFeature(
             position=tokens[0].position,
             feature_description="Attribute lookup",
         )
 
     else:
+        assert isinstance(tokens[0], Token)
         raise XPathParsingError(
             message="Unrecognized node test.", position=tokens[0].position
         )
@@ -250,7 +281,10 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
     predicates = []
     while tokens:
-        if start_matches(TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET):
+        if initial_tokens_match(
+            tokens, (TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET)
+        ):
+            assert isinstance(tokens[1], Sequence)
             predicate = parse_evaluation_expression(tokens[1])
             if isinstance(predicate, AnyValue) and isinstance(predicate.value, int):
                 predicate = BooleanOperator(
@@ -259,6 +293,7 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
             predicates.append(predicate)
             tokens = tokens[3:]
         else:
+            assert isinstance(tokens[-1], Token)
             raise XPathParsingError(
                 position=tokens[-1].position, message="Unrecognized expression."
             )
@@ -267,26 +302,30 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
 
 def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C901
-    def all_matches(*pattern: Optional[TokenType]) -> bool:
-        return len(pattern) == token_count and all(
-            x.type is y for x, y in zip(tokens, pattern) if y is not None
-        )
-
-    token_count = len(tokens)
-
-    if all_matches(TokenType.NUMBER):
+    if all_tokens_match(tokens, (TokenType.NUMBER,)):
+        assert isinstance(tokens[0], Token)
         return AnyValue(int(tokens[0].string))
 
-    if all_matches(TokenType.STRING):
+    if all_tokens_match(tokens, (TokenType.STRING,)):
+        assert isinstance(tokens[0], Token)
         return AnyValue(tokens[0].string[1:-1])
 
-    if all_matches(TokenType.STRUDEL, TokenType.NAME):
+    if all_tokens_match(tokens, (TokenType.STRUDEL, TokenType.NAME)):
+        assert isinstance(tokens[1], Token)
         return HasAttribute(prefix=None, local_name=tokens[1].string)
 
-    if all_matches(TokenType.STRUDEL, TokenType.NAME, TokenType.COLON, TokenType.NAME):
+    if all_tokens_match(
+        tokens, (TokenType.STRUDEL, TokenType.NAME, TokenType.COLON, TokenType.NAME)
+    ):
+        assert isinstance(tokens[1], Token)
+        assert isinstance(tokens[3], Token)
         return HasAttribute(prefix=tokens[1].string, local_name=tokens[3].string)
 
-    if all_matches(TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
+    if all_tokens_match(
+        tokens, (TokenType.NAME, TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS)
+    ):
+        assert isinstance(tokens[0], Token)
+        assert isinstance(tokens[2], Sequence)
         arguments: List[EvaluationNode] = []
         for argument in (
             parse_evaluation_expression(x)
@@ -304,10 +343,14 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
             e.position = tokens[0].position
             raise e
 
-    if all_matches(TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS):
+    if all_tokens_match(
+        tokens, (TokenType.NAME, TokenType.OPEN_PARENS, TokenType.CLOSE_PARENS)
+    ):
+        assert isinstance(tokens[0], Token)
         return Function(tokens[0].string, ())
 
-    if all_matches(TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS):
+    if all_tokens_match(tokens, (TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS)):
+        assert isinstance(tokens[1], Sequence)
         return parse_evaluation_expression(tokens[1])
 
     for _operator in (
@@ -342,6 +385,7 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
                     right,
                 )
 
+    assert isinstance(tokens[0], Token)
     raise XPathParsingError(
         position=tokens[0].position, message="Unrecognized predicate expression."
     )
