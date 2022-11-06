@@ -55,7 +55,7 @@ def test_comment_node():
     assert str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
 
     with altered_default_filters():
-        for node in [x for x in root.iterate_children()]:
+        for node in tuple(root.iterate_children()):
             node.detach()
     root.add_preceding_siblings(new_comment_node("before"))
     root.add_following_siblings(new_comment_node("after"))

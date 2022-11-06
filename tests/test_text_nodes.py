@@ -95,7 +95,7 @@ def test_add_text_after_appended():
 
     document.merge_text_nodes()
 
-    assert len(root) == 2, [x for x in root.iterate_children()]
+    assert len(root) == 2
     assert root[0]._etree_obj.tail == "foobarpeng"
 
 
@@ -171,7 +171,7 @@ def test_appended_text_nodes():
         assert child.content == str(child) == tokens[i]
 
     document.merge_text_nodes()
-    assert len(root) == 1, [x for x in root.iterate_children()]
+    assert len(root) == 1
     assert root[0].content == "How much is the fish?"
 
 

@@ -135,6 +135,7 @@ linkcheck = "make -C docs linkcheck"
 dependencies = [
     "flake8-absolute-import",
     "flake8-black",
+    "flake8-comprehensions",
     "flake8-eradicate",
     "flake8-pyprojecttoml",
     "flake8-use-fstring",

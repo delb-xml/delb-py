@@ -86,7 +86,7 @@ def test_string_pattern(_in, out):
     ),
 )
 def test_tokenize(_in, out):
-    assert list(x.string for x in tokenize(_in)) == out
+    assert [x.string for x in tokenize(_in)] == out
 
 
 @mark.parametrize(
