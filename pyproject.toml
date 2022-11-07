@@ -139,6 +139,8 @@ dependencies = [
     "flake8-black",
     "flake8-comprehensions",
     "flake8-eradicate",
+    "flake8-pep585",
+    "flake8-pep604",
     "flake8-pyprojecttoml",
     "flake8-use-fstring",
     "flake8-use-pathlib",

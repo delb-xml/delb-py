@@ -104,8 +104,10 @@ interface allows also to chain multiple chains::
    removed altogether.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional, Type, Union
+from typing import NamedTuple, Optional
 
 from delb import Document, TagNode
 
@@ -124,7 +126,7 @@ class TransformationBase(ABC):
 class Transformation(TransformationBase):
     """This is a base class for any transformation algorithm."""
 
-    options_class: Optional[Type] = None
+    options_class: Optional[type] = None
 
     def __init__(self, options: Optional[NamedTuple] = None):
         self.root: Optional[TagNode] = None
@@ -167,7 +169,7 @@ class TransformationSequence(TransformationBase):
 
     def __init__(
         self,
-        *transformations: Union[TransformationBase, Type[TransformationBase]],
+        *transformations: TransformationBase | type[TransformationBase],
     ):
         self.transformations = []
         for transformation in transformations:

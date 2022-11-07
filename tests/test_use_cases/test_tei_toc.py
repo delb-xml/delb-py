@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 import sys
 
@@ -6,7 +8,7 @@ if sys.version_info < (3, 7):
 
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 from delb import Document, NodeBase, TagNode
 
@@ -25,8 +27,8 @@ class TOCSection:
 
     index: int
     level: int
-    pages_range: Tuple[Optional[str], Optional[str]]
-    subsections: Tuple["TOCSection", ...]
+    pages_range: tuple[Optional[str], Optional[str]]
+    subsections: tuple["TOCSection", ...]
     title: str
     location_path: str
 
@@ -46,7 +48,7 @@ class TableOfContents:
         self.document = document
 
     @property
-    def back_sections(self) -> Tuple[TOCSection, ...]:
+    def back_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level back sections."""
         back_nodes = self.document.xpath("./text/back")
         if back_nodes:
@@ -57,7 +59,7 @@ class TableOfContents:
             return ()
 
     @property
-    def body_sections(self) -> Tuple[TOCSection, ...]:
+    def body_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level body sections."""
         body_nodes = self.document.xpath("./text/body")
         if body_nodes:
@@ -68,7 +70,7 @@ class TableOfContents:
             return ()
 
     @property
-    def in_order_of_appearance(self) -> Tuple[TOCSection, ...]:
+    def in_order_of_appearance(self) -> tuple[TOCSection, ...]:
         def get_children(section):
             result = []
             for subsection in section.subsections:
@@ -84,7 +86,7 @@ class TableOfContents:
                 result.extend(get_children(section))
         return tuple(result)
 
-    def _parse_sections(self, node: TagNode, level: int) -> Tuple[TOCSection, ...]:
+    def _parse_sections(self, node: TagNode, level: int) -> tuple[TOCSection, ...]:
         result = []
         for index, section_element in enumerate(node.xpath("./div")):
             pages_range = (

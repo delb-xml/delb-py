@@ -18,30 +18,13 @@ from __future__ import annotations
 import gc
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import MutableMapping
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from warnings import warn
 from itertools import chain
 from sys import getrefcount
-from typing import (
-    TYPE_CHECKING,
-    cast,
-    overload,
-    Any,
-    AnyStr,
-    Deque,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
 
 from lxml import etree
 
@@ -123,13 +106,13 @@ class _WrapperCache:
         self.locks -= 1
         return False
 
-    def __gc_callback__(self, phase: str, info: Dict):  # noqa: C901
+    def __gc_callback__(self, phase: str, info: dict):  # noqa: C901
         """
         This is the verbose implementation, please verify changes with this one:
 
         .. code-block:
 
-            def __gc_callback__(self, phase: str, info: Dict):
+            def __gc_callback__(self, phase: str, info: dict):
                 if phase != "stop" or self.locks:
                     return
 
@@ -290,7 +273,7 @@ def new_comment_node(content: str) -> "CommentNode":
 
 def new_processing_instruction_node(
     target: str, content: str
-) -> "ProcessingInstructionNode":
+) -> ProcessingInstructionNode:
     """
     Creates a new :class:`ProcessingInstructionNode`.
 
@@ -305,7 +288,7 @@ def new_processing_instruction_node(
 
 def new_tag_node(
     local_name: str,
-    attributes: Optional[Dict[str, str]] = None,
+    attributes: Optional[dict[str, str]] = None,
     namespace: Optional[str] = None,
     children: Sequence[NodeSource] = (),
 ) -> "TagNode":
@@ -354,7 +337,7 @@ class _TagDefinition(NamedTuple):
     """
 
     local_name: str
-    attributes: Optional[Dict[str, str]] = None
+    attributes: Optional[dict[str, str]] = None
     children: tuple[NodeSource, ...] = ()
 
 
@@ -428,7 +411,7 @@ def tag(*args):  # noqa: C901
     '</items><addendum/></root>'
     """
 
-    def prepare_attributes(attributes: Mapping) -> Dict[str, str]:
+    def prepare_attributes(attributes: Mapping) -> dict[str, str]:
         if isinstance(attributes, TagAttributes):
             return attributes.as_dict_with_strings()
         return dict(attributes)
@@ -486,7 +469,7 @@ def _is_tag_or_text_node(node: "NodeBase") -> bool:
     return isinstance(node, (TagNode, TextNode))
 
 
-default_filters: Deque[Tuple[Filter, ...]] = deque()
+default_filters: deque[tuple[Filter, ...]] = deque()
 default_filters.append((_is_tag_or_text_node,))
 
 
@@ -568,7 +551,7 @@ class Attribute(_StringMixin):
     @property
     def namespace(self) -> Optional[str]:
         """The attribute's namespace"""
-        namespace: Union[bytes, str, None]
+        namespace: Optional[bytes | str]
 
         if self._key.startswith("{"):
             return deconstruct_clark_notation(self._key)[0]
@@ -621,14 +604,14 @@ class TagAttributes(MutableMapping):
     __slots__ = ("_attributes", "_etree_attrib", "namespaces")
 
     def __init__(self, node: TagNode):
-        self._attributes: Dict[str, Attribute] = {}
+        self._attributes: dict[str, Attribute] = {}
         self._etree_attrib: etree._Attrib = node._etree_obj.attrib
         self.namespaces: Namespaces = node.namespaces
 
     def __contains__(self, item: Any) -> bool:
         return self[item] is not None
 
-    def __delitem__(self, key: Union[str, slice]):
+    def __delitem__(self, key: str | slice):
         if isinstance(key, str):
             pass
         elif isinstance(key, slice) and self.namespaces.get(None) != key.start:
@@ -642,7 +625,7 @@ class TagAttributes(MutableMapping):
         del self._etree_attrib[key]
         self._attributes.pop(key, None)
 
-    def __getitem__(self, item: Union[str, slice]) -> Optional[Attribute]:
+    def __getitem__(self, item: str | slice) -> Optional[Attribute]:
         if isinstance(item, str):
             namespace, name = deconstruct_clark_notation(item)
         elif isinstance(item, slice):
@@ -673,7 +656,7 @@ class TagAttributes(MutableMapping):
     def __len__(self) -> int:
         return len(self._etree_attrib)
 
-    def __setitem__(self, key: Union[str, slice], value: Union[str, Attribute]):
+    def __setitem__(self, key: str | slice, value: str | Attribute):
         if isinstance(key, str):
             pass
         elif isinstance(key, slice):
@@ -693,7 +676,7 @@ class TagAttributes(MutableMapping):
 
     __repr__ = __str__
 
-    def as_dict_with_strings(self) -> Dict[str, str]:
+    def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
         return {str(k): str(v) for k, v in self._etree_attrib.items()}
 
@@ -1077,7 +1060,7 @@ class NodeBase(ABC):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[Dict[str, str]] = None,
+        attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[NodeSource] = (),
     ) -> "TagNode":
@@ -1101,7 +1084,7 @@ class NodeBase(ABC):
         self,
         context: _Element,
         local_name: str,
-        attributes: Optional[Dict[str, str]],
+        attributes: Optional[dict[str, str]],
         namespace: Optional[str],
         children: Sequence[NodeSource],
     ) -> "TagNode":
@@ -1145,8 +1128,8 @@ class NodeBase(ABC):
 
     @altered_default_filters()
     def _prepare_new_relative(
-        self, nodes: Tuple[NodeSource, ...], clone: bool
-    ) -> Tuple["NodeBase", List[NodeSource]]:
+        self, nodes: tuple[NodeSource, ...], clone: bool
+    ) -> tuple["NodeBase", list[NodeSource]]:
         this, *queue = nodes
         if isinstance(this, str):
             this = TextNode(this)
@@ -1315,9 +1298,9 @@ class _ChildLessNode(NodeBase):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[Dict[str, str]] = None,
+        attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
-        children: Sequence[Union[str, NodeBase, "_TagDefinition"]] = (),
+        children: Sequence[str | NodeBase | "_TagDefinition"] = (),
     ) -> "TagNode":
         parent = self.parent
         if parent is None:
@@ -1664,7 +1647,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self._attributes = TagAttributes(self)
         self.__document__: Optional[Document] = None
 
-    def __contains__(self, item: Union[str, NodeBase]) -> bool:
+    def __contains__(self, item: str | NodeBase) -> bool:
         if isinstance(item, str):
             return item in self.attributes
         elif isinstance(item, NodeBase):
@@ -1691,7 +1674,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         ...
 
     @overload
-    def __getitem__(self, item: slice) -> List[NodeBase]:
+    def __getitem__(self, item: slice) -> list[NodeBase]:
         ...
 
     def __getitem__(self, item):
@@ -1983,7 +1966,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def fetch_or_create_by_xpath(
         self,
         expression: str,
-        namespaces: Union[Namespaces, None, Mapping[Optional[str], str]] = None,
+        namespaces: Optional[Namespaces | Mapping[Optional[str], str]] = None,
     ) -> "TagNode":
         """
         Fetches a single node that is locatable by the provided XPath expression. If
@@ -2205,7 +2188,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             if candidate is None:
                 return
 
-            next_candidates: List[Optional[NodeBase]] = []
+            next_candidates: list[Optional[NodeBase]] = []
             while candidate is not None:
                 if all(f(candidate) for f in all_filters):
                     yield candidate
@@ -2287,9 +2270,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[Dict[str, str]] = None,
+        attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
-        children: Sequence[Union[str, NodeBase, "_TagDefinition"]] = (),
+        children: Sequence[str | NodeBase | _TagDefinition] = (),
     ) -> "TagNode":
         return self._new_tag_node_from(
             self._etree_obj, local_name, attributes, namespace, children
@@ -2525,10 +2508,10 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def __init__(
         self,
-        reference_or_text: Union[_Element, str, "TextNode"],
+        reference_or_text: _Element | str | "TextNode",
         position: int = DETACHED,
     ):
-        self._bound_to: Union[None, _Element, TextNode]
+        self._bound_to: Optional[_Element | TextNode]
         self.__content: Optional[str]
 
         self._appended_text_node: Optional[TextNode] = None

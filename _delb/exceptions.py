@@ -15,7 +15,9 @@
 
 """ These are the specific delb exceptions. """
 
-from typing import Any, Dict, Union
+from __future__ import annotations
+
+from typing import Any
 
 from _delb.typing import Loader
 
@@ -35,7 +37,7 @@ class AmbiguousTreeError(DelbBaseException):
 
 
 class FailedDocumentLoading(DelbBaseException):
-    def __init__(self, source: Any, excuses: Dict[Loader, Union[str, Exception]]):
+    def __init__(self, source: Any, excuses: dict[Loader, str | Exception]):
         self.source = source
         self.excuses = excuses
 

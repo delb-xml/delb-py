@@ -16,8 +16,9 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable, Iterable
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterable, Union
+from typing import Any
 
 if sys.version_info < (3, 10):  # DROPWITH Python3.9
     from importlib_metadata import entry_points
@@ -66,7 +67,7 @@ class DocumentMixinBase:
             plugin_manager.document_mixins.append(cls)
 
     @classmethod
-    def _init_config(cls, config: SimpleNamespace, kwargs: Dict[str, Any]):
+    def _init_config(cls, config: SimpleNamespace, kwargs: dict[str, Any]):
         """
         The ``kwargs`` argument contains the additional keyword arguments that a
         :class:`Document` instance is called with. Extension classes that expect
@@ -195,7 +196,7 @@ class PluginManager:
 
         return registrar
 
-    def register_xpath_function(self, arg: Union[Callable, str]) -> Callable:
+    def register_xpath_function(self, arg: Callable | str) -> Callable:
         """
         Custom XPath functions can be defined as shown in the following example. The
         first argument to a function is always an instance of

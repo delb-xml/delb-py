@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import MutableSequence
+from collections.abc import Iterable, Iterator, Mapping, MutableSequence
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, Union
-from typing import IO as IOType
+from typing import Any, IO as IOType, Optional
 from warnings import warn
 
 from lxml import etree
@@ -232,7 +233,7 @@ class Document(metaclass=DocumentMeta):
                    classes.
     """
 
-    _loaders: Tuple[Loader, ...]
+    _loaders: tuple[Loader, ...]
     __slots__ = ("__root_node__", "config", "head_nodes", "source_url", "tail_nodes")
 
     def __new__(
@@ -272,7 +273,7 @@ class Document(metaclass=DocumentMeta):
         collapse_whitespace: Optional[bool] = None,
         parser: Optional[etree.XMLParser] = None,
         parser_options: ParserOptions = None,
-        klass: Optional[Type["Document"]] = None,
+        klass: Optional[type["Document"]] = None,
         **config,
     ):
         self.config: SimpleNamespace
@@ -312,7 +313,7 @@ class Document(metaclass=DocumentMeta):
 
     @classmethod
     def __load_source(cls, source: Any, config: SimpleNamespace) -> TagNode:
-        loader_excuses: Dict[Loader, Union[str, Exception]] = {}
+        loader_excuses: dict[Loader, str | Exception] = {}
 
         for loader in cls._loaders:
             try:
@@ -430,7 +431,7 @@ class Document(metaclass=DocumentMeta):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[Dict[str, str]] = None,
+        attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
     ) -> "TagNode":
         """

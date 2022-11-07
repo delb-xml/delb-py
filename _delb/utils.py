@@ -12,25 +12,17 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from copy import copy
 from functools import partial
 from string import ascii_lowercase
-from typing import (
-    TYPE_CHECKING,
-    cast,
-    Any,
-    Callable,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import TYPE_CHECKING, cast, Any, Optional
 from warnings import warn
 
 from lxml import etree
@@ -268,7 +260,7 @@ class _StringMixin:  # pragma: no cover
         return self._data.zfill(width)
 
 
-def _better_call(f: Union[Callable, property]) -> Callable:
+def _better_call(f: Callable | property) -> Callable:
     def decorator(d: Callable) -> Callable:
         def wrapper(*args, **kwargs):
             """:meta category: deprecated"""

@@ -63,17 +63,9 @@ custom functions.
 
 from __future__ import annotations
 
+from collections.abc import Collection, Iterable, Iterator, Sequence
 from functools import lru_cache
-from typing import (
-    TYPE_CHECKING,
-    Collection,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Optional
 
 from cssselect import GenericTranslator  # type: ignore
 
@@ -116,12 +108,12 @@ class QueryResults(Sequence["NodeBase"]):
     def __repr__(self):
         return str([repr(x) for x in self.__items])
 
-    def as_list(self) -> List[NodeBase]:
+    def as_list(self) -> list[NodeBase]:
         """The contained nodes as a new :class:`list`."""
         return list(self.__items)
 
     @property
-    def as_tuple(self) -> Tuple[NodeBase, ...]:
+    def as_tuple(self) -> tuple[NodeBase, ...]:
         """The contained nodes in a :class:`tuple`."""
         return self.__items
 

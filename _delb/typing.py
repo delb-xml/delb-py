@@ -14,8 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeAlias
+from typing import Union  # noqa: UNT001
 
 from lxml import etree
 
@@ -23,15 +27,12 @@ if TYPE_CHECKING:
     from _delb.nodes import NodeBase, _TagDefinition
 
 
-# TODO annotate as TypeAlias(es) when support for Python 3.9 is dropped
+Filter: TypeAlias = Callable[["NodeBase"], bool]
+NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
 
-
-Filter = Callable[["NodeBase"], bool]
-NodeSource = Union[str, "NodeBase", "_TagDefinition"]
-
-LoaderResult = Union[etree._ElementTree, str]
-Loader = Callable[[Any, SimpleNamespace], LoaderResult]
-LoaderConstraint = Union[Loader, Iterable[Loader], None]
+LoaderResult: TypeAlias = etree._ElementTree | str
+Loader: TypeAlias = Callable[[Any, SimpleNamespace], LoaderResult]
+LoaderConstraint: TypeAlias = Optional[Loader | Iterable[Loader]]
 
 
 __all__ = (

@@ -18,21 +18,11 @@ from __future__ import annotations
 import inspect
 import operator
 import sys
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from functools import wraps
 from textwrap import indent
-from typing import (
-    TYPE_CHECKING,
-    cast,
-    Any,
-    Callable,
-    Iterable,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
+
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.names import Namespaces
@@ -276,7 +266,7 @@ class LocationStep(Node):
         return right
 
     @cached_property
-    def _derived_attributes(self) -> List[Tuple[Optional[str], str, str]]:
+    def _derived_attributes(self) -> list[tuple[Optional[str], str, str]]:
         predicates_count = len(self.predicates)
         if predicates_count == 0:
             return []
@@ -349,7 +339,7 @@ class LocationStep(Node):
 class XPathExpression(Node):
     __slots__ = ("location_paths",)
 
-    def __init__(self, location_paths: List[LocationPath]):
+    def __init__(self, location_paths: list[LocationPath]):
         self.location_paths = location_paths
 
     def __repr__(self):
@@ -482,7 +472,7 @@ class BooleanOperator(EvaluationNode):
         self.right = right
 
     @property
-    def _derived_attributes(self) -> List[Tuple[Optional[str], str, str]]:
+    def _derived_attributes(self) -> list[tuple[Optional[str], str, str]]:
         if self.operator is operator.and_:
             return self.left._derived_attributes + self.right._derived_attributes
 

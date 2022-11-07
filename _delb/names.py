@@ -16,8 +16,8 @@
 from __future__ import annotations
 
 from collections import ChainMap
-from collections.abc import MutableMapping
-from typing import Mapping, Optional, Tuple
+from collections.abc import Mapping, MutableMapping
+from typing import Optional
 
 
 XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
@@ -29,7 +29,7 @@ XML_ATT_SPACE = f"{{{XML_NAMESPACE}}}space"
 GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 
 
-def deconstruct_clark_notation(name: str) -> Tuple[Optional[str], str]:
+def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
     """
     Deconstructs a name in Clark notation, that may or may not include a namespace.
 

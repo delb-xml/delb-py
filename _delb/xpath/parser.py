@@ -16,8 +16,9 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Iterator, Sequence
 from functools import lru_cache
-from typing import Iterator, List, Optional, Sequence, Union
+from typing import Optional, TypeAlias, Union  # noqa: UNT001
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath.ast import (
@@ -40,8 +41,8 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 
-TokenPattern = Sequence[Optional[TokenType]]
-TokenTree = Sequence[Union[Token, "TokenTree"]]
+TokenPattern: TypeAlias = Sequence[Optional[TokenType]]
+TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]
 
 
 NODE_TYPE_TEST_MAPPING = {
@@ -326,7 +327,7 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
     ):
         assert isinstance(tokens[0], Token)
         assert isinstance(tokens[2], Sequence)
-        arguments: List[EvaluationNode] = []
+        arguments: list[EvaluationNode] = []
         for argument in (
             parse_evaluation_expression(x)
             for x in partition_tokens(TokenType.COMMA, tokens[2])
@@ -394,8 +395,8 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
 def partition_tokens(
     separator: TokenType,
     tokens: TokenTree,
-) -> Iterator[Sequence[Union[Token, TokenTree]]]:
-    current_partition: List[Union[Token, TokenTree]] = []
+) -> Iterator[Sequence[Token | TokenTree]]:
+    current_partition: list[Token | TokenTree] = []
 
     for token in tokens:
         if isinstance(token, Token) and token.type is separator:
