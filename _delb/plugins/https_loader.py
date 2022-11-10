@@ -22,14 +22,17 @@ dependencies for this loader are installed as well. See :doc:`installation`.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from io import IOBase
-from types import SimpleNamespace
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from _delb.plugins import plugin_manager
 from _delb.plugins.core_loaders import buffer_loader, ftp_loader
-from _delb.typing import LoaderResult
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import SimpleNamespace
+
+    from _delb.typing import LoaderResult
 
 
 try:

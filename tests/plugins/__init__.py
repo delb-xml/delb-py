@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 from _delb.plugins import plugin_manager, DocumentMixinBase
-from _delb.xpath import EvaluationContext
+
+if TYPE_CHECKING:
+    from _delb.xpath import EvaluationContext
 
 
 class PlaygroundDocumentExtension(DocumentMixinBase):

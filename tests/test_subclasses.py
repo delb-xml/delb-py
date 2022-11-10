@@ -1,8 +1,13 @@
-import types
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from pytest import mark
 
 from delb import Document, TagNode
+
+if TYPE_CHECKING:
+    import types
 
 
 # this is also used as example in docs/extending.rst

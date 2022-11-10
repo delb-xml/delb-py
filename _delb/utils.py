@@ -27,10 +27,10 @@ from warnings import warn
 
 from lxml import etree
 
-from _delb.typing import Filter
 
 if TYPE_CHECKING:
     from _delb.nodes import NodeBase, TagNode
+    from _delb.typing import Filter
 
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 
@@ -385,7 +385,7 @@ def last(iterable: Iterable) -> Optional[Any]:
 
 
 # REMOVE eventually
-def _random_unused_prefix(namespaces: "etree._NSMap") -> str:
+def _random_unused_prefix(namespaces: etree._NSMap) -> str:
     for prefix in ascii_lowercase:
         if prefix not in namespaces:
             return prefix
@@ -435,7 +435,7 @@ def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase
 # tree traversers
 
 
-def traverse_df_ltr_btt(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
+def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
     def yield_children(node):
         for child in tuple(node.iterate_children(*filters)):
             yield from yield_children(child)
@@ -444,7 +444,7 @@ def traverse_df_ltr_btt(root: "NodeBase", *filters: Filter) -> Iterator["NodeBas
     yield from yield_children(root)
 
 
-def traverse_df_ltr_ttb(root: "NodeBase", *filters: Filter) -> Iterator["NodeBase"]:
+def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
     yield root
     yield from root.iterate_descendants(*filters)
 

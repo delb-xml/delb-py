@@ -17,15 +17,18 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable, Iterable
-from types import SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 if sys.version_info < (3, 10):  # DROPWITH Python3.9
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-from _delb.typing import Loader, LoaderConstraint
+
+if TYPE_CHECKING:
+    from types import SimpleNamespace
+
+    from _delb.typing import Loader, LoaderConstraint
 
 
 class DocumentMixinBase:

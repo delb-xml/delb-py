@@ -28,7 +28,7 @@ class TOCSection:
     index: int
     level: int
     pages_range: tuple[Optional[str], Optional[str]]
-    subsections: tuple["TOCSection", ...]
+    subsections: tuple[TOCSection, ...]
     title: str
     location_path: str
 

@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
 
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
-from _delb.names import Namespaces
 from _delb.plugins import plugin_manager as _plugin_manager
 from _delb.utils import _is_node_of_type, last
 
@@ -37,7 +36,8 @@ else:
 
 
 if TYPE_CHECKING:
-    from delb import NodeBase, ProcessingInstructionNode, TagNode
+    from _delb.names import Namespaces
+    from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
 
 
 xpath_functions = _plugin_manager.xpath_functions
@@ -254,7 +254,7 @@ class LocationStep(Node):
         self.predicates = tuple(predicates)
 
     @cached_property
-    def _anders_predicates(self) -> "BooleanOperator":
+    def _anders_predicates(self) -> BooleanOperator:
         predicates = list(self.predicates)
 
         right = predicates.pop()

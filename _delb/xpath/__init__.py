@@ -67,10 +67,8 @@ from collections.abc import Collection, Iterable, Iterator, Sequence
 from functools import lru_cache
 from typing import TYPE_CHECKING, Optional
 
-from cssselect import GenericTranslator  # type: ignore
+from cssselect import GenericTranslator
 
-from _delb.names import Namespaces
-from _delb.typing import Filter
 from _delb.utils import sort_nodes_in_document_order
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
@@ -78,7 +76,9 @@ from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from delb import NodeBase
+    from _delb.names import Namespaces
+    from _delb.nodes import NodeBase
+    from _delb.typing import Filter
 
 
 _css_translator = GenericTranslator()
@@ -165,7 +165,7 @@ def _css_to_xpath(expression: str) -> str:
 def evaluate(
     node: NodeBase,
     expression: str,
-    namespaces: Namespaces = None,
+    namespaces: Optional[Namespaces] = None,
 ) -> QueryResults:
     if namespaces is None:
         namespaces = node.namespaces

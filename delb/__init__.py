@@ -18,9 +18,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, MutableSequence
 from copy import deepcopy
-from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, IO as IOType, Optional
+from typing import TYPE_CHECKING, Any, IO as IOType, Optional
 from warnings import warn
 
 from lxml import etree
@@ -54,7 +53,6 @@ from _delb.nodes import (
     TextNode,
 )
 from _delb.parser import _compat_get_parser, ParserOptions
-from _delb.typing import Loader
 from _delb.utils import (
     _copy_root_siblings,
     first,
@@ -64,6 +62,10 @@ from _delb.utils import (
 )
 from _delb.xpath import QueryResults
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from _delb.typing import Loader
 
 # plugin loading
 
@@ -77,7 +79,7 @@ _plugin_manager.load_plugins()
 class _RootSiblingsContainer(ABC, MutableSequence):
     __slots__ = ("_document",)
 
-    def __init__(self, document: "Document"):
+    def __init__(self, document: Document):
         self._document = document
 
     def __delitem__(self, index):
@@ -141,7 +143,7 @@ class _RootSiblingsContainer(ABC, MutableSequence):
         pass
 
     @abstractmethod
-    def _iter_all(self) -> Iterator["NodeBase"]:
+    def _iter_all(self) -> Iterator[NodeBase]:
         pass
 
 
@@ -273,7 +275,7 @@ class Document(metaclass=DocumentMeta):
         collapse_whitespace: Optional[bool] = None,
         parser: Optional[etree.XMLParser] = None,
         parser_options: ParserOptions = None,
-        klass: Optional[type["Document"]] = None,
+        klass: Optional[type[Document]] = None,
         **config,
     ):
         self.config: SimpleNamespace
@@ -383,7 +385,7 @@ class Document(metaclass=DocumentMeta):
             keep_ns_prefixes=retain_prefixes,
         )
 
-    def clone(self) -> "Document":
+    def clone(self) -> Document:
         """
         :return: Another instance with the duplicated contents.
         """
@@ -433,7 +435,7 @@ class Document(metaclass=DocumentMeta):
         local_name: str,
         attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
-    ) -> "TagNode":
+    ) -> TagNode:
         """
         This method proxies to the :meth:`TagNode.new_tag_node` method of the
         document's root node.
@@ -443,12 +445,12 @@ class Document(metaclass=DocumentMeta):
         )
 
     @property
-    def root(self) -> "TagNode":
+    def root(self) -> TagNode:
         """The root node of a document tree."""
         return self.__root_node__
 
     @root.setter
-    def root(self, node: "TagNode"):
+    def root(self, node: TagNode):
         if not isinstance(node, TagNode):
             raise TypeError("The document root node must be of 'TagNode' type.")
 
@@ -510,7 +512,7 @@ class Document(metaclass=DocumentMeta):
 
         return self.root.xpath(expression=expression, namespaces=namespaces)
 
-    def xslt(self, transformation: etree.XSLT) -> "Document":  # pragma: no cover
+    def xslt(self, transformation: etree.XSLT) -> Document:  # pragma: no cover
         """
         :param transformation: A :class:`lxml.etree.XSLT` instance that shall be
                                applied to the document.

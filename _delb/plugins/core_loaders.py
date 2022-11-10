@@ -25,8 +25,7 @@ from contextlib import suppress
 from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
-from types import SimpleNamespace
-from typing import cast, Any, IO
+from typing import TYPE_CHECKING, cast, Any, IO
 from warnings import warn
 
 from lxml import etree
@@ -34,7 +33,11 @@ from lxml import etree
 from _delb import utils
 from _delb.nodes import TagNode
 from _delb.plugins import plugin_manager
-from _delb.typing import LoaderResult
+
+if TYPE_CHECKING:
+    from types import SimpleNamespace
+
+    from _delb.typing import LoaderResult
 
 
 def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
@@ -86,7 +89,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, IOBase):
         with suppress(UnsupportedOperation):
             data.seek(0)
-        return etree.parse(cast(IO, data), parser=config.parser)
+        return etree.parse(cast("IO", data), parser=config.parser)
     return "The input value is no buffer object."
 
 

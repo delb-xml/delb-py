@@ -36,7 +36,6 @@ from _delb.names import (
     Namespaces,
 )
 from _delb.parser import ParserOptions, _compat_get_parser
-from _delb.typing import Filter, NodeSource
 from _delb.utils import (
     _StringMixin,
     _better_call,
@@ -54,7 +53,8 @@ from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
-    from delb import Document  # noqa: F401
+    from delb import Document
+    from _delb.typing import Filter, NodeSource
 
 
 # shortcuts
@@ -259,7 +259,7 @@ _wrapper_cache = _WrapperCache()
 # functions
 
 
-def new_comment_node(content: str) -> "CommentNode":
+def new_comment_node(content: str) -> CommentNode:
     """
     Creates a new :class:`CommentNode`.
 
@@ -291,7 +291,7 @@ def new_tag_node(
     attributes: Optional[dict[str, str]] = None,
     namespace: Optional[str] = None,
     children: Sequence[NodeSource] = (),
-) -> "TagNode":
+) -> TagNode:
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
     use :meth:`new_tag_node`, on instances of documents and nodes where the instance is
@@ -465,7 +465,7 @@ def tag(*args):  # noqa: C901
 # default filters
 
 
-def _is_tag_or_text_node(node: "NodeBase") -> bool:
+def _is_tag_or_text_node(node: NodeBase) -> bool:
     return isinstance(node, (TagNode, TextNode))
 
 
@@ -519,7 +519,7 @@ class Attribute(_StringMixin):
 
     __slots__ = ("_attributes", "_key")
 
-    def __init__(self, attributes: "TagAttributes", key: str):
+    def __init__(self, attributes: TagAttributes, key: str):
         self._attributes = attributes
         self._key = key
 
@@ -722,7 +722,7 @@ class NodeBase(ABC):
                 this.add_following_siblings(*queue, clone=clone)
 
     @abstractmethod
-    def _add_following_sibling(self, node: "NodeBase"):
+    def _add_following_sibling(self, node: NodeBase):
         pass
 
     def add_preceding_siblings(self, *node: NodeSource, clone: bool = False):
@@ -747,11 +747,11 @@ class NodeBase(ABC):
                 this.add_preceding_siblings(*queue, clone=clone)
 
     @abstractmethod
-    def _add_preceding_sibling(self, node: "NodeBase"):
+    def _add_preceding_sibling(self, node: NodeBase):
         pass
 
     @abstractmethod
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "NodeBase":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
         """
         :param deep: Clones the whole subtree if :py:obj:`True`.
         :param quick_and_unsafe: Creates a deep clone in a quicker manner where text
@@ -772,7 +772,7 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def detach(self, retain_child_nodes: bool = False) -> "NodeBase":
+    def detach(self, retain_child_nodes: bool = False) -> NodeBase:
         """
         Removes the node from its tree.
 
@@ -786,14 +786,14 @@ class NodeBase(ABC):
 
     @property
     @abstractmethod
-    def document(self) -> Optional["Document"]:
+    def document(self) -> Optional[Document]:
         """
         The :class:`Document` instances that the node is associated with or
         :py:obj:`None`.
         """
         pass
 
-    def fetch_following(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_following(self, *filter: Filter) -> Optional[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or
@@ -806,7 +806,7 @@ class NodeBase(ABC):
         except StopIteration:
             return None
 
-    def fetch_following_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_following_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or
@@ -827,7 +827,7 @@ class NodeBase(ABC):
     def _fetch_following_sibling(self):
         pass
 
-    def fetch_preceding(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_preceding(self, *filter: Filter) -> Optional[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
@@ -841,7 +841,7 @@ class NodeBase(ABC):
             return None
 
     @abstractmethod
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or
@@ -853,7 +853,7 @@ class NodeBase(ABC):
 
     @property
     @abstractmethod
-    def first_child(self) -> Optional["NodeBase"]:
+    def first_child(self) -> Optional[NodeBase]:
         """
         The node's first child node.
         """
@@ -884,7 +884,7 @@ class NodeBase(ABC):
 
         raise InvalidCodePath
 
-    def iterate_ancestors(self, *filter: Filter) -> Iterator["TagNode"]:
+    def iterate_ancestors(self, *filter: Filter) -> Iterator[TagNode]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -902,7 +902,7 @@ class NodeBase(ABC):
     @abstractmethod
     def iterate_children(
         self, *filter: Filter, recurse: bool = False
-    ) -> Iterator["NodeBase"]:
+    ) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
@@ -914,7 +914,7 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
@@ -925,7 +925,7 @@ class NodeBase(ABC):
         """
         pass
 
-    def iterate_following(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_following(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -938,7 +938,7 @@ class NodeBase(ABC):
             if all(f(node) for f in chain(default_filters[-1], filter)):
                 yield node
 
-    def _iterate_following(self) -> Iterator["NodeBase"]:
+    def _iterate_following(self) -> Iterator[NodeBase]:
         def next_sibling_of_an_ancestor(
             node: NodeBase,
         ) -> Optional[_ElementWrappingNode]:
@@ -965,7 +965,7 @@ class NodeBase(ABC):
             yield next_node
             pointer = next_node
 
-    def iterate_following_siblings(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_following_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -979,7 +979,7 @@ class NodeBase(ABC):
             yield next_node
             next_node = next_node.fetch_following_sibling(*filter)
 
-    def iterate_preceding(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_preceding(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -993,7 +993,7 @@ class NodeBase(ABC):
                 yield node
 
     @altered_default_filters()
-    def _iterate_preceding(self) -> Iterator["NodeBase"]:
+    def _iterate_preceding(self) -> Iterator[NodeBase]:
         def iter_children(node: NodeBase) -> Iterator[NodeBase]:
             for child_node in reversed(tuple(node.iterate_children())):
                 yield from iter_children(child_node)
@@ -1018,7 +1018,7 @@ class NodeBase(ABC):
                 yield parent
                 pointer = last_yield = parent
 
-    def iterate_preceding_siblings(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
@@ -1034,7 +1034,7 @@ class NodeBase(ABC):
 
     @property
     @abstractmethod
-    def last_child(self) -> Optional["NodeBase"]:
+    def last_child(self) -> Optional[NodeBase]:
         """
         The node's last child node.
         """
@@ -1042,7 +1042,7 @@ class NodeBase(ABC):
 
     @property
     @abstractmethod
-    def last_descendant(self) -> Optional["NodeBase"]:
+    def last_descendant(self) -> Optional[NodeBase]:
         """
         The node's last descendant.
         """
@@ -1063,7 +1063,7 @@ class NodeBase(ABC):
         attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[NodeSource] = (),
-    ) -> "TagNode":
+    ) -> TagNode:
         """
         Creates a new :class:`TagNode` instance in the node's context.
 
@@ -1087,7 +1087,7 @@ class NodeBase(ABC):
         attributes: Optional[dict[str, str]],
         namespace: Optional[str],
         children: Sequence[NodeSource],
-    ) -> "TagNode":
+    ) -> TagNode:
 
         tag: QName
 
@@ -1115,7 +1115,7 @@ class NodeBase(ABC):
 
         return result
 
-    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
+    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
         return self.parent._new_tag_node_from_definition(definition)
 
     @property
@@ -1129,7 +1129,7 @@ class NodeBase(ABC):
     @altered_default_filters()
     def _prepare_new_relative(
         self, nodes: tuple[NodeSource, ...], clone: bool
-    ) -> tuple["NodeBase", list[NodeSource]]:
+    ) -> tuple[NodeBase, list[NodeSource]]:
         this, *queue = nodes
         if isinstance(this, str):
             this = TextNode(this)
@@ -1160,7 +1160,7 @@ class NodeBase(ABC):
 
         return this, queue
 
-    def replace_with(self, node: NodeSource, clone: bool = False) -> "NodeBase":
+    def replace_with(self, node: NodeSource, clone: bool = False) -> NodeBase:
         """
         Removes the node and places the given one in its tree location.
 
@@ -1266,10 +1266,10 @@ class _ChildLessNode(NodeBase):
 
     @property
     def depth(self) -> int:
-        return cast(TagNode, self.parent).depth + 1
+        return cast("TagNode", self.parent).depth + 1
 
     @property
-    def document(self) -> Optional["Document"]:
+    def document(self) -> Optional[Document]:
         parent = self.parent
         if parent is None:
             return None
@@ -1292,7 +1292,7 @@ class _ChildLessNode(NodeBase):
 
         yield from ()
 
-    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
         yield from ()
 
     def new_tag_node(
@@ -1300,8 +1300,8 @@ class _ChildLessNode(NodeBase):
         local_name: str,
         attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
-        children: Sequence[str | NodeBase | "_TagDefinition"] = (),
-    ) -> "TagNode":
+        children: Sequence[str | NodeBase | _TagDefinition] = (),
+    ) -> TagNode:
         parent = self.parent
         if parent is None:
             return new_tag_node(
@@ -1332,16 +1332,16 @@ class _ElementWrappingNode(NodeBase):
         self._etree_obj = etree_element
         self._tail_node = TextNode(etree_element, position=TAIL)
 
-    def __copy__(self) -> "_ElementWrappingNode":
+    def __copy__(self) -> _ElementWrappingNode:
         return self.clone(deep=False)
 
-    def __deepcopy__(self, memodict=None) -> "_ElementWrappingNode":
+    def __deepcopy__(self, memodict=None) -> _ElementWrappingNode:
         return self.clone(deep=True)
 
     def __str__(self) -> str:
         return str(self._etree_obj)
 
-    def _add_following_sibling(self, node: "NodeBase"):
+    def _add_following_sibling(self, node: NodeBase):
         if isinstance(node, _ElementWrappingNode):
             my_old_tail = self._tail_node
 
@@ -1395,13 +1395,13 @@ class _ElementWrappingNode(NodeBase):
 
     def clone(
         self, deep: bool = False, quick_and_unsafe: bool = False
-    ) -> "_ElementWrappingNode":
+    ) -> _ElementWrappingNode:
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
         return _wrapper_cache(etree_clone)
 
     @altered_default_filters()
-    def detach(self, retain_child_nodes: bool = False) -> "_ElementWrappingNode":
+    def detach(self, retain_child_nodes: bool = False) -> _ElementWrappingNode:
         parent = self.parent
 
         if parent is None:
@@ -1426,7 +1426,7 @@ class _ElementWrappingNode(NodeBase):
             etree_obj.tail = None
             self._tail_node = TextNode(etree_obj, position=TAIL)
 
-        cast(_Element, etree_obj.getparent()).remove(etree_obj)
+        cast("_Element", etree_obj.getparent()).remove(etree_obj)
 
         return self
 
@@ -1439,7 +1439,7 @@ class _ElementWrappingNode(NodeBase):
             return None
         return _wrapper_cache(next_etree_obj)
 
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
 
         candidate: Optional[NodeBase] = None
 
@@ -1483,7 +1483,7 @@ class _ElementWrappingNode(NodeBase):
         return Namespaces(self._etree_obj.nsmap)
 
     @property
-    def parent(self) -> Optional["TagNode"]:
+    def parent(self) -> Optional[TagNode]:
         etree_parent = self._etree_obj.getparent()
         if etree_parent is None:
             return None
@@ -1518,7 +1518,7 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
         """
         The comment's text.
         """
-        return cast(str, self._etree_obj.text)
+        return cast("str", self._etree_obj.text)
 
     @content.setter
     def content(self, value: str):
@@ -1552,7 +1552,7 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
         """
         The processing instruction's text.
         """
-        return cast(str, self._etree_obj.text)
+        return cast("str", self._etree_obj.text)
 
     @content.setter
     def content(self, value: str):
@@ -1565,7 +1565,7 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
         """
         etree_obj = self._etree_obj
         assert isinstance(etree_obj, etree._ProcessingInstruction)
-        return cast(str, etree_obj.target)
+        return cast("str", etree_obj.target)
 
     @target.setter
     def target(self, value: str):
@@ -1807,7 +1807,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self._attributes
 
     @altered_default_filters()
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "TagNode":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> TagNode:
         # a faster implementation may be to not clear a cloned element's children and
         # to clone appended text nodes afterwards
 
@@ -1840,7 +1840,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def _collapse_whitespace(self, normalize_space: str = "default"):
         with _wrapper_cache:
             normalize_space = cast(
-                str, self.attributes.get(XML_ATT_SPACE, normalize_space)
+                "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
             )
 
             if normalize_space == "default":
@@ -1854,7 +1854,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     if (
                         crunched_stripped  # has non-whitespace content
                         and crunched[0] == " "  # begins w/ whitespace
-                        and cast(int, child_node.index) > 0  # isn't first child
+                        and cast("int", child_node.index) > 0  # isn't first child
                     ):
                         child_node.content = f" {crunched_stripped}"
                     elif (
@@ -1877,7 +1877,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 assert normalize_space == "preserve"
 
             for child_node in self.iterate_children(is_tag_node):
-                cast(TagNode, child_node)._collapse_whitespace(normalize_space)
+                cast("TagNode", child_node)._collapse_whitespace(normalize_space)
 
     def css_select(
         self, expression: str, namespaces: Optional[Namespaces] = None
@@ -1907,7 +1907,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self.location_path.count("/")
 
     @altered_default_filters()
-    def detach(self, retain_child_nodes: bool = False) -> "_ElementWrappingNode":
+    def detach(self, retain_child_nodes: bool = False) -> _ElementWrappingNode:
         parent = self.parent
         index = self.index
 
@@ -1956,18 +1956,18 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self
 
     @property
-    def document(self) -> Optional["Document"]:
+    def document(self) -> Optional[Document]:
         if self.parent is None:
             root_node = self
         else:
-            root_node = cast(TagNode, last(self.iterate_ancestors()))
+            root_node = cast("TagNode", last(self.iterate_ancestors()))
         return root_node.__document__
 
     def fetch_or_create_by_xpath(
         self,
         expression: str,
         namespaces: Optional[Namespaces | Mapping[Optional[str], str]] = None,
-    ) -> "TagNode":
+    ) -> TagNode:
         """
         Fetches a single node that is locatable by the provided XPath expression. If
         the node doesn't exist, the non-existing branch will be created. These rules
@@ -2031,7 +2031,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self,
         ast: XPathExpression,
         namespaces: Namespaces,
-    ) -> "TagNode":
+    ) -> TagNode:
 
         node = self
 
@@ -2089,14 +2089,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         This is a shortcut to retrieve and set the ``id``  attribute in the XML
         namespace. The client code is responsible to pass properly formed id names.
         """
-        return cast(str, self.attributes.get(XML_ATT_ID))
+        return cast("str", self.attributes.get(XML_ATT_ID))
 
     @id.setter
     def id(self, value: Optional[str]):
         if value is None:
             self.attributes.pop(XML_ATT_ID, "")
         elif isinstance(value, str):
-            root = cast(TagNode, last(self.iterate_ancestors())) or self
+            root = cast("TagNode", last(self.iterate_ancestors())) or self
             if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
                 raise ValueError(
                     "An xml:id-attribute with that value is already assigned in the "
@@ -2181,7 +2181,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
             candidate = candidate._fetch_following_sibling()
 
-    def iterate_descendants(self, *filter: Filter) -> Iterator["NodeBase"]:
+    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
         all_filters = default_filters[-1] + filter
         with altered_default_filters():
             candidate = self.first_child
@@ -2210,7 +2210,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return result
 
     @property
-    def last_descendant(self) -> Optional["NodeBase"]:
+    def last_descendant(self) -> Optional[NodeBase]:
         node = self.last_child
         while node is not None:
             candidate = node.last_child
@@ -2224,7 +2224,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         The node's name.
         """
-        return cast(str, QName(self._etree_obj).localname)
+        return cast("str", QName(self._etree_obj).localname)
 
     @local_name.setter
     def local_name(self, value: str):
@@ -2273,12 +2273,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
         attributes: Optional[dict[str, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[str | NodeBase | _TagDefinition] = (),
-    ) -> "TagNode":
+    ) -> TagNode:
         return self._new_tag_node_from(
             self._etree_obj, local_name, attributes, namespace, children
         )
 
-    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> "TagNode":
+    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
         return self._new_tag_node_from(
             context=self._etree_obj,
             local_name=definition.local_name,
@@ -2293,7 +2293,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         parser: Optional[etree.XMLParser] = None,
         parser_options: Optional[ParserOptions] = None,
         collapse_whitespace: Optional[bool] = None,
-    ) -> "TagNode":
+    ) -> TagNode:
         """
         Parses the given string or bytes sequence into a new tree.
 
@@ -2357,7 +2357,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
-        return cast(str, self._etree_obj.tag)
+        return cast("str", self._etree_obj.tag)
 
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
@@ -2446,7 +2446,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
         assert isinstance(_results, Iterable)
         return QueryResults(
-            (_wrapper_cache(cast(_Element, element)) for element in _results)
+            (_wrapper_cache(cast("_Element", element)) for element in _results)
         )
 
     # deprecated
@@ -2508,7 +2508,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def __init__(
         self,
-        reference_or_text: _Element | str | "TextNode",
+        reference_or_text: _Element | str | TextNode,
         position: int = DETACHED,
     ):
         self._bound_to: Optional[_Element | TextNode]
@@ -2649,7 +2649,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> "NodeBase":
+    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
         assert self.content is not None
         return self.__class__(self.content)
 
@@ -2660,15 +2660,15 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         """
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)
-            return cast(str, self._bound_to.text)
+            return cast("str", self._bound_to.text)
 
         elif self._position is TAIL:
             assert isinstance(self._bound_to, _Element)
-            return cast(str, self._bound_to.tail)
+            return cast("str", self._bound_to.tail)
 
         elif self._position in (APPENDED, DETACHED):
             assert self._bound_to is None or isinstance(self._bound_to, TextNode)
-            return cast(str, self.__content)
+            return cast("str", self.__content)
 
         else:
             raise ValueError(
@@ -2701,7 +2701,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return 0
         return super().depth
 
-    def detach(self, retain_child_nodes: bool = False) -> "TextNode":
+    def detach(self, retain_child_nodes: bool = False) -> TextNode:
 
         if self._position is DETACHED:
             return self
@@ -2796,7 +2796,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
         raise InvalidCodePath
 
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional["NodeBase"]:
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         candidate: Optional[NodeBase]
 
         if self._position in (DATA, DETACHED):
@@ -2839,7 +2839,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self._appended_text_node = None
         sibling._bound_to = None
 
-    def _insert_text_node_as_next_appended(self, node: "TextNode"):
+    def _insert_text_node_as_next_appended(self, node: TextNode):
         old = self._appended_text_node
         content = node.content
         node._bound_to = self
@@ -2907,7 +2907,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
         raise ValueError(f"A TextNode._position must not be set to {self._position}")
 
-    def _prepend_text_node(self, node: "TextNode"):
+    def _prepend_text_node(self, node: TextNode):
         if self._position is DATA:
 
             assert isinstance(self._bound_to, _Element)

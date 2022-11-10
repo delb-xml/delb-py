@@ -16,12 +16,14 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
 from enum import Enum
 from functools import lru_cache
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from _delb.exceptions import XPathParsingError
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 # constants & data structures

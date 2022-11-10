@@ -17,9 +17,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from _delb.typing import Loader
+if TYPE_CHECKING:
+    from _delb.typing import Loader
 
 
 class DelbBaseException(Exception):
