@@ -156,7 +156,7 @@ check = "flake8 benchmarks _delb delb tests"
 [tool.hatch.envs.mypy]
 dependencies = [
     "lxml-stubs",
-    "mypy"
+    "mypy>=0.990"
 ]
 [tool.hatch.envs.mypy.scripts]
 check = "mypy _delb delb"
@@ -174,12 +174,6 @@ coverage-report = """
         --cov=_delb --cov=delb \
         tests
 """
-
-#
-
-[tool.mypy]
-# DROPWITH mypy 0.990
-enable_recursive_aliases = true
 
 #
 

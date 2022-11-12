@@ -119,7 +119,7 @@ class TransformationBase(ABC):
     """This base class defines the calling interface of transformations."""
 
     @abstractmethod
-    def __call__(self, root: TagNode, document: Document = None) -> TagNode:
+    def __call__(self, root: TagNode, document: Optional[Document] = None) -> TagNode:
         pass
 
 
@@ -136,7 +136,7 @@ class Transformation(TransformationBase):
 
         self.options = options
 
-    def __call__(self, root: TagNode, document: Document = None) -> TagNode:
+    def __call__(self, root: TagNode, document: Optional[Document] = None) -> TagNode:
         if root.document is None:
             # TODO clarify why a copy is needed for trees that aren't part of a
             #      document
@@ -185,7 +185,7 @@ class TransformationSequence(TransformationBase):
                     "allowed."
                 )
 
-    def __call__(self, root: TagNode, document: Document = None) -> TagNode:
+    def __call__(self, root: TagNode, document: Optional[Document] = None) -> TagNode:
         for transformation in self.transformations:
             root = transformation(root, document=document)
         return root

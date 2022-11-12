@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Optional, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from _delb.typing import Loader
@@ -70,7 +70,10 @@ class XPathParsingError(DelbBaseException):
     """Raised when an XPath expression can't be parsed."""
 
     def __init__(
-        self, expression: str = None, position: int = None, message: str = None
+        self,
+        expression: Optional[str] = None,
+        position: Optional[int] = None,
+        message: Optional[str] = None,
     ):
         self.expression = expression
         self.position = position

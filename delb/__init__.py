@@ -274,7 +274,7 @@ class Document(metaclass=DocumentMeta):
         source: Any,
         collapse_whitespace: Optional[bool] = None,
         parser: Optional[etree.XMLParser] = None,
-        parser_options: ParserOptions = None,
+        parser_options: Optional[ParserOptions] = None,
         klass: Optional[type[Document]] = None,
         **config,
     ):
