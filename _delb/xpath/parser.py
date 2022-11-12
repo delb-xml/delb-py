@@ -18,7 +18,7 @@ from __future__ import annotations
 import operator
 from collections.abc import Iterator, Sequence
 from functools import lru_cache
-from typing import Optional, TypeAlias, Union  # noqa: UNT001
+from typing import TYPE_CHECKING, Optional, Union  # noqa: UNT001
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath.ast import (
@@ -39,6 +39,10 @@ from _delb.xpath.ast import (
     XPathExpression,
 )
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
+
+
+if TYPE_CHECKING:
+    from _delb.typing import TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[Optional[TokenType]]

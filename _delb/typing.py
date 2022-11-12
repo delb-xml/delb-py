@@ -18,12 +18,20 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional, TypeAlias
+from typing import TYPE_CHECKING, Any, Optional
 from typing import Union  # noqa: UNT001
+
 
 from lxml import etree
 
 if TYPE_CHECKING:
+    import sys
+
+    if sys.version_info < (3, 10):
+        from typing_extensions import TypeAlias
+    else:
+        from typing import TypeAlias
+
     from _delb.nodes import NodeBase, _TagDefinition
 
 
