@@ -89,8 +89,9 @@ max-annotations-complexity = 4
 max-complexity = 10
 max-line-length = 88
 
-# https://github.com/PyCQA/pycodestyle/issues/373
-extend-ignore = ["E203"]
+# E203: https://github.com/PyCQA/pycodestyle/issues/373
+# PEA001: DROPWITH Python3.8
+extend-ignore = ["E203", "PEA001"]
 extend-select = ["TC", "TC1"]
 
 #
