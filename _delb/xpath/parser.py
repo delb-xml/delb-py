@@ -46,10 +46,6 @@ if TYPE_CHECKING:
     from _delb.typing import TypeAlias
 
 
-if TYPE_CHECKING:
-    from _delb.typing import TypeAlias
-
-
 TokenPattern: TypeAlias = Sequence[Optional[TokenType]]
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]
 
