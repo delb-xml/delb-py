@@ -61,6 +61,7 @@ message = "🔥🌍🔥"
 [tool.coverage.run]
 source = ["_delb", "delb"]
 omit = [
+    "_delb/typing.py",
     "delb/exceptions.py",
     "delb/names.py",
     "delb/nodes.py",
