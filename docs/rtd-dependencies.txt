@@ -1,4 +1,4 @@
-autoclasstoc @ git+https://github.com/kalekundert/autoclasstoc.git@ba868daf4fecc72bd1a8957c565760d4c41eb71a
+autoclasstoc~=1.6
 httpx
 sphinx
 sphinxcontrib-fulltoc
