@@ -71,7 +71,7 @@ class NormalizeDocument(Transformation):
             choice_node.css_select(keep_selector).first.detach(retain_child_nodes=True)
             choice_node.detach(retain_child_nodes=True)
 
-    def resolve_copyOf(self):
+    def resolve_copyOf(self):  # noqa: N802
         document = self.document
         for node in self.root.css_select("*[copyOf]"):
             source_id = node.attributes.pop("copyOf", "")

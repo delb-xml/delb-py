@@ -19,7 +19,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, MutableSequence
 from copy import deepcopy
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, IO as IOType, Optional
+from typing import TYPE_CHECKING, Any, Optional
+from typing import IO as IOType  # noqa: N811
 from warnings import warn
 
 from lxml import etree
@@ -172,7 +173,7 @@ class _TailNodes(_RootSiblingsContainer):
 
 
 class DocumentMeta(type):
-    def __new__(mcs, name, base_classes, namespace):
+    def __new__(mcls, name, base_classes, namespace):  # noqa: N804
         extension_classes = tuple(_plugin_manager.document_mixins)
 
         if not base_classes:  # Document class is being constructed
@@ -194,7 +195,7 @@ class DocumentMeta(type):
             *_plugin_manager.loaders,
         )
 
-        return super().__new__(mcs, name, base_classes, namespace)
+        return super().__new__(mcls, name, base_classes, namespace)
 
 
 class Document(metaclass=DocumentMeta):

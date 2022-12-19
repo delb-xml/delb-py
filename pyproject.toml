@@ -148,7 +148,8 @@ dependencies = [
     "flake8-use-pathlib",
     "flake8-simplify",
     "flake8-sphinx-links",
-    "flake8-type-checking"
+    "flake8-type-checking",
+    "pep8-naming"
 ]
 skip-install = true
 [tool.hatch.envs.linting.scripts]

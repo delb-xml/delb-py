@@ -35,10 +35,10 @@ if TYPE_CHECKING:
 _crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
 
 
-class _Nodes_Sorter:
+class _NodesSorter:
     def __init__(self):
         self.__node = None
-        self.__items = defaultdict(_Nodes_Sorter)
+        self.__items = defaultdict(_NodesSorter)
 
     def add(self, path: Sequence[int], node: TagNode):
         assert _is_node_of_type(node, "TagNode")
@@ -416,7 +416,7 @@ def register_namespace(prefix: str, namespace: str):
 
 
 def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
-    sorter = _Nodes_Sorter()
+    sorter = _NodesSorter()
     for node in nodes:
         if not _is_node_of_type(node, "TagNode"):
             raise NotImplementedError(
