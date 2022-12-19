@@ -60,10 +60,11 @@ class Namespaces(MutableMapping):
     __slots__ = ("data",)
 
     def __init__(self, namespaces: Mapping[Optional[str], str]):
-        self.data: Mapping[Optional[str], str]
+        self.data: MutableMapping[Optional[str], str]
         if isinstance(namespaces, Namespaces):
             self.data = namespaces.data
         else:
+            assert isinstance(namespaces, MutableMapping)
             self.data = namespaces
 
     def __delitem__(self, key):

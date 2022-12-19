@@ -246,12 +246,12 @@ class Document(metaclass=DocumentMeta):
         parser=None,
         parser_options=None,
         klass=None,
-        **config,
+        **config_options,
     ):
         parser, collapse_whitespace = _compat_get_parser(
             parser, parser_options, collapse_whitespace
         )
-        config = cls.__process_config(collapse_whitespace, parser, config)
+        config = cls.__process_config(collapse_whitespace, parser, config_options)
         root = cls.__load_source(source, config)
 
         if klass is None:
