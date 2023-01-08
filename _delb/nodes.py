@@ -21,10 +21,11 @@ from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
-from warnings import warn
+from io import StringIO
 from itertools import chain
 from sys import getrefcount
 from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
+from warnings import warn
 
 from lxml import etree
 
@@ -53,6 +54,8 @@ from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
+    from typing import BinaryIO
+
     from delb import Document
     from _delb.typing import Filter, NamespaceDeclarations, NodeSource
 
@@ -697,6 +700,12 @@ class TagAttributes(MutableMapping):
 
 class NodeBase(ABC):
     __slots__ = ("__weakref__",)
+
+    def __str__(self):
+        text_buffer = StringIO()
+        serializer = StringSerializationConfigurator._get_serializer(text_buffer.buffer)
+        serializer(self)
+        return text_buffer.getvalue()
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -3006,6 +3015,62 @@ def not_(*filter: Filter) -> Filter:
     return not_wrapper
 
 
+# serializer
+
+
+class Serialzer:
+    # TODO __slots__
+
+    def __init__(
+        self,
+        buffer: BinaryIO,
+        encoding="utf-8",
+        *,
+        align_attributes: bool = False,
+        indentation: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        if encoding != "utf-8":
+            raise NotImplementedError
+
+        self.buffer = buffer
+        self.encoding = encoding
+        self.align_attributes = align_attributes
+        self.indentation = indentation
+        self.text_width = text_width
+
+        self._level = 0
+
+    def __call__(self, node: NodeBase):
+        raise NotImplementedError
+
+
+class StringSerializationConfigurator:
+    """
+    This object is used to configure the default serializer that is employed to cast
+    :class:`NodeBase` instances to strings.
+    """
+
+    align_attributes: bool = False
+    """TODO"""
+    indentation: str = "\t"
+    """TODO"""
+    serializer: type[Serialzer] = Serialzer
+    """TODO"""
+    text_width: int = 0
+    """TODO"""
+
+    @classmethod
+    def _get_serializer(cls, buffer: BinaryIO) -> Serialzer:
+        return cls.serializer(
+            buffer=buffer,
+            align_attributes=cls.align_attributes,
+            encoding="utf-8",
+            indentation=cls.indentation,
+            text_width=cls.text_width,
+        )
+
+
 #
 
 
@@ -3015,6 +3080,8 @@ __all__ = (
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
+    Serialzer.__name__,
+    StringSerializationConfigurator.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
     TextNode.__name__,

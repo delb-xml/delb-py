@@ -18,9 +18,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, MutableSequence
 from copy import deepcopy
+from itertools import chain
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional
-from typing import IO as IOType  # noqa: N811
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from warnings import warn
 
 from lxml import etree
@@ -50,6 +50,8 @@ from _delb.nodes import (
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
+    Serialzer,
+    StringSerializationConfigurator,
     TagNode,
     TextNode,
 )
@@ -478,7 +480,18 @@ class Document(metaclass=DocumentMeta):
         self.__root_node__ = node
         node.__document__ = self
 
-    def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
+    def save(
+        self,
+        path: Path,
+        pretty: Optional[bool] = None,
+        *,
+        encoding: str = "utf-8",
+        align_attributes: bool = False,
+        indentation: Optional[str] = None,
+        text_width: int = 0,
+        **cleanup_namespaces_args,
+    ):
+        # TODO
         """
         :param path: The path where the document shall be saved.
         :param pretty: Adds indentation for human consumers when :py:obj:`True`.
@@ -486,22 +499,71 @@ class Document(metaclass=DocumentMeta):
                                         :meth:`Document.cleanup_namespaces` before
                                         saving.
         """
-        with path.open("bw") as file:
-            self.write(file, pretty=pretty, **cleanup_namespaces_args)
+        if pretty is not None:
+            raise NotImplementedError
 
-    def write(self, buffer: IOType, pretty: bool = False, **cleanup_namespaces_args):
+        with path.open("bw") as file:
+            self.write(
+                buffer=file,
+                encoding=encoding,
+                align_attributes=align_attributes,
+                indentation=indentation,
+                text_width=text_width,
+                **cleanup_namespaces_args,
+            )
+
+    def write(
+        self,
+        buffer: BinaryIO,
+        pretty: Optional[bool] = None,
+        *,
+        encoding: str = "utf-8",
+        align_attributes: bool = False,
+        indentation: Optional[str] = None,
+        text_width: int = 0,
+        **cleanup_namespaces_args,
+    ):
         """
         :param buffer: A :term:`file-like object` that the document is written to.
-        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
+        :param pretty: *Deprecated.* Adds indentation for human consumers when
+                       :py:obj:`True`.
+        :encoding: The desired text encoding.
+        :align_attributes: Determines that tags' attribute names are padded before
+                           vertically aligned equal signs if :py:obj:`True`.
+        :indentation: When a string is provided, descending nodes are indented with one
+                      instance of that string per depth level.
+        :text_width: A positive integer is used as maximum width for possibly indented
+                     text node contents.
         :param cleanup_namespaces_args: Arguments that are a passed to
                                         :meth:`Document.cleanup_namespaces` before
                                         writing.
         """
-        self.root.merge_text_nodes()
+        if pretty is not None:
+            warn(
+                "The `pretty` argument is deprecated, for the legacy behaviour provide "
+                "`indentation` as two spaces instead."
+            )
+            align_attributes = False
+            indentation = "  " if pretty else ""
+            text_width = 0
+
         self.cleanup_namespaces(**cleanup_namespaces_args)
-        self.root._etree_obj.getroottree().write(
-            file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
+        serializer = Serialzer(
+            buffer=buffer,
+            encoding=encoding,
+            align_attributes=align_attributes,
+            indentation=indentation,
+            text_width=text_width,
         )
+
+        # TODO use native ProcessingInstructionNode when available?
+        declaration = f'<?xml encoding="{encoding}" ' f'version="1.1"?>'
+        if indentation is not None:
+            declaration += "\n"
+        serializer.buffer.write(declaration.encode(encoding="ascii"))
+
+        for node in chain(self.head_nodes, (self.root,), self.tail_nodes):
+            serializer(node)
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
@@ -536,6 +598,7 @@ __all__ = (
     ParserOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
+    StringSerializationConfigurator.__name__,
     TagNode.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
