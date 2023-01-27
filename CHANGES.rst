@@ -23,7 +23,7 @@ News
 - ⚠️ The method :meth:`delb.NodeBase.iterate_descendants` is added as a
   replacement for the former :meth:`delb.NodeBase.child_nodes` invoked with the
   now deprecated argument ``recurse``.
-- ⚠️ The ``https-loader`` extensions is now required for loading documents via
+- ⚠️ The ``https-loader`` extension is now required for loading documents via
   plain and secured HTTP connections.
 - Under the hood httpx_ is now employed as HTTP/S client.
 - ⚠️ The contributed loader for FTP connections is marked as deprecated.
