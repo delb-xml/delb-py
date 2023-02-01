@@ -15,6 +15,7 @@ from _delb.nodes import DETACHED
         (new_comment_node("foo"), "<!--foo-->"),
         (new_processing_instruction_node("foo", 'bar="0"'), '<?foo bar="0"?>'),
         (new_tag_node("foo"), "<foo/>"),
+        (new_tag_node("foo", {"bar": "0"}), '<foo bar="0"/>'),
         (TextNode("foo", DETACHED), "foo"),
     ),
 )

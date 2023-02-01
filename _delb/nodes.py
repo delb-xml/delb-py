@@ -3041,6 +3041,7 @@ class Serialzer:
 
         self._level = 0
 
+    @altered_default_filters()
     def __call__(self, node: NodeBase):
         if self.indentation and self._level:
             self.buffer.write(self.newline + self._level * self.indentation)
@@ -3064,6 +3065,15 @@ class Serialzer:
         else:
             raise TypeError
 
+    def __aligned_attributes(self, node: TagNode):
+        raise NotImplementedError
+
+    def __attributes(self, node: TagNode):
+        for name, value in node.attributes.items():
+            if '"' in value:
+                raise NotImplementedError
+            self.buffer.write(f' {name}="{value}"'.encode(encoding=self.encoding))
+
     def __tag(self, node: TagNode):
         self.buffer.write(b"<")
 
@@ -3073,7 +3083,10 @@ class Serialzer:
             raise NotImplementedError
 
         if node.attributes:
-            raise NotImplementedError
+            if self.align_attributes:
+                self.__aligned_attributes(node)
+            else:
+                self.__attributes(node)
 
         if len(node):
             raise NotImplementedError
