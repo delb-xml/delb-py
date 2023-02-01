@@ -21,7 +21,7 @@ from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
-from io import StringIO
+from io import BytesIO
 from itertools import chain
 from sys import getrefcount
 from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
@@ -702,10 +702,10 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self):
-        text_buffer = StringIO()
-        serializer = StringSerializationConfigurator._get_serializer(text_buffer.buffer)
+        buffer = BytesIO()
+        serializer = StringSerializationConfigurator._get_serializer(buffer)
         serializer(self)
-        return text_buffer.getvalue()
+        return buffer.getvalue().decode()
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -1353,9 +1353,6 @@ class _ElementWrappingNode(NodeBase):
     def __deepcopy__(self, memodict=None) -> _ElementWrappingNode:
         return self.clone(deep=True)
 
-    def __str__(self) -> str:
-        return str(self._etree_obj)
-
     def _add_following_sibling(self, node: NodeBase):
         if isinstance(node, _ElementWrappingNode):
             my_old_tail = self._tail_node
@@ -1722,11 +1719,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         for i, _ in enumerate(self.iterate_children(), start=1):
             pass
         return i
-
-    def __str__(self) -> str:
-        clone = self.clone(deep=True)
-        clone.merge_text_nodes()
-        return etree.tostring(clone._etree_obj, encoding="unicode")
 
     def __repr__(self) -> str:
         return (
@@ -3028,6 +3020,7 @@ class Serialzer:
         *,
         align_attributes: bool = False,
         indentation: Optional[str] = None,
+        newline: Optional[str] = None,
         text_width: int = 0,
     ):
         if encoding != "utf-8":
@@ -3036,13 +3029,56 @@ class Serialzer:
         self.buffer = buffer
         self.encoding = encoding
         self.align_attributes = align_attributes
-        self.indentation = indentation
+        if indentation is None:
+            self.indentation = b""
+        else:
+            self.indentation = indentation.encode(encoding=encoding)
+        if newline is None:
+            self.newline = "\n".encode(encoding=encoding)
+        else:
+            self.newline = newline.encode(encoding=encoding)
         self.text_width = text_width
 
         self._level = 0
 
     def __call__(self, node: NodeBase):
-        raise NotImplementedError
+        if self.indentation and self._level:
+            self.buffer.write(self.newline + self._level * self.indentation)
+
+        if isinstance(node, CommentNode):
+            self.buffer.write(
+                b"<!--" + node.content.encode(encoding=self.encoding) + b"-->"
+            )
+        elif isinstance(node, ProcessingInstructionNode):
+            self.buffer.write(
+                b"<?"
+                + node.target.encode(encoding=self.encoding)
+                + b" "
+                + node.content.encode(encoding=self.encoding)
+                + b"?>"
+            )
+        elif isinstance(node, TagNode):
+            self.__tag(node)
+        elif isinstance(node, TextNode):
+            self.buffer.write(node.content.encode(encoding=self.encoding))
+        else:
+            raise TypeError
+
+    def __tag(self, node: TagNode):
+        self.buffer.write(b"<")
+
+        if node.namespace is None:
+            self.buffer.write(node.local_name.encode(encoding=self.encoding))
+        else:
+            raise NotImplementedError
+
+        if node.attributes:
+            raise NotImplementedError
+
+        if len(node):
+            raise NotImplementedError
+        else:
+            self.buffer.write(b"/>")
 
 
 class StringSerializationConfigurator:
@@ -3067,8 +3103,16 @@ class StringSerializationConfigurator:
             align_attributes=cls.align_attributes,
             encoding="utf-8",
             indentation=cls.indentation,
+            # TODO newline per platform?
             text_width=cls.text_width,
         )
+
+    @classmethod
+    def reset_defaults(cls):
+        cls.align_attributes = False
+        cls.indentation = "\t"
+        cls.serializer = Serialzer
+        cls.text_width = 0
 
 
 #
