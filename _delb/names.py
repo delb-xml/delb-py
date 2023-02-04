@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from collections import ChainMap
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Mapping
 from typing import Optional
 
 
@@ -49,7 +49,7 @@ def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
         return None, name
 
 
-class Namespaces(MutableMapping):
+class Namespaces(Mapping):
     """
     A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
     are available and unchanged.
@@ -60,16 +60,12 @@ class Namespaces(MutableMapping):
     __slots__ = ("data",)
 
     def __init__(self, namespaces: Mapping[Optional[str], str]):
-        self.data: MutableMapping[Optional[str], str]
+        self.data: Mapping[Optional[str], str]
         if isinstance(namespaces, Namespaces):
             self.data = namespaces.data
         else:
-            assert isinstance(namespaces, MutableMapping)
+            assert isinstance(namespaces, Mapping)
             self.data = namespaces
-
-    def __delitem__(self, key):
-        if key not in GLOBAL_PREFIXES:
-            del self.data[key]
 
     def __getitem__(self, item):
         return GLOBAL_PREFIXES.get(item) or self.data[item]
@@ -79,11 +75,6 @@ class Namespaces(MutableMapping):
 
     def __len__(self):
         return len(self.data) + 2
-
-    def __setitem__(self, key, value):
-        if key in GLOBAL_PREFIXES:
-            raise ValueError(f"One must not override the prefix '{key}'.")
-        self.data[key] = value
 
     def __str__(self):
         return str(dict(self))
