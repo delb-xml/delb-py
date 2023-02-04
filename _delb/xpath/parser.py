@@ -135,7 +135,6 @@ def group_enclosed_expressions(tokens: Sequence[Token]) -> TokenTree:
     openers = []
 
     for i, token in enumerate(tokens):
-
         if token.type in (TokenType.OPEN_BRACKET, TokenType.OPEN_PARENS):
             openers.append((i, token))
 

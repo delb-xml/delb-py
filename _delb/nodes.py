@@ -212,7 +212,6 @@ class _WrapperCache:
             tail_node = node._tail_node
 
             if isinstance(node, TagNode):
-
                 # data node is checked first, assuming that appended text nodes tend
                 # to be used in the depths of a tree
                 data_node = node._data_node
@@ -365,7 +364,6 @@ def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
 def tag(
     local_name: str, attributes: Mapping[str, str], child: NodeSource
 ):  # pragma: no cover
-
     ...
 
 
@@ -1088,7 +1086,6 @@ class NodeBase(ABC):
         namespace: Optional[str],
         children: Sequence[NodeSource],
     ) -> TagNode:
-
         tag: QName
 
         context_namespace = QName(context).namespace
@@ -1379,7 +1376,6 @@ class _ElementWrappingNode(NodeBase):
         previous = self.fetch_preceding_sibling()
 
         if previous is None:
-
             if isinstance(node, _ElementWrappingNode):
                 self._etree_obj.addprevious(node._etree_obj)
 
@@ -1410,7 +1406,6 @@ class _ElementWrappingNode(NodeBase):
         etree_obj = self._etree_obj
 
         if self._tail_node._exists:
-
             if self.index == 0:
                 self._tail_node._bind_to_data(parent)
 
@@ -1440,7 +1435,6 @@ class _ElementWrappingNode(NodeBase):
         return _wrapper_cache(next_etree_obj)
 
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-
         candidate: Optional[NodeBase] = None
 
         previous_etree_obj = self._etree_obj.getprevious()
@@ -2032,7 +2026,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         ast: XPathExpression,
         namespaces: Namespaces,
     ) -> TagNode:
-
         node = self
 
         for i, step in enumerate(ast.location_paths[0].location_steps):
@@ -2552,9 +2545,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self._add_next_element_wrapping_node(node)
 
     def _add_next_element_wrapping_node(self, node: _ElementWrappingNode):
-
         if self._position is DATA:
-
             assert isinstance(self._bound_to, _Element)
             appended_text_node = self._appended_text_node
             self._bound_to.insert(0, node._etree_obj)
@@ -2563,7 +2554,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 appended_text_node._bind_to_tail(node)
 
         elif self._position is TAIL:
-
             assert isinstance(self._bound_to, _Element)
             data = self._bound_to.tail
             text_sibling = self._appended_text_node
@@ -2581,7 +2571,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 text_sibling._bind_to_tail(node)
 
         elif self._position is APPENDED:
-
             appended_text_node = self._appended_text_node
             self._appended_text_node = None
 
@@ -2608,9 +2597,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self._prepend_text_node(node)
 
         elif isinstance(node, _ElementWrappingNode):
-
             if self._position is DATA:
-
                 content = self.content
                 current_bound = self._bound_to
                 assert isinstance(current_bound, _Element)
@@ -2624,7 +2611,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 self.content = content
 
             elif self._position is TAIL:
-
                 assert isinstance(self._bound_to, _Element)
                 _wrapper_cache(self._bound_to)._add_following_sibling(node)
 
@@ -2702,7 +2688,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         return super().depth
 
     def detach(self, retain_child_nodes: bool = False) -> TextNode:
-
         if self._position is DETACHED:
             return self
 
@@ -2710,7 +2695,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         text_sibling = self._appended_text_node
 
         if self._position is DATA:
-
             current_parent = self.parent
             assert current_parent is not None
 
@@ -2726,7 +2710,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 assert not current_parent._data_node._exists
 
         elif self._position is TAIL:
-
             current_bound = self._bound_to
             assert isinstance(current_bound, _Element)
             current_previous = _wrapper_cache(current_bound)
@@ -2741,7 +2724,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
                 assert not current_previous._tail_node._exists
 
         elif self._position is APPENDED:
-
             assert isinstance(self._bound_to, TextNode)
             self._bound_to._appended_text_node = text_sibling
             if text_sibling:
@@ -2781,7 +2763,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self._appended_text_node
 
         elif self._position is DATA:
-
             assert isinstance(self._bound_to, _Element)
             if len(self._bound_to):
                 return _wrapper_cache(self._bound_to[0])
@@ -2909,7 +2890,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def _prepend_text_node(self, node: TextNode):
         if self._position is DATA:
-
             assert isinstance(self._bound_to, _Element)
             parent = _wrapper_cache(self._bound_to)
             assert isinstance(parent, TagNode)
@@ -2919,7 +2899,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self.content = content
 
         elif self._position is TAIL:
-
             assert isinstance(self._bound_to, _Element)
             left_sibling = _wrapper_cache(self._bound_to)
             content = self.content
@@ -2928,7 +2907,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self.content = content
 
         elif self._position is APPENDED:
-
             assert node._appended_text_node is None
             previous = self._bound_to
             assert isinstance(previous, TextNode)

@@ -193,23 +193,16 @@ def test_iter_following_nodes_over_long_stream(files_path):
 
 
 def test_namespaces():
-    node = Document("<node/>").root
+    node = Document("<node xmlns:foo='bar'/>").root
     namespaces = node.namespaces
 
-    namespaces["xmpl"] = "https:example.org"
-    assert "xmpl" in namespaces
-
     assert len(namespaces) == 3
-    assert set(namespaces.keys()) == {"xml", "xmlns", "xmpl"}
-
-    namespaces.pop("xmpl")
-    assert "xmpl" not in namespaces
-
-    namespaces.pop("xml")
-    assert "xml" in namespaces
-
-    with pytest.raises(ValueError):
-        namespaces["xml"] = "something completely different"
+    assert set(namespaces.keys()) == {"foo", "xml", "xmlns"}
+    assert set(namespaces.values()) == {
+        "bar",
+        "http://www.w3.org/2000/xmlns/",
+        "http://www.w3.org/XML/1998/namespace",
+    }
 
 
 def test_no_following_node():

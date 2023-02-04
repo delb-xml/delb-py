@@ -214,7 +214,6 @@ class LocationPath(Node):
         return nested_repr(self)
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
-
         if self.parent_path:
             parent_paths_result_generator = self.parent_path.evaluate(
                 node=node, namespaces=namespaces
