@@ -12,6 +12,13 @@ on:
       ref:
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: A git reference to check out.
+        default: main
+        required: true
+        type: string
 
 jobs:
 
