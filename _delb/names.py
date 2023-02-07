@@ -15,18 +15,19 @@
 
 from __future__ import annotations
 
-from collections import ChainMap
 from collections.abc import Mapping
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
+from _delb.rfc3987 import is_iri_compliant
 
-XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
-XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
+if TYPE_CHECKING:
+    from _delb.typing import Final, NamespaceDeclarations
 
-XML_ATT_ID = f"{{{XML_NAMESPACE}}}id"
-XML_ATT_SPACE = f"{{{XML_NAMESPACE}}}space"
+XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
+XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
 
-GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
+XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
+XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
 
 
 def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
@@ -57,27 +58,66 @@ class Namespaces(Mapping):
 
     # https://www.w3.org/TR/xml-names/#xmlReserved
 
-    __slots__ = ("data",)
+    __slots__ = ("__data", "fallback")
 
-    def __init__(self, namespaces: Mapping[Optional[str], str]):
-        self.data: Mapping[Optional[str], str]
+    def __init__(
+        self,
+        namespaces: NamespaceDeclarations,
+        *,
+        fallback: Optional[Namespaces] = None,
+    ):
+        self.__data: NamespaceDeclarations
         if isinstance(namespaces, Namespaces):
-            self.data = namespaces.data
-        else:
-            assert isinstance(namespaces, Mapping)
-            self.data = namespaces
+            self.__data = namespaces.__data
 
-    def __getitem__(self, item):
-        return GLOBAL_PREFIXES.get(item) or self.data[item]
+        elif isinstance(namespaces, Mapping):
+            # https://www.w3.org/TR/REC-xml-names seems not to care about redundantly
+            # declared namespaces.
+            self.__data = {}
+            for prefix, namespace in namespaces.items():
+                if prefix in ("xml", "xmlns"):
+                    raise ValueError(
+                        f"One must not override the global prefix `{prefix}`."
+                    )
+
+                if namespace == "":
+                    pass  # empty namespaces are allowed
+                elif namespace in {XML_NAMESPACE, XMLNS_NAMESPACE}:
+                    raise ValueError(
+                        f"The namespace `{namespace}` must not be overridden."
+                    )
+                elif not is_iri_compliant(namespace):
+                    raise ValueError(f"`{namespace}` is not a valid IRI.")
+
+                self.__data[prefix] = namespace
+
+        else:
+            raise TypeError
+
+        self.fallback: NamespaceDeclarations = (
+            {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
+            if fallback is None
+            else fallback
+        )
+
+    def __getitem__(self, item) -> str:
+        return self.__data.get(item) or self.fallback[item]
+
+    def __hash__(self):
+        data_hash = hash(frozenset(self.__data.items()))
+        if isinstance(self.fallback, Namespaces):
+            return hash((data_hash, hash(self.fallback)))
+        else:
+            return data_hash
 
     def __iter__(self):
-        return iter(ChainMap(GLOBAL_PREFIXES, self.data))
+        return iter(self.__data)
 
     def __len__(self):
-        return len(self.data) + 2
+        return len(self.__data)
 
     def __str__(self):
-        return str(dict(self))
+        return str(self.__data)
 
 
 __all__ = (
