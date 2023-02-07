@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, Mapping, MutableSequence
+from collections.abc import Iterable, Iterator, MutableSequence
 from copy import deepcopy
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Optional
@@ -66,7 +66,7 @@ from _delb.xpath import QueryResults
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import Loader
+    from _delb.typing import Loader, NamespaceDeclarations
 
 # plugin loading
 
@@ -351,7 +351,7 @@ class Document(metaclass=DocumentMeta):
 
     def cleanup_namespaces(
         self,
-        namespaces: Optional[Mapping[Optional[str], str]] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
         retain_prefixes: Optional[Iterable[str]] = None,
     ):
         """

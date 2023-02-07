@@ -41,6 +41,7 @@ else:
 
 
 Filter: TypeAlias = Callable[["NodeBase"], bool]
+NamespaceDeclarations: TypeAlias = Mapping[Optional[str], str]
 NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
 
 LoaderResult: TypeAlias = etree._ElementTree | str
@@ -54,5 +55,6 @@ __all__ = (
     "Loader",
     "LoaderConstraint",
     "LoaderResult",
+    "NamespaceDeclarations",
     "NodeSource",
 )
