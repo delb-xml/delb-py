@@ -409,7 +409,7 @@ class Document(metaclass=DocumentMeta):
             self.root._collapse_whitespace()
 
     def css_select(
-        self, expression: str, namespaces: Optional[Namespaces] = None
+        self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.css_select` method of the document's
@@ -504,7 +504,7 @@ class Document(metaclass=DocumentMeta):
         )
 
     def xpath(
-        self, expression: str, namespaces: Optional[Namespaces] = None
+        self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
         This method proxies to the :meth:`TagNode.xpath` method of the document's
