@@ -54,7 +54,7 @@ from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from delb import Document
-    from _delb.typing import Filter, NodeSource
+    from _delb.typing import Filter, NamespaceDeclarations, NodeSource
 
 
 # shortcuts
@@ -1933,7 +1933,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 etree.QName(self._etree_obj),
                 attrib=dict(self._etree_obj.attrib),  # type: ignore
                 # TODO https://github.com/lxml/lxml-stubs/issues/62
-                nsmap=parent.namespaces.data,  # type: ignore
+                nsmap=parent.namespaces,
             )
             self._attributes._etree_attrib = self._etree_obj.attrib
             self._attributes.namespaces = self.namespaces
@@ -1960,7 +1960,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def fetch_or_create_by_xpath(
         self,
         expression: str,
-        namespaces: Optional[Namespaces | Mapping[Optional[str], str]] = None,
+        namespaces: Optional[Namespaces | NamespaceDeclarations] = None,
     ) -> TagNode:
         """
         Fetches a single node that is locatable by the provided XPath expression. If
