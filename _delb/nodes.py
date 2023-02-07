@@ -1324,11 +1324,19 @@ class _ChildLessNode(NodeBase):
 
 
 class _ElementWrappingNode(NodeBase):
-    __slots__ = ("_etree_obj", "_tail_node")
+    __slots__ = ("_etree_obj", "__namespaces", "_tail_node")
 
     def __init__(self, etree_element: _Element):
         self._etree_obj = etree_element
         self._tail_node = TextNode(etree_element, position=TAIL)
+
+        namespaces = Namespaces(self._etree_obj.nsmap)
+        # TODO eventually review whether this is the only piece that benefits from
+        #      hashing names.Namespace
+        if self.parent is not None and namespaces == self.parent.namespaces:
+            self.__namespaces = self.parent.namespaces
+        else:
+            self.__namespaces = namespaces
 
     def __copy__(self) -> _ElementWrappingNode:
         return self.clone(deep=False)
@@ -1475,7 +1483,7 @@ class _ElementWrappingNode(NodeBase):
 
     @property
     def namespaces(self) -> Namespaces:
-        return Namespaces(self._etree_obj.nsmap)
+        return self.__namespaces
 
     @property
     def parent(self) -> Optional[TagNode]:
