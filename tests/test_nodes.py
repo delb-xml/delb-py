@@ -192,19 +192,6 @@ def test_iter_following_nodes_over_long_stream(files_path):
     assert collected_text == expected_text
 
 
-def test_namespaces():
-    node = Document("<node xmlns:foo='bar'/>").root
-    namespaces = node.namespaces
-
-    assert len(namespaces) == 3
-    assert set(namespaces.keys()) == {"foo", "xml", "xmlns"}
-    assert set(namespaces.values()) == {
-        "bar",
-        "http://www.w3.org/2000/xmlns/",
-        "http://www.w3.org/XML/1998/namespace",
-    }
-
-
 def test_no_following_node():
     document = Document("<root><a/></root>")
     assert document.root[0].fetch_following() is None

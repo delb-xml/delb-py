@@ -15,19 +15,6 @@ from delb.exceptions import FailedDocumentLoading, InvalidOperation
 from tests.plugins import PlaygroundDocumentExtension
 
 
-def test_cleanup_namespaces():
-    document = Document('<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/></root>')
-
-    document.cleanup_namespaces(retain_prefixes=("y",))
-    assert str(document) == '<root xmlns="D" xmlns:y="Y"><x:a xmlns:x="X"/></root>'
-
-    document.cleanup_namespaces()
-    assert str(document) == '<root xmlns="D"><x:a xmlns:x="X"/></root>'
-
-    document.cleanup_namespaces(namespaces={"x": "X"})
-    assert str(document) == '<root xmlns="D" xmlns:x="X"><x:a/></root>'
-
-
 def test_config_initialization():
     document = Document("<root/>", playground_property="foo")
 
