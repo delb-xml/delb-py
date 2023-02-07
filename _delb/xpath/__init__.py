@@ -67,10 +67,11 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Optional
 
 # DROPWITH Python 3.8 and replace w/ imports from collections.abc
-from typing import Collection, Iterable, Iterator, Sequence
+from typing import Collection, Iterable, Iterator, Mapping, Sequence
 
 from cssselect import GenericTranslator
 
+from _delb.names import Namespaces
 from _delb.utils import sort_nodes_in_document_order
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
@@ -78,10 +79,8 @@ from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from _delb.names import Namespaces
     from _delb.nodes import NodeBase
-    from _delb.typing import Filter
-
+    from _delb.typing import Filter, NamespaceDeclarations
 
 _css_translator = GenericTranslator()
 
@@ -167,11 +166,20 @@ def _css_to_xpath(expression: str) -> str:
 def evaluate(
     node: NodeBase,
     expression: str,
-    namespaces: Optional[Namespaces] = None,
+    namespaces: Optional[NamespaceDeclarations] = None,
 ) -> QueryResults:
+    # global namespaces are guaranteed by the Namespaces implementation
     if namespaces is None:
-        namespaces = node.namespaces
-    return QueryResults(parse(expression).evaluate(node=node, namespaces=namespaces))
+        _namespaces = node.namespaces
+    elif isinstance(namespaces, Namespaces):
+        # b/c it would break fallback chains
+        raise TypeError
+    elif isinstance(namespaces, Mapping):
+        _namespaces = Namespaces(namespaces, fallback=node.namespaces)
+    else:
+        raise TypeError
+
+    return QueryResults(parse(expression).evaluate(node=node, namespaces=_namespaces))
 
 
 __all__ = (

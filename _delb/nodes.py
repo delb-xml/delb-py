@@ -1195,7 +1195,7 @@ class NodeBase(ABC):
     def xpath(
         self,
         expression: str,
-        namespaces: Optional[Namespaces] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
         """
         See `Queries with XPath & CSS`_ for details on the extent of the XPath
@@ -1204,7 +1204,8 @@ class NodeBase(ABC):
         :param expression: A supported XPath 1.0 expression that contains one or more
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. If omitted, the node's definition is used.
+                           namespaces. The declarations that were used in a document's
+                           source serialisat serve as fallback.
         :return: All nodes that match the evaluation of the provided XPath expression.
 
         :meta category: query-nodes
@@ -1874,7 +1875,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 cast("TagNode", child_node)._collapse_whitespace(normalize_space)
 
     def css_select(
-        self, expression: str, namespaces: Optional[Namespaces] = None
+        self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
         See `Queries with XPath & CSS`_ regarding the extent of the supported grammar.
@@ -1960,7 +1961,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def fetch_or_create_by_xpath(
         self,
         expression: str,
-        namespaces: Optional[Namespaces | NamespaceDeclarations] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
     ) -> TagNode:
         """
         Fetches a single node that is locatable by the provided XPath expression. If
@@ -1990,8 +1991,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param expression: An XPath expression that can unambiguously locate a
                            descending node in a tree that has any state.
-        :param namespaces: An optional mapping of prefixes to namespaces. As default the
-                           node's one is used.
+        :param namespaces: An optional mapping of prefixes to namespaces. The
+                           declarations that were used in a document's source serialisat
+                           serve as fallback.
         :return: The existing or freshly created node descibed with ``expression``.
 
         :meta category: query-nodes
@@ -2002,12 +2004,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "The XPath expression doesn't determine a distinct branch."
             )
 
-        if namespaces is None:
-            namespaces = self.namespaces
-        elif not isinstance(namespaces, Namespaces):
-            namespaces = Namespaces(namespaces)
-
-        query_result = self.xpath(expression, namespaces)
+        query_result = self.xpath(expression, namespaces=namespaces)
 
         if query_result.size == 1:
             result = query_result.first
@@ -2019,7 +2016,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 f"The tree already contains {query_result.size} matching branches."
             )
 
-        return self._create_by_xpath(ast, namespaces)
+        return self._create_by_xpath(
+            ast, namespaces=Namespaces(namespaces or {}, fallback=self.namespaces)
+        )
 
     def _create_by_xpath(
         self,
@@ -2369,7 +2368,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def xpath(
         self,
         expression: str,
-        namespaces: Optional[Namespaces] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
         """
         See `Queries with XPath & CSS`_ for details on the extent of the XPath
@@ -2378,7 +2377,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :param expression: A supported XPath 1.0 expression that contains one or more
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. If omitted, the node's definition is used.
+                           namespaces. The declarations that were used in a document's
+                           source serialisat serve as fallback.
         :return: All nodes that match the evaluation of the provided XPath expression.
 
         :meta category: query-nodes
