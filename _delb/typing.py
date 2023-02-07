@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Iterable
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Mapping, Optional
@@ -25,14 +26,18 @@ from typing import Union  # noqa: UNT001
 from lxml import etree
 
 if TYPE_CHECKING:
-    import sys
-
-    if sys.version_info < (3, 10):
+    if sys.version_info < (3, 10):  # DROPWITH Python 3.10
         from typing_extensions import TypeAlias
     else:
         from typing import TypeAlias
 
     from _delb.nodes import NodeBase, _TagDefinition
+
+
+if sys.version_info < (3, 8):  # DROPWITH Python 3.8
+    from typing_extensions import Final
+else:
+    from typing import Final
 
 
 Filter: TypeAlias = Callable[["NodeBase"], bool]
@@ -46,6 +51,7 @@ LoaderConstraint: TypeAlias = Optional[Loader | Iterable[Loader]]
 
 __all__ = (
     "Filter",
+    "Final",
     "Loader",
     "LoaderConstraint",
     "LoaderResult",

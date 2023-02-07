@@ -28,6 +28,13 @@ def test_namespaces():
         namespaces["none"]
 
 
+def test_namespaces_hashing():
+    namespaces1 = Namespaces({"ns0": "0", "ns1": "1"})
+    namespaces2 = Namespaces({"ns0": "00"}, fallback=namespaces1)
+    assert hash(namespaces1) != hash(namespaces2)
+    assert hash(namespaces2) != hash(Namespaces({"ns0": "00"}))
+
+
 @mark.parametrize(
     "data",
     ({"xml": "foo"}, {"foo": XML_NAMESPACE}),

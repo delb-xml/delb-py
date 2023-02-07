@@ -15,18 +15,17 @@
 
 from __future__ import annotations
 
-from collections import ChainMap
 from collections.abc import Mapping
-from typing import Optional
+from typing import TYPE_CHECKING, Iterator, Optional
 
+if TYPE_CHECKING:
+    from _delb.typing import Final, NamespaceDeclarations
 
-XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
-XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
+XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
+XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
 
-XML_ATT_ID = f"{{{XML_NAMESPACE}}}id"
-XML_ATT_SPACE = f"{{{XML_NAMESPACE}}}space"
-
-GLOBAL_PREFIXES = {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
+XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
+XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
 
 
 def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
@@ -49,35 +48,80 @@ def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
         return None, name
 
 
+def is_valid_namespace(value: str) -> bool:
+    if value == "":
+        return True
+
+    if value in {XML_NAMESPACE, XMLNS_NAMESPACE}:
+        raise ValueError(f"The namespace `{value}` must not be overridden.")
+
+    # TODO? validate as RFC 3987 compliant
+    #       see https://github.com/delb-xml/delb-py/issues/69
+
+    return True
+
+
 class Namespaces(Mapping):
     """
     A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
     are available and unchanged.
     """
 
-    # https://www.w3.org/TR/xml-names/#xmlReserved
+    __slots__ = ("__data", "fallback", "__hash")
 
-    __slots__ = ("data",)
-
-    def __init__(self, namespaces: Mapping[Optional[str], str]):
-        self.data: Mapping[Optional[str], str]
+    def __init__(
+        self,
+        namespaces: NamespaceDeclarations,
+        *,
+        fallback: Optional[Namespaces] = None,
+    ):
+        self.__data: NamespaceDeclarations
         if isinstance(namespaces, Namespaces):
-            self.data = namespaces.data
+            self.__data = namespaces.__data
+
+        elif isinstance(namespaces, Mapping):
+            # https://www.w3.org/TR/REC-xml-names seems not to care about redundantly
+            # declared namespaces.
+            self.__data = {}
+            for prefix, namespace in namespaces.items():
+                if prefix in ("xml", "xmlns"):
+                    # https://www.w3.org/TR/xml-names/#xmlReserved
+                    raise ValueError(
+                        f"One must not override the global prefix `{prefix}`."
+                    )
+                if not is_valid_namespace(namespace):
+                    raise RuntimeError("Unexpected code path")
+                self.__data[prefix] = namespace
+
         else:
-            assert isinstance(namespaces, Mapping)
-            self.data = namespaces
+            raise TypeError
 
-    def __getitem__(self, item):
-        return GLOBAL_PREFIXES.get(item) or self.data[item]
+        self.fallback: NamespaceDeclarations = (
+            {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
+            if fallback is None
+            else fallback
+        )
 
-    def __iter__(self):
-        return iter(ChainMap(GLOBAL_PREFIXES, self.data))
+        data_hash = hash(tuple(self.__data.items()))
+        if isinstance(self.fallback, Namespaces):
+            self.__hash = hash((data_hash, hash(self.fallback)))
+        else:
+            self.__hash = data_hash
 
-    def __len__(self):
-        return len(self.data) + 2
+    def __getitem__(self, item) -> str:
+        return self.__data.get(item) or self.fallback[item]
 
-    def __str__(self):
-        return str(dict(self))
+    def __hash__(self) -> int:
+        return self.__hash
+
+    def __iter__(self) -> Iterator[Optional[str]]:
+        return iter(self.__data)
+
+    def __len__(self) -> int:
+        return len(self.__data)
+
+    def __str__(self) -> str:
+        return str(self.__data)
 
 
 __all__ = (
