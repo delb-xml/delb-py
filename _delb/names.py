@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Iterator, Optional
 
 from _delb.rfc3987 import is_iri_compliant
 
@@ -56,8 +56,6 @@ class Namespaces(Mapping):
     are available and unchanged.
     """
 
-    # https://www.w3.org/TR/xml-names/#xmlReserved
-
     __slots__ = ("__data", "fallback", "__hash")
 
     def __init__(
@@ -76,6 +74,7 @@ class Namespaces(Mapping):
             self.__data = {}
             for prefix, namespace in namespaces.items():
                 if prefix in ("xml", "xmlns"):
+                    # https://www.w3.org/TR/xml-names/#xmlReserved
                     raise ValueError(
                         f"One must not override the global prefix `{prefix}`."
                     )
@@ -109,16 +108,16 @@ class Namespaces(Mapping):
     def __getitem__(self, item) -> str:
         return self.__data.get(item) or self.fallback[item]
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.__hash
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Optional[str]]:
         return iter(self.__data)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.__data)
 
 
