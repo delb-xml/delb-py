@@ -58,7 +58,7 @@ class Namespaces(Mapping):
 
     # https://www.w3.org/TR/xml-names/#xmlReserved
 
-    __slots__ = ("__data", "fallback")
+    __slots__ = ("__data", "fallback", "__hash")
 
     def __init__(
         self,
@@ -100,15 +100,17 @@ class Namespaces(Mapping):
             else fallback
         )
 
+        data_hash = hash(tuple(self.__data.items()))
+        if isinstance(self.fallback, Namespaces):
+            self.__hash = hash((data_hash, hash(self.fallback)))
+        else:
+            self.__hash = data_hash
+
     def __getitem__(self, item) -> str:
         return self.__data.get(item) or self.fallback[item]
 
     def __hash__(self):
-        data_hash = hash(frozenset(self.__data.items()))
-        if isinstance(self.fallback, Namespaces):
-            return hash((data_hash, hash(self.fallback)))
-        else:
-            return data_hash
+        return self.__hash
 
     def __iter__(self):
         return iter(self.__data)
