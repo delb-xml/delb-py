@@ -1,7 +1,7 @@
 delb
 ====
 
-|latest-version| |rtd| |python-support| |license| |black|
+|latest-version| |rtd| |python-support| |license| |mypy| |black|
 
 ``delb`` is a library that provides an ergonomic model for XML encoded text
 documents (e.g. TEI-XML_) for the Python programming language.
@@ -60,6 +60,9 @@ Kurt Raschke `noted in 2010`_::
 .. |license| image:: https://img.shields.io/pypi/l/delb.svg?style=flat-square
    :alt: License
    :target: https://github.com/delb-xml/delb-py/blob/main/LICENSE.txt
+.. |mypy| image:: https://img.shields.io/badge/mypy-checked-success.svg?style=flat-square
+   :alt: mypy-checked
+   :target: https://www.mypy-lang.org/
 .. |python-support| image:: https://img.shields.io/pypi/pyversions/delb.svg?style=flat-square
    :alt: Python versions
 .. |rtd| image:: https://img.shields.io/badge/RTD-Docs-informational.svg?style=flat-square
