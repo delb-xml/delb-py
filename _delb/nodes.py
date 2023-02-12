@@ -1331,6 +1331,8 @@ class _ElementWrappingNode(NodeBase):
         self._tail_node = TextNode(etree_element, position=TAIL)
 
         namespaces = Namespaces(self._etree_obj.nsmap)
+        # TODO eventually review whether this is the only piece that benefits from
+        #      hashing names.Namespace
         if self.parent is not None and namespaces == self.parent.namespaces:
             self.__namespaces = self.parent.namespaces
         else:
