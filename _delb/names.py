@@ -19,8 +19,6 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Iterator, Optional
 
-from _delb.rfc3987 import is_iri_compliant
-
 if TYPE_CHECKING:
     from _delb.typing import Final, NamespaceDeclarations
 
@@ -55,6 +53,19 @@ def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
         return None, name
 
 
+def is_valid_namespace(value: str) -> bool:
+    if value == "":
+        return True
+
+    if value in {XML_NAMESPACE, XMLNS_NAMESPACE}:
+        raise ValueError(f"The namespace `{value}` must not be overridden.")
+
+    # TODO? validate as RFC 3987 compliant
+    #       see https://github.com/delb-xml/delb-py/issues/69
+
+    return True
+
+
 class Namespaces(Mapping):
     """
     A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
@@ -86,16 +97,8 @@ class Namespaces(Mapping):
                     raise ValueError(
                         f"One must not override the global prefix `{prefix}`."
                     )
-
-                if namespace == "":
-                    pass  # empty namespaces are allowed
-                elif namespace in {XML_NAMESPACE, XMLNS_NAMESPACE}:
-                    raise ValueError(
-                        f"The namespace `{namespace}` must not be overridden."
-                    )
-                elif not is_iri_compliant(namespace):
-                    raise ValueError(f"`{namespace}` is not a valid IRI.")
-
+                if not is_valid_namespace(namespace):
+                    raise RuntimeError("Unexpected code path")
                 self.__data[prefix] = namespace
 
         else:
