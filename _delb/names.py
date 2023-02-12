@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Iterator, Optional
 
 if TYPE_CHECKING:
@@ -23,6 +24,10 @@ if TYPE_CHECKING:
 
 XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
+
+GLOBAL_NAMESPACES: Final = MappingProxyType(
+    {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
+)
 
 XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
 XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
@@ -67,7 +72,12 @@ class Namespaces(Mapping):
     are available and unchanged.
     """
 
-    __slots__ = ("__data", "fallback", "__hash")
+    __slots__ = (
+        "__data",
+        "__fallback",
+        "__hash",
+        "__prefixes_lookup_cache",
+    )
 
     def __init__(
         self,
@@ -80,11 +90,9 @@ class Namespaces(Mapping):
             self.__data = namespaces.__data
 
         elif isinstance(namespaces, Mapping):
-            # https://www.w3.org/TR/REC-xml-names seems not to care about redundantly
-            # declared namespaces.
             self.__data = {}
             for prefix, namespace in namespaces.items():
-                if prefix in ("xml", "xmlns"):
+                if prefix in {"xml", "xmlns"}:
                     # https://www.w3.org/TR/xml-names/#xmlReserved
                     raise ValueError(
                         f"One must not override the global prefix `{prefix}`."
@@ -96,20 +104,24 @@ class Namespaces(Mapping):
         else:
             raise TypeError
 
-        self.fallback: NamespaceDeclarations = (
+        self.__fallback: MappingProxyType[str, str] | NamespaceDeclarations = (
             {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
             if fallback is None
             else fallback
         )
 
         data_hash = hash(tuple(self.__data.items()))
-        if isinstance(self.fallback, Namespaces):
-            self.__hash = hash((data_hash, hash(self.fallback)))
+        if isinstance(self.__fallback, Namespaces):
+            self.__hash = hash((data_hash, hash(self.__fallback)))
         else:
             self.__hash = data_hash
 
+        self.__prefixes_lookup_cache: dict[str, Optional[str]] = {
+            v: k for k, v in GLOBAL_NAMESPACES.items()
+        }
+
     def __getitem__(self, item) -> str:
-        return self.__data.get(item) or self.fallback[item]
+        return self.__data.get(item) or self.__fallback[item]
 
     def __hash__(self) -> int:
         return self.__hash
@@ -123,8 +135,42 @@ class Namespaces(Mapping):
     def __str__(self) -> str:
         return str(self.__data)
 
+    def lookup_prefix(self, namespace: str) -> Optional[str]:
+        """
+        Resolves a namespace while considering namespace declarations of ascending
+        nodes.
+        """
+        if namespace in self.__prefixes_lookup_cache:
+            return self.__prefixes_lookup_cache[namespace]
+
+        encountered_prefixes: set[None | str] = set()
+        scope: Namespaces = self
+        result = None
+
+        while result is None:
+            for prefix, _namespace in scope.__data.items():
+                if namespace == _namespace:
+                    if prefix is None and None not in encountered_prefixes:
+                        self.__prefixes_lookup_cache[namespace] = None
+                        return None
+                    elif result is None:
+                        result = prefix
+
+                encountered_prefixes.add(prefix)
+
+            if not isinstance(scope.__fallback, Namespaces):
+                break
+            scope = scope.__fallback
+
+        if result is None:
+            raise KeyError(f"The namespace `{namespace}` hasn't been declared.")
+
+        self.__prefixes_lookup_cache[namespace] = result
+        return result
+
 
 __all__ = (
+    "GLOBAL_NAMESPACES",
     "XML_NAMESPACE",
     "XMLNS_NAMESPACE",
     deconstruct_clark_notation.__name__,
