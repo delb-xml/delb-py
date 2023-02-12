@@ -21,7 +21,7 @@ from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
 from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
@@ -3026,17 +3026,17 @@ class Serialzer:
         if encoding != "utf-8":
             raise NotImplementedError
 
-        self.buffer = buffer
+        self.buffer = TextIOWrapper(buffer, encoding=encoding, newline=newline)
         self.encoding = encoding
         self.align_attributes = align_attributes
         if indentation is None:
-            self.indentation = b""
+            self.indentation = ""
         else:
-            self.indentation = indentation.encode(encoding=encoding)
+            self.indentation = indentation
         if newline is None:
-            self.newline = "\n".encode(encoding=encoding)
+            self.newline = "\n"
         else:
-            self.newline = newline.encode(encoding=encoding)
+            self.newline = newline
         self.text_width = text_width
 
         self._level = 0
@@ -3047,23 +3047,17 @@ class Serialzer:
             self.buffer.write(self.newline + self._level * self.indentation)
 
         if isinstance(node, CommentNode):
-            self.buffer.write(
-                b"<!--" + node.content.encode(encoding=self.encoding) + b"-->"
-            )
+            self.buffer.write(f"<!--{node.content}-->")
         elif isinstance(node, ProcessingInstructionNode):
-            self.buffer.write(
-                b"<?"
-                + node.target.encode(encoding=self.encoding)
-                + b" "
-                + node.content.encode(encoding=self.encoding)
-                + b"?>"
-            )
+            self.buffer.write(f"<?{node.target} {node.content}?>")
         elif isinstance(node, TagNode):
             self.__tag(node)
         elif isinstance(node, TextNode):
-            self.buffer.write(node.content.encode(encoding=self.encoding))
+            self.buffer.write(node.content)
         else:
             raise TypeError
+
+        self.buffer.flush()
 
     def __aligned_attributes(self, node: TagNode):
         raise NotImplementedError
@@ -3072,13 +3066,13 @@ class Serialzer:
         for name, value in node.attributes.items():
             if '"' in value:
                 raise NotImplementedError
-            self.buffer.write(f' {name}="{value}"'.encode(encoding=self.encoding))
+            self.buffer.write(f' {name}="{value}"')
 
     def __tag(self, node: TagNode):
-        self.buffer.write(b"<")
+        self.buffer.write("<")
 
         if node.namespace is None:
-            self.buffer.write(node.local_name.encode(encoding=self.encoding))
+            self.buffer.write(node.local_name)
         else:
             raise NotImplementedError
 
@@ -3091,7 +3085,7 @@ class Serialzer:
         if len(node):
             raise NotImplementedError
         else:
-            self.buffer.write(b"/>")
+            self.buffer.write("/>")
 
 
 class StringSerializationConfigurator:
@@ -3111,6 +3105,7 @@ class StringSerializationConfigurator:
 
     @classmethod
     def _get_serializer(cls, buffer: BinaryIO) -> Serialzer:
+        # TODO employ a specialized serializer that writes to a StringIO instance
         return cls.serializer(
             buffer=buffer,
             align_attributes=cls.align_attributes,
