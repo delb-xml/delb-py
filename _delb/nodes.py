@@ -44,6 +44,7 @@ from _delb.utils import (
     _crunch_whitespace,
     last,
     _random_unused_prefix,
+    traverse_bf_ltr_ttb,
 )
 from _delb.xpath import (
     LegacyXPathExpression,
@@ -3040,9 +3041,14 @@ class Serialzer:
         self.text_width = text_width
 
         self._level = 0
+        self._prefixes: dict[Optional[str], str] = {}
+        self._root_was_handled = False
 
     @altered_default_filters()
     def __call__(self, node: NodeBase):
+        if not self._root_was_handled and isinstance(node, TagNode):
+            self.__collect_prefixes(node)
+
         if self.indentation and self._level:
             self.buffer.write(self.newline + self._level * self.indentation)
 
@@ -3051,7 +3057,8 @@ class Serialzer:
         elif isinstance(node, ProcessingInstructionNode):
             self.buffer.write(f"<?{node.target} {node.content}?>")
         elif isinstance(node, TagNode):
-            self.__tag(node)
+            self.__serialize_tag(node)
+            self._root_was_handled = True
         elif isinstance(node, TextNode):
             self.buffer.write(node.content)
         else:
@@ -3059,28 +3066,100 @@ class Serialzer:
 
         self.buffer.flush()
 
-    def __aligned_attributes(self, node: TagNode):
+    def __collect_prefixes(self, root: TagNode):
+        for node in traverse_bf_ltr_ttb(root, is_tag_node):
+            assert isinstance(node, TagNode)
+            for namespace in {node.namespace} | {
+                a.namespace for a in node.attributes.values()
+            }:
+                if namespace in self._prefixes:
+                    continue
+
+                if namespace is None:
+                    if "" in self._prefixes.values():
+                        # hence there's a default namespace in use
+                        raise NotImplementedError
+                    else:
+                        self._prefixes[None] = ""
+                        continue
+
+                try:
+                    prefix = node.namespaces.lookup_prefix(namespace)
+
+                    if prefix is None:
+                        if "" in self._prefixes.values():
+                            # hence there's an empty namespace in use
+                            self._prefixes[namespace] = ""
+                            namespace = None
+                            raise KeyError
+                        else:
+                            prefix = ""
+                    else:
+                        prefix = prefix + ":"
+
+                    self._prefixes[namespace] = prefix
+
+                except KeyError:
+                    assert isinstance(namespace, str)
+                    self.__new_namespace_declaration(namespace)
+
+    def __new_namespace_declaration(self, namespace: str):
+        for i in range(2**16):
+            prefix = f"ns{i}:"
+            if prefix not in self._prefixes.values():
+                self._prefixes[namespace] = prefix
+                return
+        else:
+            raise NotImplementedError("Just don't.")
+
+    def __generate_attributes_data(self, node: TagNode) -> dict[str, str]:
+        data = {}
+
+        if not self._root_was_handled:
+            declarations = {v: k for k, v in self._prefixes.items()}
+            assert None not in declarations
+            if "" in declarations:
+                namespace = declarations.pop("")
+                if namespace is not None:
+                    data["xmlns"] = namespace
+                # else it would be an unprefixed, empty namespace
+            for prefix in sorted(cast("dict[str, str]", declarations)):
+                assert len(prefix) >= 2
+                data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
+
+        for attribute in (node.attributes[a] for a in sorted(node.attributes)):
+            assert isinstance(attribute, Attribute)
+            if '"' in attribute.value:  # FIXME don't consider escaped characters
+                if "'" in attribute.value:
+                    raise NotImplementedError
+                else:
+                    quote = "'"
+            else:
+                quote = '"'
+
+            data[self._prefixes[attribute.namespace] + attribute.local_name] = (
+                # TODO encode value properly
+                quote
+                + attribute.value
+                + quote
+            )
+
+        return data  # type: ignore
+
+    def __serialize_aligned_attributes(self, data: dict[str, str]):
         raise NotImplementedError
 
-    def __attributes(self, node: TagNode):
-        for name, value in node.attributes.items():
-            if '"' in value:
-                raise NotImplementedError
-            self.buffer.write(f' {name}="{value}"')
-
-    def __tag(self, node: TagNode):
+    def __serialize_tag(self, node: TagNode):
         self.buffer.write("<")
+        self.buffer.write(self._prefixes[node.namespace] + node.local_name)
 
-        if node.namespace is None:
-            self.buffer.write(node.local_name)
-        else:
-            raise NotImplementedError
-
-        if node.attributes:
+        if node.attributes or not self._root_was_handled:
+            data = self.__generate_attributes_data(node)
             if self.align_attributes:
-                self.__aligned_attributes(node)
+                self.__serialize_aligned_attributes(data)
             else:
-                self.__attributes(node)
+                for key, value in data.items():
+                    self.buffer.write(f" {key}={value}")
 
         if len(node):
             raise NotImplementedError

@@ -435,6 +435,19 @@ def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase
 # tree traversers
 
 
+def traverse_bf_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+    if all(f(root) for f in filters):
+        yield root
+
+    queue = list(root.iterate_children())
+    while queue:
+        node = queue.pop(0)
+        if _is_node_of_type(node, "TagNode"):
+            queue.extend(node.iterate_children())
+        if all(f(node) for f in filters):
+            yield node
+
+
 def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
     def yield_children(node):
         for child in tuple(node.iterate_children(*filters)):
@@ -450,6 +463,7 @@ def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
 
 
 TRAVERSERS = {
+    (True, False, True): traverse_bf_ltr_ttb,
     (True, True, True): traverse_df_ltr_ttb,
     (True, True, False): traverse_df_ltr_btt,
 }
