@@ -702,7 +702,7 @@ class TagAttributes(MutableMapping):
 class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         buffer = BytesIO()
         serializer = StringSerializationConfigurator._get_serializer(buffer)
         serializer(self)
