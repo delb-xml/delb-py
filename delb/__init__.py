@@ -520,6 +520,7 @@ class Document(metaclass=DocumentMeta):
         encoding: str = "utf-8",
         align_attributes: bool = False,
         indentation: Optional[str] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
         text_width: int = 0,
         **cleanup_namespaces_args,
     ):
@@ -532,6 +533,10 @@ class Document(metaclass=DocumentMeta):
                            vertically aligned equal signs if :py:obj:`True`.
         :indentation: When a string is provided, descending nodes are indented with one
                       instance of that string per depth level.
+        :namespaces: A mapping of prefixes to namespaces. These are overriding possible
+                     declarations from a parsed serialisat that the document instance
+                     stems from. Prefixes for undeclared namespaces are enumerated with
+                     the prefix ``ns``.
         :text_width: A positive integer is used as maximum width for possibly indented
                      text node contents.
         :param cleanup_namespaces_args: Arguments that are a passed to
@@ -553,6 +558,7 @@ class Document(metaclass=DocumentMeta):
             encoding=encoding,
             align_attributes=align_attributes,
             indentation=indentation,
+            namespaces=namespaces,
             text_width=text_width,
         )
 

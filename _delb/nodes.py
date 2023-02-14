@@ -3021,6 +3021,7 @@ class Serialzer:
         *,
         align_attributes: bool = False,
         indentation: Optional[str] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
         text_width: int = 0,
     ):
@@ -3034,6 +3035,9 @@ class Serialzer:
             self.indentation = ""
         else:
             self.indentation = indentation
+        if namespaces is None:
+            namespaces = {}
+        self.namespaces = Namespaces(namespaces)
         if newline is None:
             self.newline = "\n"
         else:
@@ -3084,7 +3088,8 @@ class Serialzer:
                         continue
 
                 try:
-                    prefix = node.namespaces.lookup_prefix(namespace)
+                    self.namespaces._fallback = node.namespaces
+                    prefix = self.namespaces.lookup_prefix(namespace)
 
                     if prefix is None:
                         if "" in self._prefixes.values():
@@ -3121,7 +3126,7 @@ class Serialzer:
             if "" in declarations:
                 namespace = declarations.pop("")
                 if namespace is not None:
-                    data["xmlns"] = namespace
+                    data["xmlns"] = f'"{namespace}"'
                 # else it would be an unprefixed, empty namespace
             for prefix in sorted(cast("dict[str, str]", declarations)):
                 assert len(prefix) >= 2
@@ -3177,6 +3182,8 @@ class StringSerializationConfigurator:
     """TODO"""
     indentation: str = "\t"
     """TODO"""
+    namespaces: Optional[NamespaceDeclarations] = None
+    """TODO"""
     serializer: type[Serialzer] = Serialzer
     """TODO"""
     text_width: int = 0
@@ -3190,6 +3197,7 @@ class StringSerializationConfigurator:
             align_attributes=cls.align_attributes,
             encoding="utf-8",
             indentation=cls.indentation,
+            namespaces=cls.namespaces,
             # TODO newline per platform?
             text_width=cls.text_width,
         )
@@ -3198,6 +3206,7 @@ class StringSerializationConfigurator:
     def reset_defaults(cls):
         cls.align_attributes = False
         cls.indentation = "\t"
+        cls.namespaces = None
         cls.serializer = Serialzer
         cls.text_width = 0
 

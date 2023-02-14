@@ -74,7 +74,7 @@ class Namespaces(Mapping):
 
     __slots__ = (
         "__data",
-        "__fallback",
+        "_fallback",
         "__hash",
         "__prefixes_lookup_cache",
     )
@@ -104,15 +104,15 @@ class Namespaces(Mapping):
         else:
             raise TypeError
 
-        self.__fallback: MappingProxyType[str, str] | NamespaceDeclarations = (
+        self._fallback: MappingProxyType[str, str] | NamespaceDeclarations = (
             {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
             if fallback is None
             else fallback
         )
 
         data_hash = hash(tuple(self.__data.items()))
-        if isinstance(self.__fallback, Namespaces):
-            self.__hash = hash((data_hash, hash(self.__fallback)))
+        if isinstance(self._fallback, Namespaces):
+            self.__hash = hash((data_hash, hash(self._fallback)))
         else:
             self.__hash = data_hash
 
@@ -121,7 +121,7 @@ class Namespaces(Mapping):
         }
 
     def __getitem__(self, item) -> str:
-        return self.__data.get(item) or self.__fallback[item]
+        return self.__data.get(item) or self._fallback[item]
 
     def __hash__(self) -> int:
         return self.__hash
@@ -158,9 +158,9 @@ class Namespaces(Mapping):
 
                 encountered_prefixes.add(prefix)
 
-            if not isinstance(scope.__fallback, Namespaces):
+            if not isinstance(scope._fallback, Namespaces):
                 break
-            scope = scope.__fallback
+            scope = scope._fallback
 
         if result is None:
             raise KeyError(f"The namespace `{namespace}` hasn't been declared.")
