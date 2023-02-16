@@ -3191,7 +3191,7 @@ class StringSerializationConfigurator:
     """TODO"""
     namespaces: Optional[NamespaceDeclarations] = None
     """TODO"""
-    newline: None | str
+    newline: None | str = None
     """See :py:class:`io.StringIOWrapper`."""
     serializer: type[Serializer] = Serializer
     """TODO"""

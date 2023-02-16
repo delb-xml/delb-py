@@ -452,6 +452,7 @@ class Document(metaclass=DocumentMeta):
         encoding: str = "utf-8",
         align_attributes: bool = False,
         indentation: Optional[str] = None,
+        newline: None | str = None,
         text_width: int = 0,
         **cleanup_namespaces_args,
     ):
@@ -472,6 +473,7 @@ class Document(metaclass=DocumentMeta):
                 encoding=encoding,
                 align_attributes=align_attributes,
                 indentation=indentation,
+                newline=newline,
                 text_width=text_width,
                 **cleanup_namespaces_args,
             )
@@ -520,6 +522,7 @@ class Document(metaclass=DocumentMeta):
             align_attributes=align_attributes,
             indentation=indentation,
             namespaces=namespaces,
+            newline=newline,
             text_width=text_width,
         )
 
