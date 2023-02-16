@@ -3046,28 +3046,14 @@ class Serializer:
 
         self._level = 0
         self._prefixes: dict[Optional[str], str] = {}
-        self._root_was_handled = False
+        self._namespaces_are_declared = False
 
     @altered_default_filters()
     def __call__(self, node: NodeBase):
-        if not self._root_was_handled and isinstance(node, TagNode):
+        if not self._namespaces_are_declared and isinstance(node, TagNode):
             self.__collect_prefixes(node)
 
-        if self.indentation and self._level:
-            self.buffer.write(self.newline + self._level * self.indentation)
-
-        if isinstance(node, CommentNode):
-            self.buffer.write(f"<!--{node.content}-->")
-        elif isinstance(node, ProcessingInstructionNode):
-            self.buffer.write(f"<?{node.target} {node.content}?>")
-        elif isinstance(node, TagNode):
-            self.__serialize_tag(node)
-            self._root_was_handled = True
-        elif isinstance(node, TextNode):
-            self.buffer.write(node.content)
-        else:
-            raise TypeError
-
+        self.__serialize_node(node)
         self.buffer.flush()
 
     def __collect_prefixes(self, root: TagNode):
@@ -3120,7 +3106,7 @@ class Serializer:
     def __generate_attributes_data(self, node: TagNode) -> dict[str, str]:
         data = {}
 
-        if not self._root_was_handled:
+        if not self._namespaces_are_declared:
             declarations = {v: k for k, v in self._prefixes.items()}
             assert None not in declarations
             if "" in declarations:
@@ -3131,6 +3117,7 @@ class Serializer:
             for prefix in sorted(cast("dict[str, str]", declarations)):
                 assert len(prefix) >= 2
                 data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
+            self._namespaces_are_declared = True
 
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
@@ -3154,11 +3141,25 @@ class Serializer:
     def __serialize_aligned_attributes(self, data: dict[str, str]):
         raise NotImplementedError
 
+    def __serialize_node(self, node):
+        if self.indentation and self._level:
+            self.buffer.write(self.newline + self._level * self.indentation)
+        if isinstance(node, CommentNode):
+            self.buffer.write(f"<!--{node.content}-->")
+        elif isinstance(node, ProcessingInstructionNode):
+            self.buffer.write(f"<?{node.target} {node.content}?>")
+        elif isinstance(node, TagNode):
+            self.__serialize_tag(node)
+        elif isinstance(node, TextNode):
+            self.buffer.write(node.content)
+        else:
+            raise TypeError
+
     def __serialize_tag(self, node: TagNode):
         self.buffer.write("<")
         self.buffer.write(self._prefixes[node.namespace] + node.local_name)
 
-        if node.attributes or not self._root_was_handled:
+        if node.attributes or not self._namespaces_are_declared:
             data = self.__generate_attributes_data(node)
             if self.align_attributes:
                 self.__serialize_aligned_attributes(data)
@@ -3167,7 +3168,10 @@ class Serializer:
                     self.buffer.write(f" {key}={value}")
 
         if len(node):
-            raise NotImplementedError
+            self.buffer.write(">")
+            for child_node in node.iterate_children():
+                self.__serialize_node(child_node)
+            self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
         else:
             self.buffer.write("/>")
 
