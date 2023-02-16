@@ -18,6 +18,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, MutableSequence
 from copy import deepcopy
+from io import TextIOWrapper
 from itertools import chain
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
@@ -521,6 +522,7 @@ class Document(metaclass=DocumentMeta):
         align_attributes: bool = False,
         indentation: Optional[str] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
+        newline: None | str,
         text_width: int = 0,
         **cleanup_namespaces_args,
     ):
@@ -537,6 +539,7 @@ class Document(metaclass=DocumentMeta):
                      declarations from a parsed serialisat that the document instance
                      stems from. Prefixes for undeclared namespaces are enumerated with
                      the prefix ``ns``.
+        :newline: See :py:class:`io.TextIOWrapper`.
         :text_width: A positive integer is used as maximum width for possibly indented
                      text node contents.
         :param cleanup_namespaces_args: Arguments that are a passed to
@@ -554,7 +557,7 @@ class Document(metaclass=DocumentMeta):
 
         self.cleanup_namespaces(**cleanup_namespaces_args)
         serializer = Serializer(
-            buffer=buffer,
+            buffer=TextIOWrapper(buffer),
             encoding=encoding,
             align_attributes=align_attributes,
             indentation=indentation,

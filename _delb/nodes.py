@@ -21,7 +21,7 @@ from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
-from io import BytesIO, TextIOWrapper
+from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
 from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
@@ -55,7 +55,7 @@ from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
-    from typing import BinaryIO
+    from typing import TextIO
 
     from delb import Document
     from _delb.typing import Filter, NamespaceDeclarations, NodeSource
@@ -703,10 +703,10 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self) -> str:
-        buffer = BytesIO()
+        buffer = StringIO()
         serializer = StringSerializationConfigurator._get_serializer(buffer)
         serializer(self)
-        return buffer.getvalue().decode()
+        return buffer.getvalue()
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -3016,7 +3016,7 @@ class Serializer:
 
     def __init__(
         self,
-        buffer: BinaryIO,
+        buffer: TextIO,
         encoding="utf-8",
         *,
         align_attributes: bool = False,
@@ -3028,7 +3028,6 @@ class Serializer:
         if encoding != "utf-8":
             raise NotImplementedError
 
-        self.buffer = TextIOWrapper(buffer, encoding=encoding, newline=newline)
         self.encoding = encoding
         self.align_attributes = align_attributes
         if indentation is None:
@@ -3043,6 +3042,10 @@ class Serializer:
         else:
             self.newline = newline
         self.text_width = text_width
+
+        if isinstance(buffer, TextIOWrapper):
+            buffer.reconfigure(encoding=self.encoding, newline=self.newline)
+        self.buffer = buffer
 
         self._level = 0
         self._prefixes: dict[Optional[str], str] = {}
@@ -3188,20 +3191,22 @@ class StringSerializationConfigurator:
     """TODO"""
     namespaces: Optional[NamespaceDeclarations] = None
     """TODO"""
+    newline: None | str
+    """See :py:class:`io.StringIOWrapper`."""
     serializer: type[Serializer] = Serializer
     """TODO"""
     text_width: int = 0
     """TODO"""
 
     @classmethod
-    def _get_serializer(cls, buffer: BinaryIO) -> Serializer:
+    def _get_serializer(cls, buffer: StringIO) -> Serializer:
         return cls.serializer(
             buffer=buffer,
             align_attributes=cls.align_attributes,
             encoding="utf-8",
             indentation=cls.indentation,
             namespaces=cls.namespaces,
-            # TODO newline per platform?
+            newline=cls.newline,
             text_width=cls.text_width,
         )
 
