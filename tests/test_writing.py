@@ -32,11 +32,10 @@ def test_significant_whitespace_is_saved(result_file):
     root[2].append_children("world!")
 
     document.save(result_file)
-    with result_file.open("rt") as result:
-        assert result.readlines() == [
-            "<?xml version='1.0' encoding='UTF-8'?>\n",
-            "<text><hi>Hello</hi> <hi>world!</hi></text>",
-        ]
+    assert (
+        result_file.read_text() == "<?xml version='1.0' encoding='UTF-8'?>"
+        "<text><hi>Hello</hi> <hi>world!</hi></text>"
+    )
 
     document.save(result_file, pretty=True)
     with result_file.open("rt") as result:

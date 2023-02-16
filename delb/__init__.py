@@ -563,7 +563,7 @@ class Document(metaclass=DocumentMeta):
         )
 
         # TODO use native ProcessingInstructionNode when available?
-        declaration = f'<?xml encoding="{encoding}" ' f'version="1.1"?>'
+        declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
         if indentation is not None:
             declaration += "\n"
         serializer.buffer.write(declaration)
