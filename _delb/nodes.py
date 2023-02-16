@@ -3011,7 +3011,7 @@ def not_(*filter: Filter) -> Filter:
 # serializer
 
 
-class Serialzer:
+class Serializer:
     # TODO __slots__
 
     def __init__(
@@ -3184,14 +3184,13 @@ class StringSerializationConfigurator:
     """TODO"""
     namespaces: Optional[NamespaceDeclarations] = None
     """TODO"""
-    serializer: type[Serialzer] = Serialzer
+    serializer: type[Serializer] = Serializer
     """TODO"""
     text_width: int = 0
     """TODO"""
 
     @classmethod
-    def _get_serializer(cls, buffer: BinaryIO) -> Serialzer:
-        # TODO employ a specialized serializer that writes to a StringIO instance
+    def _get_serializer(cls, buffer: BinaryIO) -> Serializer:
         return cls.serializer(
             buffer=buffer,
             align_attributes=cls.align_attributes,
@@ -3207,7 +3206,7 @@ class StringSerializationConfigurator:
         cls.align_attributes = False
         cls.indentation = "\t"
         cls.namespaces = None
-        cls.serializer = Serialzer
+        cls.serializer = Serializer
         cls.text_width = 0
 
 
@@ -3220,7 +3219,7 @@ __all__ = (
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    Serialzer.__name__,
+    Serializer.__name__,
     StringSerializationConfigurator.__name__,
     TagAttributes.__name__,
     TagNode.__name__,

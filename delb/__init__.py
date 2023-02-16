@@ -50,7 +50,7 @@ from _delb.nodes import (
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
-    Serialzer,
+    Serializer,
     StringSerializationConfigurator,
     TagNode,
     TextNode,
@@ -553,7 +553,7 @@ class Document(metaclass=DocumentMeta):
             text_width = 0
 
         self.cleanup_namespaces(**cleanup_namespaces_args)
-        serializer = Serialzer(
+        serializer = Serializer(
             buffer=buffer,
             encoding=encoding,
             align_attributes=align_attributes,
