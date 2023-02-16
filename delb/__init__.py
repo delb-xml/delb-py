@@ -352,43 +352,6 @@ class Document(metaclass=DocumentMeta):
         _copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
         return etree.tostring(cloned_root._etree_obj.getroottree(), encoding="unicode")
 
-    def cleanup_namespaces(
-        self,
-        namespaces: Optional[NamespaceDeclarations] = None,
-        retain_prefixes: Optional[Iterable[str]] = None,
-    ):
-        """
-        Consolidates the namespace declarations in the document by removing unused and
-        redundant ones.
-
-        There are currently some caveats due to lxml/libxml2's implementations:
-          - prefixes cannot be set for the default namespace
-          - a namespace cannot be declared as default after a node's creation (where a
-            namespace was specified that had been registered for a prefix with
-            :func:`register_namespace`)
-          - there's no way to unregister a prefix for a namespace
-          - if there are other namespaces used as default namespaces (where a namespace
-            was specified that had *not* been registered for a prefix) in the
-            descendants of the root, their declarations are lost when this method is
-            used
-
-        To ensure clean serializations, one should:
-          - register prefixes for all namespaces except the default one at the start of
-            an application
-          - use only one default namespace within a document
-
-        :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
-                           (values) that will be declared at the root element.
-        :param retain_prefixes: An optional iterable that contains prefixes whose
-                                declarations shall be kept despite not being used.
-        """
-        etree.cleanup_namespaces(
-            self.root._etree_obj.getroottree(),
-            # TODO https://github.com/lxml/lxml-stubs/issues/62
-            top_nsmap=namespaces,  # type: ignore
-            keep_ns_prefixes=retain_prefixes,
-        )
-
     def clone(self) -> Document:
         """
         :return: Another instance with the duplicated contents.
@@ -524,7 +487,6 @@ class Document(metaclass=DocumentMeta):
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str,
         text_width: int = 0,
-        **cleanup_namespaces_args,
     ):
         """
         :param buffer: A :term:`file-like object` that the document is written to.
@@ -542,9 +504,6 @@ class Document(metaclass=DocumentMeta):
         :newline: See :py:class:`io.TextIOWrapper`.
         :text_width: A positive integer is used as maximum width for possibly indented
                      text node contents.
-        :param cleanup_namespaces_args: Arguments that are a passed to
-                                        :meth:`Document.cleanup_namespaces` before
-                                        writing.
         """
         if pretty is not None:
             warn(
@@ -555,7 +514,6 @@ class Document(metaclass=DocumentMeta):
             indentation = "  " if pretty else ""
             text_width = 0
 
-        self.cleanup_namespaces(**cleanup_namespaces_args)
         serializer = Serializer(
             buffer=TextIOWrapper(buffer),
             encoding=encoding,
