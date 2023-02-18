@@ -454,7 +454,6 @@ class Document(metaclass=DocumentMeta):
         indentation: Optional[str] = None,
         newline: None | str = None,
         text_width: int = 0,
-        **cleanup_namespaces_args,
     ):
         # TODO
         """
@@ -475,7 +474,6 @@ class Document(metaclass=DocumentMeta):
                 indentation=indentation,
                 newline=newline,
                 text_width=text_width,
-                **cleanup_namespaces_args,
             )
 
     def write(

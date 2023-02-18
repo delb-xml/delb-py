@@ -42,7 +42,6 @@ def test_attribute_object():
     assert attribute.universal_name == "{kitchen.sink}clam"
 
     attribute.namespace = None
-    document.cleanup_namespaces()
     assert str(node) == '<root clam="spam"/>'
     assert attribute.universal_name == "clam"
 
