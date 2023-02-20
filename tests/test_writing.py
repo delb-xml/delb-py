@@ -38,10 +38,22 @@ def test_significant_whitespace_is_saved(result_file):
     )
 
     document.save(result_file, pretty=True)
+
+    assert (
+        Document(result_file, collapse_whitespace=True)
+        .xpath("hi")
+        .first.fetch_following_sibling()
+        == " "
+    )
+
     with result_file.open("rt") as result:
         assert result.readlines() == [
             "<?xml version='1.0' encoding='UTF-8'?>\n",
-            "<text><hi>Hello</hi> <hi>world!</hi></text>\n",
+            "<text>\n",
+            "  <hi>Hello</hi>\n",
+            "   \n",  # FIXME?
+            "  <hi>world!</hi>\n",
+            "</text>\n",
         ]
 
 

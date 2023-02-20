@@ -3139,8 +3139,8 @@ class SerializerBase:
 
     def serialize_node(self, node: NodeBase):
         if self.indentation and self._level:
-            # TODO this assumes that \n is handled platform-sensitive, but it's untested
-            self.buffer.write("\n" + self._level * self.indentation)
+            self.buffer.write(self._level * self.indentation)
+
         if isinstance(node, CommentNode):
             self.buffer.write(f"<!--{node.content}-->")
         elif isinstance(node, ProcessingInstructionNode):
@@ -3151,6 +3151,9 @@ class SerializerBase:
             self.buffer.write(node.content)
         else:
             raise TypeError
+
+        if self.indentation:
+            self.buffer.write("\n")
 
     def serialize_root(self, root: TagNode):
         self.__collect_prefixes(root)
@@ -3168,11 +3171,14 @@ class SerializerBase:
 
         attributes_data.update(self.__generate_attributes_data(root))
         self.__serialize_tag(root, attributes_data)
+        if self.indentation:
+            self.buffer.write("\n")
 
     def __serialize_non_root_tag(self, node: TagNode):
         self.__serialize_tag(node, self.__generate_attributes_data(node))
 
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
+        # TODO this assumes that \n is handled platform-sensitive, but it's untested
         self.buffer.write("<")
         self.buffer.write(self._prefixes[node.namespace] + node.local_name)
 
@@ -3183,10 +3189,20 @@ class SerializerBase:
                 for key, value in attributes_data.items():
                     self.buffer.write(f" {key}={value}")
 
-        if len(node):
+        child_nodes = tuple(node.iterate_children())
+        if child_nodes:
             self.buffer.write(">")
-            for child_node in node.iterate_children():
-                self.serialize_node(child_node)
+            if all(isinstance(n, TextNode) for n in child_nodes):
+                self.buffer.write(
+                    "".join(cast("TextNode", n).content for n in child_nodes)
+                )
+            else:
+                if self.indentation:
+                    self.buffer.write("\n")
+                for child_node in child_nodes:
+                    self._level += 1
+                    self.serialize_node(child_node)
+                    self._level -= 1
             self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
         else:
             self.buffer.write("/>")
@@ -3227,7 +3243,7 @@ class StringSerializer(SerializerBase):
 
     align_attributes: bool = False
     """TODO"""
-    indentation: str = "\t"
+    indentation: str = ""
     """TODO"""
     namespaces: Optional[NamespaceDeclarations] = None
     """TODO"""
@@ -3249,7 +3265,7 @@ class StringSerializer(SerializerBase):
     @classmethod
     def reset_defaults(cls):
         cls.align_attributes = False
-        cls.indentation = "\t"
+        cls.indentation = ""
         cls.namespaces = None
         cls.serializer = Serializer
         cls.text_width = 0
