@@ -4,7 +4,7 @@ from delb import (
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
-    StringSerializationConfigurator,
+    StringSerializer,
     TextNode,
 )
 from _delb.nodes import DETACHED
@@ -31,5 +31,5 @@ from _delb.nodes import DETACHED
     ),
 )
 def test_single_nodes(declarations, _in, out):
-    StringSerializationConfigurator.namespaces = declarations
+    StringSerializer.namespaces = declarations
     assert str(_in) == out

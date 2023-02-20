@@ -52,7 +52,7 @@ from _delb.nodes import (
     NodeBase,
     ProcessingInstructionNode,
     Serializer,
-    StringSerializationConfigurator,
+    StringSerializer,
     TagNode,
     TextNode,
 )
@@ -565,7 +565,7 @@ __all__ = (
     ParserOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    StringSerializationConfigurator.__name__,
+    StringSerializer.__name__,
     TagNode.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,

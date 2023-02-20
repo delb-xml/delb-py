@@ -712,10 +712,9 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self) -> str:
-        buffer = StringIO()
-        with StringSerializationConfigurator._get_serializer(buffer) as serializer:
+        with StringSerializer() as serializer:
             serializer(self)
-        return buffer.getvalue()
+            return serializer.result
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -3020,40 +3019,10 @@ def not_(*filter: Filter) -> Filter:
 # serializer
 
 
-class Serializer:
+class SerializerBase:
     # TODO __slots__
 
-    def __init__(
-        self,
-        buffer: TextIO,
-        encoding="utf-8",
-        *,
-        align_attributes: bool = False,
-        indentation: Optional[str] = None,
-        namespaces: Optional[NamespaceDeclarations] = None,
-        newline: Optional[str] = None,
-        text_width: int = 0,
-    ):
-        if encoding != "utf-8":
-            raise NotImplementedError
-
-        self.encoding = encoding
-        self.align_attributes = align_attributes
-        if indentation is None:
-            self.indentation = ""
-        else:
-            self.indentation = indentation
-        if namespaces is None:
-            namespaces = {}
-        self.namespaces = Namespaces(namespaces)
-        if newline is None:
-            self.newline = "\n"
-        else:
-            self.newline = newline
-        self.text_width = text_width
-
-        if isinstance(buffer, TextIOWrapper):
-            buffer.reconfigure(encoding=self.encoding, newline=self.newline)
+    def __init__(self, buffer: TextIO):
         self.buffer = buffer
 
     @altered_default_filters()
@@ -3092,8 +3061,8 @@ class Serializer:
                         continue
 
                 try:
-                    self.namespaces._fallback = node.namespaces
-                    prefix = self.namespaces.lookup_prefix(namespace)
+                    self._namespaces._fallback = node.namespaces
+                    prefix = self._namespaces.lookup_prefix(namespace)
 
                     if prefix is None:
                         if "" in self._prefixes.values():
@@ -3111,6 +3080,27 @@ class Serializer:
                 except KeyError:
                     assert isinstance(namespace, str)
                     self.__new_namespace_declaration(namespace)
+
+    def _init_config(
+        self,
+        align_attributes: bool,
+        encoding: str,
+        indentation: None | str,
+        namespaces: None | NamespaceDeclarations,
+        text_width: int,
+    ):
+        if encoding != "utf-8":
+            raise NotImplementedError
+        self.encoding = encoding
+        self.align_attributes = align_attributes
+        if indentation is None:
+            self.indentation = ""
+        else:
+            self.indentation = indentation
+        if namespaces is None:
+            namespaces = {}
+        self._namespaces = Namespaces(namespaces)
+        self.text_width = text_width
 
     def __new_namespace_declaration(self, namespace: str):
         for i in range(2**16):
@@ -3161,7 +3151,8 @@ class Serializer:
 
     def __serialize_node(self, node):
         if self.indentation and self._level:
-            self.buffer.write(self.newline + self._level * self.indentation)
+            # TODO this assumes that \n is handled platform-sensitive, but it's untested
+            self.buffer.write("\n" + self._level * self.indentation)
         if isinstance(node, CommentNode):
             self.buffer.write(f"<!--{node.content}-->")
         elif isinstance(node, ProcessingInstructionNode):
@@ -3194,7 +3185,34 @@ class Serializer:
             self.buffer.write("/>")
 
 
-class StringSerializationConfigurator:
+class Serializer(SerializerBase):
+    # TODO __slots__
+
+    def __init__(
+        self,
+        buffer: TextIO,
+        encoding="utf-8",
+        *,
+        align_attributes: bool = False,
+        indentation: Optional[str] = None,
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        self._init_config(
+            align_attributes=align_attributes,
+            encoding=encoding,
+            indentation=indentation,
+            namespaces=namespaces,
+            text_width=text_width,
+        )
+
+        if isinstance(buffer, TextIOWrapper):
+            buffer.reconfigure(encoding=self.encoding, newline=newline)
+        super().__init__(buffer=buffer)
+
+
+class StringSerializer(SerializerBase):
     """
     This object is used to configure the default serializer that is employed to cast
     :class:`NodeBase` instances to strings.
@@ -3208,22 +3226,18 @@ class StringSerializationConfigurator:
     """TODO"""
     newline: None | str = None
     """See :py:class:`io.StringIOWrapper`."""
-    serializer: type[Serializer] = Serializer
-    """TODO"""
     text_width: int = 0
     """TODO"""
 
-    @classmethod
-    def _get_serializer(cls, buffer: StringIO) -> Serializer:
-        return cls.serializer(
-            buffer=buffer,
-            align_attributes=cls.align_attributes,
+    def __init__(self):
+        self._init_config(
+            align_attributes=StringSerializer.align_attributes,
             encoding="utf-8",
-            indentation=cls.indentation,
-            namespaces=cls.namespaces,
-            newline=cls.newline,
-            text_width=cls.text_width,
+            indentation=StringSerializer.indentation,
+            namespaces=StringSerializer.namespaces,
+            text_width=StringSerializer.text_width,
         )
+        super().__init__(buffer=StringIO(newline=StringSerializer.newline))
 
     @classmethod
     def reset_defaults(cls):
@@ -3232,6 +3246,10 @@ class StringSerializationConfigurator:
         cls.namespaces = None
         cls.serializer = Serializer
         cls.text_width = 0
+
+    @property
+    def result(self):
+        return self.buffer.getvalue()
 
 
 #
@@ -3244,7 +3262,7 @@ __all__ = (
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     Serializer.__name__,
-    StringSerializationConfigurator.__name__,
+    StringSerializer.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
     TextNode.__name__,
