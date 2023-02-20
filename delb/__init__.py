@@ -514,7 +514,7 @@ class Document(metaclass=DocumentMeta):
             indentation = "  " if pretty else ""
             text_width = 0
 
-        serializer = Serializer(
+        with Serializer(
             buffer=TextIOWrapper(buffer),
             encoding=encoding,
             align_attributes=align_attributes,
@@ -522,16 +522,15 @@ class Document(metaclass=DocumentMeta):
             namespaces=namespaces,
             newline=newline,
             text_width=text_width,
-        )
+        ) as serializer:
+            # TODO use native ProcessingInstructionNode when available?
+            declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
+            if indentation is not None:
+                declaration += "\n"
+            serializer.buffer.write(declaration)
 
-        # TODO use native ProcessingInstructionNode when available?
-        declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
-        if indentation is not None:
-            declaration += "\n"
-        serializer.buffer.write(declaration)
-
-        for node in chain(self.head_nodes, (self.root,), self.tail_nodes):
-            serializer(node)
+            for node in chain(self.head_nodes, (self.root,), self.tail_nodes):
+                serializer(node)
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None

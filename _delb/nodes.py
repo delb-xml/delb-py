@@ -24,7 +24,16 @@ from copy import copy, deepcopy
 from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
-from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    cast,
+    overload,
+    Any,
+    AnyStr,
+    NamedTuple,
+    Optional,
+    Self,
+)
 from warnings import warn
 
 from lxml import etree
@@ -704,8 +713,8 @@ class NodeBase(ABC):
 
     def __str__(self) -> str:
         buffer = StringIO()
-        serializer = StringSerializationConfigurator._get_serializer(buffer)
-        serializer(self)
+        with StringSerializationConfigurator._get_serializer(buffer) as serializer:
+            serializer(self)
         return buffer.getvalue()
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
@@ -3047,16 +3056,22 @@ class Serializer:
             buffer.reconfigure(encoding=self.encoding, newline=self.newline)
         self.buffer = buffer
 
-        self._level = 0
-        self._prefixes: dict[Optional[str], str] = {}
-        self._namespaces_are_declared = False
-
     @altered_default_filters()
     def __call__(self, node: NodeBase):
         if not self._namespaces_are_declared and isinstance(node, TagNode):
             self.__collect_prefixes(node)
 
         self.__serialize_node(node)
+
+    def __enter__(
+        self,
+    ) -> Self:
+        self._level = 0
+        self._prefixes: dict[Optional[str], str] = {}
+        self._namespaces_are_declared = False
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.buffer.flush()
 
     def __collect_prefixes(self, root: TagNode):
