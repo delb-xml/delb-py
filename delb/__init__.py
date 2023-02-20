@@ -462,12 +462,10 @@ class Document(metaclass=DocumentMeta):
                                         :meth:`Document.cleanup_namespaces` before
                                         saving.
         """
-        if pretty is not None:
-            raise NotImplementedError
-
         with path.open("bw") as file:
             self.write(
                 buffer=file,
+                pretty=pretty,
                 encoding=encoding,
                 align_attributes=align_attributes,
                 indentation=indentation,
