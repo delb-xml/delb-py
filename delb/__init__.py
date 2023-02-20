@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, MutableSequence
+from collections.abc import Iterator, MutableSequence
 from copy import deepcopy
 from io import TextIOWrapper
 from itertools import chain
@@ -492,18 +492,18 @@ class Document(metaclass=DocumentMeta):
         :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :py:obj:`True`.
-        :encoding: The desired text encoding.
-        :align_attributes: Determines that tags' attribute names are padded before
-                           vertically aligned equal signs if :py:obj:`True`.
-        :indentation: When a string is provided, descending nodes are indented with one
-                      instance of that string per depth level.
-        :namespaces: A mapping of prefixes to namespaces. These are overriding possible
-                     declarations from a parsed serialisat that the document instance
-                     stems from. Prefixes for undeclared namespaces are enumerated with
-                     the prefix ``ns``.
-        :newline: See :py:class:`io.TextIOWrapper`.
-        :text_width: A positive integer is used as maximum width for possibly indented
-                     text node contents.
+        :param encoding: The desired text encoding.
+        :param align_attributes: Determines that tags' attribute names are padded before
+                                 vertically aligned equal signs if :py:obj:`True`.
+        :param indentation: When a string is provided, descending nodes are indented
+                            with one instance of that string per depth level.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper`.
+        :param text_width: A positive integer is used as maximum width for possibly
+                           indented text node contents.
         """
         if pretty is not None:
             warn(
