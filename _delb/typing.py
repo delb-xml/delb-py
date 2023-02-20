@@ -31,6 +31,11 @@ if TYPE_CHECKING:
     else:
         from typing import TypeAlias
 
+    if sys.version_info < (3, 11):  # DROPWITH Python 3.11
+        from typing_extensions import Self
+    else:
+        from typing import Self
+
     from _delb.nodes import NodeBase, _TagDefinition
 
 
@@ -57,4 +62,5 @@ __all__ = (
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "Self",
 )

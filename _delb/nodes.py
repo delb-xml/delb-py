@@ -32,7 +32,6 @@ from typing import (
     AnyStr,
     NamedTuple,
     Optional,
-    Self,
 )
 from warnings import warn
 
@@ -67,7 +66,7 @@ if TYPE_CHECKING:
     from typing import TextIO
 
     from delb import Document
-    from _delb.typing import Filter, NamespaceDeclarations, NodeSource
+    from _delb.typing import Filter, NamespaceDeclarations, NodeSource, Self
 
 
 # shortcuts
@@ -3030,9 +3029,7 @@ class SerializerBase:
     def __init__(self, buffer: TextIO):
         self.buffer = buffer
 
-    def __enter__(
-        self,
-    ) -> Self:
+    def __enter__(self) -> Self:
         self._level = 0
         self._prefixes: dict[Optional[str], str] = {}
         return self
