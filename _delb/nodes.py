@@ -713,7 +713,7 @@ class NodeBase(ABC):
 
     def __str__(self) -> str:
         with StringSerializer() as serializer:
-            serializer(self)
+            serializer.serialize_node(self)
             return serializer.result
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
@@ -1734,6 +1734,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
             f'<{self.__class__.__name__}("{self.universal_name}", '
             f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
+
+    def __str__(self) -> str:
+        with StringSerializer() as serializer:
+            serializer.serialize_root(self)
+            return serializer.result
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
@@ -3025,19 +3030,11 @@ class SerializerBase:
     def __init__(self, buffer: TextIO):
         self.buffer = buffer
 
-    @altered_default_filters()
-    def __call__(self, node: NodeBase):
-        if not self._namespaces_are_declared and isinstance(node, TagNode):
-            self.__collect_prefixes(node)
-
-        self.__serialize_node(node)
-
     def __enter__(
         self,
     ) -> Self:
         self._level = 0
         self._prefixes: dict[Optional[str], str] = {}
-        self._namespaces_are_declared = False
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -3114,19 +3111,6 @@ class SerializerBase:
     def __generate_attributes_data(self, node: TagNode) -> dict[str, str]:
         data = {}
 
-        if not self._namespaces_are_declared:
-            declarations = {v: k for k, v in self._prefixes.items()}
-            assert None not in declarations
-            if "" in declarations:
-                namespace = declarations.pop("")
-                if namespace is not None:
-                    data["xmlns"] = f'"{namespace}"'
-                # else it would be an unprefixed, empty namespace
-            for prefix in sorted(cast("dict[str, str]", declarations)):
-                assert len(prefix) >= 2
-                data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
-            self._namespaces_are_declared = True
-
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
             if '"' in attribute.value:  # FIXME don't consider escaped characters
@@ -3149,7 +3133,7 @@ class SerializerBase:
     def __serialize_aligned_attributes(self, data: dict[str, str]):
         raise NotImplementedError
 
-    def __serialize_node(self, node):
+    def serialize_node(self, node: NodeBase):
         if self.indentation and self._level:
             # TODO this assumes that \n is handled platform-sensitive, but it's untested
             self.buffer.write("\n" + self._level * self.indentation)
@@ -3158,28 +3142,47 @@ class SerializerBase:
         elif isinstance(node, ProcessingInstructionNode):
             self.buffer.write(f"<?{node.target} {node.content}?>")
         elif isinstance(node, TagNode):
-            self.__serialize_tag(node)
+            self.__serialize_non_root_tag(node)
         elif isinstance(node, TextNode):
             self.buffer.write(node.content)
         else:
             raise TypeError
 
-    def __serialize_tag(self, node: TagNode):
+    def serialize_root(self, root: TagNode):
+        self.__collect_prefixes(root)
+        attributes_data = {}
+        declarations = {v: k for k, v in self._prefixes.items()}
+        assert None not in declarations
+        if "" in declarations:
+            namespace = declarations.pop("")
+            if namespace is not None:
+                attributes_data["xmlns"] = f'"{namespace}"'
+            # else it would be an unprefixed, empty namespace
+        for prefix in sorted(cast("dict[str, str]", declarations)):
+            assert len(prefix) >= 2
+            attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
+
+        attributes_data.update(self.__generate_attributes_data(root))
+        self.__serialize_tag(root, attributes_data)
+
+    def __serialize_non_root_tag(self, node: TagNode):
+        self.__serialize_tag(node, self.__generate_attributes_data(node))
+
+    def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
         self.buffer.write("<")
         self.buffer.write(self._prefixes[node.namespace] + node.local_name)
 
-        if node.attributes or not self._namespaces_are_declared:
-            data = self.__generate_attributes_data(node)
+        if attributes_data:
             if self.align_attributes:
-                self.__serialize_aligned_attributes(data)
+                self.__serialize_aligned_attributes(attributes_data)
             else:
-                for key, value in data.items():
+                for key, value in attributes_data.items():
                     self.buffer.write(f" {key}={value}")
 
         if len(node):
             self.buffer.write(">")
             for child_node in node.iterate_children():
-                self.__serialize_node(child_node)
+                self.serialize_node(child_node)
             self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
         else:
             self.buffer.write("/>")

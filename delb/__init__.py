@@ -19,7 +19,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator, MutableSequence
 from copy import deepcopy
 from io import TextIOWrapper
-from itertools import chain
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from warnings import warn
@@ -529,8 +528,12 @@ class Document(metaclass=DocumentMeta):
                 declaration += "\n"
             serializer.buffer.write(declaration)
 
-            for node in chain(self.head_nodes, (self.root,), self.tail_nodes):
-                serializer(node)
+            for node in self.head_nodes:
+                serializer.serialize_node(node)
+            with altered_default_filters():
+                serializer.serialize_root(self.root)
+            for node in self.tail_nodes:
+                serializer.serialize_node(node)
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None

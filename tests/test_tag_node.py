@@ -4,6 +4,7 @@ import pytest
 from lxml import etree
 
 from _delb.names import XML_ATT_ID
+from _delb.nodes import altered_default_filters
 from delb import (
     Document,
     TagNode,
@@ -182,11 +183,13 @@ def test_detach_node_retain_child_nodes():
     node.detach(retain_child_nodes=True)
 
     assert len(node) == 0
-    assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
+    with altered_default_filters():
+        assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
     child = root.first_child
     child.detach(retain_child_nodes=True)
-    assert str(root) == "<root>childish<!-- [~.ö] --></root>"
+    with altered_default_filters():
+        assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
     with pytest.raises(InvalidOperation):
         root.detach(retain_child_nodes=True)

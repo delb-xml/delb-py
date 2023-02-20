@@ -28,7 +28,8 @@ def test_comment_node():
     tag = root[0]
     tag.append_children(new_comment_node("b"))
     comment.content = "comment"
-    assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
+    with altered_default_filters():
+        assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
 
     assert comment == new_comment_node("comment")
     assert comment != tag
@@ -36,23 +37,28 @@ def test_comment_node():
         assert comment != tag.first_child
 
     comment.detach()
-    assert str(root) == "<root><tag><!--b--></tag>text</root>"
-
     with altered_default_filters():
+        assert str(root) == "<root><tag><!--b--></tag>text</root>"
+
         b = tag.first_child
 
     b.add_preceding_siblings(new_comment_node("a"))
     b.add_following_siblings(new_comment_node("c"))
-    assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
+    with altered_default_filters():
+        assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
 
     b.detach()
-    assert str(root) == "<root><tag><!--a--><!--c--></tag>text</root>"
+    with altered_default_filters():
+        assert str(root) == "<root><tag><!--a--><!--c--></tag>text</root>"
 
     text = root.last_child
     x = new_comment_node("x")
     text.add_preceding_siblings(x)
     text.add_following_siblings(new_comment_node("y"))
-    assert str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
+    with altered_default_filters():
+        assert (
+            str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
+        )
 
     with altered_default_filters():
         for node in tuple(root.iterate_children()):
@@ -60,7 +66,8 @@ def test_comment_node():
     root.add_preceding_siblings(new_comment_node("before"))
     root.add_following_siblings(new_comment_node("after"))
 
-    assert str(document) == "<!--before--><root/><!--after-->"
+    with altered_default_filters():
+        assert str(document) == "<!--before--><root/><!--after-->"
 
 
 def test_processing_instruction_node():
@@ -79,9 +86,10 @@ def test_processing_instruction_node():
     assert pi != root
     assert pi != new_processing_instruction_node("ham", "bar")
 
-    assert str(root) == "<root><?foo bar?></root>"
-
+    with altered_default_filters():
+        assert str(root) == "<root><?foo bar?></root>"
     pi.target = "space"
-    assert str(root) == "<root><?space bar?></root>"
+    with altered_default_filters():
+        assert str(root) == "<root><?space bar?></root>"
 
     assert pi.new_tag_node("ham").local_name == "ham"
