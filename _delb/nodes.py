@@ -3089,14 +3089,18 @@ class SerializerBase:
         if encoding != "utf-8":
             raise NotImplementedError
         self.encoding = encoding
+
         self.align_attributes = align_attributes
+
         if indentation is None:
             self.indentation = ""
         else:
             self.indentation = indentation
+
         if namespaces is None:
             namespaces = {}
         self._namespaces = Namespaces(namespaces)
+
         self.text_width = text_width
 
     def __new_namespace_declaration(self, namespace: str):
