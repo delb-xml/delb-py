@@ -3049,7 +3049,7 @@ class SerializerBase:
                 if namespace is None:
                     if "" in self._prefixes.values():
                         # hence there's a default namespace in use
-                        raise NotImplementedError
+                        raise NotImplementedError  # TODO
                     else:
                         self._prefixes[None] = ""
                         continue
