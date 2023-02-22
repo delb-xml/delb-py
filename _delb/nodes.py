@@ -3200,6 +3200,8 @@ class SerializerBase:
                     self._level += 1
                     self.serialize_node(child_node)
                     self._level -= 1
+                if self.indentation and self._level:
+                    self.buffer.write(self._level * self.indentation)
             self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
         else:
             self.buffer.write("/>")
