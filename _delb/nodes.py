@@ -3024,7 +3024,16 @@ def not_(*filter: Filter) -> Filter:
 
 
 class SerializerBase:
-    # TODO __slots__
+    __slots__ = (
+        "align_attributes",
+        "buffer",
+        "encoding",
+        "indentation",
+        "_level",
+        "_namespaces",
+        "_prefixes",
+        "text_width",
+    )
 
     def __init__(self, buffer: TextIO):
         self.buffer = buffer
@@ -3208,8 +3217,6 @@ class SerializerBase:
 
 
 class Serializer(SerializerBase):
-    # TODO __slots__
-
     def __init__(
         self,
         buffer: TextIO,
