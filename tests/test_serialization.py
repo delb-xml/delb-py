@@ -40,6 +40,13 @@ def test_indentation(indentation, _in, out, result_file):
     assert result_file.read_text() == dedent(out)
 
 
+def test_prefixes_collection():
+    # a tree with a default namespace and an empty namespace as descendant
+    root = Document("<root xmlns='http://fo.org/'/>").root
+    root.append_children(new_tag_node(local_name="node", namespace=None))
+    assert str(root) == '<root xmlns="http://fo.org/" xmlns:ns0=""><ns0:node/></root>'
+
+
 def test_significant_whitespace_is_saved(result_file):
     document = Document("<text/>")
     root = document.root

@@ -3058,10 +3058,10 @@ class SerializerBase:
                 if namespace is None:
                     if "" in self._prefixes.values():
                         # hence there's a default namespace in use
-                        raise NotImplementedError  # TODO
+                        self.__new_namespace_declaration(namespace)
                     else:
                         self._prefixes[None] = ""
-                        continue
+                    continue
 
                 try:
                     self._namespaces._fallback = node.namespaces
@@ -3109,7 +3109,7 @@ class SerializerBase:
 
         self.text_width = text_width
 
-    def __new_namespace_declaration(self, namespace: str):
+    def __new_namespace_declaration(self, namespace: None | str):
         for i in range(2**16):
             prefix = f"ns{i}:"
             if prefix not in self._prefixes.values():
@@ -3164,14 +3164,14 @@ class SerializerBase:
     def serialize_root(self, root: TagNode):
         self.__collect_prefixes(root)
         attributes_data = {}
-        declarations = {v: k for k, v in self._prefixes.items()}
+        declarations = {v: "" if k is None else k for k, v in self._prefixes.items()}
         assert None not in declarations
         if "" in declarations:
-            namespace = declarations.pop("")
-            if namespace is not None:
-                attributes_data["xmlns"] = f'"{namespace}"'
+            default_namespace = declarations.pop("")
+            if default_namespace:
+                attributes_data["xmlns"] = f'"{default_namespace}"'
             # else it would be an unprefixed, empty namespace
-        for prefix in sorted(cast("dict[str, str]", declarations)):
+        for prefix in sorted(declarations):
             assert len(prefix) >= 2
             attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
 
