@@ -103,6 +103,12 @@ def test_significant_whitespace_is_saved(result_file):
             ("n", {}, "ftp://foo.bar"),
             '<p:n xmlns:p="ftp://foo.bar"/>',
         ),
+        ({}, new_tag_node, ("n", {"x": "'"}), """<n x="'"/>"""),
+        ({}, new_tag_node, ("n", {"x": "&"}), """<n x="&amp;"/>"""),
+        ({}, new_tag_node, ("n", {"x": ">"}), """<n x="&gt;"/>"""),
+        ({}, new_tag_node, ("n", {"x": "<"}), """<n x="&lt;"/>"""),
+        ({}, new_tag_node, ("n", {"x": '"'}), """<n x="&quot;"/>"""),
+        ({}, new_tag_node, ("n", {"x": '"&"'}), r"""<n x="&quot;&amp;&quot;"/>"""),
     ),
 )
 # TODO create node objects in parametrization when the etree element wrapper cache has

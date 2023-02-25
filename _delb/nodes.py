@@ -3123,22 +3123,15 @@ class SerializerBase:
 
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
-            if '"' in attribute.value:  # FIXME don't consider escaped characters
-                if "'" in attribute.value:
-                    raise NotImplementedError
-                else:
-                    quote = "'"
-            else:
-                quote = '"'
+            data[
+                self._prefixes[attribute.namespace] + attribute.local_name
+            ] = f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
 
-            data[self._prefixes[attribute.namespace] + attribute.local_name] = (
-                # TODO encode value properly
-                quote
-                + attribute.value
-                + quote
-            )
+        return data
 
-        return data  # type: ignore
+    @staticmethod
+    def sanitize_text(text: str) -> str:
+        return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
 
     def __serialize_aligned_attributes(self, data: dict[str, str]):
         raise NotImplementedError
@@ -3154,7 +3147,7 @@ class SerializerBase:
         elif isinstance(node, TagNode):
             self.__serialize_non_root_tag(node)
         elif isinstance(node, TextNode):
-            self.buffer.write(node.content)
+            self.buffer.write(self.sanitize_text(node.content))
         else:
             raise TypeError
 
@@ -3200,7 +3193,9 @@ class SerializerBase:
             self.buffer.write(">")
             if all(isinstance(n, TextNode) for n in child_nodes):
                 self.buffer.write(
-                    "".join(cast("TextNode", n).content for n in child_nodes)
+                    self.sanitize_text(
+                        "".join(cast("TextNode", n).content for n in child_nodes)
+                    )
                 )
             else:
                 if self.indentation:
