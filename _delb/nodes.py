@@ -3177,7 +3177,6 @@ class SerializerBase:
         self.__serialize_tag(node, self.__generate_attributes_data(node))
 
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
-        # TODO this assumes that \n is handled platform-sensitive, but it's untested
         self.buffer.write("<")
         self.buffer.write(self._prefixes[node.namespace] + node.local_name)
 
