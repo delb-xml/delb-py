@@ -3027,7 +3027,6 @@ class SerializerBase:
     __slots__ = (
         "align_attributes",
         "buffer",
-        "encoding",
         "indentation",
         "_level",
         "_namespaces",
@@ -3087,15 +3086,10 @@ class SerializerBase:
     def _init_config(
         self,
         align_attributes: bool,
-        encoding: str,
         indentation: None | str,
         namespaces: None | NamespaceDeclarations,
         text_width: int,
     ):
-        if encoding != "utf-8":
-            raise NotImplementedError
-        self.encoding = encoding
-
         self.align_attributes = align_attributes
 
         if indentation is None:
@@ -3213,7 +3207,7 @@ class SerializerBase:
 class Serializer(SerializerBase):
     def __init__(
         self,
-        buffer: TextIO,
+        buffer: TextIOWrapper,
         encoding="utf-8",
         *,
         align_attributes: bool = False,
@@ -3224,14 +3218,12 @@ class Serializer(SerializerBase):
     ):
         self._init_config(
             align_attributes=align_attributes,
-            encoding=encoding,
             indentation=indentation,
             namespaces=namespaces,
             text_width=text_width,
         )
 
-        if isinstance(buffer, TextIOWrapper):
-            buffer.reconfigure(encoding=self.encoding, newline=newline)
+        buffer.reconfigure(encoding=encoding, newline=newline)
         super().__init__(buffer=buffer)
 
 
@@ -3255,7 +3247,6 @@ class StringSerializer(SerializerBase):
     def __init__(self):
         self._init_config(
             align_attributes=StringSerializer.align_attributes,
-            encoding="utf-8",
             indentation=StringSerializer.indentation,
             namespaces=StringSerializer.namespaces,
             text_width=StringSerializer.text_width,
