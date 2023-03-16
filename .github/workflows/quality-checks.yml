@@ -41,7 +41,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: sudo snap install --edge --classic just
       - run: pip install hatch
-      - run: just pytest-all
+      - run: just pytest
 
   other-quality-checks:
     runs-on: ubuntu-latest
