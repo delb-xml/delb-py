@@ -34,13 +34,9 @@ doctest:
 mypy:
     hatch run mypy:check
 
-# run most of the test suite, avoid network
+# run the complete testsuite
 pytest:
     hatch run unit-tests:check
-
-# run the complete testsuite
-pytest-all:
-    TEST_LOADERS=1 hatch run unit-tests:check
 
 # release the current version on github & the PyPI
 release: tests
@@ -60,7 +56,7 @@ showdocs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-tests: black code-lint mypy pytest-all doctest
+tests: black code-lint mypy pytest doctest
 
 # Generates and validates CITATION.cff
 update-citation-file:

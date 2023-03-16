@@ -1,5 +1,5 @@
 autoclasstoc~=1.6
-httpx
+httpx[http2]
 sphinx
 sphinxcontrib-fulltoc
 sphinx-readable-theme

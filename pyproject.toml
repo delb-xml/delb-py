@@ -167,6 +167,7 @@ check = "mypy _delb delb"
 [tool.hatch.envs.unit-tests]
 dependencies = [
     "pytest-cov",
+    "pytest-httpx",
     "xmldiff"
 ]
 [tool.hatch.envs.unit-tests.scripts]

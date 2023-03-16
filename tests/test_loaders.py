@@ -1,20 +1,16 @@
-from os import environ
 from pathlib import Path
 
 from lxml import etree
 from pytest import mark
+from pytest_httpx import IteratorStream
 
 from delb import Document
-
-
-pytestmark = mark.skipif(
-    "TEST_LOADERS" not in environ, reason="For example we can reduce energy usage."
-)
 
 
 TEST_FILE = (
     Path(__file__).resolve().parent / "files" / "tei_marx_manifestws_1848.TEI-P5.xml"
 )
+TEST_CONTENTS = TEST_FILE.read_text()
 
 
 def test_buffer_loader():
@@ -32,15 +28,17 @@ def test_etree_loader():
     assert document.source_url is None
 
 
-@mark.parametrize(
-    "url",
-    (
-        "http://textgridlab.org/1.0/tgcrud-public/rest/textgrid:mhpz.0/data",
-        "https://raw.githubusercontent.com/delb-xml/delb-py/main/tests/files/"
-        "marx_manifestws_1848.TEI-P5.xml",
-    ),
-)
-def test_https_loader(url):
+@mark.parametrize("s", ("", "s"))
+def test_http_s_loader(httpx_mock, s):
+    httpx_mock.add_response(
+        stream=IteratorStream(
+            (
+                TEST_CONTENTS[i : i + 4096].encode()
+                for i in range(0, len(TEST_CONTENTS), 4096)
+            )
+        )
+    )
+    url = f"http{s}://bdk.london/das_manifest.xml"
     document = Document(url)
     assert document.root.local_name == "TEI"
     assert document.source_url == url
@@ -52,6 +50,5 @@ def test_pathloader():
 
 
 def test_text_loader():
-    with TEST_FILE.open("rt") as f:
-        document = Document(f.read())
+    document = Document(TEST_CONTENTS)
     assert document.source_url is None
