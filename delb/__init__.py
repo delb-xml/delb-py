@@ -450,7 +450,7 @@ class Document(metaclass=DocumentMeta):
         *,
         encoding: str = "utf-8",
         align_attributes: bool = False,
-        indentation: Optional[str] = None,
+        indentation: str = "",
         newline: None | str = None,
         text_width: int = 0,
     ):
@@ -480,7 +480,7 @@ class Document(metaclass=DocumentMeta):
         *,
         encoding: str = "utf-8",
         align_attributes: bool = False,
-        indentation: Optional[str] = None,
+        indentation: str = "",
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str,
         text_width: int = 0,
@@ -522,7 +522,7 @@ class Document(metaclass=DocumentMeta):
         ) as serializer:
             # TODO use native ProcessingInstructionNode when available?
             declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
-            if indentation is not None:
+            if indentation:
                 declaration += "\n"
             serializer.buffer.write(declaration)
 

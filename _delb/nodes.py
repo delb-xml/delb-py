@@ -3086,16 +3086,12 @@ class SerializerBase:
     def _init_config(
         self,
         align_attributes: bool,
-        indentation: None | str,
+        indentation: str,
         namespaces: None | NamespaceDeclarations,
         text_width: int,
     ):
         self.align_attributes = align_attributes
-
-        if indentation is None:
-            self.indentation = ""
-        else:
-            self.indentation = indentation
+        self.indentation = indentation
 
         if namespaces is None:
             namespaces = {}
@@ -3211,7 +3207,7 @@ class Serializer(SerializerBase):
         encoding="utf-8",
         *,
         align_attributes: bool = False,
-        indentation: Optional[str] = None,
+        indentation: str = "",
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
         text_width: int = 0,
