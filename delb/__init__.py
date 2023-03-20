@@ -50,9 +50,9 @@ from _delb.nodes import (
     CommentNode,
     NodeBase,
     ProcessingInstructionNode,
-    Serializer,
     StringSerializer,
     TagNode,
+    TextBufferSerializer,
     TextNode,
 )
 from _delb.parser import _compat_get_parser, ParserOptions
@@ -511,7 +511,7 @@ class Document(metaclass=DocumentMeta):
             indentation = "  " if pretty else ""
             text_width = 0
 
-        with Serializer(
+        with TextBufferSerializer(
             buffer=TextIOWrapper(buffer),
             encoding=encoding,
             align_attributes=align_attributes,

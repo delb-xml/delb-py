@@ -3230,7 +3230,8 @@ class SerializerBase:
         ):
             self.buffer.write(f"{self._level*self.indentation}{line}\n")
 
-class Serializer(SerializerBase):
+
+class TextBufferSerializer(SerializerBase):
     def __init__(
         self,
         buffer: TextIOWrapper,
@@ -3284,7 +3285,6 @@ class StringSerializer(SerializerBase):
         cls.align_attributes = False
         cls.indentation = ""
         cls.namespaces = None
-        cls.serializer = Serializer
         cls.text_width = 0
 
     @property
@@ -3301,10 +3301,10 @@ __all__ = (
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    Serializer.__name__,
     StringSerializer.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
+    TextBufferSerializer.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,
