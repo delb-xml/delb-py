@@ -24,6 +24,7 @@ from copy import copy, deepcopy
 from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
+from textwrap import TextWrapper
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -3032,6 +3033,7 @@ class SerializerBase:
         "_namespaces",
         "_prefixes",
         "text_width",
+        "__text_wrapper",
     )
 
     def __init__(self, buffer: TextIO):
@@ -3098,6 +3100,17 @@ class SerializerBase:
         self._namespaces = Namespaces(namespaces)
 
         self.text_width = text_width
+        self.__text_wrapper = TextWrapper(
+            width=text_width,
+            expand_tabs=False,
+            replace_whitespace=True,
+            drop_whitespace=True,
+            initial_indent="",
+            subsequent_indent="",
+            fix_sentence_endings=False,
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
 
     def __new_namespace_declaration(self, namespace: None | str):
         for i in range(2**16):
@@ -3126,6 +3139,33 @@ class SerializerBase:
     def __serialize_aligned_attributes(self, data: dict[str, str]):
         raise NotImplementedError
 
+    def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
+        self.buffer.write(">")
+        if all(isinstance(n, TextNode) for n in child_nodes):
+            if self.text_width:
+                self.buffer.write("\n")
+                self._level += 1
+                self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
+                self._level -= 1
+                if self.indentation and self._level:
+                    self.buffer.write(self._level * self.indentation)
+            else:
+                self.buffer.write(
+                    self.sanitize_text(
+                        "".join(cast("TextNode", n).content for n in child_nodes)
+                    )
+                )
+
+        else:
+            if self.indentation:
+                self.buffer.write("\n")
+            for child_node in child_nodes:
+                self._level += 1
+                self.serialize_node(child_node)
+                self._level -= 1
+            if self.indentation and self._level:
+                self.buffer.write(self._level * self.indentation)
+
     def serialize_node(self, node: NodeBase):
         if self.indentation and self._level:
             self.buffer.write(self._level * self.indentation)
@@ -3137,7 +3177,10 @@ class SerializerBase:
         elif isinstance(node, TagNode):
             self.__serialize_non_root_tag(node)
         elif isinstance(node, TextNode):
-            self.buffer.write(self.sanitize_text(node.content))
+            if self.text_width:
+                self.__write_wrapped_text((node,))
+            else:
+                self.buffer.write(self.sanitize_text(node.content))
         else:
             raise TypeError
 
@@ -3160,15 +3203,12 @@ class SerializerBase:
 
         attributes_data.update(self.__generate_attributes_data(root))
         self.__serialize_tag(root, attributes_data)
-        if self.indentation:
-            self.buffer.write("\n")
 
     def __serialize_non_root_tag(self, node: TagNode):
         self.__serialize_tag(node, self.__generate_attributes_data(node))
 
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
-        self.buffer.write("<")
-        self.buffer.write(self._prefixes[node.namespace] + node.local_name)
+        self.buffer.write(f"<{self._prefixes[node.namespace]}{node.local_name}")
 
         if attributes_data:
             if self.align_attributes:
@@ -3179,26 +3219,16 @@ class SerializerBase:
 
         child_nodes = tuple(node.iterate_children())
         if child_nodes:
-            self.buffer.write(">")
-            if all(isinstance(n, TextNode) for n in child_nodes):
-                self.buffer.write(
-                    self.sanitize_text(
-                        "".join(cast("TextNode", n).content for n in child_nodes)
-                    )
-                )
-            else:
-                if self.indentation:
-                    self.buffer.write("\n")
-                for child_node in child_nodes:
-                    self._level += 1
-                    self.serialize_node(child_node)
-                    self._level -= 1
-                if self.indentation and self._level:
-                    self.buffer.write(self._level * self.indentation)
+            self.__serialize_child_nodes(child_nodes)
             self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
         else:
             self.buffer.write("/>")
 
+    def __write_wrapped_text(self, nodes: tuple[TextNode, ...]):
+        for line in self.__text_wrapper.wrap(
+            self.sanitize_text("".join(n.content for n in nodes))
+        ):
+            self.buffer.write(f"{self._level*self.indentation}{line}\n")
 
 class Serializer(SerializerBase):
     def __init__(

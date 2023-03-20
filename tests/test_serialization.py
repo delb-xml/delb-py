@@ -30,8 +30,7 @@ from tests.utils import assert_documents_are_semantical_equal, count_pis
                <b x="foo">
                  <c/>
                </b>
-             </root>
-            """,
+             </root>""",
         ),
     ),
 )
@@ -143,6 +142,97 @@ def test_transparency(files_path, result_file):
 
         assert_documents_are_semantical_equal(file, result_file)
         assert count_pis(file) == count_pis(result_file)
+
+
+@mark.parametrize(
+    ("indentation", "text_width", "out"),
+    (
+        (
+            "",
+            11,  # longest word has 12 characters
+            '<p xmlns="http://www.tei-c.org/ns/1.0">\n'
+            "Die\n"
+            "Entdeckung\n"
+            "Amerika’s,\n"
+            "die\n"
+            "Umschiffung\n"
+            "Afrika’s,\n"
+            "schufen der\n"
+            "aufkommenden\n"
+            "Bourgeoisie\n"
+            "ein neues\n"
+            "Terrain.\n"
+            "Der\n"
+            "ostindische\n"
+            "und\n"
+            "chinesische\n"
+            "Markt, die\n"
+            "Kolonisirung\n"
+            "von\n"
+            "Amerika,\n"
+            "der\n"
+            "Austausch\n"
+            "mit den\n"
+            "Kolonien,\n"
+            "die\n"
+            "Vermehrung\n"
+            "der\n"
+            "Tauschmittel\n"
+            "und der\n"
+            "Waaren\n"
+            "überhaupt\n"
+            "gaben dem\n"
+            "Handel, der\n"
+            "Schifffahrt,\n"
+            "der\n"
+            "Industrie\n"
+            "einen\n"
+            "niegekannten\n"
+            "Aufschwung,\nund damit\n"
+            "dem\n"
+            "revolutionären\n"
+            "Element in\n"
+            "der\n"
+            "zerfallenden\n"
+            "feudalen\n"
+            "Gesellschaft\neine rasche\n"
+            "Entwicklung.\n"
+            "</p>",
+        ),
+        (
+            "",
+            68,
+            '<p xmlns="http://www.tei-c.org/ns/1.0">\n'
+            "Die Entdeckung Amerika’s, die Umschiffung Afrika’s, schufen der\n"
+            "aufkommenden Bourgeoisie ein neues Terrain. Der ostindische und\n"
+            "chinesische Markt, die Kolonisirung von Amerika, der Austausch mit\n"
+            "den Kolonien, die Vermehrung der Tauschmittel und der Waaren\n"
+            "überhaupt gaben dem Handel, der Schifffahrt, der Industrie einen\n"
+            "niegekannten Aufschwung, und damit dem revolutionären Element in der\n"
+            "zerfallenden feudalen Gesellschaft eine rasche Entwicklung.\n"
+            "</p>",
+        ),
+        (
+            "\t",
+            68,
+            '<p xmlns="http://www.tei-c.org/ns/1.0">\n'
+            "\tDie Entdeckung Amerika’s, die Umschiffung Afrika’s, schufen der\n"
+            "\taufkommenden Bourgeoisie ein neues Terrain. Der ostindische und\n"
+            "\tchinesische Markt, die Kolonisirung von Amerika, der Austausch mit\n"
+            "\tden Kolonien, die Vermehrung der Tauschmittel und der Waaren\n"
+            "\tüberhaupt gaben dem Handel, der Schifffahrt, der Industrie einen\n"
+            "\tniegekannten Aufschwung, und damit dem revolutionären Element in der\n"
+            "\tzerfallenden feudalen Gesellschaft eine rasche Entwicklung.\n"
+            "</p>",
+        ),
+    ),
+)
+def test_text_width(files_path, indentation, text_width, out):
+    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    paragraph = document.xpath("//p")[14]
+    StringSerializer.indentation = indentation
+    StringSerializer.text_width = text_width
+    assert str(paragraph) == out
 
 
 def test_xml_declaration(files_path, result_file):
