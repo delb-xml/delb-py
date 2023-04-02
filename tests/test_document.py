@@ -141,8 +141,7 @@ def test_root_siblings():
     assert len(head_nodes) == len(tail_nodes) == 2
 
     assert (
-        str(document) ==
-        "<?xml version='1.0' encoding='UTF-8'?><?Blood Fire?>"
+        str(document) == "<?xml version='1.0' encoding='UTF-8'?><?Blood Fire?>"
         "<!-- I Roy --><root/><!-- Prince Jazzbo --><?over out?>"
     )
 

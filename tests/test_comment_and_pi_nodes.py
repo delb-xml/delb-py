@@ -68,8 +68,8 @@ def test_comment_node():
 
     with altered_default_filters():
         assert (
-            str(root.document) ==
-            "<?xml version='1.0' encoding='UTF-8'?><!--before--><root/><!--after-->"
+            str(root.document)
+            == "<?xml version='1.0' encoding='UTF-8'?><!--before--><root/><!--after-->"
         )
 
 
