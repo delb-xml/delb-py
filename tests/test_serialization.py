@@ -7,9 +7,9 @@ from delb import (
     new_processing_instruction_node,
     new_tag_node,
     tag,
+    DefaultStringOptions,
     Document,
     ParserOptions,
-    StringSerializer,
     TextNode,
 )
 from _delb.nodes import DETACHED
@@ -39,8 +39,8 @@ def test_indentation(indentation, _in, out, result_file):
     assert result_file.read_text() == dedent(out)
 
 
-def test_prefixes_collection():
-    # a tree with a default namespace and an empty namespace as descendant
+def test_empty_below_default_namespace():
+    # as there's a default namespace, a prefix must be declared for an empty namespace
     root = Document("<root xmlns='http://fo.org/'/>").root
     root.append_children(new_tag_node(local_name="node", namespace=None))
     assert str(root) == '<root xmlns="http://fo.org/" xmlns:ns0=""><ns0:node/></root>'
@@ -113,8 +113,11 @@ def test_significant_whitespace_is_saved(result_file):
 # TODO create node objects in parametrization when the etree element wrapper cache has
 #      been shed off
 def test_single_nodes(declarations, node_constructor, args, out):
-    StringSerializer.namespaces = declarations
-    assert str(node_constructor(*args)) == out
+    DefaultStringOptions.namespaces = declarations
+    node = node_constructor(*args)
+    assert (
+        node.serialize(namespaces=DefaultStringOptions.namespaces) == str(node) == out
+    )
 
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
@@ -188,14 +191,16 @@ def test_transparency(files_path, result_file):
             "Industrie\n"
             "einen\n"
             "niegekannten\n"
-            "Aufschwung,\nund damit\n"
+            "Aufschwung,\n"
+            "und damit\n"
             "dem\n"
             "revolutionären\n"
             "Element in\n"
             "der\n"
             "zerfallenden\n"
             "feudalen\n"
-            "Gesellschaft\neine rasche\n"
+            "Gesellschaft\n"
+            "eine rasche\n"
             "Entwicklung.\n"
             "</p>",
         ),
@@ -230,9 +235,13 @@ def test_transparency(files_path, result_file):
 def test_text_width(files_path, indentation, text_width, out):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     paragraph = document.xpath("//p")[14]
-    StringSerializer.indentation = indentation
-    StringSerializer.text_width = text_width
-    assert str(paragraph) == out
+    DefaultStringOptions.indentation = indentation
+    DefaultStringOptions.text_width = text_width
+    assert (
+        paragraph.serialize(indentation=indentation, text_width=text_width)
+        == str(paragraph)
+        == out
+    )
 
 
 def test_xml_declaration(files_path, result_file):

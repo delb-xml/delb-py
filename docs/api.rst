@@ -130,6 +130,12 @@ Transformations
 .. automodule:: delb.transform
 
 
+String serialization
+--------------------
+
+.. autoclass:: delb.DefaultStringOptions
+
+
 Various helpers
 ---------------
 

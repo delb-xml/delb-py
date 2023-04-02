@@ -4,7 +4,7 @@ from pytest import fixture
 
 from tests import plugins  # noqa: F401
 
-from delb import Document, StringSerializer
+from delb import DefaultStringOptions, Document
 
 
 FILES_PATH = Path(__file__).parent / "files"
@@ -45,7 +45,7 @@ def queries_sample():
 
 @fixture(autouse=True, scope="function")
 def reset_serializer():
-    StringSerializer.reset_defaults()
+    DefaultStringOptions.reset_defaults()
 
 
 @fixture()

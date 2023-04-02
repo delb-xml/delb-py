@@ -31,6 +31,7 @@ from typing import (
     overload,
     Any,
     AnyStr,
+    ClassVar as ClassWar,
     NamedTuple,
     Optional,
 )
@@ -712,7 +713,7 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self) -> str:
-        with StringSerializer() as serializer:
+        with DefaultStringOptions._get_serializer() as serializer:
             serializer.serialize_node(self)
             return serializer.result
 
@@ -1198,6 +1199,43 @@ class NodeBase(ABC):
 
         self.add_following_siblings(node, clone=clone)
         return self.detach()
+
+    def serialize(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        """
+        Returns a string that contains the serialization of the node.
+
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes n times per depth
+                            level.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: Text nodes are wrapped at this character position, or not
+                           when a ``0`` is given. Indentations are not considered, it's
+                           purposed to define reasonable widths for text displays that
+                           can be scrolled horizontally.
+        """
+        with StringSerializer(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            newline=newline,
+            text_width=text_width,
+        ) as serializer:
+            serializer.serialize_node(self)
+            return serializer.result
 
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
@@ -1736,7 +1774,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     def __str__(self) -> str:
-        with StringSerializer() as serializer:
+        with DefaultStringOptions._get_serializer() as serializer:
             serializer.serialize_root(self)
             return serializer.result
 
@@ -2364,6 +2402,25 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :meta category: add-nodes
         """
         self.insert_children(0, *node, clone=clone)
+
+    def serialize(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        with StringSerializer(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            newline=newline,
+            text_width=text_width,
+        ) as serializer:
+            serializer.serialize_root(self)
+            return serializer.result
 
     @property
     def universal_name(self) -> str:
@@ -3255,41 +3312,85 @@ class TextBufferSerializer(SerializerBase):
 
 
 class StringSerializer(SerializerBase):
-    """
-    This object is used to configure the default serializer that is employed to cast
-    :class:`NodeBase` instances to strings.
-    """
+    buffer: StringIO
 
-    align_attributes: bool = False
-    """TODO"""
-    indentation: str = ""
-    """TODO"""
-    namespaces: Optional[NamespaceDeclarations] = None
-    """TODO"""
-    newline: None | str = None
-    """See :py:class:`io.StringIOWrapper`."""
-    text_width: int = 0
-    """TODO"""
-
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
         self._init_config(
-            align_attributes=StringSerializer.align_attributes,
-            indentation=StringSerializer.indentation,
-            namespaces=StringSerializer.namespaces,
-            text_width=StringSerializer.text_width,
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            text_width=text_width,
         )
-        super().__init__(buffer=StringIO(newline=StringSerializer.newline))
-
-    @classmethod
-    def reset_defaults(cls):
-        cls.align_attributes = False
-        cls.indentation = ""
-        cls.namespaces = None
-        cls.text_width = 0
+        super().__init__(buffer=StringIO(newline=newline))
 
     @property
     def result(self):
         return self.buffer.getvalue()
+
+
+class DefaultStringOptions:
+    """
+    This object is used to configure the serialization parameters that are applied when
+    nodes are coerced to :py:class:`str` objects. Hence it also applies when node
+    objects are fed to the :py:func:`print` function.
+
+    ⚠️
+    Use this once to define behaviour on *application level*, for thread-safe
+    serializations of nodes use :meth:`NodeBase.serialize`! Think thrice whether you
+    want to use this facility in a library.
+    """
+
+    align_attributes: ClassWar[bool] = False
+    """
+    Determines whether attributes' names and values line up sharply around vertically
+    aligned equal signs.
+    """
+    indentation: ClassWar[str] = ""
+    """ This string prefixes descending nodes n times per depth level. """
+    namespaces: ClassWar[None | NamespaceDeclarations] = None
+    """
+    A mapping of prefixes to namespaces. These are overriding possible declarations from
+    a parsed serialisat that the document instance stems from. Prefixes for undeclared
+    namespaces are enumerated with the prefix ``ns``.
+    """
+    newline: ClassWar[None | str] = None
+    """
+    See See :py:class:`io.TextIOWrapper` for a detailed explanation of the parameter
+    with the same name.
+    """
+    text_width: ClassWar[int] = 0
+    """
+    Text nodes are wrapped at this character position, or not when a ``0`` is given.
+    Indentations are not considered, it's purposed to define reasonable widths for
+    text displays that can be scrolled horizontally.
+    """
+
+    @classmethod
+    def _get_serializer(cls) -> StringSerializer:
+        return StringSerializer(
+            align_attributes=cls.align_attributes,
+            indentation=cls.indentation,
+            namespaces=cls.namespaces,
+            newline=cls.newline,
+            text_width=cls.text_width,
+        )
+
+    @classmethod
+    def reset_defaults(cls):
+        """Restores the factory settings."""
+        cls.align_attributes = False
+        cls.indentation = ""
+        cls.namespaces = None
+        cls.newline = None
+        cls.text_width = 0
 
 
 #
@@ -3298,10 +3399,10 @@ class StringSerializer(SerializerBase):
 __all__ = (
     Attribute.__name__,
     CommentNode.__name__,
+    DefaultStringOptions.__name__,
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    StringSerializer.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
     TextBufferSerializer.__name__,

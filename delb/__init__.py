@@ -18,7 +18,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, MutableSequence
 from copy import deepcopy
-from io import TextIOWrapper
+from io import BytesIO, TextIOWrapper
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from warnings import warn
@@ -48,9 +48,9 @@ from _delb.nodes import (
     new_tag_node,
     tag,
     CommentNode,
+    DefaultStringOptions,
     NodeBase,
     ProcessingInstructionNode,
-    StringSerializer,
     TagNode,
     TextBufferSerializer,
     TextNode,
@@ -217,8 +217,8 @@ class Document(metaclass=DocumentMeta):
     >>> text_node.clone() in document
     False
 
-    The string coercion of a document yields an XML encoded stream, but unlike
-    :meth:`Document.save` and :meth:`Document.write`, without an XML declaration:
+    The string coercion of a document yields an XML encoded stream as string. Its
+    appearance can be configured via :class:`DefaultStringOptions`.
 
     >>> document = Document("<root/>")
     >>> str(document)
@@ -345,11 +345,17 @@ class Document(metaclass=DocumentMeta):
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self
 
-    def __str__(self):
-        cloned_root = self.root.clone(deep=True)
-        cloned_root.merge_text_nodes()
-        _copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
-        return etree.tostring(cloned_root._etree_obj.getroottree(), encoding="unicode")
+    def __str__(self) -> str:
+        buffer = BytesIO()
+        self.write(
+            buffer=buffer,
+            align_attributes=DefaultStringOptions.align_attributes,
+            indentation=DefaultStringOptions.indentation,
+            namespaces=DefaultStringOptions.namespaces,
+            newline=DefaultStringOptions.newline,
+            text_width=DefaultStringOptions.text_width,
+        )
+        return buffer.getvalue().decode()
 
     def clone(self) -> Document:
         """
@@ -451,16 +457,26 @@ class Document(metaclass=DocumentMeta):
         encoding: str = "utf-8",
         align_attributes: bool = False,
         indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
         text_width: int = 0,
     ):
-        # TODO
         """
-        :param path: The path where the document shall be saved.
-        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
-        :param cleanup_namespaces_args: Arguments that are a passed to
-                                        :meth:`Document.cleanup_namespaces` before
-                                        saving.
+        :param encoding: The desired text encoding.
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes n times per depth
+                            level.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: Text nodes are wrapped at this character position, or not
+                           when a ``0`` is given. Indentations are not considered, it's
+                           purposed to define reasonable widths for text displays that
+                           can be scrolled horizontally.
         """
         with path.open("bw") as file:
             self.write(
@@ -469,6 +485,7 @@ class Document(metaclass=DocumentMeta):
                 encoding=encoding,
                 align_attributes=align_attributes,
                 indentation=indentation,
+                namespaces=namespaces,
                 newline=newline,
                 text_width=text_width,
             )
@@ -490,17 +507,20 @@ class Document(metaclass=DocumentMeta):
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :py:obj:`True`.
         :param encoding: The desired text encoding.
-        :param align_attributes: Determines that tags' attribute names are padded before
-                                 vertically aligned equal signs if :py:obj:`True`.
-        :param indentation: When a string is provided, descending nodes are indented
-                            with one instance of that string per depth level.
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes n times per depth
+                            level.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
-        :param newline: See :py:class:`io.TextIOWrapper`.
-        :param text_width: A positive integer is used as maximum width for possibly
-                           indented text node contents.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: Text nodes are wrapped at this character position, or not
+                           when a ``0`` is given. Indentations are not considered, it's
+                           purposed to define reasonable widths for text displays that
+                           can be scrolled horizontally.
         """
         if pretty is not None:
             warn(
@@ -561,12 +581,12 @@ class Document(metaclass=DocumentMeta):
 
 __all__ = (
     CommentNode.__name__,
+    DefaultStringOptions.__name__,
     Document.__name__,
     Namespaces.__name__,
     ParserOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    StringSerializer.__name__,
     TagNode.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
