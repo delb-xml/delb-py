@@ -2039,15 +2039,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
           behaviour.
         - Other contents in predicate expressions are invalid.
 
-        >>> document = Document("<root/>")
-        >>> grandchild = document.root.fetch_or_create_by_xpath(
+        >>> root = Document("<root/>").root
+        >>> grandchild = root.fetch_or_create_by_xpath(
         ...     "child[@a='b']/grandchild"
         ... )
-        >>> grandchild is document.root.fetch_or_create_by_xpath(
+        >>> grandchild is root.fetch_or_create_by_xpath(
         ...     "child[@a='b']/grandchild"
         ... )
         True
-        >>> str(document)
+        >>> str(root)
         '<root><child a="b"><grandchild/></child></root>'
 
         :param expression: An XPath expression that can unambiguously locate a

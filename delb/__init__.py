@@ -18,7 +18,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, MutableSequence
 from copy import deepcopy
-from io import BytesIO, TextIOWrapper
+from io import TextIOWrapper
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from warnings import warn
@@ -222,7 +222,7 @@ class Document(metaclass=DocumentMeta):
 
     >>> document = Document("<root/>")
     >>> str(document)
-    '<root/>'
+    "<?xml version='1.0' encoding='UTF-8'?><root/>"
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
@@ -346,16 +346,13 @@ class Document(metaclass=DocumentMeta):
         return node.document is self
 
     def __str__(self) -> str:
-        buffer = BytesIO()
-        self.write(
-            buffer=buffer,
-            align_attributes=DefaultStringOptions.align_attributes,
-            indentation=DefaultStringOptions.indentation,
-            namespaces=DefaultStringOptions.namespaces,
-            newline=DefaultStringOptions.newline,
-            text_width=DefaultStringOptions.text_width,
-        )
-        return buffer.getvalue().decode()
+        with DefaultStringOptions._get_serializer() as serializer:
+            self.__serialize(
+                serializer=serializer,
+                encoding="utf-8",
+                indentation=serializer.indentation,
+            )
+            return serializer.buffer.getvalue()
 
     def clone(self) -> Document:
         """
@@ -490,6 +487,18 @@ class Document(metaclass=DocumentMeta):
                 text_width=text_width,
             )
 
+    def __serialize(self, serializer, encoding, indentation):
+        declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
+        if indentation:
+            declaration += "\n"
+        serializer.buffer.write(declaration)
+        for node in self.head_nodes:
+            serializer.serialize_node(node)
+        with altered_default_filters():
+            serializer.serialize_root(self.root)
+        for node in self.tail_nodes:
+            serializer.serialize_node(node)
+
     def write(
         self,
         buffer: BinaryIO,
@@ -540,18 +549,9 @@ class Document(metaclass=DocumentMeta):
             newline=newline,
             text_width=text_width,
         ) as serializer:
-            # TODO use native ProcessingInstructionNode when available?
-            declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
-            if indentation:
-                declaration += "\n"
-            serializer.buffer.write(declaration)
-
-            for node in self.head_nodes:
-                serializer.serialize_node(node)
-            with altered_default_filters():
-                serializer.serialize_root(self.root)
-            for node in self.tail_nodes:
-                serializer.serialize_node(node)
+            self.__serialize(
+                serializer=serializer, encoding=encoding, indentation=indentation
+            )
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None

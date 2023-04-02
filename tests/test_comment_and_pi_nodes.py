@@ -9,14 +9,14 @@ from delb import (
 
 
 def test_appended_text_node():
-    document = Document("<root><!-- c -->tail</root>")
-    document.root.last_child.add_following_siblings("|appended")
-    assert str(document) == "<root><!-- c -->tail|appended</root>"
+    root = Document("<root><!-- c -->tail</root>").root
+    root.last_child.add_following_siblings("|appended")
+    with altered_default_filters():
+        assert str(root) == "<root><!-- c -->tail|appended</root>"
 
 
 def test_comment_node():
-    document = Document("<root><tag/><!-- comment -->text</root>")
-    root = document.root
+    root = Document("<root><tag/><!-- comment -->text</root>").root
 
     with altered_default_filters():
         comment = root[1]
@@ -67,7 +67,10 @@ def test_comment_node():
     root.add_following_siblings(new_comment_node("after"))
 
     with altered_default_filters():
-        assert str(document) == "<!--before--><root/><!--after-->"
+        assert (
+            str(root.document) ==
+            "<?xml version='1.0' encoding='UTF-8'?><!--before--><root/><!--after-->"
+        )
 
 
 def test_processing_instruction_node():
