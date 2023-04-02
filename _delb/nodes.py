@@ -570,7 +570,7 @@ class Attribute(_StringMixin):
 
         namespace, _ = deconstruct_clark_notation(self._key)
         if namespace is None:
-            namespace = self._attributes.namespaces.get(None, None)
+            namespace = self._attributes.namespaces.get(None)
 
         if isinstance(namespace, bytes):
             namespace = namespace.decode()
