@@ -96,10 +96,10 @@ def test_significant_whitespace_is_saved(result_file):
         "<text><hi>Hello</hi> <hi>world!</hi></text>"
     )
 
-    document.save(result_file, pretty=True)
+    document.save(result_file, indentation="  ")
 
     assert (
-        Document(result_file, collapse_whitespace=True)
+        Document(result_file, parser_options=ParserOptions(collapse_whitespace=True))
         .xpath("hi")
         .first.fetch_following_sibling()
         == " "

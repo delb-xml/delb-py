@@ -1214,8 +1214,8 @@ class NodeBase(ABC):
 
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes n times per depth
-                            level.
+        :param indentation: This string prefixes descending nodes' contents n times per
+                            depth level.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
@@ -1223,9 +1223,9 @@ class NodeBase(ABC):
         :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
                         the parameter with the same name.
         :param text_width: Text nodes are wrapped at this character position, or not
-                           when a ``0`` is given. Indentations are not considered, it's
-                           purposed to define reasonable widths for text displays that
-                           can be scrolled horizontally.
+                           when a ``0`` is given. Indentations are not considered as
+                           part of text. This parameter's purposed to define reasonable
+                           widths for text displays that can be scrolled horizontally.
         """
         with StringSerializer(
             align_attributes=align_attributes,
@@ -3223,9 +3223,10 @@ class SerializerBase:
         else:
             if self.indentation:
                 self.buffer.write("\n")
-            for child_node in child_nodes:
+            if child_nodes:
                 self._level += 1
-                self.serialize_node(child_node)
+                for child_node in child_nodes:
+                    self.serialize_node(child_node)
                 self._level -= 1
             if self.indentation and self._level:
                 self.buffer.write(self._level * self.indentation)
@@ -3246,7 +3247,7 @@ class SerializerBase:
             else:
                 self.buffer.write(self.sanitize_text(node.content))
         else:
-            raise TypeError
+            raise InvalidCodePath
 
         if self.indentation:
             self.buffer.write("\n")
@@ -3255,14 +3256,13 @@ class SerializerBase:
         self.__collect_prefixes(root)
         attributes_data = {}
         declarations = {v: "" if k is None else k for k, v in self._prefixes.items()}
-        assert None not in declarations
         if "" in declarations:
             default_namespace = declarations.pop("")
             if default_namespace:
                 attributes_data["xmlns"] = f'"{default_namespace}"'
             # else it would be an unprefixed, empty namespace
         for prefix in sorted(declarations):
-            assert len(prefix) >= 2
+            assert len(prefix) >= 2  # at least one letter and a colon
             attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
 
         attributes_data.update(self.__generate_attributes_data(root))
@@ -3347,10 +3347,11 @@ class DefaultStringOptions:
     """
     This object is used to configure the serialization parameters that are applied when
     nodes are coerced to :py:class:`str` objects. Hence it also applies when node
-    objects are fed to the :py:func:`print` function.
+    objects are fed to the :py:func:`print` function and in other cases where objects
+    are implicitly cast to strings.
 
     ⚠️
-    Use this once to define behaviour on *application level*, for thread-safe
+    Use this once to define behaviour on *application level*. For thread-safe
     serializations of nodes use :meth:`NodeBase.serialize`! Think thrice whether you
     want to use this facility in a library.
     """
@@ -3361,7 +3362,7 @@ class DefaultStringOptions:
     aligned equal signs.
     """
     indentation: ClassWar[str] = ""
-    """ This string prefixes descending nodes n times per depth level. """
+    """ This string prefixes descending nodes' contents n times per depth level. """
     namespaces: ClassWar[None | NamespaceDeclarations] = None
     """
     A mapping of prefixes to namespaces. These are overriding possible declarations from
@@ -3376,8 +3377,8 @@ class DefaultStringOptions:
     text_width: ClassWar[int] = 0
     """
     Text nodes are wrapped at this character position, or not when a ``0`` is given.
-    Indentations are not considered, it's purposed to define reasonable widths for
-    text displays that can be scrolled horizontally.
+    Indentations are not considered as part of text. This parameter's purposed to define
+    reasonable widths for text displays that can be scrolled horizontally.
     """
 
     @classmethod
