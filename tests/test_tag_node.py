@@ -145,7 +145,8 @@ def test_detach_node_with_tail_1():
 
     root.append_children(tag("e"), "f")
     assert str(root) == "<root>bc<d/><e/>f</root>"
-    e = root[3]
+
+    e = root.css_select("e").first
     assert isinstance(e, TagNode)
     assert e.local_name == "e"
     e.detach()
