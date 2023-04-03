@@ -18,6 +18,39 @@ from tests.utils import assert_documents_are_semantical_equal, count_pis
 
 
 @mark.parametrize(
+    ("indentation", "out"),
+    (
+        (
+            "",
+            "<chimeney\n"
+            '      califragi="1"\n'
+            ' expialidocious="3"\n'
+            '         listic="2"\n'
+            '          super="0"/>',
+        ),
+        (
+            "  ",
+            "<chimeney\n"
+            '        califragi="1"\n'
+            '   expialidocious="3"\n'
+            '           listic="2"\n'
+            '            super="0"\n'
+            "/>",
+        ),
+    ),
+)
+def test_align_attributes(indentation, out):
+    DefaultStringOptions.align_attributes = True
+    DefaultStringOptions.indentation = indentation
+    node = new_tag_node(
+        "chimeney",
+        {"super": "0", "califragi": "1", "listic": "2", "expialidocious": "3"},
+    )
+
+    assert str(node) == out
+
+
+@mark.parametrize(
     ("indentation", "_in", "out"),
     (
         (

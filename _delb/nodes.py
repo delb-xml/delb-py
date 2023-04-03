@@ -3194,7 +3194,14 @@ class SerializerBase:
         return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
 
     def __serialize_aligned_attributes(self, data: dict[str, str]):
-        raise NotImplementedError
+        key_width = max(len(k) for k in data)
+        for key, value in data.items():
+            self.buffer.write(
+                f"\n{self._level*self.indentation} {self.indentation}"
+                f"{' '*(key_width-len(key))}{key}={value}"
+            )
+        if self.indentation:
+            self.buffer.write(f"\n{self._level*self.indentation}")
 
     def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
         self.buffer.write(">")
