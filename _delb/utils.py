@@ -25,10 +25,9 @@ from string import ascii_lowercase
 from typing import TYPE_CHECKING, cast, Any, Optional
 from warnings import warn
 
-from lxml import etree
-
-
 if TYPE_CHECKING:
+    from lxml import etree
+
     from _delb.nodes import NodeBase, TagNode
     from _delb.typing import Filter
 
@@ -395,26 +394,6 @@ def _random_unused_prefix(namespaces: etree._NSMap) -> str:
     )
 
 
-def register_namespace(prefix: str, namespace: str):
-    """
-    Registers a namespace prefix that newly created :class:`TagNode` instances in that
-    namespace will use in serializations.
-
-    The registry is global, and any existing mapping for either the given prefix or the
-    namespace URI will be removed. It has however no effect on the serialization of
-    existing nodes, see :meth:`Document.cleanup_namespace` for that.
-
-    :param prefix: The prefix to register.
-    :param namespace: The targeted namespace.
-    """
-    warn(
-        "This function will be replaced with a different mechanism in a future version "
-        "without a backward-compatible facilitation through this function.",
-        category=PendingDeprecationWarning,
-    )
-    etree.register_namespace(prefix, namespace)
-
-
 def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
     sorter = _NodesSorter()
     for node in nodes:
@@ -473,6 +452,5 @@ __all__ = (
     first.__name__,
     get_traverser.__name__,
     last.__name__,
-    register_namespace.__name__,
     sort_nodes_in_document_order.__name__,
 )

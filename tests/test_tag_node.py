@@ -10,7 +10,6 @@ from delb import (
     TextNode,
     is_tag_node,
     new_tag_node,
-    register_namespace,
     tag,
 )
 from delb.exceptions import InvalidOperation
@@ -412,7 +411,6 @@ def test_make_node_namespace_inheritance():
     assert node.prefix == "pfx"
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_make_node_with_children():
     result = new_tag_node("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
@@ -442,7 +440,7 @@ def test_make_node_with_children():
         '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
-    register_namespace("foo", "https://foo.org")
+    DefaultStringOptions.namespaces = {"foo": "https://foo.org"}
     result = new_tag_node("root", namespace="https://foo.org", children=[tag("node")])
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 

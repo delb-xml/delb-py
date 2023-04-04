@@ -145,8 +145,6 @@ Various helpers
 
 .. autofunction:: delb.last
 
-.. autofunction:: delb.register_namespace
-
 .. autofunction:: delb.tag
 
 
