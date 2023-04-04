@@ -3193,16 +3193,6 @@ class SerializerBase:
     def sanitize_text(text: str) -> str:
         return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
 
-    def __serialize_aligned_attributes(self, data: dict[str, str]):
-        key_width = max(len(k) for k in data)
-        for key, value in data.items():
-            self.buffer.write(
-                f"\n{self._level*self.indentation} {self.indentation}"
-                f"{' '*(key_width-len(key))}{key}={value}"
-            )
-        if self.indentation:
-            self.buffer.write(f"\n{self._level*self.indentation}")
-
     def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
         self.buffer.write(">")
         if all(isinstance(n, TextNode) for n in child_nodes):
@@ -3272,11 +3262,21 @@ class SerializerBase:
         self.__serialize_tag(node, self.__generate_attributes_data(node))
 
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
-        self.buffer.write(f"<{self._prefixes[node.namespace]}{node.local_name}")
+        prefixed_name = self._prefixes[node.namespace] + node.local_name
+
+        self.buffer.write(f"<{prefixed_name}")
 
         if attributes_data:
             if self.align_attributes:
-                self.__serialize_aligned_attributes(attributes_data)
+                key_width = max(len(k) for k in attributes_data)
+                for key, value in attributes_data.items():
+                    self.buffer.write(
+                        f"\n{self._level * self.indentation} {self.indentation}"
+                        f"{' ' * (key_width - len(key))}{key}={value}"
+                    )
+                if self.indentation:
+                    self.buffer.write(f"\n{self._level * self.indentation}")
+
             else:
                 for key, value in attributes_data.items():
                     self.buffer.write(f" {key}={value}")
@@ -3284,7 +3284,7 @@ class SerializerBase:
         child_nodes = tuple(node.iterate_children())
         if child_nodes:
             self.__serialize_child_nodes(child_nodes)
-            self.buffer.write(f"</{self._prefixes[node.namespace] + node.local_name}>")
+            self.buffer.write(f"</{prefixed_name}>")
         else:
             self.buffer.write("/>")
 
