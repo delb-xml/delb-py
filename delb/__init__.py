@@ -228,7 +228,7 @@ class Document(metaclass=DocumentMeta):
     :param collapse_whitespace: Deprecated. Use the argument with the same name on the
                                 ``parser_options`` object.
     :param parser: Deprecated.
-    :param parser_options: A :class:`delb.ParserOptions` class to configure the used
+    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
                            parser.
     :param klass: Explicitly define the initilized class. This can be useful for
                   applications that have :ref:`default document subclasses
@@ -461,18 +461,20 @@ class Document(metaclass=DocumentMeta):
         :param encoding: The desired text encoding.
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents n times per
-                            depth level.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
                         the parameter with the same name.
-        :param text_width: Text nodes are wrapped at this character position, or not
-                           when a ``0`` is given. Indentations are not considered as
-                           part of text. This parameter's purposed to define reasonable
-                           widths for text displays that can be scrolled horizontally.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
         """
         with path.open("bw") as file:
             self.write(
@@ -517,18 +519,20 @@ class Document(metaclass=DocumentMeta):
         :param encoding: The desired text encoding.
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents n times per
-                            depth level.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
                         the parameter with the same name.
-        :param text_width: Text nodes are wrapped at this character position, or not
-                           when a ``0`` is given. Indentations are not considered as
-                           part of text. This parameter's purposed to define reasonable
-                           widths for text displays that can be scrolled horizontally.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
         """
         if pretty is not None:
             warn(

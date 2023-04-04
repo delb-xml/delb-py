@@ -1214,18 +1214,20 @@ class NodeBase(ABC):
 
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents n times per
-                            depth level.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
                         the parameter with the same name.
-        :param text_width: Text nodes are wrapped at this character position, or not
-                           when a ``0`` is given. Indentations are not considered as
-                           part of text. This parameter's purposed to define reasonable
-                           widths for text displays that can be scrolled horizontally.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
         """
         with StringSerializer(
             align_attributes=align_attributes,
@@ -3345,15 +3347,15 @@ class StringSerializer(SerializerBase):
 
 class DefaultStringOptions:
     """
-    This object is used to configure the serialization parameters that are applied when
-    nodes are coerced to :py:class:`str` objects. Hence it also applies when node
-    objects are fed to the :py:func:`print` function and in other cases where objects
-    are implicitly cast to strings.
+    This object's class variables are used to configure the serialization parameters
+    that are applied when nodes are coerced to :py:class:`str` objects. Hence it also
+    applies when node objects are fed to the :py:func:`print` function and in other
+    cases where objects are implicitly cast to strings.
 
     ⚠️
     Use this once to define behaviour on *application level*. For thread-safe
-    serializations of nodes use :meth:`NodeBase.serialize`! Think thrice whether you
-    want to use this facility in a library.
+    serializations of nodes with diverging parameters use :meth:`NodeBase.serialize`!
+    Think thrice whether you want to use this facility in a library.
     """
 
     align_attributes: ClassWar[bool] = False
@@ -3362,7 +3364,10 @@ class DefaultStringOptions:
     aligned equal signs.
     """
     indentation: ClassWar[str] = ""
-    """ This string prefixes descending nodes' contents n times per depth level. """
+    """
+    This string prefixes descending nodes' contents one time per depth level.
+    A non-empty string implies line-breaks between nodes as well.
+    """
     namespaces: ClassWar[None | NamespaceDeclarations] = None
     """
     A mapping of prefixes to namespaces. These are overriding possible declarations from
@@ -3371,12 +3376,13 @@ class DefaultStringOptions:
     """
     newline: ClassWar[None | str] = None
     """
-    See See :py:class:`io.TextIOWrapper` for a detailed explanation of the parameter
-    with the same name.
+    See :py:class:`io.TextIOWrapper` for a detailed explanation of the parameter with
+    the same name.
     """
     text_width: ClassWar[int] = 0
     """
-    Text nodes are wrapped at this character position, or not when a ``0`` is given.
+    A positive value indicates that text nodes shall get wrapped at this character
+    position.
     Indentations are not considered as part of text. This parameter's purposed to define
     reasonable widths for text displays that can be scrolled horizontally.
     """
