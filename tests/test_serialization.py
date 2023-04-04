@@ -67,9 +67,9 @@ def test_align_attributes(indentation, out):
         ),
     ),
 )
-def test_indentation(indentation, _in, out, result_file):
-    Document(_in).save(result_file, indentation=indentation)
-    assert result_file.read_text() == dedent(out)
+def test_indentation(indentation, _in, out):
+    DefaultStringOptions.indentation = indentation
+    assert str(Document(_in)) == dedent(out)
 
 
 def test_empty_below_default_namespace():
@@ -173,9 +173,9 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
 
 def test_transparency(files_path, result_file):
     for file in (x for x in files_path.glob("[!tei_]*.xml")):
-        doc = Document(file, parser_options=ParserOptions(collapse_whitespace=False))
-        doc.save(result_file)
-
+        Document(file, parser_options=ParserOptions(collapse_whitespace=False)).save(
+            result_file
+        )
         assert_documents_are_semantical_equal(file, result_file)
         assert count_pis(file) == count_pis(result_file)
 
@@ -277,6 +277,7 @@ def test_text_width(files_path, indentation, text_width, out):
     )
 
 
-def test_xml_declaration(files_path, result_file):
-    Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml").save(result_file)
-    assert result_file.read_text().startswith("<?xml version='1.0' encoding='UTF-8'?>")
+def test_xml_declaration(files_path):
+    assert str(Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")).startswith(
+        "<?xml version='1.0' encoding='UTF-8'?>"
+    )
