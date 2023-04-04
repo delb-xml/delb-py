@@ -3091,7 +3091,6 @@ class SerializerBase:
         "_level",
         "_namespaces",
         "_prefixes",
-        "text_width",
         "__text_wrapper",
     )
 
@@ -3155,10 +3154,12 @@ class SerializerBase:
         self.indentation = indentation
 
         if namespaces is None:
-            namespaces = {}
-        self._namespaces = Namespaces(namespaces)
+            self._namespaces = Namespaces({})
+        else:
+            self._namespaces = Namespaces(namespaces)
 
-        self.text_width = text_width
+        if text_width < 0:
+            raise ValueError
         self.__text_wrapper = TextWrapper(
             width=text_width,
             expand_tabs=False,
@@ -3198,7 +3199,7 @@ class SerializerBase:
     def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
         self.buffer.write(">")
         if all(isinstance(n, TextNode) for n in child_nodes):
-            if self.text_width:
+            if self.__text_wrapper.width:
                 self.buffer.write("\n")
                 self._level += 1
                 self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
@@ -3234,7 +3235,7 @@ class SerializerBase:
         elif isinstance(node, TagNode):
             self.__serialize_non_root_tag(node)
         elif isinstance(node, TextNode):
-            if self.text_width:
+            if self.__text_wrapper.width:
                 self.__write_wrapped_text((node,))
             else:
                 self.buffer.write(self.sanitize_text(node.content))
