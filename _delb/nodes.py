@@ -3085,12 +3085,12 @@ def not_(*filter: Filter) -> Filter:
 
 class SerializerBase:
     __slots__ = (
-        "align_attributes",
+        "__align_attributes",
         "buffer",
         "indentation",
-        "_level",
-        "_namespaces",
-        "_prefixes",
+        "__level",
+        "__namespaces",
+        "__prefixes",
         "__text_wrapper",
     )
 
@@ -3098,8 +3098,8 @@ class SerializerBase:
         self.buffer = buffer
 
     def __enter__(self) -> Self:
-        self._level = 0
-        self._prefixes: dict[Optional[str], str] = {}
+        self.__level = 0
+        self.__prefixes: dict[Optional[str], str] = {}
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -3111,25 +3111,25 @@ class SerializerBase:
             for namespace in {node.namespace} | {
                 a.namespace for a in node.attributes.values()
             }:
-                if namespace in self._prefixes:
+                if namespace in self.__prefixes:
                     continue
 
                 if namespace is None:
-                    if "" in self._prefixes.values():
+                    if "" in self.__prefixes.values():
                         # hence there's a default namespace in use
                         self.__new_namespace_declaration(namespace)
                     else:
-                        self._prefixes[None] = ""
+                        self.__prefixes[None] = ""
                     continue
 
                 try:
-                    self._namespaces._fallback = node.namespaces
-                    prefix = self._namespaces.lookup_prefix(namespace)
+                    self.__namespaces._fallback = node.namespaces
+                    prefix = self.__namespaces.lookup_prefix(namespace)
 
                     if prefix is None:
-                        if "" in self._prefixes.values():
+                        if "" in self.__prefixes.values():
                             # hence there's an empty namespace in use
-                            self._prefixes[namespace] = ""
+                            self.__prefixes[namespace] = ""
                             namespace = None
                             raise KeyError
                         else:
@@ -3137,7 +3137,7 @@ class SerializerBase:
                     else:
                         prefix = prefix + ":"
 
-                    self._prefixes[namespace] = prefix
+                    self.__prefixes[namespace] = prefix
 
                 except KeyError:
                     assert isinstance(namespace, str)
@@ -3150,13 +3150,13 @@ class SerializerBase:
         namespaces: None | NamespaceDeclarations,
         text_width: int,
     ):
-        self.align_attributes = align_attributes
+        self.__align_attributes = align_attributes
         self.indentation = indentation
 
         if namespaces is None:
-            self._namespaces = Namespaces({})
+            self.__namespaces = Namespaces({})
         else:
-            self._namespaces = Namespaces(namespaces)
+            self.__namespaces = Namespaces(namespaces)
 
         if text_width < 0:
             raise ValueError
@@ -3175,8 +3175,8 @@ class SerializerBase:
     def __new_namespace_declaration(self, namespace: None | str):
         for i in range(2**16):
             prefix = f"ns{i}:"
-            if prefix not in self._prefixes.values():
-                self._prefixes[namespace] = prefix
+            if prefix not in self.__prefixes.values():
+                self.__prefixes[namespace] = prefix
                 return
         else:
             raise NotImplementedError("Just don't.")
@@ -3187,7 +3187,7 @@ class SerializerBase:
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
             data[
-                self._prefixes[attribute.namespace] + attribute.local_name
+                self.__prefixes[attribute.namespace] + attribute.local_name
             ] = f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
 
         return data
@@ -3201,11 +3201,11 @@ class SerializerBase:
         if all(isinstance(n, TextNode) for n in child_nodes):
             if self.__text_wrapper.width:
                 self.buffer.write("\n")
-                self._level += 1
+                self.__level += 1
                 self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
-                self._level -= 1
-                if self.indentation and self._level:
-                    self.buffer.write(self._level * self.indentation)
+                self.__level -= 1
+                if self.indentation and self.__level:
+                    self.buffer.write(self.__level * self.indentation)
             else:
                 self.buffer.write(
                     self.sanitize_text(
@@ -3217,16 +3217,16 @@ class SerializerBase:
             if self.indentation:
                 self.buffer.write("\n")
             if child_nodes:
-                self._level += 1
+                self.__level += 1
                 for child_node in child_nodes:
                     self.serialize_node(child_node)
-                self._level -= 1
-            if self.indentation and self._level:
-                self.buffer.write(self._level * self.indentation)
+                self.__level -= 1
+            if self.indentation and self.__level:
+                self.buffer.write(self.__level * self.indentation)
 
     def serialize_node(self, node: NodeBase):
-        if self.indentation and self._level:
-            self.buffer.write(self._level * self.indentation)
+        if self.indentation and self.__level:
+            self.buffer.write(self.__level * self.indentation)
 
         if isinstance(node, CommentNode):
             self.buffer.write(f"<!--{node.content}-->")
@@ -3248,7 +3248,7 @@ class SerializerBase:
     def serialize_root(self, root: TagNode):
         self.__collect_prefixes(root)
         attributes_data = {}
-        declarations = {v: "" if k is None else k for k, v in self._prefixes.items()}
+        declarations = {v: "" if k is None else k for k, v in self.__prefixes.items()}
         if "" in declarations:
             default_namespace = declarations.pop("")
             if default_namespace:
@@ -3265,20 +3265,20 @@ class SerializerBase:
         self.__serialize_tag(node, self.__generate_attributes_data(node))
 
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
-        prefixed_name = self._prefixes[node.namespace] + node.local_name
+        prefixed_name = self.__prefixes[node.namespace] + node.local_name
 
         self.buffer.write(f"<{prefixed_name}")
 
         if attributes_data:
-            if self.align_attributes:
+            if self.__align_attributes:
                 key_width = max(len(k) for k in attributes_data)
                 for key, value in attributes_data.items():
                     self.buffer.write(
-                        f"\n{self._level * self.indentation} {self.indentation}"
+                        f"\n{self.__level * self.indentation} {self.indentation}"
                         f"{' ' * (key_width - len(key))}{key}={value}"
                     )
                 if self.indentation:
-                    self.buffer.write(f"\n{self._level * self.indentation}")
+                    self.buffer.write(f"\n{self.__level * self.indentation}")
 
             else:
                 for key, value in attributes_data.items():
@@ -3295,7 +3295,7 @@ class SerializerBase:
         for line in self.__text_wrapper.wrap(
             self.sanitize_text("".join(n.content for n in nodes))
         ):
-            self.buffer.write(f"{self._level*self.indentation}{line}\n")
+            self.buffer.write(f"{self.__level * self.indentation}{line}\n")
 
 
 class TextBufferSerializer(SerializerBase):
