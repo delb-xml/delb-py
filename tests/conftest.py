@@ -62,28 +62,3 @@ def sample_document():
         "</text>"
         "</doc>"
     )
-
-
-@fixture()
-def traverser_sample():
-    yield Document(
-        """\
-            <root>
-                <a>
-                    <aa/>
-                    <ab>
-                        <aba/>
-                    </ab>
-                    <ac/>
-                </a>
-                <b/>
-                <c>
-                    <ca>
-                        <caa/>
-                        <cab/>
-                    </ca>
-                    <cb/>
-                </c>
-            </root>
-        """
-    )
