@@ -123,7 +123,7 @@ def test_set_root():
     assert str(document) == "<?xml version='1.0' encoding='UTF-8'?><node/>"
 
     document_2 = Document("<root><replacement/>parts</root>")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="detached node"):
         document.root = document_2.root[0]
 
 

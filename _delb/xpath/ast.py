@@ -483,7 +483,8 @@ class BooleanOperator(EvaluationNode):
                     (left.prefix, left.local_name, right.value),
                 ]
             else:
-                assert isinstance(left, AnyValue) and isinstance(right, AttributeValue)
+                assert isinstance(left, AnyValue)
+                assert isinstance(right, AttributeValue)
                 return [
                     (right.prefix, right.local_name, left.value),
                 ]

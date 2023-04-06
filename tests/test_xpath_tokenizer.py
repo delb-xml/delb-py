@@ -1,11 +1,11 @@
 import re
 
-from pytest import mark
+import pytest
 
 from _delb.xpath.tokenizer import named_group, string_pattern, tokenize, TokenType
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("_in", "out"),
     (
         ("foo", ""),
@@ -25,7 +25,7 @@ def test_string_pattern(_in, out):
         assert result.group("STRING") == out
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     (
         "_in",
         "out",
@@ -89,7 +89,7 @@ def test_tokenize(_in, out):
     assert [x.string for x in tokenize(_in)] == out
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("_in", "out"),
     (
         ("'foo'", TokenType.STRING),
@@ -133,6 +133,6 @@ def test_type_detection(_in, out):
     assert result[0].type is out
 
 
-@mark.parametrize("_in", (" ", "\t", "\n"))
+@pytest.mark.parametrize("_in", (" ", "\t", "\n"))
 def test_ignored_whitespace(_in):
     assert not tokenize(_in)

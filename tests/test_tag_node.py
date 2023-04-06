@@ -282,12 +282,12 @@ def test_id_property(files_path):
     with pytest.raises(TypeError):
         publisher.id = 1234
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="already assigned"):
         publisher.parent.id = "foo"
 
     publisher.detach()
-    with pytest.raises(ValueError):
-        a_tag_child_node = next(publisher.iterate_children(is_tag_node))
+    a_tag_child_node = next(publisher.iterate_children(is_tag_node))
+    with pytest.raises(ValueError, match="already assigned"):
         a_tag_child_node.id = "foo"
 
 
@@ -317,7 +317,7 @@ def test_insert_first_child():
 def test_insert_at_invalid_index():
     root = Document("<root><a/><b/></root>").root
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="positive"):
         root.insert_children(-1, "x")
 
     with pytest.raises(IndexError):

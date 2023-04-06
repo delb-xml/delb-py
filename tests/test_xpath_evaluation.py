@@ -1,10 +1,10 @@
-from pytest import mark
+import pytest
 
 from _delb.xpath.ast import Axis
 from delb import altered_default_filters, is_tag_node, Document, TextNode
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("name", "start_name", "expected_order"),
     (
         ("ancestor", "c", "ba"),

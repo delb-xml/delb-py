@@ -92,8 +92,12 @@ max-line-length = 88
 
 # E203: https://github.com/PyCQA/pycodestyle/issues/373
 # PEA001: DROPWITH Python3.8
-extend-ignore = ["E203", "PEA001"]
+# PT019: https://github.com/m-burst/flake8-pytest-style/issues/202
+extend-ignore = ["E203", "PEA001", "PT019"]
 extend-select = ["TC", "TC1"]
+
+pytest-parametrize-values-type = "tuple"
+pytest-parametrize-values-row-type = "tuple"
 
 #
 
@@ -144,6 +148,7 @@ dependencies = [
     "flake8-pep585",
     "flake8-pep604",
     "flake8-pyprojecttoml",
+    "flake8-pytest-style",
     "flake8-use-fstring",
     "flake8-use-pathlib",
     "flake8-simplify",

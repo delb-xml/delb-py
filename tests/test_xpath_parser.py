@@ -1,6 +1,6 @@
 import operator
 
-from pytest import mark, raises
+import pytest
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath import _css_to_xpath, parse
@@ -21,7 +21,7 @@ from _delb.xpath.ast import (
 )
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "selector",
     (
         "*[copyOf]",
@@ -43,7 +43,7 @@ def test_css_selectors(selector):
     parse(_css_to_xpath(selector))
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("expression", "string"),
     (
         ("", " 0: Missing location path."),
@@ -73,11 +73,11 @@ def test_css_selectors(selector):
     ),
 )
 def test_invalid_expressions(expression, string):
-    with raises(XPathParsingError, match=string):
+    with pytest.raises(XPathParsingError, match=string):
         parse(expression)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("_in", "out"),
     (
         (
@@ -213,7 +213,7 @@ def test_parse(_in, out):
     assert parse(_in) == out, parse(_in)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("_in", "out"),
     (
         (
@@ -366,5 +366,7 @@ def test_parse_predicates(_in, out):
 
 
 def test_unsupported_feature():
-    with raises(XPathUnsupportedStandardFeature, match=" 5 .*: Attribute lookup "):
+    with pytest.raises(
+        XPathUnsupportedStandardFeature, match=" 5 .*: Attribute " "lookup "
+    ):
         parse("//pb/@facs")
