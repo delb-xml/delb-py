@@ -86,15 +86,17 @@ fail_under = 97
 #
 
 [tool.flake8]
-max-annotations-complexity = 4
-max-complexity = 10
-max-line-length = 88
-
 # E203: https://github.com/PyCQA/pycodestyle/issues/373
 # PEA001: DROPWITH Python3.8
 # PT019: https://github.com/m-burst/flake8-pytest-style/issues/202
 extend-ignore = ["E203", "PEA001", "PT019"]
 extend-select = ["TC", "TC1"]
+
+ban-relative-imports = "true"
+
+max-annotations-complexity = 4
+max-complexity = 10
+max-line-length = 88
 
 pytest-parametrize-values-type = "tuple"
 pytest-parametrize-values-row-type = "tuple"
@@ -153,6 +155,7 @@ dependencies = [
     "flake8-use-pathlib",
     "flake8-simplify",
     "flake8-sphinx-links",
+    "flake8-tidy-imports",
     "flake8-type-checking",
     "pep8-naming"
 ]
