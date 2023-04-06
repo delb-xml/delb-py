@@ -4,7 +4,7 @@ from delb import get_traverser, is_tag_node, Document
 
 
 SAMPLE = Document(
-        """\
+    """\
             <root>
                 <a>
                     <aa/>
@@ -23,7 +23,7 @@ SAMPLE = Document(
                 </c>
             </root>
         """
-    ).root
+).root
 
 
 @mark.parametrize(
