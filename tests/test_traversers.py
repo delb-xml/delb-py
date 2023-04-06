@@ -1,9 +1,9 @@
-from pytest import mark
+import pytest
 
 from delb import get_traverser, is_tag_node, Document
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("from_left", "depth_first", "from_top", "result"),
     (
         (

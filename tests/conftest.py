@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pytest import fixture
+import pytest
 
 from tests import plugins  # noqa: F401
 
@@ -14,24 +14,24 @@ RESULTS_FILE = FILES_PATH / ".result.xml"
 _referenced_objects_for_wrapper_cache_tests = {}
 
 
-@fixture()
+@pytest.fixture()
 def files_path():
-    yield FILES_PATH
+    return FILES_PATH
 
 
-@fixture()
+@pytest.fixture()
 def long_term_references():
-    yield _referenced_objects_for_wrapper_cache_tests
+    return _referenced_objects_for_wrapper_cache_tests
 
 
-@fixture()
+@pytest.fixture()
 def result_file():
-    yield RESULTS_FILE
+    return RESULTS_FILE
 
 
-@fixture()
+@pytest.fixture()
 def queries_sample():
-    yield Document(
+    return Document(
         """\
             <root>
                 <node n="1"/>
@@ -43,14 +43,14 @@ def queries_sample():
     )
 
 
-@fixture(autouse=True, scope="function")
-def reset_serializer():
+@pytest.fixture(autouse=True)
+def _reset_serializer():
     DefaultStringOptions.reset_defaults()
 
 
-@fixture()
+@pytest.fixture()
 def sample_document():
-    yield Document(
+    return Document(
         '<doc xmlns="https://name.space">'
         "<header/>"
         "<text>"

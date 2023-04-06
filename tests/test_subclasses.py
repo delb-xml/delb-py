@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pytest import mark
+import pytest
 
 from delb import Document, TagNode
 
@@ -47,7 +47,7 @@ def test_no_subclass():
     assert isinstance(Document("<root/>"), Document)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "filename",
     ("tei_marx_manifestws_1848.TEI-P5.xml", "tei_stevenson_treasure_island.xml"),
 )

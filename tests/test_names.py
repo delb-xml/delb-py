@@ -1,15 +1,15 @@
-from pytest import mark, raises
+import pytest
 
 from delb import Document, Namespaces
 from delb.names import XML_NAMESPACE
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "data",
     ({"xml": "foo"}, {"foo": XML_NAMESPACE}),
 )
 def test_invalid_namespace_declarations(data):
-    with raises(ValueError):
+    with pytest.raises(ValueError, match="(not be overridden|not override)"):
         Namespaces(data)
 
 
@@ -20,7 +20,7 @@ def test_namespaces():
     assert namespaces == Namespaces({"foo": "bar"})
     assert namespaces["xml"] == XML_NAMESPACE
 
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         namespaces["none"]
 
 
@@ -56,5 +56,5 @@ def test_prefix_lookup():
     # default namespace declared in a descendant
     assert namespaces.lookup_prefix("mailto:duper@delb") == "alt"
 
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         namespaces.lookup_prefix("http://void.delb/")

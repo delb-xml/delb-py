@@ -1,4 +1,4 @@
-from pytest import mark, raises
+import pytest
 
 from delb import tag, Document
 from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
@@ -18,10 +18,10 @@ def test_fetch_or_create_by_xpath():
 
     root.append_children(tag("intermediate"))
 
-    with raises(AmbiguousTreeError):
+    with pytest.raises(AmbiguousTreeError):
         root.fetch_or_create_by_xpath("intermediate")
 
-    with raises(AmbiguousTreeError):
+    with pytest.raises(AmbiguousTreeError):
         root.fetch_or_create_by_xpath("intermediate/test")
 
 
@@ -43,7 +43,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
     )
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "expression",
     (
         "child[0]",
@@ -56,7 +56,7 @@ def test_fetch_or_create_by_xpath_with_attributes():
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
     node = Document("<node/>").root
-    with raises(ValueError):
+    with pytest.raises(ValueError, match="distinct branch"):
         node.fetch_or_create_by_xpath(expression)
 
 
@@ -72,11 +72,11 @@ def test_fetch_or_create_by_xpath_with_prefix():
         "</root>"
     )
 
-    with raises(XPathEvaluationError):
+    with pytest.raises(XPathEvaluationError):
         root.fetch_or_create_by_xpath("unknwn:test")
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "expression",
     (
         'entry/sense/cit[@type="translation" and "en"=@lang]',

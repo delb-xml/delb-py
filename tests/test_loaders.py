@@ -1,7 +1,7 @@
 from pathlib import Path
 
+import pytest
 from lxml import etree
-from pytest import mark
 from pytest_httpx import IteratorStream
 
 from delb import Document
@@ -28,7 +28,7 @@ def test_etree_loader():
     assert document.source_url is None
 
 
-@mark.parametrize("s", ("", "s"))
+@pytest.mark.parametrize("s", ("", "s"))
 def test_http_s_loader(httpx_mock, s):
     httpx_mock.add_response(
         stream=IteratorStream(

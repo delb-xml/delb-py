@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from pytest import mark
+import pytest
 
 from delb import (
     new_comment_node,
@@ -17,7 +17,7 @@ from _delb.nodes import DETACHED
 from tests.utils import assert_documents_are_semantical_equal, count_pis
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("indentation", "out"),
     (
         (
@@ -50,7 +50,7 @@ def test_align_attributes(indentation, out):
     assert str(node) == out
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("indentation", "_in", "out"),
     (
         (
@@ -115,7 +115,7 @@ def test_significant_whitespace_is_saved(result_file):
     ]
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("declarations", "node_constructor", "args", "out"),
     (
         ({}, new_comment_node, ("foo",), "<!--foo-->"),
@@ -180,7 +180,7 @@ def test_transparency(files_path, result_file):
         assert count_pis(file) == count_pis(result_file)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("indentation", "text_width", "out"),
     (
         (
