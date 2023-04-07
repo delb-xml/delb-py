@@ -2687,7 +2687,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             self.__content = text
 
     # for utils._StringMixin:
-    _data = content  # type: ignore
+    _data = content
 
     @property
     def depth(self) -> int:

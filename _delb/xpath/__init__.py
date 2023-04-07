@@ -123,10 +123,10 @@ class QueryResults(Sequence["NodeBase"]):
         Returns another :class:`QueryResults` instance that contains all nodes filtered
         by the provided :term:`filter` s.
         """
-        items = self.__items
+        items: Sequence[NodeBase] = self.__items
         for filter in filters:
-            items = (x for x in items if filter(x))  # type: ignore
-        return self.__class__(items)  # type: ignore
+            items = [x for x in items if filter(x)]
+        return self.__class__(items)
 
     @property
     def first(self) -> Optional[NodeBase]:
