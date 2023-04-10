@@ -51,6 +51,32 @@ def test_align_attributes(indentation, out):
 
 
 @mark.parametrize(
+    ('out',),
+    (
+        (
+            "<root\n"
+            '   F="b"\n'
+            '   ῇ̣="ἐ̣"\n'
+            '   f="bar"\n'
+            '  fo="bar"\n'
+            ' foo="b"\n'
+            ' foo="bar"\n'
+            "/>",
+        ),
+    )
+)
+def test_align_attributes_sort_by_len(out):
+    DefaultStringOptions.align_attributes = True
+    DefaultStringOptions.align_attributes_by_len = True
+    node = new_tag_node(
+        'root',
+        {'foo': 'b', 'F': 'bar', 'fo': 'bar', 'ῇ̣': 'ἐ̣', 'f': 'b'}
+    )
+
+    assert str(node) == out
+
+
+@mark.parametrize(
     ("indentation", "_in", "out"),
     (
         (
