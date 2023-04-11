@@ -25,7 +25,6 @@ class ParserOptions:
     """
     The configuration options that define an XML parser's behaviour.
 
-    :param cleanup_namespaces: Consolidate XML namespace declarations.
     :param collapse_whitespace: :meth:`Collapse the content's whitespace
                                 <delb.Document.collapse_whitespace>`.
     :param remove_comments: Ignore comments.
@@ -37,14 +36,12 @@ class ParserOptions:
 
     def __init__(
         self,
-        cleanup_namespaces: bool = False,
         collapse_whitespace: bool = False,
         remove_comments: bool = False,
         remove_processing_instructions: bool = False,
         resolve_entities: bool = True,
         unplugged: bool = False,
     ):
-        self.cleanup_namespaces = cleanup_namespaces
         self.collapse_whitespace = collapse_whitespace
         self.remove_comments = remove_comments
         self.remove_processing_instructions = remove_processing_instructions
@@ -54,7 +51,6 @@ class ParserOptions:
     def _make_parser(self) -> etree.XMLParser:
         return etree.XMLParser(
             no_network=self.unplugged,
-            ns_clean=self.cleanup_namespaces,
             remove_blank_text=False,
             remove_comments=self.remove_comments,
             remove_pis=self.remove_processing_instructions,
