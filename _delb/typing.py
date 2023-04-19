@@ -26,18 +26,22 @@ from typing import Union  # noqa: UNT001
 from lxml import etree
 
 if TYPE_CHECKING:
-    if sys.version_info < (3, 10):  # DROPWITH Python 3.10
+    if sys.version_info < (3, 10):  # DROPWITH Python 3.9
         from typing_extensions import TypeAlias
     else:
         from typing import TypeAlias
 
     from _delb.nodes import NodeBase, _TagDefinition
 
-
-if sys.version_info < (3, 8):  # DROPWITH Python 3.8
+if sys.version_info < (3, 8):  # DROPWITH Python 3.7
     from typing_extensions import Final
 else:
     from typing import Final
+
+if sys.version_info < (3, 11):  # DROPWITH Python 3.10
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 
 Filter: TypeAlias = Callable[["NodeBase"], bool]
@@ -57,4 +61,5 @@ __all__ = (
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "Self",
 )

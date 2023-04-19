@@ -16,11 +16,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, MutableSequence
+from collections.abc import Iterator, MutableSequence
 from copy import deepcopy
+from io import TextIOWrapper
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional
-from typing import IO as IOType  # noqa: N811
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from warnings import warn
 
 from lxml import etree
@@ -48,9 +48,11 @@ from _delb.nodes import (
     new_tag_node,
     tag,
     CommentNode,
+    DefaultStringOptions,
     NodeBase,
     ProcessingInstructionNode,
     TagNode,
+    TextBufferSerializer,
     TextNode,
 )
 from _delb.parser import _compat_get_parser, ParserOptions
@@ -59,7 +61,6 @@ from _delb.utils import (
     first,
     get_traverser,
     last,
-    register_namespace,
 )
 from _delb.xpath import QueryResults
 
@@ -215,19 +216,19 @@ class Document(metaclass=DocumentMeta):
     >>> text_node.clone() in document
     False
 
-    The string coercion of a document yields an XML encoded stream, but unlike
-    :meth:`Document.save` and :meth:`Document.write`, without an XML declaration:
+    The string coercion of a document yields an XML encoded stream as string. Its
+    appearance can be configured via :class:`DefaultStringOptions`.
 
     >>> document = Document("<root/>")
     >>> str(document)
-    '<root/>'
+    "<?xml version='1.0' encoding='UTF-8'?><root/>"
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
     :param collapse_whitespace: Deprecated. Use the argument with the same name on the
                                 ``parser_options`` object.
     :param parser: Deprecated.
-    :param parser_options: A :class:`delb.ParserOptions` class to configure the used
+    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
                            parser.
     :param klass: Explicitly define the initilized class. This can be useful for
                   applications that have :ref:`default document subclasses
@@ -343,48 +344,14 @@ class Document(metaclass=DocumentMeta):
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self
 
-    def __str__(self):
-        cloned_root = self.root.clone(deep=True)
-        cloned_root.merge_text_nodes()
-        _copy_root_siblings(self.root._etree_obj, cloned_root._etree_obj)
-        return etree.tostring(cloned_root._etree_obj.getroottree(), encoding="unicode")
-
-    def cleanup_namespaces(
-        self,
-        namespaces: Optional[NamespaceDeclarations] = None,
-        retain_prefixes: Optional[Iterable[str]] = None,
-    ):
-        """
-        Consolidates the namespace declarations in the document by removing unused and
-        redundant ones.
-
-        There are currently some caveats due to lxml/libxml2's implementations:
-          - prefixes cannot be set for the default namespace
-          - a namespace cannot be declared as default after a node's creation (where a
-            namespace was specified that had been registered for a prefix with
-            :func:`register_namespace`)
-          - there's no way to unregister a prefix for a namespace
-          - if there are other namespaces used as default namespaces (where a namespace
-            was specified that had *not* been registered for a prefix) in the
-            descendants of the root, their declarations are lost when this method is
-            used
-
-        To ensure clean serializations, one should:
-          - register prefixes for all namespaces except the default one at the start of
-            an application
-          - use only one default namespace within a document
-
-        :param namespaces: An optional :term:`mapping` of prefixes (keys) to namespaces
-                           (values) that will be declared at the root element.
-        :param retain_prefixes: An optional iterable that contains prefixes whose
-                                declarations shall be kept despite not being used.
-        """
-        etree.cleanup_namespaces(
-            self.root._etree_obj.getroottree(),
-            # TODO https://github.com/lxml/lxml-stubs/issues/62
-            top_nsmap=namespaces,  # type: ignore
-            keep_ns_prefixes=retain_prefixes,
-        )
+    def __str__(self) -> str:
+        with DefaultStringOptions._get_serializer() as serializer:
+            self.__serialize(
+                serializer=serializer,
+                encoding="utf-8",
+                indentation=serializer.indentation,
+            )
+            return serializer.result
 
     def clone(self) -> Document:
         """
@@ -478,30 +445,116 @@ class Document(metaclass=DocumentMeta):
         self.__root_node__ = node
         node.__document__ = self
 
-    def save(self, path: Path, pretty: bool = False, **cleanup_namespaces_args):
+    def save(
+        self,
+        path: Path,
+        pretty: Optional[bool] = None,
+        *,
+        encoding: str = "utf-8",
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: None | str = None,
+        text_width: int = 0,
+    ):
         """
-        :param path: The path where the document shall be saved.
-        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
-        :param cleanup_namespaces_args: Arguments that are a passed to
-                                        :meth:`Document.cleanup_namespaces` before
-                                        saving.
+        :param encoding: The desired text encoding.
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
         """
         with path.open("bw") as file:
-            self.write(file, pretty=pretty, **cleanup_namespaces_args)
+            self.write(
+                buffer=file,
+                pretty=pretty,
+                encoding=encoding,
+                align_attributes=align_attributes,
+                indentation=indentation,
+                namespaces=namespaces,
+                newline=newline,
+                text_width=text_width,
+            )
 
-    def write(self, buffer: IOType, pretty: bool = False, **cleanup_namespaces_args):
+    def __serialize(self, serializer, encoding, indentation):
+        declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
+        if indentation:
+            declaration += "\n"
+        serializer.buffer.write(declaration)
+        for node in self.head_nodes:
+            serializer.serialize_node(node)
+        with altered_default_filters():
+            serializer.serialize_root(self.root)
+        for node in self.tail_nodes:
+            serializer.serialize_node(node)
+
+    def write(
+        self,
+        buffer: BinaryIO,
+        pretty: Optional[bool] = None,
+        *,
+        encoding: str = "utf-8",
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: None | str,
+        text_width: int = 0,
+    ):
         """
         :param buffer: A :term:`file-like object` that the document is written to.
-        :param pretty: Adds indentation for human consumers when :py:obj:`True`.
-        :param cleanup_namespaces_args: Arguments that are a passed to
-                                        :meth:`Document.cleanup_namespaces` before
-                                        writing.
+        :param pretty: *Deprecated.* Adds indentation for human consumers when
+                       :py:obj:`True`.
+        :param encoding: The desired text encoding.
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
         """
-        self.root.merge_text_nodes()
-        self.cleanup_namespaces(**cleanup_namespaces_args)
-        self.root._etree_obj.getroottree().write(
-            file=buffer, encoding="utf-8", pretty_print=pretty, xml_declaration=True
-        )
+        if pretty is not None:
+            warn(
+                "The `pretty` argument is deprecated, for the legacy behaviour provide "
+                "`indentation` as two spaces instead."
+            )
+            align_attributes = False
+            indentation = "  " if pretty else ""
+            text_width = 0
+
+        with TextBufferSerializer(
+            buffer=TextIOWrapper(buffer),
+            encoding=encoding,
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            newline=newline,
+            text_width=text_width,
+        ) as serializer:
+            self.__serialize(
+                serializer=serializer, encoding=encoding, indentation=indentation
+            )
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
@@ -531,6 +584,7 @@ class Document(metaclass=DocumentMeta):
 
 __all__ = (
     CommentNode.__name__,
+    DefaultStringOptions.__name__,
     Document.__name__,
     Namespaces.__name__,
     ParserOptions.__name__,
@@ -552,6 +606,5 @@ __all__ = (
     new_comment_node.__name__,
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
-    register_namespace.__name__,
     tag.__name__,
 )

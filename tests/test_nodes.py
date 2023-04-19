@@ -14,17 +14,15 @@ from delb.exceptions import InvalidOperation
 
 
 def test_add_preceding_siblings():
-    document = Document("<root><e1/></root>")
-    document.root[0].add_preceding_siblings(tag("e2"), tag("e3"))
-
-    assert str(document) == "<root><e3/><e2/><e1/></root>"
+    root = Document("<root><e1/></root>").root
+    root[0].add_preceding_siblings(tag("e2"), tag("e3"))
+    assert str(root) == "<root><e3/><e2/><e1/></root>"
 
 
 def test_add_following_siblings():
-    document = Document("<root><e1/></root>")
-    document.root[0].add_following_siblings(tag("e2"), tag("e3"))
-
-    assert str(document) == "<root><e1/><e2/><e3/></root>"
+    root = Document("<root><e1/></root>").root
+    root[0].add_following_siblings(tag("e2"), tag("e3"))
+    assert str(root) == "<root><e1/><e2/><e3/></root>"
 
 
 def test_iterate_ancestors():
@@ -48,12 +46,9 @@ def test_ancestors_of_detached_node():
 
 
 def test_insert_children():
-    document = Document("<root><a>b</a></root>")
-    root = document.root
-
+    root = Document("<root><a>b</a></root>").root
     root[0].insert_children(1, root.new_tag_node("c"))
-
-    assert str(document) == "<root><a>b<c/></a></root>"
+    assert str(root) == "<root><a>b<c/></a></root>"
 
 
 def test_comment_is_ignored():
@@ -91,7 +86,10 @@ def test_insert_issue_in_a_more_complex_situation():
     document = Document("<root><foo><div1><bar><div2/></bar> </div1></foo></root>")
     for node in document.root.css_select("bar,foo"):
         node.detach(retain_child_nodes=True)
-    assert str(document) == "<root><div1><div2/> </div1></root>"
+    assert (
+        str(document) == "<?xml version='1.0' encoding='UTF-8'?>"
+        "<root><div1><div2/> </div1></root>"
+    )
 
 
 def test_wrapper_consistency():
@@ -220,8 +218,7 @@ def test_parse(yes_or_no):
 
 
 def test_replace_with():
-    document = Document("<root><a>b</a>c<d>e</d></root>")
-    root = document.root
+    root = Document("<root><a>b</a>c<d>e</d></root>").root
 
     b_text = root[0][0]
     b_text.replace_with(tag("b"))
@@ -231,7 +228,7 @@ def test_replace_with():
     assert expected_new is not b_text
     assert isinstance(expected_new, TagNode)
     assert expected_new.local_name == "b"
-    assert str(document) == "<root><a><b/></a>c<d>e</d></root>"
+    assert str(root) == "<root><a><b/></a>c<d>e</d></root>"
 
     c_text = root[1]
     c_text.replace_with(tag("c"))
@@ -241,7 +238,7 @@ def test_replace_with():
     assert expected_new is not c_text
     assert isinstance(expected_new, TagNode)
     assert expected_new.local_name == "c"
-    assert str(document) == "<root><a><b/></a><c/><d>e</d></root>"
+    assert str(root) == "<root><a><b/></a><c/><d>e</d></root>"
 
     with pytest.raises(InvalidOperation):
         root.replace_with(tag("new"))

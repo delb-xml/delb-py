@@ -86,7 +86,7 @@ def test_fetch_or_create_by_xpath_with_prefix():
 def test_fetch_or_create_by_xpath_with_multiple_attributes(expression):
     root = Document("<root/>").root
     cit = root.fetch_or_create_by_xpath(expression)
-    assert str(cit) == '<cit type="translation" lang="en"/>'
+    assert str(cit) == '<cit lang="en" type="translation"/>'
     assert root.fetch_or_create_by_xpath(expression) is cit
 
 

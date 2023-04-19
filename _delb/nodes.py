@@ -21,10 +21,21 @@ from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
 from copy import copy, deepcopy
-from warnings import warn
+from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
-from typing import TYPE_CHECKING, cast, overload, Any, AnyStr, NamedTuple, Optional
+from textwrap import TextWrapper
+from typing import (
+    TYPE_CHECKING,
+    cast,
+    overload,
+    Any,
+    AnyStr,
+    ClassVar as ClassWar,
+    NamedTuple,
+    Optional,
+)
+from warnings import warn
 
 from lxml import etree
 
@@ -43,6 +54,7 @@ from _delb.utils import (
     _crunch_whitespace,
     last,
     _random_unused_prefix,
+    traverse_bf_ltr_ttb,
 )
 from _delb.xpath import (
     LegacyXPathExpression,
@@ -53,8 +65,10 @@ from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
+    from typing import TextIO
+
     from delb import Document
-    from _delb.typing import Filter, NamespaceDeclarations, NodeSource
+    from _delb.typing import Filter, NamespaceDeclarations, NodeSource, Self
 
 
 # shortcuts
@@ -556,7 +570,7 @@ class Attribute(_StringMixin):
 
         namespace, _ = deconstruct_clark_notation(self._key)
         if namespace is None:
-            namespace = self._attributes.namespaces.get(None, None)
+            namespace = self._attributes.namespaces.get(None)
 
         if isinstance(namespace, bytes):
             namespace = namespace.decode()
@@ -697,6 +711,11 @@ class TagAttributes(MutableMapping):
 
 class NodeBase(ABC):
     __slots__ = ("__weakref__",)
+
+    def __str__(self) -> str:
+        with DefaultStringOptions._get_serializer() as serializer:
+            serializer.serialize_node(self)
+            return serializer.result
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -1181,6 +1200,45 @@ class NodeBase(ABC):
         self.add_following_siblings(node, clone=clone)
         return self.detach()
 
+    def serialize(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        """
+        Returns a string that contains the serialization of the node.
+
+        :param align_attributes: Determines whether attributes' names and values line up
+                                 sharply around vertically aligned equal signs.
+        :param indentation: This string prefixes descending nodes' contents one time per
+                            depth level. A non-empty string implies line-breaks between
+                            nodes as well.
+        :param namespaces: A mapping of prefixes to namespaces. These are overriding
+                           possible declarations from a parsed serialisat that the
+                           document instance stems from. Prefixes for undeclared
+                           namespaces are enumerated with the prefix ``ns``.
+        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
+                        the parameter with the same name.
+        :param text_width: A positive value indicates that text nodes shall get wrapped
+                           at this character position.
+                           Indentations are not considered as part of text. This
+                           parameter's purposed to define reasonable widths for text
+                           displays that can be scrolled horizontally.
+        """
+        with StringSerializer(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            newline=newline,
+            text_width=text_width,
+        ) as serializer:
+            serializer.serialize_node(self)
+            return serializer.result
+
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
             # is happening among valid root node siblings
@@ -1343,9 +1401,6 @@ class _ElementWrappingNode(NodeBase):
 
     def __deepcopy__(self, memodict=None) -> _ElementWrappingNode:
         return self.clone(deep=True)
-
-    def __str__(self) -> str:
-        return str(self._etree_obj)
 
     def _add_following_sibling(self, node: NodeBase):
         if isinstance(node, _ElementWrappingNode):
@@ -1714,16 +1769,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
             pass
         return i
 
-    def __str__(self) -> str:
-        clone = self.clone(deep=True)
-        clone.merge_text_nodes()
-        return etree.tostring(clone._etree_obj, encoding="unicode")
-
     def __repr__(self) -> str:
         return (
             f'<{self.__class__.__name__}("{self.universal_name}", '
             f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
+
+    def __str__(self) -> str:
+        with DefaultStringOptions._get_serializer() as serializer:
+            serializer.serialize_root(self)
+            return serializer.result
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
@@ -1986,15 +2041,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
           behaviour.
         - Other contents in predicate expressions are invalid.
 
-        >>> document = Document("<root/>")
-        >>> grandchild = document.root.fetch_or_create_by_xpath(
+        >>> root = Document("<root/>").root
+        >>> grandchild = root.fetch_or_create_by_xpath(
         ...     "child[@a='b']/grandchild"
         ... )
-        >>> grandchild is document.root.fetch_or_create_by_xpath(
+        >>> grandchild is root.fetch_or_create_by_xpath(
         ...     "child[@a='b']/grandchild"
         ... )
         True
-        >>> str(document)
+        >>> str(root)
         '<root><child a="b"><grandchild/></child></root>'
 
         :param expression: An XPath expression that can unambiguously locate a
@@ -2349,6 +2404,25 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :meta category: add-nodes
         """
         self.insert_children(0, *node, clone=clone)
+
+    def serialize(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        with StringSerializer(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            newline=newline,
+            text_width=text_width,
+        ) as serializer:
+            serializer.serialize_root(self)
+            return serializer.result
 
     @property
     def universal_name(self) -> str:
@@ -3006,17 +3080,347 @@ def not_(*filter: Filter) -> Filter:
     return not_wrapper
 
 
+# serializer
+
+
+class SerializerBase:
+    __slots__ = (
+        "__align_attributes",
+        "buffer",
+        "indentation",
+        "__level",
+        "__namespaces",
+        "__prefixes",
+        "__text_wrapper",
+    )
+
+    def __init__(self, buffer: TextIO):
+        self.buffer = buffer
+
+    def __enter__(self) -> Self:
+        self.__level = 0
+        self.__prefixes: dict[Optional[str], str] = {}
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.buffer.flush()
+
+    def __collect_prefixes(self, root: TagNode):
+        for node in traverse_bf_ltr_ttb(root, is_tag_node):
+            assert isinstance(node, TagNode)
+            for namespace in {node.namespace} | {
+                a.namespace for a in node.attributes.values()
+            }:
+                if namespace in self.__prefixes:
+                    continue
+
+                if namespace is None:
+                    if "" in self.__prefixes.values():
+                        # hence there's a default namespace in use
+                        self.__new_namespace_declaration(namespace)
+                    else:
+                        self.__prefixes[None] = ""
+                    continue
+
+                try:
+                    self.__namespaces._fallback = node.namespaces
+                    prefix = self.__namespaces.lookup_prefix(namespace)
+
+                    if prefix is None:
+                        if "" in self.__prefixes.values():
+                            # hence there's an empty namespace in use
+                            self.__prefixes[namespace] = ""
+                            namespace = None
+                            raise KeyError
+                        else:
+                            prefix = ""
+                    else:
+                        prefix = prefix + ":"
+
+                    self.__prefixes[namespace] = prefix
+
+                except KeyError:
+                    assert isinstance(namespace, str)
+                    self.__new_namespace_declaration(namespace)
+
+    def _init_config(
+        self,
+        align_attributes: bool,
+        indentation: str,
+        namespaces: None | NamespaceDeclarations,
+        text_width: int,
+    ):
+        self.__align_attributes = align_attributes
+        self.indentation = indentation
+
+        if namespaces is None:
+            self.__namespaces = Namespaces({})
+        else:
+            self.__namespaces = Namespaces(namespaces)
+
+        if text_width < 0:
+            raise ValueError
+        self.__text_wrapper = TextWrapper(
+            width=text_width,
+            expand_tabs=False,
+            replace_whitespace=True,
+            drop_whitespace=True,
+            initial_indent="",
+            subsequent_indent="",
+            fix_sentence_endings=False,
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
+
+    def __new_namespace_declaration(self, namespace: None | str):
+        for i in range(2**16):
+            prefix = f"ns{i}:"
+            if prefix not in self.__prefixes.values():
+                self.__prefixes[namespace] = prefix
+                return
+        else:
+            raise NotImplementedError("Just don't.")
+
+    def __generate_attributes_data(self, node: TagNode) -> dict[str, str]:
+        data = {}
+
+        for attribute in (node.attributes[a] for a in sorted(node.attributes)):
+            assert isinstance(attribute, Attribute)
+            data[
+                self.__prefixes[attribute.namespace] + attribute.local_name
+            ] = f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
+
+        return data
+
+    @staticmethod
+    def sanitize_text(text: str) -> str:
+        return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+
+    def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
+        self.buffer.write(">")
+        if all(isinstance(n, TextNode) for n in child_nodes):
+            if self.__text_wrapper.width:
+                self.buffer.write("\n")
+                self.__level += 1
+                self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
+                self.__level -= 1
+                if self.indentation and self.__level:
+                    self.buffer.write(self.__level * self.indentation)
+            else:
+                self.buffer.write(
+                    self.sanitize_text(
+                        "".join(cast("TextNode", n).content for n in child_nodes)
+                    )
+                )
+
+        else:
+            if self.indentation:
+                self.buffer.write("\n")
+            if child_nodes:
+                self.__level += 1
+                for child_node in child_nodes:
+                    self.serialize_node(child_node)
+                self.__level -= 1
+            if self.indentation and self.__level:
+                self.buffer.write(self.__level * self.indentation)
+
+    def serialize_node(self, node: NodeBase):
+        if self.indentation and self.__level:
+            self.buffer.write(self.__level * self.indentation)
+
+        if isinstance(node, CommentNode):
+            self.buffer.write(f"<!--{node.content}-->")
+        elif isinstance(node, ProcessingInstructionNode):
+            self.buffer.write(f"<?{node.target} {node.content}?>")
+        elif isinstance(node, TagNode):
+            self.__serialize_non_root_tag(node)
+        elif isinstance(node, TextNode):
+            if self.__text_wrapper.width:
+                self.__write_wrapped_text((node,))
+            else:
+                self.buffer.write(self.sanitize_text(node.content))
+        else:
+            raise InvalidCodePath
+
+        if self.indentation:
+            self.buffer.write("\n")
+
+    def serialize_root(self, root: TagNode):
+        self.__collect_prefixes(root)
+        attributes_data = {}
+        declarations = {v: "" if k is None else k for k, v in self.__prefixes.items()}
+        if "" in declarations:
+            default_namespace = declarations.pop("")
+            if default_namespace:
+                attributes_data["xmlns"] = f'"{default_namespace}"'
+            # else it would be an unprefixed, empty namespace
+        for prefix in sorted(declarations):
+            assert len(prefix) >= 2  # at least one letter and a colon
+            attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
+
+        attributes_data.update(self.__generate_attributes_data(root))
+        self.__serialize_tag(root, attributes_data)
+
+    def __serialize_non_root_tag(self, node: TagNode):
+        self.__serialize_tag(node, self.__generate_attributes_data(node))
+
+    def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
+        prefixed_name = self.__prefixes[node.namespace] + node.local_name
+
+        self.buffer.write(f"<{prefixed_name}")
+
+        if attributes_data:
+            if self.__align_attributes:
+                key_width = max(len(k) for k in attributes_data)
+                for key, value in attributes_data.items():
+                    self.buffer.write(
+                        f"\n{self.__level * self.indentation} {self.indentation}"
+                        f"{' ' * (key_width - len(key))}{key}={value}"
+                    )
+                if self.indentation:
+                    self.buffer.write(f"\n{self.__level * self.indentation}")
+
+            else:
+                for key, value in attributes_data.items():
+                    self.buffer.write(f" {key}={value}")
+
+        child_nodes = tuple(node.iterate_children())
+        if child_nodes:
+            self.__serialize_child_nodes(child_nodes)
+            self.buffer.write(f"</{prefixed_name}>")
+        else:
+            self.buffer.write("/>")
+
+    def __write_wrapped_text(self, nodes: tuple[TextNode, ...]):
+        for line in self.__text_wrapper.wrap(
+            self.sanitize_text("".join(n.content for n in nodes))
+        ):
+            self.buffer.write(f"{self.__level * self.indentation}{line}\n")
+
+
+class TextBufferSerializer(SerializerBase):
+    def __init__(
+        self,
+        buffer: TextIOWrapper,
+        encoding="utf-8",
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        self._init_config(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            text_width=text_width,
+        )
+
+        buffer.reconfigure(encoding=encoding, newline=newline)
+        super().__init__(buffer=buffer)
+
+
+class StringSerializer(SerializerBase):
+    buffer: StringIO
+
+    def __init__(
+        self,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        newline: Optional[str] = None,
+        text_width: int = 0,
+    ):
+        self._init_config(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            text_width=text_width,
+        )
+        super().__init__(buffer=StringIO(newline=newline))
+
+    @property
+    def result(self):
+        return self.buffer.getvalue()
+
+
+class DefaultStringOptions:
+    """
+    This object's class variables are used to configure the serialization parameters
+    that are applied when nodes are coerced to :py:class:`str` objects. Hence it also
+    applies when node objects are fed to the :py:func:`print` function and in other
+    cases where objects are implicitly cast to strings.
+
+    ⚠️
+    Use this once to define behaviour on *application level*. For thread-safe
+    serializations of nodes with diverging parameters use :meth:`NodeBase.serialize`!
+    Think thrice whether you want to use this facility in a library.
+    """
+
+    align_attributes: ClassWar[bool] = False
+    """
+    Determines whether attributes' names and values line up sharply around vertically
+    aligned equal signs.
+    """
+    indentation: ClassWar[str] = ""
+    """
+    This string prefixes descending nodes' contents one time per depth level.
+    A non-empty string implies line-breaks between nodes as well.
+    """
+    namespaces: ClassWar[None | NamespaceDeclarations] = None
+    """
+    A mapping of prefixes to namespaces. These are overriding possible declarations from
+    a parsed serialisat that the document instance stems from. Prefixes for undeclared
+    namespaces are enumerated with the prefix ``ns``.
+    """
+    newline: ClassWar[None | str] = None
+    """
+    See :py:class:`io.TextIOWrapper` for a detailed explanation of the parameter with
+    the same name.
+    """
+    text_width: ClassWar[int] = 0
+    """
+    A positive value indicates that text nodes shall get wrapped at this character
+    position.
+    Indentations are not considered as part of text. This parameter's purposed to define
+    reasonable widths for text displays that can be scrolled horizontally.
+    """
+
+    @classmethod
+    def _get_serializer(cls) -> StringSerializer:
+        return StringSerializer(
+            align_attributes=cls.align_attributes,
+            indentation=cls.indentation,
+            namespaces=cls.namespaces,
+            newline=cls.newline,
+            text_width=cls.text_width,
+        )
+
+    @classmethod
+    def reset_defaults(cls):
+        """Restores the factory settings."""
+        cls.align_attributes = False
+        cls.indentation = ""
+        cls.namespaces = None
+        cls.newline = None
+        cls.text_width = 0
+
+
 #
 
 
 __all__ = (
     Attribute.__name__,
     CommentNode.__name__,
+    DefaultStringOptions.__name__,
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
+    TextBufferSerializer.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,

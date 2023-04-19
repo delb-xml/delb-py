@@ -1,16 +1,15 @@
 from copy import copy, deepcopy
 
 import pytest
-from lxml import etree
 
 from _delb.names import XML_ATT_ID
+from _delb.nodes import DefaultStringOptions, altered_default_filters
 from delb import (
     Document,
     TagNode,
     TextNode,
     is_tag_node,
     new_tag_node,
-    register_namespace,
     tag,
 )
 from delb.exceptions import InvalidOperation
@@ -23,47 +22,40 @@ def is_pagebreak(node):
 
 
 def test_add_following_sibling_tag_before_tail():
-    document = Document("<root><a/>b</root>")
-    root = document.root
-
+    root = Document("<root><a/>b</root>").root
     root[0].add_following_siblings(tag("c"))
-
-    assert str(document) == "<root><a/><c/>b</root>"
+    assert str(root) == "<root><a/><c/>b</root>"
 
 
 def test_add_following_sibling_text_node_before_text_sibling():
-    document = Document("<root><a/>c</root>")
-
-    a = document.root[0]
+    root = Document("<root><a/>c</root>").root
+    a = root[0]
     a.add_following_siblings("b")
-
-    assert str(document) == "<root><a/>bc</root>"
+    assert str(root) == "<root><a/>bc</root>"
 
 
 def test_add_preceding_node():
-    document = Document("<root><a/></root>")
-    root = document.root
+    root = Document("<root><a/></root>").root
 
     a = root[0]
     a.add_preceding_siblings(tag("z"))
-    assert str(document) == "<root><z/><a/></root>"
+    assert str(root) == "<root><z/><a/></root>"
 
     z = root[0]
     z.add_preceding_siblings("x")
-    assert str(document) == "<root>x<z/><a/></root>"
+    assert str(root) == "<root>x<z/><a/></root>"
 
     z.add_preceding_siblings("y")
-    assert str(document) == "<root>xy<z/><a/></root>"
+    assert str(root) == "<root>xy<z/><a/></root>"
 
     a.add_preceding_siblings(tag("boundary"))
-    assert str(document) == "<root>xy<z/><boundary/><a/></root>"
+    assert str(root) == "<root>xy<z/><boundary/><a/></root>"
 
 
 def test_append_no_child():
-    document = Document("<root/>")
-
-    document.root.append_children()
-    assert str(document) == "<root/>"
+    root = Document("<root/>").root
+    root.append_children()
+    assert str(root) == "<root/>"
 
 
 def test_clone_quick_and_unsafe(sample_document):
@@ -139,29 +131,30 @@ def test_detach_and_document_property():
     assert node.parent is None
     assert node.document is None
     assert root.document is document
-    assert str(document) == "<root/>"
+    assert str(document) == "<?xml version='1.0' encoding='UTF-8'?><root/>"
 
 
 def test_detach_node_with_tail_1():
-    document = Document("<root><a>c<c/></a>b<d/></root>")
-    root = document.root
+    root = Document("<root><a>c<c/></a>b<d/></root>").root
 
     root[1].add_following_siblings("c")
-    assert str(document) == "<root><a>c<c/></a>bc<d/></root>"
+    assert str(root) == "<root><a>c<c/></a>bc<d/></root>"
     root[0].detach()
-    assert str(document) == "<root>bc<d/></root>"
+    assert str(root) == "<root>bc<d/></root>"
 
     root.append_children(tag("e"), "f")
-    assert str(document) == "<root>bc<d/><e/>f</root>"
-    e = root[3]
+    assert str(root) == "<root>bc<d/><e/>f</root>"
+
+    e = root.css_select("e").first
+    assert isinstance(e, TagNode)
     assert e.local_name == "e"
     e.detach()
-    assert str(document) == "<root>bc<d/>f</root>"
+    assert str(root) == "<root>bc<d/>f</root>"
 
     root.append_children(tag("g"), "h")
 
     root[-2].detach()
-    assert str(document) == "<root>bc<d/>fh</root>"
+    assert str(root) == "<root>bc<d/>fh</root>"
 
 
 def test_detach_node_with_tail_2():
@@ -182,11 +175,13 @@ def test_detach_node_retain_child_nodes():
     node.detach(retain_child_nodes=True)
 
     assert len(node) == 0
-    assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
+    with altered_default_filters():
+        assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
     child = root.first_child
     child.detach(retain_child_nodes=True)
-    assert str(root) == "<root>childish<!-- [~.ö] --></root>"
+    with altered_default_filters():
+        assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
     with pytest.raises(InvalidOperation):
         root.detach(retain_child_nodes=True)
@@ -297,27 +292,26 @@ def test_id_property(files_path):
 
 
 def test_insert_children():
-    document = Document("<root><a>c</a></root>")
-    root = document.root
+    root = Document("<root><a>c</a></root>").root
     a = root[0]
 
     a.insert_children(0, tag("b"))
-    assert str(document) == "<root><a><b/>c</a></root>"
+    assert str(root) == "<root><a><b/>c</a></root>"
 
     a.insert_children(0, "|aaa|")
-    assert str(document) == "<root><a>|aaa|<b/>c</a></root>"
+    assert str(root) == "<root><a>|aaa|<b/>c</a></root>"
 
     a.insert_children(0, TextNode("|aa|"), clone=True)
-    assert str(document) == "<root><a>|aa||aaa|<b/>c</a></root>"
+    assert str(root) == "<root><a>|aa||aaa|<b/>c</a></root>"
 
     a.insert_children(1, "-")
-    assert str(document) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
+    assert str(root) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
 
 
 def test_insert_first_child():
-    document = Document("<root/>")
-    document.root.insert_children(0, "a")
-    assert str(document) == "<root>a</root>"
+    root = Document("<root/>").root
+    root.insert_children(0, "a")
+    assert str(root) == "<root>a</root>"
 
 
 def test_insert_at_invalid_index():
@@ -417,7 +411,6 @@ def test_make_node_namespace_inheritance():
     assert node.prefix == "pfx"
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_make_node_with_children():
     result = new_tag_node("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
@@ -447,23 +440,16 @@ def test_make_node_with_children():
         '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
-    register_namespace("foo", "https://foo.org")
+    DefaultStringOptions.namespaces = {"foo": "https://foo.org"}
     result = new_tag_node("root", namespace="https://foo.org", children=[tag("node")])
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_make_node_outside_context():
-    document = Document('<root xmlns="ham" />')
-
-    register_namespace("spam", "https://spam")
-    node = new_tag_node("a", namespace="https://spam")
-
-    document.root.append_children(node)
-
-    assert (
-        str(document) == '<root xmlns="ham"><spam:a xmlns:spam="https://spam"/></root>'
-    )
+    root = Document('<root xmlns="ham" />').root
+    root.append_children(new_tag_node("a", namespace="https://spam"))
+    DefaultStringOptions.namespaces = {"spam": "https://spam"}
+    assert str(root) == '<root xmlns="ham" xmlns:spam="https://spam"><spam:a/></root>'
 
 
 def test_make_node_in_context_with_namespace():
@@ -531,9 +517,9 @@ def test_prefix():
 
 
 def test_prepend_children():
-    document = Document("<root><b/></root>")
-    document.root.prepend_children(tag("a"))
-    assert str(document) == "<root><a/><b/></root>"
+    root = Document("<root><b/></root>").root
+    root.prepend_children(tag("a"))
+    assert str(root) == "<root><a/><b/></root>"
 
 
 def test_fetch_preceding(files_path):
@@ -608,20 +594,20 @@ def test_serialization():
 
 
 def test_set_tag_components():
-    document = Document("<root/>")
-    root = document.root
+    root = Document("<root/>").root
 
     root.local_name = "top"
-    assert str(document) == "<top/>"
+    assert str(root) == "<top/>"
 
     ns = "https://name.space"
-    etree.register_namespace("prfx", ns)
+    DefaultStringOptions.namespaces = {"prfx": ns}
     root.namespace = ns
+
     assert root.namespace == ns
-    assert str(document) == '<prfx:top xmlns:prfx="https://name.space"/>'
+    assert str(root) == '<prfx:top xmlns:prfx="https://name.space"/>'
 
     root.local_name = "root"
-    assert str(document) == '<prfx:root xmlns:prfx="https://name.space"/>'
+    assert str(root) == '<prfx:root xmlns:prfx="https://name.space"/>'
 
 
 def test_tag_definition_copies_attributes():

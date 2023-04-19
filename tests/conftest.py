@@ -4,7 +4,7 @@ from pytest import fixture
 
 from tests import plugins  # noqa: F401
 
-from delb import Document
+from delb import DefaultStringOptions, Document
 
 
 FILES_PATH = Path(__file__).parent / "files"
@@ -43,6 +43,11 @@ def queries_sample():
     )
 
 
+@fixture(autouse=True, scope="function")
+def reset_serializer():
+    DefaultStringOptions.reset_defaults()
+
+
 @fixture()
 def sample_document():
     yield Document(
@@ -56,29 +61,4 @@ def sample_document():
         "</p>"
         "</text>"
         "</doc>"
-    )
-
-
-@fixture()
-def traverser_sample():
-    yield Document(
-        """\
-            <root>
-                <a>
-                    <aa/>
-                    <ab>
-                        <aba/>
-                    </ab>
-                    <ac/>
-                </a>
-                <b/>
-                <c>
-                    <ca>
-                        <caa/>
-                        <cab/>
-                    </ca>
-                    <cb/>
-                </c>
-            </root>
-        """
     )

@@ -130,6 +130,12 @@ Transformations
 .. automodule:: delb.transform
 
 
+String serialization
+--------------------
+
+.. autoclass:: delb.DefaultStringOptions
+
+
 Various helpers
 ---------------
 
@@ -138,8 +144,6 @@ Various helpers
 .. autofunction:: delb.get_traverser
 
 .. autofunction:: delb.last
-
-.. autofunction:: delb.register_namespace
 
 .. autofunction:: delb.tag
 
