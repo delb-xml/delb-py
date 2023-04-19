@@ -242,3 +242,6 @@ class PluginManager:
 
 
 plugin_manager = PluginManager()
+
+
+__all__ = (DocumentMixinBase.__name__, "plugin_manager")

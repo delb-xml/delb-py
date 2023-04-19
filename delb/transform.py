@@ -189,3 +189,6 @@ class TransformationSequence(TransformationBase):
         for transformation in self.transformations:
             root = transformation(root, document=document)
         return root
+
+
+__all__ = (Transformation.__name__, TransformationSequence.__name__)
