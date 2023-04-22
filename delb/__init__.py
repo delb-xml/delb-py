@@ -507,6 +507,8 @@ class Document(metaclass=DocumentMeta):
             serializer.serialize_node(node)
         with altered_default_filters():
             serializer.serialize_root(self.root)
+        if indentation:
+            serializer.buffer.write("\n")
         for node in self.tail_nodes:
             serializer.serialize_node(node)
 

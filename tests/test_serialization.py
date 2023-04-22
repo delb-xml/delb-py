@@ -63,7 +63,8 @@ def test_align_attributes(indentation, out):
                <b x="foo">
                  <c/>
                </b>
-             </root>""",
+             </root>
+             """,
         ),
     ),
 )
