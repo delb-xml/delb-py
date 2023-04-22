@@ -3,6 +3,7 @@ from textwrap import dedent
 from pytest import mark
 
 from delb import (
+    compare_trees,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
@@ -13,8 +14,6 @@ from delb import (
     TextNode,
 )
 from _delb.nodes import DETACHED
-
-from tests.utils import assert_documents_are_semantical_equal, count_pis
 
 
 @mark.parametrize(
@@ -155,30 +154,32 @@ def test_single_nodes(declarations, node_constructor, args, out):
 
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
-    Document(files_path / "root_siblings.xml").clone().save(result_file)
-    assert count_pis(result_file) == {
-        '<?another-target ["it", "could", "be", "anything"]?>': 1,
-        '<?target some="processing" instructions="here"?>': 2,
-    }
+    origin_path = files_path / "root_siblings.xml"
+    Document(origin_path).save(result_file, indentation="  ")
 
-    assert result_file.read_text() == (
-        "<?xml version='1.0' encoding='UTF-8'?>"
-        '<?target some="processing" instructions="here"?>'
-        '<?another-target ["it", "could", "be", "anything"]?>'
-        "<!-- a comment -->"
-        '<?target some="processing" instructions="here"?>'
-        "<root/>"
-        "<!-- end -->"
+    assert (
+        origin_path.read_text()
+        == result_file.read_text()
+        == (
+            "<?xml version='1.0' encoding='UTF-8'?>\n"
+            '<?target some="processing" instructions="here"?>\n'
+            '<?another-target ["it", "could", "be", "anything"]?>\n'
+            "<!-- a comment -->\n"
+            '<?target some="processing" instructions="here"?>\n'
+            "<root/>\n"
+            "<!-- end -->\n"
+        )
     )
 
 
-def test_transparency(files_path, result_file):
+def test_unaltered_transparency(files_path, result_file):
     for file in (x for x in files_path.glob("[!tei_]*.xml")):
-        Document(file, parser_options=ParserOptions(collapse_whitespace=False)).save(
-            result_file
-        )
-        assert_documents_are_semantical_equal(file, result_file)
-        assert count_pis(file) == count_pis(result_file)
+        origin = Document(file, parser_options=ParserOptions(collapse_whitespace=False))
+        origin.save(result_file)
+        _copy = Document(result_file)
+        assert compare_trees(origin.root, _copy.root)
+        assert origin.head_nodes == _copy.head_nodes
+        assert origin.tail_nodes == origin.tail_nodes
 
 
 @mark.parametrize(
