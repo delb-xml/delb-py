@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, MutableSequence
+from collections.abc import Iterator, MutableSequence, Sequence
 from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
@@ -91,6 +91,15 @@ class _RootSiblingsContainer(ABC, MutableSequence):
             "The thing is, lxml doesn't provide an interface to remove siblings of the "
             "root node."
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, Sequence):
+            return False
+
+        if len(self) != len(other):
+            return False
+
+        return all(a == b for a, b in zip(iter(self), iter(other)))
 
     def __getitem__(self, index):
         # TODO? slices
