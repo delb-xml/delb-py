@@ -416,7 +416,7 @@ TRAVERSERS = {
 }
 
 
-__all__ = (
+__all__: tuple[str, ...] = (
     first.__name__,
     get_traverser.__name__,
     last.__name__,
