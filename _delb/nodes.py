@@ -2493,6 +2493,12 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         else:
             raise ValueError
 
+    def __eq__(self, other):
+        if isinstance(other, TextNode):
+            return self.content == other.content
+        else:
+            return super().__eq__(other)
+
     def __getitem__(self, item):
         return self.content[item]
 
