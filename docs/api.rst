@@ -139,6 +139,8 @@ String serialization
 Various helpers
 ---------------
 
+.. autofunction:: delb.compare_trees
+
 .. autofunction:: delb.first
 
 .. autofunction:: delb.get_traverser

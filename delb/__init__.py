@@ -63,6 +63,7 @@ from _delb.utils import (
     last,
 )
 from _delb.xpath import QueryResults
+from delb.utils import compare_trees
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -581,6 +582,7 @@ __all__ = (
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,
+    compare_trees.__name__,
     first.__name__,
     get_traverser.__name__,
     is_comment_node.__name__,
