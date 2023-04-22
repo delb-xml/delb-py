@@ -67,7 +67,6 @@ omit = [
     "delb/nodes.py",
     "delb/parser.py",
     "delb/typing.py",
-    "delb/utils.py"
 ]
 
 [tool.coverage.report]

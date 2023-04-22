@@ -1,6 +1,24 @@
 import pytest
 
-from delb import first, is_tag_node, Document
+from delb import altered_default_filters, compare_trees, first, is_tag_node, Document
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    (
+        ("<node/>", "<mode/>"),
+        ("<node/>", "<node xmlns='http://foo.ls'/>"),
+        ("<node a=''/>", "<node b=''/>"),
+        ("<node a=''/>", "<node xmlns:p='http://foo.ls' p:a=''/>"),
+        ("<node><!--a--></node>", "<node><!-- a --></node>"),
+        ("<node>foo</node>", "<node>bar</node>"),
+        ("<node><a/></node>", "<node><a/><a/></node>"),
+        ("<node><a/><b/></node>", "<node><a/><a/></node>"),
+    ),
+)
+def test_compare_unequal_trees(a, b):
+    with altered_default_filters():
+        assert not compare_trees(Document(a).root, Document(b).root)
 
 
 def test_first():
