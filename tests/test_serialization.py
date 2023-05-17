@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+import pytest
 from pytest import mark
 
 from delb import (
@@ -172,8 +173,30 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
     )
 
 
+@pytest.mark.parametrize(
+    "serialization_parameters",
+    (
+        {"indentation": ""},
+        {"indentation": "  "},
+        {"indentation": "\t"},
+        {"text_width": 0},
+        {"text_width": 77},
+        {"indentation": "  ", "text_width": 77},
+    ),
+)
+def test_whitespace_cleaned_transparency(
+    files_path, result_file, serialization_parameters
+):
+    parser_options = ParserOptions(collapse_whitespace=True)
+    for file in files_path.glob("tei_*.xml"):
+        origin = Document(file, parser_options=parser_options)
+        origin.save(result_file, **serialization_parameters)
+        _copy = Document(result_file, parser_options=parser_options)
+        assert compare_trees(origin.root, _copy.root)
+
+
 def test_unaltered_transparency(files_path, result_file):
-    for file in (x for x in files_path.glob("[!tei_]*.xml")):
+    for file in files_path.glob("[!tei_]*.xml"):
         origin = Document(file, parser_options=ParserOptions(collapse_whitespace=False))
         origin.save(result_file)
         _copy = Document(result_file)
@@ -276,6 +299,27 @@ def test_text_width(files_path, indentation, text_width, out):
         paragraph.serialize(indentation=indentation, text_width=text_width)
         == str(paragraph)
         == out
+    )
+
+
+def test_text_with_milestone_tag(files_path):
+    document = Document(
+        files_path / "tei_stevenson_treasure_island.xml",
+        parser_options=ParserOptions(collapse_whitespace=True),
+    )
+    paragraph = document.css_select("fileDesc sourceDesc p").first
+    assert "\t" not in paragraph.full_text
+
+    DefaultStringOptions.indentation = "  "
+    DefaultStringOptions.text_width = 68
+    assert str(paragraph) == (
+        '<p xmlns="http://www.tei-c.org/ns/1.0">This text is a TEI version of\n'
+        "  a Project Gutenberg text originally located at\n"
+        '  <ptr target="http://www.gutenberg.org/dirs/1/2/0//120/"/>. As per\n'
+        "  their license agreement we have removed all references to the\n"
+        "  project's trademark, however have included this pointer to the\n"
+        "  original in case you want the plain text, or their XHTML version.\n"
+        "</p>"
     )
 
 
