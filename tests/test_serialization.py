@@ -50,6 +50,20 @@ def test_align_attributes(indentation, out):
     assert str(node) == out
 
 
+def test_document_xml_declaration(files_path):
+    assert str(Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")).startswith(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+    )
+
+
+def test_empty_below_default_namespace():
+    # as there's a default namespace and a namespace can't be empty, a prefix must be
+    # supplied for all namespaces
+    root = Document("<root xmlns='http://fo.org/'/>").root
+    root.append_children(new_tag_node(local_name="node", namespace=None))
+    assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
+
+
 @pytest.mark.parametrize(
     ("indentation", "_in", "out"),
     (
@@ -70,14 +84,6 @@ def test_align_attributes(indentation, out):
 def test_indentation(indentation, _in, out):
     DefaultStringOptions.indentation = indentation
     assert str(Document(_in)) == dedent(out)
-
-
-def test_empty_below_default_namespace():
-    # as there's a default namespace and a namespace can't be empty, a prefix must be
-    # supplied for all namespaces
-    root = Document("<root xmlns='http://fo.org/'/>").root
-    root.append_children(new_tag_node(local_name="node", namespace=None))
-    assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
 
 
 @pytest.mark.parametrize(
@@ -295,7 +301,55 @@ def test_text_width(files_path, indentation, text_width, out):
     )
 
 
-def test_xml_declaration(files_path):
-    assert str(Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")).startswith(
-        '<?xml version="1.0" encoding="UTF-8"?>'
+def test_text_with_milestone_tag(files_path):
+    document = Document(
+        files_path / "tei_stevenson_treasure_island.xml",
+        parser_options=ParserOptions(reduce_whitespace=True),
     )
+    paragraph = document.css_select("fileDesc sourceDesc p").first
+    assert "\t" not in paragraph.full_text
+
+    DefaultStringOptions.indentation = "  "
+    DefaultStringOptions.text_width = 68
+    assert str(paragraph) == (
+        # the first line's length matches the configured text_width
+        '<p xmlns="http://www.tei-c.org/ns/1.0">This text is a TEI version of\n'
+        "  a Project Gutenberg text originally located at\n"
+        '  <ptr target="http://www.gutenberg.org/dirs/1/2/0//120/"/>. As per\n'
+        "  their license agreement we have removed all references to the\n"
+        "  project's trademark, however have included this pointer to the\n"
+        "  original in case you want the plain text, or their XHTML version.\n"
+        "</p>"
+    )
+
+
+def test_unaltered_transparency(files_path, result_file):
+    for file in files_path.glob("[!tei_]*.xml"):
+        origin = Document(file, parser_options=ParserOptions(reduce_whitespace=False))
+        origin.save(result_file)
+        _copy = Document(result_file)
+        assert_equal_trees(origin.root, _copy.root)
+        assert origin.head_nodes == _copy.head_nodes
+        assert origin.tail_nodes == origin.tail_nodes
+
+
+@pytest.mark.parametrize(
+    "serialization_parameters",
+    (
+        {"indentation": ""},
+        {"indentation": "  "},
+        {"indentation": "\t"},
+        {"text_width": 0},
+        {"text_width": 77},
+        {"indentation": "  ", "text_width": 77},
+    ),
+)
+def test_whitespace_cleaned_transparency(
+    files_path, result_file, serialization_parameters
+):
+    parser_options = ParserOptions(reduce_whitespace=True)
+    for file in files_path.glob("tei_*.xml"):
+        origin = Document(file, parser_options=parser_options)
+        origin.save(result_file, **serialization_parameters)
+        _copy = Document(result_file, parser_options=parser_options)
+        assert_equal_trees(origin.root, _copy.root)
