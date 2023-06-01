@@ -1,4 +1,7 @@
+import pytest
+
 from delb import Document
+from _delb.xpath import _css_to_xpath
 
 
 def test_css_considers_xml_namespace(files_path):
@@ -21,8 +24,13 @@ def test_css_select_or(files_path):
     assert {x.local_name for x in result} == {"author", "title"}
 
 
+@pytest.mark.parametrize(("_in", "out"), (("metadata", "descendant::metadata"),))
+def test_css_to_xpath(_in, out):
+    assert _css_to_xpath(_in) == out
+
+
 def test_quotes_in_css_selector():
-    document = Document('<a href="https://super.test/123"/>')
+    document = Document('<root><a href="https://super.test/123"/></root>')
     assert document.css_select('a[href^="https://super.test/"]').size == 1
     assert document.css_select('a[href|="https://super.test/123"]').size == 1
     assert document.css_select('a[href*="super"]').size == 1

@@ -1,5 +1,3 @@
-import pytest
-
 from delb import Document
 
 from tests.utils import assert_nodes_are_in_document_order
@@ -38,9 +36,6 @@ def test_equality():
     assert word_nodes == word_nodes.as_list()
     assert word_nodes == tuple(reversed(word_nodes.as_list()))
     assert word_nodes != 2 * word_nodes.as_list()
-    assert [document.root] == document.css_select("root")
-    with pytest.raises(TypeError):
-        document.css_select("root") == document.root
 
 
 def test_filtered_by(queries_sample):

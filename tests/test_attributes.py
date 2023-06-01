@@ -63,7 +63,7 @@ def test_attribute_object():
 
 def test_delete_namespaced_attribute():
     root = Document('<root><node xmlns:p="ns" p:a="1" p:b="2"/></root>').root
-    node = root.css_select("root > node")[0]
+    node = root.css_select("node").first
     assert len(node.attributes) == 2
     del node.attributes["ns":"a"]
     assert len(node.attributes) == 1
