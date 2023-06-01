@@ -137,14 +137,15 @@ def test_transformation_sequence_sequence():
         </cast>""",
         parser_options=ParserOptions(collapse_whitespace=True),
     )
-    root = Document("<body><ul/></body>").root
+    root = Document("<doc><body><ul/></body></doc>").root
     transformation = TransformationSequence(
         DoNothing,
         TransformationSequence(ResolveItems, DoNothing()),
         TransformationSequence(ResolveItemList),
     )
     assert str(transformation(root, document)) == (
-        "<body><ul><li>abla fahita</li><li>caro</li><li>boudi</li></ul></body>"
+        "<doc><body><ul><li>abla fahita</li>"
+        "<li>caro</li><li>boudi</li></ul></body></doc>"
     )
 
     with pytest.raises(TypeError):

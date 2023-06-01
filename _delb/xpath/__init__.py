@@ -160,7 +160,7 @@ class QueryResults(Sequence["NodeBase"]):
 # TODO make cachesize configurable via environment variable?
 @lru_cache(maxsize=64)
 def _css_to_xpath(expression: str) -> str:
-    return _css_translator.css_to_xpath(expression, prefix="descendant-or-self::")
+    return _css_translator.css_to_xpath(expression, prefix="descendant::")
 
 
 def evaluate(
