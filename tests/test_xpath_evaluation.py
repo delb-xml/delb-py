@@ -118,3 +118,24 @@ def test_processing_instruction():
     assert all(x.content == "yes" for x in result)
 
     assert not document.xpath("//processing-instruction()[@lang]")
+
+
+def test_scope_on_descendant_or_self_axis():
+    # this test is here to remind us how abbreviated XPath syntax is not intuitive
+    first_record = (
+        Document(
+            """<root>
+               <record id="a"><metadata id="1"/></record>
+               <record id="b"><metadata id="2"/></record>
+               </root>"""
+        )
+        .xpath("//record")
+        .first
+    )
+    assert first_record["id"] == "a"
+
+    result = first_record.xpath(".//metadata")
+    assert len(result) == 1
+    assert result.first["id"] == "1"
+
+    assert len(first_record.xpath("//metadata")) == 2
