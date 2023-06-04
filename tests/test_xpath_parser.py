@@ -142,6 +142,23 @@ def test_invalid_expressions(expression, string):
             ),
         ),
         (
+            "/descendant-or-self::node()/foo",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [
+                            LocationStep(
+                                Axis("descendant-or-self"),
+                                NodeTypeTest("TagNode"),
+                            ),
+                            LocationStep(Axis("child"), NameMatchTest(None, "foo")),
+                        ],
+                        absolute=True,
+                    )
+                ]
+            ),
+        ),
+        (
             "foo[@bar]",
             XPathExpression(
                 [
