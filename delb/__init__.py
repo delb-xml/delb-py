@@ -51,8 +51,10 @@ from _delb.nodes import (
     DefaultStringOptions,
     NodeBase,
     ProcessingInstructionNode,
+    _Serializer,
+    _StringWriter,
     TagNode,
-    TextBufferSerializer,
+    _TextBufferWriter,
     TextNode,
 )
 from _delb.parser import ParserOptions
@@ -389,13 +391,15 @@ class Document(metaclass=DocumentMeta):
         return node.document is self
 
     def __str__(self) -> str:
-        with DefaultStringOptions._get_serializer() as serializer:
+        serializer = DefaultStringOptions._get_serializer()
+        with serializer:
             self.__serialize(
                 serializer=serializer,
                 encoding="utf-8",
                 indentation=serializer.indentation,
             )
-            return serializer.result
+        assert isinstance(serializer.writer, _StringWriter)
+        return serializer.writer.result
 
     def clone(self) -> Document:
         """
@@ -547,19 +551,19 @@ class Document(metaclass=DocumentMeta):
     def __serialize(self, serializer, encoding: str, indentation: str):
         possible_newline = "\n" if indentation else ""
 
-        serializer.buffer.write(
+        serializer.writer(
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
         )
         with _wrapper_cache:
             for node in self.head_nodes:
-                serializer.buffer.write(str(node) + possible_newline)
+                serializer.writer(str(node) + possible_newline)
             with altered_default_filters():
                 serializer.serialize_root(self.root)
             if self.tail_nodes:
-                serializer.buffer.write(possible_newline)
+                serializer.writer(possible_newline)
                 for node in self.tail_nodes[:-1]:
-                    serializer.buffer.write(str(node) + possible_newline)
-                serializer.buffer.write(str(self.tail_nodes[-1]))
+                    serializer.writer(str(node) + possible_newline)
+                serializer.writer(str(self.tail_nodes[-1]))
 
     def write(
         self,
@@ -606,13 +610,13 @@ class Document(metaclass=DocumentMeta):
             indentation = "  " if pretty else ""
             text_width = 0
 
-        with TextBufferSerializer(
-            buffer=TextIOWrapper(buffer),
-            encoding=encoding,
+        with _Serializer(
+            _TextBufferWriter(
+                TextIOWrapper(buffer), encoding=encoding, newline=newline
+            ),
             align_attributes=align_attributes,
             indentation=indentation,
             namespaces=namespaces,
-            newline=newline,
             text_width=text_width,
         ) as serializer:
             self.__serialize(
