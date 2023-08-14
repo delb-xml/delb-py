@@ -744,9 +744,11 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self) -> str:
-        with DefaultStringOptions._get_serializer() as serializer:
+        serializer = DefaultStringOptions._get_serializer()
+        with serializer:
             serializer.serialize_node(self)
-            return serializer.result
+        assert isinstance(serializer.writer, _StringWriter)
+        return serializer.writer.result
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -1284,15 +1286,16 @@ class NodeBase(ABC):
                            parameter's purposed to define reasonable widths for text
                            displays that can be scrolled horizontally.
         """
-        with StringSerializer(
+        writer = _StringWriter(newline=newline)
+        with _Serializer(
+            writer,
             align_attributes=align_attributes,
             indentation=indentation,
             namespaces=namespaces,
-            newline=newline,
             text_width=text_width,
         ) as serializer:
             serializer.serialize_node(self)
-            return serializer.result
+        return writer.result
 
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
@@ -1774,9 +1777,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     def __str__(self) -> str:
-        with DefaultStringOptions._get_serializer() as serializer:
+        serializer = DefaultStringOptions._get_serializer()
+        with serializer:
             serializer.serialize_root(self)
-            return serializer.result
+        assert isinstance(serializer.writer, _StringWriter)
+        return serializer.writer.result
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
@@ -2471,15 +2476,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
         newline: Optional[str] = None,
         text_width: int = 0,
     ):
-        with StringSerializer(
+        writer = _StringWriter(newline=newline)
+        with _Serializer(
+            writer,
             align_attributes=align_attributes,
             indentation=indentation,
             namespaces=namespaces,
-            newline=newline,
             text_width=text_width,
         ) as serializer:
             serializer.serialize_root(self)
-            return serializer.result
+        return writer.result
 
     @property
     def universal_name(self) -> str:
@@ -3106,19 +3112,33 @@ def not_(*filter: Filter) -> Filter:
 # serializer
 
 
-class SerializerBase:
+class _Serializer:
     __slots__ = (
         "__align_attributes",
-        "buffer",
         "indentation",
         "__level",
         "__namespaces",
         "__prefixes",
         "__text_wrapper",
+        "writer",
     )
 
-    def __init__(self, buffer: TextIO):
-        self.buffer = buffer
+    def __init__(
+        self,
+        writer: _SerializationWriter,
+        *,
+        align_attributes: bool = False,
+        indentation: str = "",
+        namespaces: Optional[NamespaceDeclarations] = None,
+        text_width: int = 0,
+    ):
+        self._init_config(
+            align_attributes=align_attributes,
+            indentation=indentation,
+            namespaces=namespaces,
+            text_width=text_width,
+        )
+        self.writer = writer
 
     def __enter__(self) -> Self:
         self.__level = 0
@@ -3126,7 +3146,7 @@ class SerializerBase:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.buffer.flush()
+        self.writer.buffer.flush()
 
     def __collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
@@ -3231,17 +3251,17 @@ class SerializerBase:
         return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
 
     def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
-        self.buffer.write(">")
+        self.writer(">")
         if all(isinstance(n, TextNode) for n in child_nodes):
             if self.__text_wrapper.width:
-                self.buffer.write("\n")
+                self.writer("\n")
                 self.__level += 1
                 self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
                 self.__level -= 1
                 if self.indentation and self.__level:
-                    self.buffer.write(self.__level * self.indentation)
+                    self.writer(self.__level * self.indentation)
             else:
-                self.buffer.write(
+                self.writer(
                     self.sanitize_text(
                         "".join(cast("TextNode", n).content for n in child_nodes)
                     )
@@ -3249,35 +3269,35 @@ class SerializerBase:
 
         else:
             if self.indentation:
-                self.buffer.write("\n")
+                self.writer("\n")
             if child_nodes:
                 self.__level += 1
                 for child_node in child_nodes:
                     self.serialize_node(child_node)
                 self.__level -= 1
             if self.indentation and self.__level:
-                self.buffer.write(self.__level * self.indentation)
+                self.writer(self.__level * self.indentation)
 
     def serialize_node(self, node: NodeBase):
         if self.indentation and self.__level:
-            self.buffer.write(self.__level * self.indentation)
+            self.writer(self.__level * self.indentation)
 
         if isinstance(node, CommentNode):
-            self.buffer.write(f"<!--{node.content}-->")
+            self.writer(f"<!--{node.content}-->")
         elif isinstance(node, ProcessingInstructionNode):
-            self.buffer.write(f"<?{node.target} {node.content}?>")
+            self.writer(f"<?{node.target} {node.content}?>")
         elif isinstance(node, TagNode):
             self.__serialize_non_root_tag(node)
         elif isinstance(node, TextNode):
             if self.__text_wrapper.width:
                 self.__write_wrapped_text((node,))
             else:
-                self.buffer.write(self.sanitize_text(node.content))
+                self.writer(self.sanitize_text(node.content))
         else:
             raise InvalidCodePath
 
         if self.indentation:
-            self.buffer.write("\n")
+            self.writer("\n")
 
     def serialize_root(self, root: TagNode):
         self.__collect_prefixes(root)
@@ -3301,83 +3321,35 @@ class SerializerBase:
     def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
         prefixed_name = self.__prefixes[node.namespace] + node.local_name
 
-        self.buffer.write(f"<{prefixed_name}")
+        self.writer(f"<{prefixed_name}")
 
         if attributes_data:
             if self.__align_attributes:
                 key_width = max(len(k) for k in attributes_data)
                 for key, value in attributes_data.items():
-                    self.buffer.write(
+                    self.writer(
                         f"\n{self.__level * self.indentation} {self.indentation}"
                         f"{' ' * (key_width - len(key))}{key}={value}"
                     )
                 if self.indentation:
-                    self.buffer.write(f"\n{self.__level * self.indentation}")
+                    self.writer(f"\n{self.__level * self.indentation}")
 
             else:
                 for key, value in attributes_data.items():
-                    self.buffer.write(f" {key}={value}")
+                    self.writer(f" {key}={value}")
 
         child_nodes = tuple(node.iterate_children())
         if child_nodes:
             self.__serialize_child_nodes(child_nodes)
-            self.buffer.write(f"</{prefixed_name}>")
+            self.writer(f"</{prefixed_name}>")
         else:
-            self.buffer.write("/>")
+            self.writer("/>")
 
     def __write_wrapped_text(self, nodes: tuple[TextNode, ...]):
         for line in self.__text_wrapper.wrap(
             self.sanitize_text("".join(n.content for n in nodes))
         ):
-            self.buffer.write(f"{self.__level * self.indentation}{line}\n")
-
-
-class TextBufferSerializer(SerializerBase):
-    def __init__(
-        self,
-        buffer: TextIOWrapper,
-        encoding="utf-8",
-        *,
-        align_attributes: bool = False,
-        indentation: str = "",
-        namespaces: Optional[NamespaceDeclarations] = None,
-        newline: Optional[str] = None,
-        text_width: int = 0,
-    ):
-        self._init_config(
-            align_attributes=align_attributes,
-            indentation=indentation,
-            namespaces=namespaces,
-            text_width=text_width,
-        )
-
-        buffer.reconfigure(encoding=encoding, newline=newline)
-        super().__init__(buffer=buffer)
-
-
-class StringSerializer(SerializerBase):
-    buffer: StringIO
-
-    def __init__(
-        self,
-        *,
-        align_attributes: bool = False,
-        indentation: str = "",
-        namespaces: Optional[NamespaceDeclarations] = None,
-        newline: Optional[str] = None,
-        text_width: int = 0,
-    ):
-        self._init_config(
-            align_attributes=align_attributes,
-            indentation=indentation,
-            namespaces=namespaces,
-            text_width=text_width,
-        )
-        super().__init__(buffer=StringIO(newline=newline))
-
-    @property
-    def result(self):
-        return self.buffer.getvalue()
+            self.writer(f"{self.__level * self.indentation}{line}\n")
 
 
 class DefaultStringOptions:
@@ -3425,12 +3397,13 @@ class DefaultStringOptions:
     """
 
     @classmethod
-    def _get_serializer(cls) -> StringSerializer:
-        return StringSerializer(
+    def _get_serializer(cls) -> _Serializer:
+        writer = _StringWriter(newline=cls.newline)
+        return _Serializer(
+            writer,
             align_attributes=cls.align_attributes,
             indentation=cls.indentation,
             namespaces=cls.namespaces,
-            newline=cls.newline,
             text_width=cls.text_width,
         )
 
@@ -3442,6 +3415,36 @@ class DefaultStringOptions:
         cls.namespaces = None
         cls.newline = None
         cls.text_width = 0
+
+
+class _SerializationWriter(ABC):
+    __slots__ = ("buffer",)
+
+    def __init__(self, buffer: TextIO):
+        self.buffer = buffer
+
+    def __call__(self, data: str):
+        self.buffer.write(data)
+
+
+class _TextBufferWriter(_SerializationWriter):
+    def __init__(
+        self,
+        buffer: TextIOWrapper,
+        encoding: str = "utf-8",
+        newline: Optional[str] = None,
+    ):
+        buffer.reconfigure(encoding=encoding, newline=newline)
+        super().__init__(buffer)
+
+
+class _StringWriter(_SerializationWriter):
+    def __init__(self, newline: Optional[str] = None):
+        super().__init__(StringIO(newline=newline))
+
+    @property
+    def result(self):
+        return self.buffer.getvalue()
 
 
 #
@@ -3456,7 +3459,7 @@ __all__ = (
     QueryResults.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
-    TextBufferSerializer.__name__,
+    _TextBufferWriter.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,
