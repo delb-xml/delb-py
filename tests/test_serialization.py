@@ -10,6 +10,7 @@ from delb import (
     DefaultStringOptions,
     Document,
     ParserOptions,
+    PrettyFormatOptions,
     TextNode,
 )
 from _delb.nodes import DETACHED
@@ -40,8 +41,9 @@ from tests.utils import assert_equal_trees
     ),
 )
 def test_align_attributes(indentation, out):
-    DefaultStringOptions.align_attributes = True
-    DefaultStringOptions.indentation = indentation
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        align_attributes=True, indentation=indentation
+    )
     node = new_tag_node(
         "chimeney",
         {"super": "0", "califragi": "1", "listic": "2", "expialidocious": "3"},
@@ -82,7 +84,9 @@ def test_empty_below_default_namespace():
     ),
 )
 def test_indentation(indentation, _in, out):
-    DefaultStringOptions.indentation = indentation
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        indentation=indentation, text_width=0
+    )
     assert str(Document(_in)) == dedent(out)
 
 
@@ -117,7 +121,7 @@ def test_significant_whitespace_is_saved(result_file):
         "<text><hi>Hello</hi> <hi>world!</hi></text>"
     )
 
-    document.save(result_file, indentation="  ")
+    document.save(result_file, PrettyFormatOptions(indentation="  "))
 
     assert (
         Document(result_file, parser_options=ParserOptions(reduce_whitespace=True))
@@ -172,36 +176,6 @@ def test_single_nodes(declarations, node_constructor, args, out):
     assert (
         node.serialize(namespaces=DefaultStringOptions.namespaces) == str(node) == out
     )
-
-
-def test_that_root_siblings_are_preserved(files_path, result_file):
-    origin_path = files_path / "root_siblings.xml"
-    Document(origin_path).save(result_file, indentation="  ")
-
-    assert (
-        origin_path.read_text()
-        == result_file.read_text()
-        == (
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<?target some="processing" instructions="here"?>\n'
-            '<?another-target ["it", "could", "be", "anything"]?>\n'
-            "<!-- a comment -->\n"
-            '<?target some="processing" instructions="here"?>\n'
-            "<root/>\n"
-            "<!-- end -->"
-        )
-    )
-
-
-def test_transparency(files_path, result_file):
-    parser_options = ParserOptions(reduce_whitespace=False)
-    for file in (x for x in files_path.glob("[!tei_]*.xml")):
-        origin = Document(file, parser_options=parser_options)
-        origin.save(result_file)
-        _copy = Document(file, parser_options=parser_options)
-        assert_equal_trees(origin.root, _copy.root)
-        assert origin.head_nodes == _copy.head_nodes
-        assert origin.tail_nodes == _copy.tail_nodes
 
 
 @pytest.mark.parametrize(
@@ -292,10 +266,15 @@ def test_transparency(files_path, result_file):
 def test_text_width(files_path, indentation, text_width, out):
     document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
     paragraph = document.xpath("//p")[14]
-    DefaultStringOptions.indentation = indentation
-    DefaultStringOptions.text_width = text_width
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        indentation=indentation, text_width=text_width
+    )
     assert (
-        paragraph.serialize(indentation=indentation, text_width=text_width)
+        paragraph.serialize(
+            pretty_format_options=PrettyFormatOptions(
+                indentation=indentation, text_width=text_width
+            )
+        )
         == str(paragraph)
         == out
     )
@@ -323,6 +302,27 @@ def test_text_with_milestone_tag(files_path):
     )
 
 
+def test_that_root_siblings_are_preserved(files_path, result_file):
+    origin_path = files_path / "root_siblings.xml"
+    Document(origin_path).save(
+        result_file, pretty_format_options=PrettyFormatOptions(indentation="  ")
+    )
+
+    assert (
+        origin_path.read_text()
+        == result_file.read_text()
+        == (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<?target some="processing" instructions="here"?>\n'
+            '<?another-target ["it", "could", "be", "anything"]?>\n'
+            "<!-- a comment -->\n"
+            '<?target some="processing" instructions="here"?>\n'
+            "<root/>\n"
+            "<!-- end -->"
+        )
+    )
+
+
 def test_unaltered_transparency(files_path, result_file):
     for file in files_path.glob("[!tei_]*.xml"):
         origin = Document(file, parser_options=ParserOptions(reduce_whitespace=False))
@@ -334,7 +334,7 @@ def test_unaltered_transparency(files_path, result_file):
 
 
 @pytest.mark.parametrize(
-    "serialization_parameters",
+    "pretty_format_options",
     (
         {"indentation": ""},
         {"indentation": "  "},
@@ -345,11 +345,11 @@ def test_unaltered_transparency(files_path, result_file):
     ),
 )
 def test_whitespace_cleaned_transparency(
-    files_path, result_file, serialization_parameters
+    files_path, result_file, pretty_format_options
 ):
     parser_options = ParserOptions(reduce_whitespace=True)
     for file in files_path.glob("tei_*.xml"):
         origin = Document(file, parser_options=parser_options)
-        origin.save(result_file, **serialization_parameters)
+        origin.save(result_file, PrettyFormatOptions(**pretty_format_options))
         _copy = Document(result_file, parser_options=parser_options)
         assert_equal_trees(origin.root, _copy.root)
