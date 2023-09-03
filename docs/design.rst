@@ -74,8 +74,10 @@ Now it is time for an example, given this document snippet:
 
   <p rendition="#justify">
     <lb/>Nomadisme épique exploratori-
-    <lb/><space dim="horizontal" quantity="2" units="chars"/>sme urbain <hi rendition="#b">Art des voya-
-    <lb/><space dim="horizontal" quantity="2" units="chars"/>ges</hi> et des promenades
+    <lb/><space dim="horizontal" quantity="2" units="chars"/>
+         sme urbain <hi rendition="#b">Art des voya-
+    <lb/><space dim="horizontal" quantity="2" units="chars"/>
+         ges</hi> et des promenades
   </p>
 
 Here's a graphical representation of the markup with etree's elements and their

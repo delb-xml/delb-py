@@ -276,7 +276,7 @@ def new_comment_node(content: str) -> CommentNode:
     """
     Creates a new :class:`CommentNode`.
 
-    :param content: The comment's content a.k.a. as text.
+    :param content: The comment's content a.k.a. text.
     :return: The newly created comment node.
     """
     result = _wrapper_cache(etree.Comment(content))
@@ -307,8 +307,8 @@ def new_tag_node(
 ) -> TagNode:
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
-    use :meth:`new_tag_node`, on instances of documents and nodes where the instance is
-    the creation context.
+    use the method ``new_tag_node`` on instances of documents and nodes where the
+    namespace is inherited.
 
     :param local_name: The tag name.
     :param attributes: Optional attributes that are assigned to the new node.
@@ -504,6 +504,7 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     As the default filters shadow comments and processing instructions by default,
     use no argument to unset this in order to access all type of nodes.
 
+    :param filter: The filters to set or append.
     :param extend: Extends the currently active filters with the given ones instead of
                    replacing them.
     """
