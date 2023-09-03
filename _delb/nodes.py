@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     from typing import TextIO
 
     from delb import Document
-    from _delb.typing import Filter, NamespaceDeclarations, NodeSource, Self
+    from _delb.typing import Filter, NamespaceDeclarations, NodeSource
 
 
 # shortcuts
@@ -745,8 +745,7 @@ class NodeBase(ABC):
 
     def __str__(self) -> str:
         serializer = DefaultStringOptions._get_serializer()
-        with serializer:
-            serializer.serialize_node(self)
+        serializer.serialize_node(self)
         assert isinstance(serializer.writer, _StringWriter)
         return serializer.writer.result
 
@@ -1260,41 +1259,27 @@ class NodeBase(ABC):
     def serialize(
         self,
         *,
-        align_attributes: bool = False,
-        indentation: str = "",
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-        text_width: int = 0,
+        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
         Returns a string that contains the serialization of the node.
 
-        :param align_attributes: Determines whether attributes' names and values line up
-                                 sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents one time per
-                            depth level. A non-empty string implies line-breaks between
-                            nodes as well.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param text_width: A positive value indicates that text nodes shall get wrapped
-                           at this character position.
-                           Indentations are not considered as part of text. This
-                           parameter's purposed to define reasonable widths for text
-                           displays that can be scrolled horizontally.
+        :param pretty_format_options: An instance of :class:`PrettyFormatOptions` can be
+                                      provided to configure formatting.
         """
         writer = _StringWriter(newline=newline)
-        with _Serializer(
-            writer,
-            align_attributes=align_attributes,
-            indentation=indentation,
-            namespaces=namespaces,
-            text_width=text_width,
-        ) as serializer:
-            serializer.serialize_node(self)
+        serializer = _get_serializer(
+            writer, namespaces=namespaces, pretty_format_options=pretty_format_options
+        )
+        serializer.serialize_node(self)
         return writer.result
 
     def _validate_sibling_operation(self, node):
@@ -1778,8 +1763,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def __str__(self) -> str:
         serializer = DefaultStringOptions._get_serializer()
-        with serializer:
-            serializer.serialize_root(self)
+        serializer.serialize_root(self)
         assert isinstance(serializer.writer, _StringWriter)
         return serializer.writer.result
 
@@ -2470,21 +2454,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def serialize(
         self,
         *,
-        align_attributes: bool = False,
-        indentation: str = "",
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-        text_width: int = 0,
+        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         writer = _StringWriter(newline=newline)
-        with _Serializer(
-            writer,
-            align_attributes=align_attributes,
-            indentation=indentation,
-            namespaces=namespaces,
-            text_width=text_width,
-        ) as serializer:
-            serializer.serialize_root(self)
+        serializer = _get_serializer(
+            writer, namespaces=namespaces, pretty_format_options=pretty_format_options
+        )
+        serializer.serialize_root(self)
         return writer.result
 
     @property
@@ -3112,7 +3090,27 @@ def not_(*filter: Filter) -> Filter:
 # serializer
 
 
-class _Serializer:
+def _get_serializer(
+    writer: _SerializationWriter,
+    namespaces: Optional[NamespaceDeclarations],
+    pretty_format_options: Optional[PrettyFormatOptions],
+):
+    # TODO employ specialized serializers
+    if pretty_format_options is None:
+        return Serializer(
+            writer=writer,
+            namespaces=namespaces,
+            pretty_format_options=pretty_format_options,
+        )
+    else:
+        return Serializer(
+            writer=writer,
+            namespaces=namespaces,
+            pretty_format_options=pretty_format_options,
+        )
+
+
+class Serializer:
     __slots__ = (
         "__align_attributes",
         "indentation",
@@ -3127,26 +3125,28 @@ class _Serializer:
         self,
         writer: _SerializationWriter,
         *,
-        align_attributes: bool = False,
-        indentation: str = "",
         namespaces: Optional[NamespaceDeclarations] = None,
-        text_width: int = 0,
+        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         self._init_config(
-            align_attributes=align_attributes,
-            indentation=indentation,
+            align_attributes=(
+                False
+                if pretty_format_options is None
+                else pretty_format_options.align_attributes
+            ),
+            indentation=(
+                ""
+                if pretty_format_options is None
+                else pretty_format_options.indentation
+            ),
             namespaces=namespaces,
-            text_width=text_width,
+            text_width=(
+                0 if pretty_format_options is None else pretty_format_options.text_width
+            ),
         )
-        self.writer = writer
-
-    def __enter__(self) -> Self:
         self.__level = 0
         self.__prefixes: dict[str | None, str] = {}
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.writer.buffer.flush()
+        self.writer = writer
 
     def __collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
@@ -3352,6 +3352,31 @@ class _Serializer:
             self.writer(f"{self.__level * self.indentation}{line}\n")
 
 
+class PrettyFormatOptions(NamedTuple):
+    """
+    Instances of this class can be used to define serialization formatting that is
+    not so hard to interpret for instances of Homo sapiens s., but more costly to
+    compute.
+    When it's employed, it will always insert a newline after any node unless this
+    wouldn't vanish when collapsing whitespace.
+    """
+
+    align_attributes: bool = False
+    """
+    Determines whether attributes' names and values line up sharply around vertically
+    aligned equal signs.
+    """
+    indentation: str = "  "
+    """ This string prefixes descending nodes' contents one time per depth level. """
+    text_width: int = 89
+    """
+    A positive value indicates that text nodes shall get wrapped at this character
+    position. Indentations are not considered as part of text. This parameter is
+    purposed to define reasonable widths for text displays that could be scrolled
+    horizontally.
+    """
+
+
 class DefaultStringOptions:
     """
     This object's class variables are used to configure the serialization parameters
@@ -3367,54 +3392,36 @@ class DefaultStringOptions:
         in a library.
     """
 
-    align_attributes: ClassWar[bool] = False
-    """
-    Determines whether attributes' names and values line up sharply around vertically
-    aligned equal signs.
-    """
-    indentation: ClassWar[str] = ""
-    """
-    This string prefixes descending nodes' contents one time per depth level.
-    A non-empty string implies line-breaks between nodes as well.
-    """
     namespaces: ClassWar[None | NamespaceDeclarations] = None
     """
     A mapping of prefixes to namespaces. These are overriding possible declarations from
-    a parsed serialisat that the document instance stems from. Prefixes for undeclared
-    namespaces are enumerated with the prefix ``ns``.
+    a parsed serialisat that the document instance stems from. Any other prefixes for
+    undeclared namespaces are enumerated with the prefix ``ns``.
     """
     newline: ClassWar[None | str] = None
     """
     See :class:`io.TextIOWrapper` for a detailed explanation of the parameter with the
     same name.
     """
-    text_width: ClassWar[int] = 0
+    pretty_format_options: Optional[PrettyFormatOptions] = None
     """
-    A positive value indicates that text nodes shall get wrapped at this character
-    position.
-    Indentations are not considered as part of text. This parameter's purposed to define
-    reasonable widths for text displays that can be scrolled horizontally.
+    An instance of :class:`PrettyFormatOptions` can be provided to configure formatting.
     """
 
     @classmethod
-    def _get_serializer(cls) -> _Serializer:
-        writer = _StringWriter(newline=cls.newline)
-        return _Serializer(
-            writer,
-            align_attributes=cls.align_attributes,
-            indentation=cls.indentation,
+    def _get_serializer(cls) -> Serializer:
+        return _get_serializer(
+            _StringWriter(newline=cls.newline),
             namespaces=cls.namespaces,
-            text_width=cls.text_width,
+            pretty_format_options=cls.pretty_format_options,
         )
 
     @classmethod
     def reset_defaults(cls):
         """Restores the factory settings."""
-        cls.align_attributes = False
-        cls.indentation = ""
         cls.namespaces = None
         cls.newline = None
-        cls.text_width = 0
+        cls.pretty_format_options = None
 
 
 class _SerializationWriter(ABC):
@@ -3455,6 +3462,7 @@ __all__ = (
     CommentNode.__name__,
     DefaultStringOptions.__name__,
     NodeBase.__name__,
+    PrettyFormatOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagAttributes.__name__,
