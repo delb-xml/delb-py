@@ -230,7 +230,7 @@ class Document(metaclass=DocumentMeta):
     :param parser: Deprecated.
     :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
                            parser.
-    :param klass: Explicitly define the initilized class. This can be useful for
+    :param klass: Explicitly define the initialized class. This can be useful for
                   applications that have :ref:`default document subclasses
                   <extending-subclasses>` in use.
     :param config: Additional keyword arguments for the configuration of extension

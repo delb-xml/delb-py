@@ -806,7 +806,7 @@ class NodeBase(ABC):
     @abstractmethod
     def document(self) -> Optional[Document]:
         """
-        The :class:`Document` instances that the node is associated with or
+        The :class:`Document` instance that the node is associated with or
         :py:obj:`None`.
         """
         pass
@@ -815,7 +815,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or
-        :py:obj:`None`.
+                 :py:obj:`None`.
 
         :meta category: fetch-node
         """
@@ -2034,13 +2034,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         - All location steps must use the child axis.
         - Each step needs to provide a name test.
-        - Attributes must be compared against a literal.
+        - Attribute comparisons against literals are the only allowed predicates.
         - Multiple attribute comparisons must be joined with the `and` operator and / or
-          more than one predicate expression.
+          contained in more than one predicate expression.
         - The logical validity of multiple attribute comparisons isn't checked. E.g.
           one could provide ``foo[@p="her"][@p="him"]``, but expect an undefined
           behaviour.
-        - Other contents in predicate expressions are invalid.
 
         >>> root = Document("<root/>").root
         >>> grandchild = root.fetch_or_create_by_xpath(

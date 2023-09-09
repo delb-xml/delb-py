@@ -64,9 +64,9 @@ else:
     ) -> LoaderResult:
         """
         This loader loads a document from a URL with the ``http`` and ``https`` scheme.
-        Redirects are followed. The default httpx_-client follows redirects and can
-        partially be configured with `environment variables`_. The URL will be bound to
-        the name ``source_url`` on the document's :attr:`Document.config` attribute.
+        The default httpx_-client follows redirects and can partially be configured with
+        `environment variables`_. The URL will be bound to the name ``source_url`` on
+        the document's :attr:`Document.config` attribute.
 
         Loaders with specifically configured httpx-clients can build on this loader
         like so:
