@@ -46,7 +46,7 @@ def test_xml_namespace(files_path):
     document = Document("<root><xml:node/><node/></root>")
     assert document.css_select("xml|node").size == 1
 
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     results = document.css_select("*[xml|id]")
     assert results.size == 1
     results = document.css_select("*[xml|lang]")

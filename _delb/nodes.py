@@ -24,7 +24,6 @@ from copy import copy, deepcopy
 from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
-from textwrap import TextWrapper
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -32,6 +31,7 @@ from typing import (
     Any,
     AnyStr,
     ClassVar as ClassWar,
+    Final,
     Literal,
     NamedTuple,
     Optional,
@@ -82,6 +82,19 @@ QName = etree.QName
 
 # constants
 
+
+CTRL_CHAR_ENTITY_NAME_MAPPING: Final = (
+    ("&", "amp"),
+    (">", "gt"),
+    ("<", "lt"),
+    ('"', "quot"),
+)
+CCE_TABLE_FOR_ATTRIBUTES: Final = str.maketrans(
+    {ord(k): f"&{v};" for k, v in CTRL_CHAR_ENTITY_NAME_MAPPING}
+)
+CCE_TABLE_FOR_TEXT: Final = str.maketrans(
+    {ord(k): f"&{v};" for k, v in CTRL_CHAR_ENTITY_NAME_MAPPING if k != '"'}
+)
 
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
@@ -744,10 +757,11 @@ class NodeBase(ABC):
     __slots__ = ("__weakref__",)
 
     def __str__(self) -> str:
-        serializer = DefaultStringOptions._get_serializer()
-        serializer.serialize_node(self)
-        assert isinstance(serializer.writer, _StringWriter)
-        return serializer.writer.result
+        return self.serialize(
+            namespaces=DefaultStringOptions.namespaces,
+            newline=DefaultStringOptions.newline,
+            pretty_format_options=DefaultStringOptions.pretty_format_options,
+        )
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
         """
@@ -1256,6 +1270,7 @@ class NodeBase(ABC):
         self.add_following_siblings(node, clone=clone)
         return self.detach()
 
+    @altered_default_filters()
     def serialize(
         self,
         *,
@@ -1275,12 +1290,14 @@ class NodeBase(ABC):
         :param pretty_format_options: An instance of :class:`PrettyFormatOptions` can be
                                       provided to configure formatting.
         """
-        writer = _StringWriter(newline=newline)
         serializer = _get_serializer(
-            writer, namespaces=namespaces, pretty_format_options=pretty_format_options
+            _StringWriter(newline=newline),
+            namespaces=namespaces,
+            pretty_format_options=pretty_format_options,
         )
-        serializer.serialize_node(self)
-        return writer.result
+        with _wrapper_cache:
+            serializer.serialize_node(self)
+        return serializer.writer.result
 
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
@@ -1554,6 +1571,9 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}("{self.content}") [{hex(id(self))}]>'
 
+    def __str__(self) -> str:
+        return f"<!--{self.content}-->"
+
     @property
     def content(self) -> str:
         """
@@ -1589,6 +1609,9 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
             f'<{self.__class__.__name__}("{self.target}", "{self.content}") '
             f"[{hex(id(self))}]>"
         )
+
+    def __str__(self) -> str:
+        return f"<?{self.target} {self.content}?>"
 
     @property
     def content(self) -> str:
@@ -1760,12 +1783,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
             f'<{self.__class__.__name__}("{self.universal_name}", '
             f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
-
-    def __str__(self) -> str:
-        serializer = DefaultStringOptions._get_serializer()
-        serializer.serialize_root(self)
-        assert isinstance(serializer.writer, _StringWriter)
-        return serializer.writer.result
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
@@ -2086,15 +2103,17 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def full_text(self) -> str:
-        return "".join(str(x) for x in self.iterate_descendants(is_text_node))
+        return "".join(
+            n.content for n in self.iterate_descendants() if isinstance(n, TextNode)
+        )
 
     def _get_normalize_space_directive(
-        self, normalize_space: Literal["default", "preserve"]
+        self, default: Literal["default", "preserve"] = "default"
     ) -> Literal["default", "preserve"]:
         attribute_value = self.attributes.get(XML_ATT_SPACE)
 
         if attribute_value is None:
-            return normalize_space
+            return default
 
         if attribute_value in ("default", "preserve"):
             return attribute_value
@@ -2104,7 +2123,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             + attribute_value,
             category=UserWarning,
         )
-        return normalize_space
+        return default
 
     @property
     def id(self) -> Optional[str]:
@@ -2451,6 +2470,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         return result
 
+    @altered_default_filters()
     def serialize(
         self,
         *,
@@ -2458,12 +2478,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         newline: Optional[str] = None,
         pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
-        writer = _StringWriter(newline=newline)
         serializer = _get_serializer(
-            writer, namespaces=namespaces, pretty_format_options=pretty_format_options
+            _StringWriter(newline=newline),
+            namespaces=namespaces,
+            pretty_format_options=pretty_format_options,
         )
-        serializer.serialize_root(self)
-        return writer.result
+        with _wrapper_cache:
+            serializer.serialize_root(self)
+        return serializer.writer.result
 
     @property
     def universal_name(self) -> str:
@@ -3094,30 +3116,37 @@ def _get_serializer(
     writer: _SerializationWriter,
     namespaces: Optional[NamespaceDeclarations],
     pretty_format_options: Optional[PrettyFormatOptions],
-):
-    # TODO employ specialized serializers
+) -> Serializer:
     if pretty_format_options is None:
         return Serializer(
             writer=writer,
             namespaces=namespaces,
+        )
+
+    if (
+        pretty_format_options.indentation
+        and not pretty_format_options.indentation.isspace()
+    ):
+        raise ValueError("Invalid indentation characters.")
+
+    if pretty_format_options.text_width:
+        return TextWrappingSerializer(
+            writer=writer,
             pretty_format_options=pretty_format_options,
+            namespaces=namespaces,
         )
     else:
-        return Serializer(
+        return PrettySerializer(
             writer=writer,
-            namespaces=namespaces,
             pretty_format_options=pretty_format_options,
+            namespaces=namespaces,
         )
 
 
 class Serializer:
     __slots__ = (
-        "__align_attributes",
-        "indentation",
-        "__level",
-        "__namespaces",
-        "__prefixes",
-        "__text_wrapper",
+        "_namespaces",
+        "_prefixes",
         "writer",
     )
 
@@ -3126,47 +3155,32 @@ class Serializer:
         writer: _SerializationWriter,
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
-        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
-        self._init_config(
-            align_attributes=(
-                False
-                if pretty_format_options is None
-                else pretty_format_options.align_attributes
-            ),
-            indentation=(
-                ""
-                if pretty_format_options is None
-                else pretty_format_options.indentation
-            ),
-            namespaces=namespaces,
-            text_width=(
-                0 if pretty_format_options is None else pretty_format_options.text_width
-            ),
+        self._namespaces = (
+            Namespaces({}) if namespaces is None else Namespaces(namespaces)
         )
-        self.__level = 0
-        self.__prefixes: dict[str | None, str] = {}
+        self._prefixes: dict[str | None, str] = {}
         self.writer = writer
 
-    def __collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
+    def _collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNode)
             for namespace in {node.namespace} | {
                 a.namespace for a in node.attributes.values()
             }:
-                if namespace in self.__prefixes:
+                if namespace in self._prefixes:
                     continue
 
                 prefix: str | None
                 if namespace is None:
-                    for other_namespace, prefix in self.__prefixes.items():
+                    for other_namespace, prefix in self._prefixes.items():
                         if prefix == "":
                             # hence there's a default namespace in use, it needs to use
                             # a prefix though as an empty namespace can't be declared
                             assert other_namespace
-                            self.__new_namespace_declaration(other_namespace)
+                            self._new_namespace_declaration(other_namespace)
                             break
-                    self.__prefixes[None] = ""
+                    self._prefixes[None] = ""
                     continue
 
                 # TODO unlike lxml, delb will probably not keep the individual
@@ -3175,181 +3189,644 @@ class Serializer:
 
                 # with the lxml backend, a node retains prefix declarations from the
                 # parsed source
-                self.__namespaces._fallback = node.namespaces
+                self._namespaces._fallback = node.namespaces
                 try:
-                    prefix = self.__namespaces.lookup_prefix(namespace)
+                    prefix = self._namespaces.lookup_prefix(namespace)
                 except KeyError:
                     assert isinstance(namespace, str)
-                    self.__new_namespace_declaration(namespace)
+                    self._new_namespace_declaration(namespace)
                     continue
 
                 if prefix is not None:
                     # that found prefix still needs a colon for faster serialisat
                     # composition later
-                    self.__prefixes[namespace] = f"{prefix}:"
+                    self._prefixes[namespace] = f"{prefix}:"
 
                 else:  # now we need to come up with a new prefix
-                    if "" not in self.__prefixes.values():
+                    if "" not in self._prefixes.values():
                         # be bold and claim to be the default
-                        self.__prefixes[namespace] = ""
+                        self._prefixes[namespace] = ""
 
                     else:
                         assert isinstance(namespace, str)
-                        self.__new_namespace_declaration(namespace)
+                        self._new_namespace_declaration(namespace)
 
-    def _init_config(
-        self,
-        align_attributes: bool,
-        indentation: str,
-        namespaces: None | NamespaceDeclarations,
-        text_width: int,
-    ):
-        self.__align_attributes = align_attributes
-        self.indentation = indentation
-
-        if namespaces is None:
-            self.__namespaces = Namespaces({})
-        else:
-            self.__namespaces = Namespaces(namespaces)
-
-        if text_width < 0:
-            raise ValueError
-        self.__text_wrapper = TextWrapper(
-            width=text_width,
-            expand_tabs=False,
-            replace_whitespace=True,
-            drop_whitespace=True,
-            initial_indent="",
-            subsequent_indent="",
-            fix_sentence_endings=False,
-            break_long_words=False,
-            break_on_hyphens=False,
-        )
-
-    def __new_namespace_declaration(self, namespace: None | str):
-        for i in range(2**16):
-            prefix = f"ns{i}:"
-            if prefix not in self.__prefixes.values():
-                self.__prefixes[namespace] = prefix
-                return
-        else:
-            raise NotImplementedError("Just don't.")
-
-    def __generate_attributes_data(self, node: TagNode) -> dict[str, str]:
+    def _generate_attributes_data(self, node: TagNode) -> dict[str, str]:
         data = {}
 
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
-            data[self.__prefixes[attribute.namespace] + attribute.local_name] = (
-                f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
+            data[self._prefixes[attribute.namespace] + attribute.local_name] = (
+                f'"{attribute.value.translate(CCE_TABLE_FOR_ATTRIBUTES)}"'
             )
 
         return data
 
-    @staticmethod
-    def sanitize_text(text: str) -> str:
-        return text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+    def _handle_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+        for child_node in child_nodes:
+            self.serialize_node(child_node)
 
-    def __serialize_child_nodes(self, child_nodes: Sequence[NodeBase]):
-        self.writer(">")
-        if all(isinstance(n, TextNode) for n in child_nodes):
-            if self.__text_wrapper.width:
-                self.writer("\n")
-                self.__level += 1
-                self.__write_wrapped_text(cast("tuple[TextNode, ...]", child_nodes))
-                self.__level -= 1
-                if self.indentation and self.__level:
-                    self.writer(self.__level * self.indentation)
-            else:
-                self.writer(
-                    self.sanitize_text(
-                        "".join(cast("TextNode", n).content for n in child_nodes)
-                    )
-                )
-
+    def _new_namespace_declaration(self, namespace: None | str):
+        for i in range(2**16):
+            prefix = f"ns{i}:"
+            if prefix not in self._prefixes.values():
+                self._prefixes[namespace] = prefix
+                return
         else:
-            if self.indentation:
-                self.writer("\n")
-            if child_nodes:
-                self.__level += 1
-                for child_node in child_nodes:
-                    self.serialize_node(child_node)
-                self.__level -= 1
-            if self.indentation and self.__level:
-                self.writer(self.__level * self.indentation)
+            raise NotImplementedError("Just don't.")
+
+    def _serialize_attributes(self, attributes_data):
+        for key, value in attributes_data.items():
+            self.writer(f" {key}={value}")
 
     def serialize_node(self, node: NodeBase):
-        if self.indentation and self.__level:
-            self.writer(self.__level * self.indentation)
 
-        if isinstance(node, CommentNode):
-            self.writer(f"<!--{node.content}-->")
-        elif isinstance(node, ProcessingInstructionNode):
-            self.writer(f"<?{node.target} {node.content}?>")
+        if isinstance(node, (CommentNode, ProcessingInstructionNode)):
+            self.writer(str(node))
         elif isinstance(node, TagNode):
-            self.__serialize_non_root_tag(node)
-        elif isinstance(node, TextNode):
-            if self.__text_wrapper.width:
-                self.__write_wrapped_text((node,))
-            else:
-                self.writer(self.sanitize_text(node.content))
+            self._serialize_tag(
+                node,
+                attributes_data=self._generate_attributes_data(node),
+            )
+        elif isinstance(node, TextNode) and node.content:
+            self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
         else:
             raise InvalidCodePath
 
-        if self.indentation:
-            self.writer("\n")
-
     def serialize_root(self, root: TagNode):
-        self.__collect_prefixes(root)
+        self._collect_prefixes(root)
         attributes_data = {}
-        declarations = {v: "" if k is None else k for k, v in self.__prefixes.items()}
+        declarations = {p: "" if n is None else n for n, p in self._prefixes.items()}
         if "" in declarations:
             default_namespace = declarations.pop("")
             if default_namespace:
                 attributes_data["xmlns"] = f'"{default_namespace}"'
             # else it would be an unprefixed, empty namespace
         for prefix in sorted(p for p in declarations if p[:-1] not in GLOBAL_PREFIXES):
-            assert len(prefix) >= 2  # at least one letter and a colon
+            assert len(prefix) >= 2  # at least a colon and one letter
             attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
 
-        attributes_data.update(self.__generate_attributes_data(root))
-        self.__serialize_tag(root, attributes_data)
+        attributes_data.update(self._generate_attributes_data(root))
+        self._serialize_tag(root, attributes_data=attributes_data)
 
-    def __serialize_non_root_tag(self, node: TagNode):
-        self.__serialize_tag(node, self.__generate_attributes_data(node))
-
-    def __serialize_tag(self, node: TagNode, attributes_data: dict[str, str]):
-        prefixed_name = self.__prefixes[node.namespace] + node.local_name
+    def _serialize_tag(
+        self,
+        node: TagNode,
+        attributes_data: dict[str, str],
+    ):
+        child_nodes = tuple(node.iterate_children())
+        prefixed_name = self._prefixes[node.namespace] + node.local_name
 
         self.writer(f"<{prefixed_name}")
-
         if attributes_data:
-            if self.__align_attributes:
-                key_width = max(len(k) for k in attributes_data)
-                for key, value in attributes_data.items():
-                    self.writer(
-                        f"\n{self.__level * self.indentation} {self.indentation}"
-                        f"{' ' * (key_width - len(key))}{key}={value}"
-                    )
-                if self.indentation:
-                    self.writer(f"\n{self.__level * self.indentation}")
+            self._serialize_attributes(attributes_data)
 
-            else:
-                for key, value in attributes_data.items():
-                    self.writer(f" {key}={value}")
-
-        child_nodes = tuple(node.iterate_children())
         if child_nodes:
-            self.__serialize_child_nodes(child_nodes)
+            self.writer(">")
+            self._handle_child_nodes(child_nodes)
             self.writer(f"</{prefixed_name}>")
         else:
             self.writer("/>")
 
-    def __write_wrapped_text(self, nodes: tuple[TextNode, ...]):
-        for line in self.__text_wrapper.wrap(
-            self.sanitize_text("".join(n.content for n in nodes))
+
+class _LineFittingSerializer(Serializer):
+    __slots__ = ("space",)
+
+    def __init__(
+        self,
+        writer: _SerializationWriter,
+        *,
+        namespaces: Optional[NamespaceDeclarations] = None,
+    ):
+        self.writer: _LengthTrackingWriter
+        super().__init__(writer, namespaces=namespaces)
+        self.space: Literal["default", "preserve"] = "default"
+
+    def serialize_node(self, node: NodeBase):
+        if isinstance(node, TextNode):
+            if node.content:
+                if self.space == "default":
+                    content = _crunch_whitespace(node.content).translate(
+                        CCE_TABLE_FOR_TEXT
+                    )
+                else:
+                    content = node.content.translate(CCE_TABLE_FOR_TEXT)
+                self.writer(content)
+            return
+
+        if isinstance(node, TagNode):
+            space_state = self.space
+            space = node._get_normalize_space_directive(self.space)
+            if space != space_state:
+                self.space = space
+                self.writer.preserve_space = space == "default"
+
+        super().serialize_node(node)
+
+        if isinstance(node, TagNode) and space != space_state:
+            self.space = space_state
+            self.writer.preserve_space = space_state == "default"
+
+
+class PrettySerializer(Serializer):
+    __slots__ = (
+        "_align_attributes",
+        "indentation",
+        "_level",
+        "_serialization_root",
+        "_space_preserving_serializer",
+        "_text_wrapper",
+        "_unwritten_text_nodes",
+    )
+
+    def __init__(
+        self,
+        writer: _SerializationWriter,
+        pretty_format_options: PrettyFormatOptions,
+        *,
+        namespaces: Optional[NamespaceDeclarations] = None,
+    ):
+        super().__init__(writer, namespaces=namespaces)
+        self._align_attributes = pretty_format_options.align_attributes
+        self.indentation = pretty_format_options.indentation
+        self._level = 0
+        self._serialization_root: None | TagNode = None
+        self._space_preserving_serializer = Serializer(
+            self.writer, namespaces=self._namespaces
+        )
+        self._unwritten_text_nodes: list[TextNode] = []
+
+    def _collect_prefixes(self, root: TagNode):
+        super()._collect_prefixes(root)
+        self._space_preserving_serializer._prefixes = self._prefixes
+
+    def _handle_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+        # newline between an opening tag and its first child
+        if self._whitespace_is_legit_before_node(child_nodes[0]):
+            self.writer("\n")
+
+        self._level += 1
+        self._serialize_child_nodes(child_nodes)
+        self._level -= 1
+
+        if self.indentation and self._whitespace_is_legit_after_node(child_nodes[-1]):
+            # indentation before closing tag
+            # newline was possibly written in self.serialize_node()
+            # or self._serialize_text
+            self.writer(self._level * self.indentation)
+
+    def _normalize_text(self, text: str) -> str:
+        return _crunch_whitespace(text).translate(CCE_TABLE_FOR_TEXT)
+
+    def _serialize_attributes(self, attributes_data: dict[str, str]):
+        if self._align_attributes and len(attributes_data) > 1:
+            key_width = max(len(k) for k in attributes_data)
+            for key, value in attributes_data.items():
+                self.writer(
+                    f"\n{self._level * self.indentation} {self.indentation}"
+                    f"{' ' * (key_width - len(key))}{key}={value}"
+                )
+            if self.indentation:
+                self.writer(f"\n{self._level * self.indentation}")
+
+        else:
+            super()._serialize_attributes(attributes_data)
+
+    def _serialize_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+        for node in child_nodes:
+            if isinstance(node, TextNode):
+                if node.content:
+                    self._unwritten_text_nodes.append(node)
+            else:
+                self.serialize_node(node)
+
+        if self._unwritten_text_nodes:
+            self._serialize_text()
+
+    def serialize_node(self, node: NodeBase):
+        if self._unwritten_text_nodes:
+            self._serialize_text()
+
+        if self.indentation and self._whitespace_is_legit_before_node(node):
+            self.writer(self._level * self.indentation)
+
+        super().serialize_node(node)
+
+        if self._whitespace_is_legit_after_node(node):
+            self.writer("\n")
+
+    def serialize_root(self, root: TagNode):
+        self._serialization_root = root
+        super().serialize_root(root)
+        self._serialization_root = None
+
+    def _serialize_tag(
+        self,
+        node: TagNode,
+        attributes_data: dict[str, str],
+    ):
+        if node._get_normalize_space_directive() == "preserve":
+            self._space_preserving_serializer._serialize_tag(
+                node=node,
+                attributes_data=attributes_data,
+            )
+        else:
+            super()._serialize_tag(
+                node,
+                attributes_data=attributes_data,
+            )
+
+    def _serialize_text(self):
+        nodes = self._unwritten_text_nodes
+        content = self._normalize_text("".join(n.content for n in nodes))
+
+        # a whitespace-only node can be omitted as a newline has been inserted before
+        if content == " ":
+            nodes.clear()
+            return
+
+        if self.indentation and self._whitespace_is_legit_before_node(nodes[0]):
+            content = self._level * self.indentation + content.lstrip()
+
+        if self._whitespace_is_legit_after_node(nodes[-1]):
+            content = content.rstrip() + "\n"
+
+        assert content
+        self.writer(content)
+        nodes.clear()
+
+    def _whitespace_is_legit_after_node(self, node: NodeBase) -> bool:
+        if self._serialization_root is None or node is self._serialization_root:
+            # end of stream
+            return False
+
+        if node.parent.last_child is node:
+            return True
+
+        if isinstance(node, TextNode):
+            return node.content[-1].isspace()
+
+        following_sibling = node.fetch_following_sibling()
+        assert following_sibling is not None
+        if isinstance(following_sibling, TextNode):
+            return self._whitespace_is_legit_before_node(following_sibling)
+        else:
+            return False
+
+    def _whitespace_is_legit_before_node(self, node: NodeBase) -> bool:
+        if self._serialization_root is None or node is self._serialization_root:
+            # begin of stream
+            return False
+
+        if node.index == 0:
+            return True
+
+        if isinstance(node, TextNode):
+            return node.content[0].isspace()
+
+        preceding_sibling = node.fetch_preceding_sibling()
+        assert preceding_sibling is not None
+        if isinstance(preceding_sibling, TextNode):
+            return self._whitespace_is_legit_after_node(preceding_sibling)
+        else:
+            return False
+
+
+class TextWrappingSerializer(PrettySerializer):
+    __slots__ = (
+        "_line_fitting_serializer",
+        "_width",
+    )
+
+    def __init__(
+        self,
+        writer: _SerializationWriter,
+        pretty_format_options: PrettyFormatOptions,
+        *,
+        namespaces: Optional[NamespaceDeclarations] = None,
+    ):
+        if pretty_format_options.text_width < 1:
+            raise ValueError
+        self.writer: _LengthTrackingWriter
+        super().__init__(
+            writer=_LengthTrackingWriter(writer.buffer),
+            pretty_format_options=pretty_format_options,
+            namespaces=namespaces,
+        )
+        self._line_fitting_serializer = _LineFittingSerializer(
+            self.writer, namespaces=self._namespaces
+        )
+        self._width = pretty_format_options.text_width
+
+    @property
+    def _available_space(self):
+        return max(0, self._width - self._line_offset)
+
+    def _collect_prefixes(self, root: TagNode):
+        super()._collect_prefixes(root)
+        self._line_fitting_serializer._prefixes = self._prefixes
+
+    @property
+    def _line_offset(self) -> int:
+        if self.writer.offset:
+            return self.writer.offset - self._level * len(self.indentation)
+        else:
+            return 0
+
+    def _node_fits_remaining_line(self, node: NodeBase) -> bool:
+        return self._required_space(node, self._available_space) is not None
+
+    def _required_space(self, node: NodeBase, up_to: int) -> None | int:
+        # counts required space for the serialisation of a node
+        # a returned None signals that the limit up_to was hit
+
+        if isinstance(node, TextNode):
+            return self._required_space_for_text(node, up_to)
+        if isinstance(node, (CommentNode, ProcessingInstructionNode)):
+            length = len(str(node))
+            return length if length <= up_to else None
+
+        assert isinstance(node, TagNode)
+
+        name_length = len(node.local_name) + len(self._prefixes[node.namespace])
+        if len(node) == 0:
+            used_space = 3 + name_length  # <N/>
+        else:
+            used_space = 5 + 2 * name_length  # <N>…<N/>
+
+        if used_space > up_to:
+            return None
+
+        if (
+            attributes_space := self._required_space_for_attributes(
+                node, up_to - used_space
+            )
+        ) is None:
+            return None
+        used_space += attributes_space
+
+        for child_node in node.iterate_children():
+            if (
+                child_space := self._required_space(child_node, up_to - used_space)
+            ) is None:
+                return None
+            used_space += child_space
+
+        if (
+            following_space := self._required_space_for_following(
+                node, up_to - used_space
+            )
+        ) is None:
+            return None
+        used_space += following_space
+
+        return used_space
+
+    def _required_space_for_attributes(self, node: TagNode, up_to: int) -> None | int:
+        result = 0
+
+        attribute_names = tuple(node.attributes)
+        for attribute in (node.attributes[n] for n in attribute_names):
+            assert attribute is not None
+            result += (
+                4  # preceding space and »="…"«
+                + len(attribute.local_name)
+                + len(self._prefixes[attribute.namespace])
+                + len(attribute.value.translate(CCE_TABLE_FOR_ATTRIBUTES))
+            )
+            if result > up_to:
+                return None
+
+        return result
+
+    def _required_space_for_following(self, node: TagNode, up_to: int) -> None | int:
+        if self._whitespace_is_legit_after_node(node):
+            return 0
+
+        if (following := node.fetch_following()) is None:
+            return 0
+
+        if not isinstance(following, TextNode):
+            return self._required_space(following, up_to)
+
+        # indeed this doesn't consider the case where a first
+        # whitespace would appear in one of possible subsequent text
+        # nodes
+        content = following.content.translate(CCE_TABLE_FOR_TEXT)
+        if (length := content.find(" ")) == -1:
+            length = len(content)
+
+        return length if length <= up_to else None
+
+    def _required_space_for_text(self, node: TextNode, up_to: int) -> None | int:
+        content = self._normalize_text(node.content)
+        if content.startswith(" ") and self._whitespace_is_legit_before_node(node):
+            content = content.lstrip()
+        if content.endswith(" ") and self._whitespace_is_legit_after_node(node):
+            content = content.rstrip()
+        length = len(content)
+        return length if length <= up_to else None
+
+    def _serialize_appendable_node(self, node: NodeBase):
+        assert not isinstance(node, TextNode)
+
+        if self.writer.offset == 0 and self.indentation:
+            self.writer(self._level * self.indentation)
+
+        if isinstance(node, TagNode):
+            if node._get_normalize_space_directive() == "preserve":
+                serializer = self._space_preserving_serializer
+                self.writer.preserve_space = True
+            else:
+                serializer = self._line_fitting_serializer
+            serializer.serialize_node(node)
+            self.writer.preserve_space = False
+        elif isinstance(node, (CommentNode, ProcessingInstructionNode)):
+            self.writer(str(node))
+
+    def serialize_node(self, node: NodeBase):
+        if self._unwritten_text_nodes:
+            self._serialize_text()
+
+        if self._node_fits_remaining_line(node):
+            self._serialize_appendable_node(node)
+            if (
+                (not self._available_space) or (node is node.parent.last_child)
+            ) and self._whitespace_is_legit_after_node(node):
+                self.writer("\n")
+                return
+
+        else:
+            if self._line_offset > 0 and self._whitespace_is_legit_before_node(node):
+                self.writer("\n")
+                self.serialize_node(node)
+                return
+
+            if (
+                self.indentation
+                and self.writer.offset == 0
+                and self._whitespace_is_legit_before_node(node)
+            ):
+                self.writer(self._level * self.indentation)
+
+            if (
+                isinstance(node, TagNode)
+                and node._get_normalize_space_directive() == "preserve"
+            ):
+                self.writer.preserve_space = True
+            super(PrettySerializer, self).serialize_node(node)
+            self.writer.preserve_space = False
+
+        if self._whitespace_is_legit_after_node(node) and not (
+            (
+                (following := node.fetch_following()) is not None
+                and self._node_fits_remaining_line(following)
+            )
         ):
-            self.writer(f"{self.__level * self.indentation}{line}\n")
+            self.writer("\n")
+
+    def _serialize_tag(
+        self,
+        node: TagNode,
+        attributes_data: dict[str, str],
+    ):
+        if node is not self._serialization_root and self._node_fits_remaining_line(
+            node
+        ):
+            self._serialize_appendable_node(node)
+        else:
+            super()._serialize_tag(node, attributes_data)
+
+    def _serialize_text(self):
+        nodes = self._unwritten_text_nodes
+        content = self._normalize_text("".join(n.content for n in nodes))
+        last_node = nodes[-1]
+
+        if self._available_space == len(
+            content.rstrip()
+        ) and self._whitespace_is_legit_after_node(last_node):
+            # text fits perfectly
+            self.writer(content.rstrip() + "\n")
+
+        elif self._available_space > len(content):
+            # text fits current line
+            if self._line_offset == 0:
+                content = self._level * self.indentation + content.lstrip()
+
+            if (
+                (last_node is last_node.parent.last_child)
+                or (following := last_node.fetch_following()) is not None
+                and (
+                    self._whitespace_is_legit_before_node(following)
+                    and self._required_space(
+                        following, self._available_space - len(content)
+                    )
+                    is None
+                )
+            ):
+                content = content.rstrip() + "\n"
+
+            self.writer(content)
+
+        elif content == " ":
+            # " " doesn't fit line
+            self.writer("\n")
+
+        else:
+            # text doesn't fit current line
+            self._serialize_text_over_lines(content)
+
+        nodes.clear()
+
+    def _serialize_text_over_lines(self, content: str):
+        lines: list[str] = []
+        nodes = self._unwritten_text_nodes
+
+        if self._line_offset == 0:
+            # just a side note: this branch would also be interesting if
+            # len(content) > self._width  # noqa: E800
+            # and self._whitespace_is_legit_before_node(nodes[0])
+            # and one would know that the line starts with text content
+            #
+            # so for now that's why text might start after a closing tag of an
+            # element that spans multiple lines on their last one
+            # (i.e. this prefers: "the <hi>A</hi> letter…" over the "A" on a
+            # separate line which the next branch produces)
+
+            if self._whitespace_is_legit_before_node(nodes[0]):
+                lines.append("")
+            lines.extend(self._wrap_text(content.lstrip(), self._width))
+
+        else:
+            if content.startswith(" "):
+                filling = " " + next(
+                    self._wrap_text(content[1:], self._available_space - 1)
+                )
+            else:
+                filling = next(self._wrap_text(content, self._available_space))
+
+            if not (
+                len(filling) > self._available_space
+                and self._whitespace_is_legit_before_node(nodes[0])
+            ):
+                self.writer(filling)
+                content = content[len(filling) + 1 :]
+                if not content:
+                    return
+
+            lines.append("")
+            lines.extend(self._wrap_text(content, self._width))
+
+        if (
+            lines[-1].endswith(" ")
+            and self._whitespace_is_legit_after_node(nodes[-1])
+            and (following_sibling := nodes[-1].fetch_following_sibling()) is not None
+            and not self._required_space(
+                following_sibling, self._width - len(lines[-1])
+            )
+        ):
+            lines.append("")
+
+        self._consolidate_text_lines(lines)
+
+        prefix = self._level * self.indentation
+        for line in lines[:-1]:
+            if line == "":
+                self.writer("\n")
+            else:
+                self.writer(f"{prefix}{line}\n")
+        if lines[-1] != "":
+            self.writer(f"{prefix}{lines[-1]}")
+
+    def _consolidate_text_lines(self, lines: list[str]):
+        last_node = self._unwritten_text_nodes[-1]
+        assert last_node.parent is not None
+        if (
+            lines[0] == ""
+            and last_node is last_node.parent.last_child
+            and self._whitespace_is_legit_after_node(last_node)
+        ):
+            lines.append("")
+        if self._line_offset == 0 and lines[0] == "":
+            lines.pop(0)
+        if len(lines) >= 2 and lines[-1] == "":
+            lines[-2] = lines[-2].rstrip()
+
+    @staticmethod
+    def _wrap_text(text: str, width: int) -> Iterator[str]:
+        while len(text) > width:
+
+            if (index := text.rfind(" ", 0, width + 1)) > -1 or (
+                index := text.find(" ", width)
+            ) > 0:
+                yield text[:index]
+                text = text[index + 1 :]
+            else:
+                yield text
+                return
+
+        if text:
+            yield text
 
 
 class PrettyFormatOptions(NamedTuple):
@@ -3357,8 +3834,14 @@ class PrettyFormatOptions(NamedTuple):
     Instances of this class can be used to define serialization formatting that is
     not so hard to interpret for instances of Homo sapiens s., but more costly to
     compute.
+
     When it's employed, it will always insert a newline after any node unless this
-    wouldn't vanish when collapsing whitespace.
+    wouldn't vanish when trimming whitespace.
+
+    The serialization respects when a tag node bears the ``xml:space`` attribute with
+    the value ``preserve``. But if any descendent of such annotated node signals to
+    allow whitespace alterations again that has no effect. Such attributes with invalid
+    values are ignored.
     """
 
     align_attributes: bool = False
@@ -3368,6 +3851,7 @@ class PrettyFormatOptions(NamedTuple):
     """
     indentation: str = "  "
     """ This string prefixes descending nodes' contents one time per depth level. """
+    # TODO should this default to 0 due to the necessary resources for wrapping?
     text_width: int = 89
     """
     A positive value indicates that text nodes shall get wrapped at this character
@@ -3403,7 +3887,7 @@ class DefaultStringOptions:
     See :class:`io.TextIOWrapper` for a detailed explanation of the parameter with the
     same name.
     """
-    pretty_format_options: Optional[PrettyFormatOptions] = None
+    pretty_format_options: ClassWar[None | PrettyFormatOptions] = None
     """
     An instance of :class:`PrettyFormatOptions` can be provided to configure formatting.
     """
@@ -3433,6 +3917,42 @@ class _SerializationWriter(ABC):
     def __call__(self, data: str):
         self.buffer.write(data)
 
+    @property
+    def result(self):
+        if isinstance(self.buffer, StringIO):
+            return self.buffer.getvalue()
+        raise TypeError("Underlying buffer must be an instance of `io.StingIO`")
+
+
+class _LengthTrackingWriter(_SerializationWriter):
+    __slots__ = ("offset", "preserve_space")
+
+    def __init__(self, buffer: TextIO):
+        super().__init__(buffer)
+        self.offset = 0
+        self.preserve_space = False
+
+    def __call__(self, data: str):
+        if not self.preserve_space and self.offset == 0:
+            data = data.lstrip("\n")
+
+        if not data:
+            return
+
+        if data[-1] == "\n":
+            self.offset = 0
+        else:
+            if (index := data.rfind("\n")) == -1:
+                self.offset += len(data)
+            else:
+                self.offset = len(data) - (index + 1)
+        super().__call__(data)
+
+
+class _StringWriter(_SerializationWriter):
+    def __init__(self, newline: Optional[str] = None):
+        super().__init__(StringIO(newline=newline))
+
 
 class _TextBufferWriter(_SerializationWriter):
     def __init__(
@@ -3443,15 +3963,6 @@ class _TextBufferWriter(_SerializationWriter):
     ):
         buffer.reconfigure(encoding=encoding, newline=newline)
         super().__init__(buffer)
-
-
-class _StringWriter(_SerializationWriter):
-    def __init__(self, newline: Optional[str] = None):
-        super().__init__(StringIO(newline=newline))
-
-    @property
-    def result(self):
-        return self.buffer.getvalue()
 
 
 #
@@ -3467,7 +3978,6 @@ __all__ = (
     QueryResults.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
-    _TextBufferWriter.__name__,
     TextNode.__name__,
     altered_default_filters.__name__,
     any_of.__name__,

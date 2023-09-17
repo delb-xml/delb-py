@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<archivalDocument xmlns="http://www.faustedition.net/ns" xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:f="http://www.faustedition.net/ns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.faustedition.net/ns https://faustedition.uni-wuerzburg.de/xml/schema/metadata.xsd" xml:base="faust://xml/transcript/gsa/390707/">
+   <revisionDesc>
+      <change when="2012-11-20" who="henzel">imported</change>
+      <change when="2012-11-20" who="henzel">encoded</change>
+      <change when="2015-01-28" who="koehler">minimal headnote</change>
+   </revisionDesc>
+   <metadata>
+      <headNote>Zettel. – Zu ‚Faust II‘, Akt 4.</headNote>
+      <note>auf Brief(?) mit Aufschrift eines zeitgenössischen Schreibers</note>
+      <!-- GSA: auf Umschlag(?) mit Aufschrift zS, Bruchstück -->
+      <repository>gsa</repository>
+      <idno type="faustedition">2 IV H.17</idno>
+      <idno type="gsa_1">GSA 25/XVIII,5,18</idno>
+      <idno type="gsa_2">GSA 25/W 1688</idno>
+      <idno type="gsa_ident">390707</idno>
+      <idno type="wa_faust">2 IV H.17</idno>
+      <textTranscript uri="390707.xml"/>
+      <classification>Konzept</classification>
+      <condition>mehrfach gefaltet, Bruchstück eines Folioblattes</condition>
+      <dimensions>
+         <width unit="mm">204</width>
+         <height unit="mm">212</height>
+      </dimensions>
+      <note>Der Mindestwert der Blatt-Breite beträgt 200 mm. Der Mindestwert der Blatt-Höhe beträgt 209 mm.</note>
+      <format>none</format>
+      <paperType>Briefpapier</paperType>
+      <paperColour>dunkelgelb</paperColour>
+      <chainLines unit="mm">none</chainLines>
+      <paperMill><!-- TODO --></paperMill>
+      <watermarkID>angeschnittenes "JW HATMA"</watermarkID>
+      <countermarkID>none</countermarkID>
+      <references>
+         <reference type="description" uri="faust://bibliography/wa_I_15_2">S. 132f.</reference>
+      </references>
+   </metadata>
+
+   <disjunctLeaf>
+      <page>
+         <metadata>
+            <docTranscript uri="0002.xml"/>
+         </metadata>
+      </page>
+      <page>
+         <metadata>
+            <docTranscript uri="0003.xml"/>
+         </metadata>
+      </page>
+   </disjunctLeaf>
+
+   <f:metadataImport xmlns:ge="http://www.tei-c.org/ns/geneticEditions" xmlns:svg="http://www.w3.org/2000/svg">
+      <f:archiveDatabase xml:space="preserve">
+    </f:archiveDatabase>
+      <f:inventoryDatabase>
+         <f:field>
+            <f:key n="91">Kommentar</f:key>
+            <f:value>= Vorstufe zu H.13 (25/XVIII,5,14:1)</f:value>
+         </f:field>
+         <f:field>
+            <f:key n="91">Kommentar</f:key>
+            <f:value>= früheres K im Vgl. zu diesen Versen auf H.18 (25/XVIII,5,19*a)</f:value>
+         </f:field>
+      </f:inventoryDatabase>
+   </f:metadataImport>
+</archivalDocument>

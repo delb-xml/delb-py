@@ -14,8 +14,9 @@ from delb import (
     TextNode,
 )
 from _delb.nodes import DETACHED
+from tests.conftest import TEI_FILES
 
-from tests.utils import assert_equal_trees
+from tests.utils import assert_equal_trees, skip_long_running_test
 
 
 @pytest.mark.parametrize(
@@ -42,7 +43,7 @@ from tests.utils import assert_equal_trees
 )
 def test_align_attributes(indentation, out):
     DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
-        align_attributes=True, indentation=indentation
+        align_attributes=True, indentation=indentation, text_width=0
     )
     node = new_tag_node(
         "chimeney",
@@ -51,18 +52,20 @@ def test_align_attributes(indentation, out):
 
     assert str(node) == out
 
+    assert str(new_tag_node("foo", {"bar": "baz"})) == '<foo bar="baz"/>'
 
-def test_document_xml_declaration(files_path):
-    assert str(Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")).startswith(
-        '<?xml version="1.0" encoding="UTF-8"?>'
-    )
+
+def test_document_xml_declaration(sample_document):
+    assert str(sample_document).startswith('<?xml version="1.0" encoding="UTF-8"?>')
 
 
 def test_empty_below_default_namespace():
     # as there's a default namespace and a namespace can't be empty, a prefix must be
-    # supplied for all namespaces
+    # supplied for all other namespaces, including one declared as default
     root = Document("<root xmlns='http://fo.org/'/>").root
     root.append_children(new_tag_node(local_name="node", namespace=None))
+    # just to be explicit here:
+    DefaultStringOptions.namespace = {None: "http://fo.org/"}
     assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
 
 
@@ -71,77 +74,127 @@ def test_empty_below_default_namespace():
     (
         (
             "  ",
-            '<root><a>hi</a><b x="foo"><c/></b></root>',
+            "<p>Hold <hi>the</hi> thieves!</p>",
             """\
-             <?xml version="1.0" encoding="UTF-8"?>
-             <root>
-               <a>hi</a>
-               <b x="foo">
-                 <c/>
-               </b>
-             </root>""",
+            <?xml version="1.0" encoding="UTF-8"?>
+            <p>
+              Hold
+              <hi>
+                the
+              </hi>
+              thieves!
+            </p>""",
+        ),
+        (
+            "  ",
+            '<root><a>hi</a> <b x="foo">x <c/> y</b></root>',
+            """\
+            <?xml version="1.0" encoding="UTF-8"?>
+            <root>
+              <a>
+                hi
+              </a>
+              <b x="foo">
+                x
+                <c/>
+                y
+              </b>
+            </root>""",
         ),
     ),
 )
 def test_indentation(indentation, _in, out):
     DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
-        indentation=indentation, text_width=0
+        align_attributes=False, indentation=indentation, text_width=0
     )
-    assert str(Document(_in)) == dedent(out)
+    document = Document(_in, parser_options=ParserOptions(reduce_whitespace=True))
+    serialisat = str(document)
+    assert_equal_trees(
+        document.root,
+        Document(serialisat, parser_options=ParserOptions(reduce_whitespace=True)).root,
+    )
+    assert serialisat == dedent(out)
 
 
 @pytest.mark.parametrize(
-    ("_in", "out"),
+    ("_in", "open_tag"),
     (
         (
             '<r xmlns="d1"><b xmlns="d2"/></r>',
-            '<r xmlns="d1" xmlns:ns0="d2"><ns0:b/></r>',
+            '<r xmlns="d1" xmlns:ns0="d2">',
         ),
-        ('<r><b xmlns="d"/></r>', '<r xmlns:ns0="d"><ns0:b/></r>'),
+        ('<r><b xmlns="d"/></r>', '<r xmlns:ns0="d">'),
+        (
+            """\
+            <r xmlns="d1">
+              <b>
+                <c xmlns:ignored="d2"/>
+              </b>
+              <d xmlns:wanted="d2"/>
+            </r>""",
+            '<r xmlns="d1" xmlns:wanted="d2">',
+        ),
     ),
 )
-def test_prefix_collection_and_generation(_in, out):
-    assert str(Document(_in).root) == out
-
-
-def test_significant_whitespace_is_saved(result_file):
-    document = Document("<text/>")
-    root = document.root
-    hi = tag("hi")
-
-    root.append_children(hi)
-    root[0].append_children("Hello")
-    root.append_children(" ")
-    root.append_children(hi)
-    root[2].append_children("world!")
-
-    document.save(result_file)
-    assert result_file.read_text() == (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        "<text><hi>Hello</hi> <hi>world!</hi></text>"
-    )
-
-    document.save(result_file, PrettyFormatOptions(indentation="  "))
-
-    assert (
-        Document(result_file, parser_options=ParserOptions(reduce_whitespace=True))
-        .xpath("hi")
-        .first.fetch_following_sibling()
-        == " "
-    )
-
-    assert result_file.read_text().splitlines() == [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        "<text>",
-        "  <hi>Hello</hi>",
-        "   ",  # FIXME?
-        "  <hi>world!</hi>",
-        "</text>",
-    ]
+def test_prefix_collection_and_generation(_in, open_tag):
+    # all namespace declarations are included in the root node
+    # definitions from higher levels are preferred
+    assert str(Document(_in).root).startswith(open_tag)
 
 
 @pytest.mark.parametrize(
-    ("declarations", "node_constructor", "args", "out"),
+    ("pretty_format_options", "out"),
+    (
+        (
+            None,
+            (
+                """<?xml version="1.0" encoding="UTF-8"?>"""
+                """<text><hi>Hello</hi> <hi>world!</hi></text>"""
+            ),
+        ),
+        (
+            PrettyFormatOptions(align_attributes=False, indentation="  ", text_width=4),
+            """\
+            <?xml version="1.0" encoding="UTF-8"?>
+            <text>
+              <hi>
+                Hello
+              </hi>
+              <hi>
+                world!
+              </hi>
+            </text>""",
+        ),
+    ),
+)
+def test_significant_whitespace_is_saved(result_file, pretty_format_options, out):
+    document = Document("<text/>")
+    document.root.append_children(tag("hi", ["Hello"]), " ", tag("hi", ["world!"]))
+
+    document.reduce_whitespace()
+    document.save(result_file, pretty_format_options=pretty_format_options)
+    result = Document(
+        result_file,
+        parser_options=ParserOptions(
+            reduce_whitespace=pretty_format_options is not None
+        ),
+    )
+    assert result.root.full_text == "Hello world!"
+    assert_equal_trees(document.root, result.root)
+    assert result_file.read_text() == dedent(out)
+
+
+@pytest.mark.parametrize(
+    "pretty_format_options",
+    (
+        None,
+        PrettyFormatOptions(align_attributes=True, indentation="", text_width=0),
+        PrettyFormatOptions(align_attributes=False, indentation="  ", text_width=0),
+        PrettyFormatOptions(align_attributes=False, indentation="\t", text_width=89),
+    ),
+)
+@pytest.mark.parametrize(
+    ("namespaces", "node_constructor", "args", "out"),
     (
         ({}, new_comment_node, ("foo",), "<!--foo-->"),
         ({}, new_processing_instruction_node, ("foo", 'bar="0"'), '<?foo bar="0"?>'),
@@ -170,8 +223,8 @@ def test_significant_whitespace_is_saved(result_file):
 )
 # TODO create node objects in parametrization when the etree element wrapper cache has
 #      been shed off
-def test_single_nodes(declarations, node_constructor, args, out):
-    DefaultStringOptions.namespaces = declarations
+def test_single_nodes(pretty_format_options, namespaces, node_constructor, args, out):
+    DefaultStringOptions.namespaces = namespaces
     node = node_constructor(*args)
     assert (
         node.serialize(namespaces=DefaultStringOptions.namespaces) == str(node) == out
@@ -264,23 +317,45 @@ def test_single_nodes(declarations, node_constructor, args, out):
     ),
 )
 def test_text_width(files_path, indentation, text_width, out):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     paragraph = document.xpath("//p")[14]
-    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+    pretty_format_options = PrettyFormatOptions(
         indentation=indentation, text_width=text_width
     )
+    DefaultStringOptions.pretty_format_options = pretty_format_options
     assert (
-        paragraph.serialize(
-            pretty_format_options=PrettyFormatOptions(
-                indentation=indentation, text_width=text_width
-            )
-        )
+        paragraph.serialize(pretty_format_options=pretty_format_options)
         == str(paragraph)
         == out
     )
 
 
-def test_text_with_milestone_tag(files_path):
+@pytest.mark.parametrize(
+    ("text_width", "expected"),
+    (
+        (
+            0,
+            """\
+            <p xmlns="http://www.tei-c.org/ns/1.0">
+              This text is a TEI version of a Project Gutenberg text originally located at
+              <ptr target="http://www.gutenberg.org/dirs/1/2/0//120/"/>. As per their license agreement we have removed all references to the project's trademark, however have included this pointer to the original in case you want the plain text, or their XHTML version.
+            </p>""",  # noqa: E501
+        ),
+        # the first line's length matches the configured text_width:
+        (
+            73,
+            """\
+            <p xmlns="http://www.tei-c.org/ns/1.0">
+              This text is a TEI version of a Project Gutenberg text originally located
+              at <ptr target="http://www.gutenberg.org/dirs/1/2/0//120/"/>. As per
+              their license agreement we have removed all references to the project's
+              trademark, however have included this pointer to the original in case you
+              want the plain text, or their XHTML version.
+            </p>""",
+        ),
+    ),
+)
+def test_text_with_milestone_tag(files_path, text_width, expected):
     document = Document(
         files_path / "tei_stevenson_treasure_island.xml",
         parser_options=ParserOptions(reduce_whitespace=True),
@@ -288,25 +363,184 @@ def test_text_with_milestone_tag(files_path):
     paragraph = document.css_select("fileDesc sourceDesc p").first
     assert "\t" not in paragraph.full_text
 
-    DefaultStringOptions.indentation = "  "
-    DefaultStringOptions.text_width = 68
-    assert str(paragraph) == (
-        # the first line's length matches the configured text_width
-        '<p xmlns="http://www.tei-c.org/ns/1.0">This text is a TEI version of\n'
-        "  a Project Gutenberg text originally located at\n"
-        '  <ptr target="http://www.gutenberg.org/dirs/1/2/0//120/"/>. As per\n'
-        "  their license agreement we have removed all references to the\n"
-        "  project's trademark, however have included this pointer to the\n"
-        "  original in case you want the plain text, or their XHTML version.\n"
-        "</p>"
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        indentation="  ", text_width=text_width
     )
+    assert str(paragraph) == dedent(expected)
+
+
+def test_text_wrapped_document(files_path):
+    # this contains many interesting pehnomena
+    document = Document(files_path / "tei_gsa_390707.xml")
+    result_path = files_path / "gsa_390707-wrapped-result.xml"
+    reference_path = files_path / "gsa_390707-wrapped-reference.xml"
+
+    document.save(
+        result_path,
+        pretty_format_options=PrettyFormatOptions(
+            align_attributes=False, indentation="  ", text_width=77
+        ),
+    )
+    assert result_path.read_text() == reference_path.read_text()
+
+
+@pytest.mark.parametrize(
+    ("format_options", "_in", "out"),
+    (
+        (
+            PrettyFormatOptions(align_attributes=False, indentation="", text_width=60),
+            """<p><lb/>When you shall see especiall cause then give to <lb/>the lady two
+            sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <glyph/></p>""",
+            """\
+            <p>
+            <lb/>When you shall see especiall cause then give to
+            <lb/>the lady two sponefuls &amp; a halfe of the vomyting
+            syrope <lb/>mixed <glyph/>
+            </p>""",
+        ),
+        (
+            PrettyFormatOptions(align_attributes=False, indentation="", text_width=77),
+            """<p><lb/>When you shall see especiall cause <choice><sic>they</sic><corr>then</corr></choice> give to <lb/>the lady two sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <glyph/></p>""",  # noqa: E501
+            """\
+            <p>
+            <lb/>When you shall see especiall cause
+            <choice><sic>they</sic><corr>then</corr></choice> give to <lb/>the lady two
+            sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <glyph/>
+            </p>""",
+        ),
+        (
+            PrettyFormatOptions(
+                align_attributes=False, indentation="  ", text_width=77
+            ),
+            """\
+            <p>“Come, come!” he said, from his corner. “Don't go on in that way, Mr. Gridley. You are only
+             a little low. We are all of us a little low, sometimes. <hi>I</hi> am. Hold up, hold up!
+             You'll lose your temper with the whole round of 'em, again and again; and I shall take you on
+             a score of warrants yet, if I have luck.”</p>""",  # noqa: E501
+            """\
+            <p>
+              “Come, come!” he said, from his corner. “Don't go on in that way, Mr.
+              Gridley. You are only a little low. We are all of us a little low, sometimes.
+              <hi>I</hi> am. Hold up, hold up! You'll lose your temper with the whole round
+              of 'em, again and again; and I shall take you on a score of warrants yet, if
+              I have luck.”
+            </p>""",  # noqa: E501
+        ),
+        (
+            PrettyFormatOptions(
+                align_attributes=False, indentation="  ", text_width=77
+            ),
+            """\
+            <layout columns="1" ruledLines="22" writtenLines="21">
+               <!--  xml:id="LO16" -->
+               <locus from="128" to="137"> Fols 128–137 (Quire 17) </locus>: ruled space <dimensions type="ruled" unit="mm">
+                  <height>187</height>
+                  <width>90</width>
+                  <!-- check: was 904 -->
+               </dimensions> 22 long lines with double bounding lines, right and left. </layout>""",  # noqa: E501
+            """\
+            <layout columns="1" ruledLines="22" writtenLines="21">
+              <!--  xml:id="LO16" -->
+              <locus from="128" to="137">Fols 128–137 (Quire 17)</locus>: ruled space
+              <dimensions type="ruled" unit="mm">
+                <height>187</height> <width>90</width> <!-- check: was 904 -->
+              </dimensions> 22 long lines with double bounding lines, right and left.
+            </layout>""",  # noqa: E501
+        ),
+        (
+            PrettyFormatOptions(
+                align_attributes=False, indentation="  ", text_width=77
+            ),
+            """\
+            <layout columns="2" ruledLines="23" writtenLines="22">
+               <!-- xml:id="LO15??" -->
+               <locus from="1" to="8"> Fols 1–8 </locus>: ruled space <dimensions type="ruled" unit="mm">
+                  <height>198</height>
+                  <width>108</width>
+                   </dimensions> 23 lines of two columns for table of contents, with double bounding lines right, left, and centre. </layout>""",  # noqa: E501
+            """\
+            <layout columns="2" ruledLines="23" writtenLines="22">
+              <!-- xml:id="LO15??" --> <locus from="1" to="8">Fols 1–8</locus>: ruled space
+              <dimensions type="ruled" unit="mm">
+                <height>198</height> <width>108</width>
+              </dimensions> 23 lines of two columns for table of contents, with double
+              bounding lines right, left, and centre.
+            </layout>""",  # noqa: E501
+        ),
+        (
+            PrettyFormatOptions(
+                align_attributes=False, indentation="  ", text_width=77
+            ),
+            """\
+            <text>
+               <div>
+                  <list>
+                     <item xml:space="preserve">
+               <ref/>
+                 </item>
+                  </list>
+               </div>
+            </text>""",
+            """\
+            <text>
+              <div><list><item xml:space="preserve">
+               <ref/>
+                 </item></list></div>
+            </text>""",
+        ),
+    ),
+)
+def test_text_wrapping(format_options, _in, out):
+    DefaultStringOptions.pretty_format_options = format_options
+    document = Document(
+        dedent(_in), parser_options=ParserOptions(reduce_whitespace=True)
+    )
+
+    serialisat = str(document.root)
+    assert serialisat == dedent(out)
+    result = Document(serialisat, parser_options=ParserOptions(reduce_whitespace=True))
+    assert_equal_trees(document.root, result.root)
+
+
+@pytest.mark.parametrize(
+    "_in",
+    (
+        """\
+        <root>
+           <a>B</a> C<d/>.<e/>
+        </root>""",
+        """\
+        <root>
+        <a>$</a><b/>
+        </root>""",
+    ),
+)
+@pytest.mark.parametrize(
+    "pretty_format_options",
+    (
+        {"indentation": ""},
+        {"indentation": "  "},
+        {"indentation": "\t"},
+        {"text_width": 0},
+        {"text_width": 1},
+        {"text_width": 77},
+        {"indentation": "  ", "text_width": 77},
+    ),
+)
+def test_that_no_extra_whitespace_is_produced(_in, pretty_format_options):
+    parser_options = ParserOptions(reduce_whitespace=True)
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        **pretty_format_options
+    )
+
+    origin = Document(_in, parser_options=parser_options)
+    _copy = Document(str(origin.root), parser_options=parser_options)
+    assert_equal_trees(origin.root, _copy.root)
 
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
     origin_path = files_path / "root_siblings.xml"
-    Document(origin_path).save(
-        result_file, pretty_format_options=PrettyFormatOptions(indentation="  ")
-    )
+    Document(origin_path).save(result_file, PrettyFormatOptions())
 
     assert (
         origin_path.read_text()
@@ -323,33 +557,88 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
     )
 
 
-def test_unaltered_transparency(files_path, result_file):
-    for file in files_path.glob("[!tei_]*.xml"):
-        origin = Document(file, parser_options=ParserOptions(reduce_whitespace=False))
-        origin.save(result_file)
-        _copy = Document(result_file)
-        assert_equal_trees(origin.root, _copy.root)
-        assert origin.head_nodes == _copy.head_nodes
-        assert origin.tail_nodes == origin.tail_nodes
-
-
+@skip_long_running_test
+@pytest.mark.parametrize("file", TEI_FILES)
 @pytest.mark.parametrize(
     "pretty_format_options",
     (
-        {"indentation": ""},
-        {"indentation": "  "},
-        {"indentation": "\t"},
-        {"text_width": 0},
-        {"text_width": 77},
-        {"indentation": "  ", "text_width": 77},
+        None,
+        PrettyFormatOptions(align_attributes=False, indentation="", text_width=0),
+        PrettyFormatOptions(align_attributes=False, indentation="  ", text_width=0),
+        PrettyFormatOptions(align_attributes=True, indentation="\t", text_width=0),
+        PrettyFormatOptions(align_attributes=False, indentation="", text_width=77),
+        PrettyFormatOptions(align_attributes=False, indentation="  ", text_width=77),
+        PrettyFormatOptions(align_attributes=True, indentation="  ", text_width=77),
     ),
 )
-def test_whitespace_cleaned_transparency(
-    files_path, result_file, pretty_format_options
-):
-    parser_options = ParserOptions(reduce_whitespace=True)
-    for file in files_path.glob("tei_*.xml"):
-        origin = Document(file, parser_options=parser_options)
-        origin.save(result_file, PrettyFormatOptions(**pretty_format_options))
-        _copy = Document(result_file, parser_options=parser_options)
-        assert_equal_trees(origin.root, _copy.root)
+def test_transparency(file, pretty_format_options, result_file):
+    """
+    Tests that a serialization of a document will be parsed back to the identical
+    document representation. (Prologue and epilogue are ignored here as whitespace is
+    insignificant in these happy places.)
+    This test is targeted to documents that follow this recommendation:
+    https://wiki.tei-c.org/index.php/XML_Whitespace
+    The serialization streams can't be compared directly, b/c of possible alterations in
+    namespace prefixes, attributes order, dropped processing instructions and
+    character / entity references that are expanded / serialized as unicode encoding.
+    integrations-tests/test-parse-and-serialize-equality.py does the same on large
+    scale. Thus anything caught there should be added to the `tei_*.xml` files here to
+    for further investigations.
+    """
+    parser_options = ParserOptions(reduce_whitespace=pretty_format_options is not None)
+    origin = Document(file, parser_options=parser_options)
+    origin.save(result_file, pretty_format_options=pretty_format_options)
+    _copy = Document(result_file, parser_options=parser_options)
+    assert_equal_trees(origin.root, _copy.root)
+
+
+@pytest.mark.parametrize(
+    ("text_width", "out"),
+    (
+        (
+            0,
+            """\
+            <root>
+              <a/>A
+              <b xml:space="preserve"><x/><y/><z/></b>
+              Z<c/>
+            </root>""",
+        ),
+        (
+            PrettyFormatOptions().text_width,
+            """\
+            <root>
+              <a/>A <b xml:space="preserve"><x/><y/><z/></b> Z<c/>
+            </root>""",
+        ),
+    ),
+)
+def test_xml_space(text_width, out):
+    DefaultStringOptions.pretty_format_options = PrettyFormatOptions(
+        indentation="  ", text_width=text_width
+    )
+
+    # preserve in a subtree
+    root = Document(
+        '<root><a/>A <b xml:space="preserve"><x/><y/><z/></b> Z<c/></root>'
+    ).root
+    assert str(root) == dedent(out)
+
+    # ensure that it's considered at the root too
+    root = Document('<root xml:space="preserve"><t/></root>').root
+    assert str(root) == '<root xml:space="preserve"><t/></root>'
+
+    # illegal values are ignored
+    if text_width == 0:
+        root = Document('<root xml:space="illegal"><t/></root>').root
+        assert str(root) == dedent(
+            """\
+            <root xml:space="illegal">
+              <t/>
+            </root>"""
+        )
+
+    # and the application's default behaviour is determined by formatting options
+    DefaultStringOptions.pretty_format_options = None
+    root = Document('<root xml:space="default"><t/></root>').root
+    assert str(root) == '<root xml:space="default"><t/></root>'

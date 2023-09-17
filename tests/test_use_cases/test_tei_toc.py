@@ -105,7 +105,7 @@ class TableOfContents:
 
 
 def test_table_of_contents(files_path):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     toc = TableOfContents(document)
 
     expected = (
