@@ -631,8 +631,8 @@ class TagAttributes(MutableMapping):
             key = f"{{{key.start}}}{key.stop}"
         else:
             raise TypeError(
-                "Either an attribute name or a :term:`py:slice` denoting a namespace "
-                "and an attribute name must be provided."
+                "Either an attribute name or a slice denoting a namespace and an "
+                "attribute name must be provided."
             )
 
         del self._etree_attrib[key]
@@ -645,8 +645,8 @@ class TagAttributes(MutableMapping):
             namespace, name = item.start, item.stop
         else:
             raise TypeError(
-                "Either an attribute name or a :term:`py:slice` denoting a namespace "
-                "and an attribute name must be provided."
+                "Either an attribute name or a slice denoting a namespace and an "
+                "attribute name must be provided."
             )
 
         if namespace and self.namespaces.get(None) != namespace:
@@ -676,8 +676,8 @@ class TagAttributes(MutableMapping):
             key = f"{{{key.start}}}{key.stop}"
         else:
             TypeError(
-                "Either an attribute name or a :term:`py:slice` denoting a namespace "
-                "and an attribute name must be provided."
+                "Either an attribute name or a slice denoting a namespace and an "
+                "attribute name must be provided."
             )
         if isinstance(value, Attribute):
             value = value.value

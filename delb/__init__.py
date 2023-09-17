@@ -458,6 +458,9 @@ class Document(metaclass=DocumentMeta):
         text_width: int = 0,
     ):
         """
+        :param path: The filesystem path to the target file.
+        :param pretty: *Deprecated.* Adds indentation for human consumers when
+                       :py:obj:`True`.
         :param encoding: The desired text encoding.
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
