@@ -1,7 +1,7 @@
 import enum
 from itertools import zip_longest
-from typing import Optional
 
+from _delb.exceptions import InvalidCodePath
 from _delb.nodes import NodeBase, TagNode
 from _delb.utils import *  # noqa
 from _delb.utils import __all__
@@ -31,61 +31,74 @@ class TreesComparisonResult:
     def __init__(
         self,
         difference_kind: TreeDifferenceKind,
-        lhn: Optional[NodeBase],
-        rhn: Optional[NodeBase],
+        lhn: NodeBase | None,
+        rhn: NodeBase | None,
     ):
         self.difference_kind = difference_kind
-        self.lhn: Optional[NodeBase] = lhn
-        self.rhn: Optional[NodeBase] = rhn
+        self.lhn: NodeBase | None = lhn
+        self.rhn: NodeBase | None = rhn
 
     def __bool__(self):
         return self.difference_kind is TreeDifferenceKind.None_
 
     def __str__(self):
-        difference_kind = self.difference_kind
-
-        if difference_kind is TreeDifferenceKind.None_:
+        if self.difference_kind is TreeDifferenceKind.None_:
             return "Trees are equal."
+        elif self.difference_kind in (
+            TreeDifferenceKind.NodeContent,
+            TreeDifferenceKind.NodeType,
+        ):
+            return self.__str_child()
+        else:
+            return self.__str_tag()
 
+    def __str_child(self) -> str:
+        assert self.lhn is not None
         parent = self.lhn.parent
         if parent is None:
             parent_msg_tail = ":"
         else:
             parent_msg_tail = f", parent node has location_path {parent.location_path}:"
 
-        if difference_kind is TreeDifferenceKind.NodeContent:
+        if self.difference_kind is TreeDifferenceKind.NodeContent:
             return f"Nodes' content differ{parent_msg_tail}\n{self.lhn!r}\n{self.rhn!r}"
-        elif difference_kind is TreeDifferenceKind.NodeType:
+        else:  # difference_kind is TreeDifferenceKind.NodeType
             return (
                 f"Nodes are of different type{parent_msg_tail} "
                 f"{self.lhn.__class__} != {self.rhn.__class__}"
             )
 
+    def __str_tag(self) -> str:
+
         assert isinstance(self.lhn, TagNode)
         assert isinstance(self.rhn, TagNode)
 
-        if difference_kind is TreeDifferenceKind.TagAttributes:
+        if self.difference_kind is TreeDifferenceKind.TagAttributes:
             return (
                 f"Attributes of tag nodes at {self.lhn.location_path} differ:\n"
                 f"{self.lhn.attributes}\n{self.rhn.attributes}"
             )
-        elif difference_kind is TreeDifferenceKind.TagChildrenSize:
+        elif self.difference_kind is TreeDifferenceKind.TagChildrenSize:
             result = f"Child nodes of tag nodes at {self.lhn.location_path} differ:"
             for a, b in zip_longest(
-                self.lhn.iterate_children(), self.rhn.iterate_children(), fillvalue=None
+                self.lhn.iterate_children(),
+                self.rhn.iterate_children(),
+                fillvalue=None,
             ):
                 result += f"\n\n{a!r}\n{b!r}"
             return result
-        elif difference_kind is TreeDifferenceKind.TagLocalName:
+        elif self.difference_kind is TreeDifferenceKind.TagLocalName:
             return (
                 f"Local names of tag nodes at {self.lhn.location_path} differ: "
                 f"{self.lhn.local_name} != {self.rhn.location_path}"
             )
-        elif difference_kind is TreeDifferenceKind.TagNamespace:
+        elif self.difference_kind is TreeDifferenceKind.TagNamespace:
             return (
                 f"Namespaces of tag nodes at {self.lhn.location_path} differ: "
                 f"{self.lhn.namespace} != {self.rhn.namespace}"
             )
+
+        raise InvalidCodePath()
 
 
 def compare_trees(lhr: NodeBase, rhr: NodeBase) -> TreesComparisonResult:

@@ -22,7 +22,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from copy import copy
 from functools import partial
 from string import ascii_lowercase
-from typing import TYPE_CHECKING, cast, Any, Optional
+from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
 if TYPE_CHECKING:
     from lxml import etree
@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from _delb.nodes import NodeBase, TagNode
     from _delb.typing import Filter
 
-_crunch_whitespace = partial(re.compile(r"\s+").sub, " ")
+
+_crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
 
 
 class _NodesSorter:

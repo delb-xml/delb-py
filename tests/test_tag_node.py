@@ -13,6 +13,7 @@ from delb import (
     tag,
 )
 from delb.exceptions import InvalidOperation
+from tests.conftest import XML_FILES
 
 from tests.utils import assert_nodes_are_in_document_order, skip_long_running_test
 
@@ -268,7 +269,7 @@ def test_getitem():
 
 
 def test_id_property(files_path):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     publisher = document.css_select("publicationStmt publisher").first
 
     assert publisher.id == "DTACorpusPublisher"
@@ -394,15 +395,15 @@ def test_last_descendant():
 
 
 @skip_long_running_test
-def test_location_path_and_xpath_concordance(files_path):
-    for doc_path in files_path.glob("*.xml"):
-        document = Document(doc_path)
+@pytest.mark.parametrize("file", XML_FILES)
+def test_location_path_and_xpath_concordance(file):
+    document = Document(file)
+    assert document.xpath(document.root.location_path).first is document.root
 
-        assert document.xpath(document.root.location_path).first is document.root
-        for node in document.root.iterate_descendants(is_tag_node):
-            queried_nodes = document.xpath(node.location_path)
-            assert queried_nodes.size == 1
-            assert queried_nodes.first is node
+    for node in document.root.iterate_descendants(is_tag_node):
+        queried_nodes = document.xpath(node.location_path)
+        assert queried_nodes.size == 1, node.location_path
+        assert queried_nodes.first is node
 
 
 def test_make_node_namespace_inheritance():
@@ -495,7 +496,7 @@ def test_names(sample_document):
 
 
 def test_fetch_following(files_path):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
 
     result = []
     for node in document.root.iterate_descendants(is_pagebreak):
@@ -534,7 +535,7 @@ def test_prepend_children():
 
 
 def test_fetch_preceding(files_path):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
 
     result = []
     for node in document.root.iterate_descendants(is_pagebreak):

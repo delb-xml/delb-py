@@ -119,7 +119,7 @@ def test_set_root():
 
 
 def test_xpath(files_path):
-    document = Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
 
     for i, page_break in enumerate(document.xpath("//pb")):
         assert isinstance(page_break, TagNode)

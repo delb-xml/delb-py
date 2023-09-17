@@ -52,9 +52,9 @@ from _delb.nodes import (
     DefaultStringOptions,
     NodeBase,
     PrettyFormatOptions,
+    PrettySerializer,
     ProcessingInstructionNode,
     Serializer,
-    _StringWriter,
     TagNode,
     _TextBufferWriter,
     TextNode,
@@ -395,7 +395,6 @@ class Document(metaclass=DocumentMeta):
     def __str__(self) -> str:
         serializer = DefaultStringOptions._get_serializer()
         self.__serialize(serializer=serializer, encoding="utf-8")
-        assert isinstance(serializer.writer, _StringWriter)
         return serializer.writer.result
 
     def clone(self) -> Document:
@@ -539,7 +538,7 @@ class Document(metaclass=DocumentMeta):
         serializer: Serializer,
         encoding: str,
     ):
-        possible_newline = "\n" if serializer.indentation else ""
+        possible_newline = "\n" if isinstance(serializer, PrettySerializer) else ""
 
         serializer.writer(
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
@@ -554,6 +553,7 @@ class Document(metaclass=DocumentMeta):
                 for node in self.tail_nodes[:-1]:
                     serializer.writer(str(node) + possible_newline)
                 serializer.writer(str(self.tail_nodes[-1]))
+        serializer.writer.buffer.flush()
 
     def write(
         self,
@@ -562,7 +562,7 @@ class Document(metaclass=DocumentMeta):
         *,
         encoding: str = "utf-8",
         namespaces: Optional[NamespaceDeclarations] = None,
-        newline: None | str,
+        newline: None | str = None,
         pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """

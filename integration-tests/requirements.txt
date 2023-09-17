@@ -1,3 +1,4 @@
+fs
 httpx
 tenacity
 tqdm
