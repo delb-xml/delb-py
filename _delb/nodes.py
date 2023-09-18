@@ -2232,9 +2232,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def namespace(self) -> Optional[str]:
         """
-        The node's namespace. Be aware, that while this property can be set to
-        :py:obj:`None`, serializations will continue to render a previous default
-        namespace declaration if the node had such.
+        The node's namespace.
         """
         # weirdly QName fails in some cases when called with an etree._Element
         return QName(self._etree_obj.tag).namespace  # type: ignore
