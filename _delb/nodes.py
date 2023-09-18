@@ -41,6 +41,7 @@ from lxml import etree
 
 from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
 from _delb.names import (
+    GLOBAL_PREFIXES,
     XML_ATT_ID,
     XML_ATT_SPACE,
     deconstruct_clark_notation,
@@ -3140,7 +3141,7 @@ class SerializerBase:
             if default_namespace:
                 attributes_data["xmlns"] = f'"{default_namespace}"'
             # else it would be an unprefixed, empty namespace
-        for prefix in sorted(declarations):
+        for prefix in sorted(p for p in declarations if p[:-1] not in GLOBAL_PREFIXES):
             assert len(prefix) >= 2  # at least one letter and a colon
             attributes_data[f"xmlns:{prefix[:-1]}"] = f'"{declarations[prefix]}"'
 

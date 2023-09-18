@@ -28,6 +28,7 @@ XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
 GLOBAL_NAMESPACES: Final = MappingProxyType(
     {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 )
+GLOBAL_PREFIXES: Final = tuple(GLOBAL_NAMESPACES)
 
 XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
 XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
@@ -171,6 +172,7 @@ class Namespaces(Mapping):
 
 __all__ = (
     "GLOBAL_NAMESPACES",
+    "GLOBAL_PREFIXES",
     "XML_NAMESPACE",
     "XMLNS_NAMESPACE",
     deconstruct_clark_notation.__name__,
