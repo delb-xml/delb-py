@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - run: sudo snap install --edge --classic just
+      - uses: extractions/setup-just@v1
       - run: pip install hatch
       - run: just pytest
 
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - run: sudo snap install --edge --classic just
+      - uses: extractions/setup-just@v1
       - run: pip install hatch
       - run: just ${{ matrix.target }}
 
