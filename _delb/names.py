@@ -33,7 +33,7 @@ XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
 XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
 
 
-def deconstruct_clark_notation(name: str) -> tuple[Optional[str], str]:
+def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
     """
     Deconstructs a name in Clark notation, that may or may not include a namespace.
 
@@ -116,7 +116,7 @@ class Namespaces(Mapping):
         else:
             self.__hash = data_hash
 
-        self.__prefixes_lookup_cache: dict[str, Optional[str]] = {
+        self.__prefixes_lookup_cache: dict[str, str | None] = {
             v: k for k, v in GLOBAL_NAMESPACES.items()
         }
 
@@ -126,7 +126,7 @@ class Namespaces(Mapping):
     def __hash__(self) -> int:
         return self.__hash
 
-    def __iter__(self) -> Iterator[Optional[str]]:
+    def __iter__(self) -> Iterator[str | None]:
         return iter(self.__data)
 
     def __len__(self) -> int:

@@ -564,7 +564,7 @@ class Attribute(_StringMixin):
     @property
     def namespace(self) -> Optional[str]:
         """The attribute's namespace"""
-        namespace: Optional[bytes | str]
+        namespace: bytes | str | None
 
         if self._key.startswith("{"):
             return deconstruct_clark_notation(self._key)[0]
@@ -1017,7 +1017,7 @@ class NodeBase(ABC):
                 yield from iter_children(child_node)
                 yield child_node
 
-        pointer: Optional[NodeBase] = self
+        pointer: NodeBase | None = self
         assert pointer is not None
         last_yield: NodeBase = pointer
 
@@ -1500,7 +1500,7 @@ class _ElementWrappingNode(NodeBase):
         return _wrapper_cache(next_etree_obj)
 
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        candidate: Optional[NodeBase] = None
+        candidate: NodeBase | None = None
 
         previous_etree_obj = self._etree_obj.getprevious()
 
@@ -1704,7 +1704,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         super().__init__(etree_element)
         self._data_node = TextNode(etree_element, position=DATA)
         self._attributes = TagAttributes(self)
-        self.__document__: Optional[Document] = None
+        self.__document__: Document | None = None
 
     def __contains__(self, item: str | NodeBase) -> bool:
         if isinstance(item, str):
@@ -2220,7 +2220,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return
 
         all_filters = default_filters[-1] + filter
-        candidate: Optional[NodeBase]
+        candidate: NodeBase | None
 
         assert isinstance(self._data_node, TextNode)
         if self._data_node._exists:
@@ -2243,7 +2243,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             if candidate is None:
                 return
 
-            next_candidates: list[Optional[NodeBase]] = []
+            next_candidates: list[NodeBase | None] = []
             while candidate is not None:
                 if all(f(candidate) for f in all_filters):
                     yield candidate
@@ -2586,10 +2586,10 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         reference_or_text: _Element | str | TextNode,
         position: int = DETACHED,
     ):
-        self._bound_to: Optional[_Element | TextNode]
-        self.__content: Optional[str]
+        self._bound_to: _Element | TextNode | None
+        self.__content: str | None
 
-        self._appended_text_node: Optional[TextNode] = None
+        self._appended_text_node: TextNode | None = None
         self._position: int = position
 
         if position is DETACHED:
@@ -2860,7 +2860,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         raise InvalidCodePath
 
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        candidate: Optional[NodeBase]
+        candidate: NodeBase | None
 
         if self._position in (DATA, DETACHED):
             return None
@@ -3099,7 +3099,7 @@ class SerializerBase:
 
     def __enter__(self) -> Self:
         self.__level = 0
-        self.__prefixes: dict[Optional[str], str] = {}
+        self.__prefixes: dict[str | None, str] = {}
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

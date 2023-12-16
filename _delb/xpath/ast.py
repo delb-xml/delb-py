@@ -265,7 +265,7 @@ class LocationStep(Node):
         return right
 
     @cached_property
-    def _derived_attributes(self) -> list[tuple[Optional[str], str, str]]:
+    def _derived_attributes(self) -> list[tuple[str | None, str, str]]:
         predicates_count = len(self.predicates)
         if predicates_count == 0:
             return []
@@ -471,7 +471,7 @@ class BooleanOperator(EvaluationNode):
         self.right = right
 
     @property
-    def _derived_attributes(self) -> list[tuple[Optional[str], str, str]]:
+    def _derived_attributes(self) -> list[tuple[str | None, str, str]]:
         if self.operator is operator.and_:
             return self.left._derived_attributes + self.right._derived_attributes
 
