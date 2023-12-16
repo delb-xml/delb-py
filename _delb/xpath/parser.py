@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import operator
 from functools import lru_cache
-from typing import TYPE_CHECKING, Optional, Union  # noqa: UNT001
+from typing import TYPE_CHECKING, Union, cast  # noqa: UNT001
 
 # DROPWITH Python 3.8 and replace w/ imports from collections.abc
 from typing import Iterator, Sequence
@@ -46,8 +46,9 @@ if TYPE_CHECKING:
     from _delb.typing import Final, TypeAlias
 
 
-TokenPattern: TypeAlias = Sequence[Optional[TokenType]]
-TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]
+TokenPattern: TypeAlias = Sequence[TokenType | None]
+# TODO meditate over this as it cannot be used with isinstance()
+TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]  # noqa: TC008
 
 
 NODE_TYPE_TEST_MAPPING: Final = {
@@ -290,7 +291,7 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
             tokens, (TokenType.OPEN_BRACKET, None, TokenType.CLOSE_BRACKET)
         ):
             assert isinstance(tokens[1], Sequence)
-            predicate = parse_evaluation_expression(tokens[1])
+            predicate = parse_evaluation_expression(cast("TokenTree", tokens[1]))
             if isinstance(predicate, AnyValue) and isinstance(predicate.value, int):
                 predicate = BooleanOperator(
                     OPERATORS["="], Function("position", ()), predicate
@@ -334,7 +335,7 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
         arguments: list[EvaluationNode] = []
         for argument in (
             parse_evaluation_expression(x)
-            for x in partition_tokens(TokenType.COMMA, tokens[2])
+            for x in partition_tokens(TokenType.COMMA, cast("TokenTree", tokens[2]))
         ):
             if isinstance(argument, HasAttribute):
                 arguments.append(
@@ -356,7 +357,7 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
 
     if all_tokens_match(tokens, (TokenType.OPEN_PARENS, None, TokenType.CLOSE_PARENS)):
         assert isinstance(tokens[1], Sequence)
-        return parse_evaluation_expression(tokens[1])
+        return parse_evaluation_expression(cast("TokenTree", tokens[1]))
 
     for _operator in (
         (TokenType.NAME, "or"),
