@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from types import SimpleNamespace
 
-    from _delb.typing import LoaderResult
+    from _delb.typing import Final, LoaderResult
 
 
 try:
@@ -40,7 +40,7 @@ try:
 except ImportError:
     __all__: tuple[str, ...] = ()
 else:
-    DEFAULT_CLIENT = httpx.Client(follow_redirects=True, http2=True)
+    DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=True)
 
     class HttpsStreamWrapper(IOBase):
         __slots__ = ("_generator", "_response")
