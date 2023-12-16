@@ -25,10 +25,12 @@ from _delb.exceptions import XPathParsingError
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from _delb.typing import Final
+
 
 # constants & data structures
 
-TokenType = Enum(
+TokenType: Final = Enum(
     "TokenType",
     "STRING NAME SLASH_SLASH SLASH ASTERISK AXIS_SEPARATOR COLON DOT_DOT DOT "
     "OPEN_BRACKET CLOSE_BRACKET STRUDEL EQUALS OPEN_PARENS CLOSE_PARENS COMMA PASEQ "
@@ -36,7 +38,7 @@ TokenType = Enum(
 )
 
 
-COMPLEMENTING_TOKEN_TYPES = {
+COMPLEMENTING_TOKEN_TYPES: Final = {
     TokenType.OPEN_BRACKET: TokenType.CLOSE_BRACKET,
     TokenType.OPEN_PARENS: TokenType.CLOSE_PARENS,
 }
@@ -63,7 +65,7 @@ def named_group_reference(name: str) -> str:
     return f"(?P={name})"
 
 
-string_pattern = (
+string_pattern: Final = (
     named_group("stringDelimiter", """["']""")  # opening string delimiter
     + alternatives(
         r"\\.",  # either a backslash followed by any character
@@ -75,7 +77,7 @@ string_pattern = (
 
 # https://www.w3.org/TR/REC-xml-names/#NT-NCName
 # https://www.w3.org/TR/REC-xml/#NT-Name
-name_start_characters = (
+name_start_characters: Final = (
     "A-Z_a-z"
     r"\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u037d\u037f-\u1fff"
     r"\u200c-\u200d\u2070-\u218f\u2c00-\u2fef"
@@ -87,7 +89,7 @@ name_characters = name_start_characters + r"\.0-9\u00b7\u0300-\u036f\u203f-\u204
 name_pattern = f"[{name_start_characters}][{name_characters}]*"
 
 
-grab_token = re.compile(
+grab_token: Final = re.compile(
     alternatives(
         named_group("STRING", string_pattern),
         named_group("NUMBER", r"\d+"),

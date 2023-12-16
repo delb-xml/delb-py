@@ -43,20 +43,20 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 if TYPE_CHECKING:
-    from _delb.typing import TypeAlias
+    from _delb.typing import Final, TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[Optional[TokenType]]
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]
 
 
-NODE_TYPE_TEST_MAPPING = {
+NODE_TYPE_TEST_MAPPING: Final = {
     "comment": "CommentNode",
     "node": "TagNode",
     "processing-instruction": "ProcessingInstructionNode",
     "text": "TextNode",
 }
-OPERATORS = {
+OPERATORS: Final = {
     "<=": operator.le,
     "<": operator.lt,
     ">=": operator.ge,
