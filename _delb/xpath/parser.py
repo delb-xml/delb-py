@@ -76,11 +76,13 @@ def all_tokens_match(tokens: TokenTree, pattern: TokenPattern) -> bool:
 
 
 def compare_tokens_with_pattern(tokens: TokenTree, pattern: TokenPattern) -> bool:
+    # a None value in the `pattern` sequence matches for enclosed expressions
+
     for token, _type in zip(tokens, pattern):
         if isinstance(token, Token):
             if token.type != _type:
                 return False
-        else:
+        else:  # isinstance(token, TokenTree)
             if _type is not None:
                 return False
     return True
@@ -132,6 +134,11 @@ def expand_axes(tokens: TokenTree) -> TokenTree:
 
 
 def group_enclosed_expressions(tokens: Sequence[Token]) -> TokenTree:
+    # this function serves two purposes:
+    # - validating enclosed expressions
+    # - generating a nested sequence of the enclosed tokens to simplify the pattern
+    #   matching in ast generation
+
     result: list[Token | TokenTree] = []
     openers = []
 
