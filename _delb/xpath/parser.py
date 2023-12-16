@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from _delb.typing import Final, TypeAlias
 
 
-TokenPattern: TypeAlias = Sequence[TokenType | None]
+TokenPattern: TypeAlias = Sequence[Union[TokenType, None]]  # noqa: SIM907
 # TODO meditate over this as it cannot be used with isinstance()
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]  # noqa: TC008
 

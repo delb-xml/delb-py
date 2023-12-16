@@ -17,19 +17,20 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Iterable
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Mapping, Optional
-from typing import Union  # noqa: UNT001
 
+from typing import TYPE_CHECKING, Any, Mapping, Union  # noqa: UNT001
 
-from lxml import etree
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+    from types import SimpleNamespace
+
     if sys.version_info < (3, 10):  # DROPWITH Python 3.9
         from typing_extensions import TypeAlias
     else:
         from typing import TypeAlias
+
+    from lxml import etree
 
     from _delb.nodes import NodeBase, _TagDefinition
 
@@ -44,13 +45,13 @@ else:
     from typing import Self
 
 
-Filter: TypeAlias = Callable[["NodeBase"], bool]
-NamespaceDeclarations: TypeAlias = Mapping[Optional[str], str]
+Filter: TypeAlias = "Callable[[NodeBase], bool]"
+NamespaceDeclarations: TypeAlias = Mapping[str | None, str]
 NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
 
-LoaderResult: TypeAlias = etree._ElementTree | str
-Loader: TypeAlias = Callable[[Any, SimpleNamespace], LoaderResult]
-LoaderConstraint: TypeAlias = Optional[Loader | Iterable[Loader]]
+LoaderResult: TypeAlias = Union["etree._ElementTree", str]
+Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
+LoaderConstraint: TypeAlias = Union[Loader, "Iterable[Loader]", None]
 
 
 __all__ = (
