@@ -63,7 +63,7 @@ def _compat_get_parser(
     parser: Optional[etree.XMLParser],
     parser_options: Optional[ParserOptions],
     collapse_whitesppace: Optional[bool],
-) -> tuple[etree.XMLParser, Optional[bool]]:
+) -> tuple[etree.XMLParser, bool | None]:
     if parser is not None and parser_options is not None:
         raise ValueError(
             "Only either the deprecated `parser` argument or `parser_options` "
