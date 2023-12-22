@@ -558,21 +558,6 @@ class Document(metaclass=DocumentMeta):
 
         return self.root.xpath(expression=expression, namespaces=namespaces)
 
-    def xslt(self, transformation: etree.XSLT) -> Document:  # pragma: no cover
-        """
-        :param transformation: A :class:`lxml.etree.XSLT` instance that shall be
-                               applied to the document.
-        :return: A new instance with the transformation's result.
-        """
-        warn(
-            "The interface to lxml's XSLT-processor will be removed in a future "
-            "version. If you want to apply XSLT to delb documents with later versions, "
-            "start implementing a processor now.",
-            category=DeprecationWarning,
-        )
-        result = transformation(self.root._etree_obj.getroottree())
-        return Document(result.getroot())
-
 
 __all__ = (
     CommentNode.__name__,
