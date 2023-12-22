@@ -26,7 +26,6 @@ from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, cast, Any, IO
-from warnings import warn
 
 from lxml import etree
 
@@ -97,21 +96,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     return "The input value is no buffer object."
 
 
-@plugin_manager.register_loader(after=buffer_loader)
-def ftp_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
-    """
-    Loads a document from a URL with either the ``ftp`` schema. The URL will be bound to
-    ``source_url`` on the document's :attr:`Document.config` attribute.
-    """
-    if isinstance(data, str) and data.lower().startswith("ftp://"):
-        warn("The FTP loader will be removed in a future release.")
-        result = etree.parse(data, parser=config.parser)
-        config.source_url = data
-        return result
-    return "The input value is not an URL with the ftp scheme."
-
-
-@plugin_manager.register_loader(after=ftp_loader)
+@plugin_manager.register_loader()
 def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     Parses a string containing a full document.
@@ -127,7 +112,6 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
 __all__ = (
     buffer_loader.__name__,
     etree_loader.__name__,
-    ftp_loader.__name__,
     path_loader.__name__,
     tag_node_loader.__name__,
     text_loader.__name__,
