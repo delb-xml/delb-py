@@ -15,17 +15,8 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
-import abc
-
 import pkg_resources
 import sphinx_readable_theme
-from autoclasstoc import (
-    is_data_attr,
-    is_public,
-    Section,
-    is_special,
-)
-from _delb.utils import _StringMixin
 
 # -- Project information -----------------------------------------------------
 
@@ -49,7 +40,6 @@ version = ""
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "autoclasstoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
@@ -220,75 +210,6 @@ autodoc_type_aliases = {
     # "NodeSource": "_delb.typing.NodeSource",
     "_WrapperCache": "_delb.typing._WrapperCache",
 }
-
-
-# -- Options for autoclasstoc extension --------------------------------------
-
-
-def is_really_public(name: str) -> bool:
-    return is_public(name) and not is_special(name)
-
-
-class SectionBase(Section):
-    def _find_attrs(self):
-        result = {}
-        for base_class in reversed(self.cls.__mro__):
-            if base_class not in (object, abc.ABC, _StringMixin):
-                result.update(base_class.__dict__)
-        return {k: result[k] for k in sorted(result)}
-
-    def _find_inherited_attrs(self):
-        return {}
-
-    def predicate(self, name, attr, meta):
-        return meta.get("category") == self.key and is_really_public(name)
-
-
-for key, title in (
-    ("add-nodes", "Adding nodes"),
-    ("fetch-node", "Fetching a single relative node"),
-    ("iter-relatives", "Iterating over relative nodes"),
-    ("query-nodes", "Querying nodes"),
-    ("remove-node", "Removing a node from its tree"),
-):
-    type("CategorySection", (SectionBase,), {"key": key, "title": title})
-
-
-class Property(SectionBase):
-    key = "property"
-    title = "Properties"
-
-    def predicate(self, name, attr, meta):
-        return (
-            is_data_attr(name, attr)
-            and is_really_public(name)
-            and name != "qualified_name"  # TODO remove when TagNode.qu… was
-        )
-
-
-class PublicMethods(SectionBase):
-    key = "public-methods"  # to override autoclasstoc's PublicMethods
-    title = "Uncategorized methods"
-
-    def predicate(self, name, attr, meta):
-        return (
-            not is_data_attr(name, attr)
-            and meta.get("category") is None
-            and is_really_public(name)
-            # deprecation wrapper from 961b8b822ed9d8e33a4f9a63b71e64f30188cc67
-            and not getattr(attr, "__qualname__", "").startswith("_better")
-        )
-
-
-autoclasstoc_sections = [
-    "property",
-    "fetch-node",
-    "iter-relatives",
-    "query-nodes",
-    "add-nodes",
-    "remove-node",
-    "public-methods",
-]
 
 
 # -- Options for intersphinx extension ---------------------------------------

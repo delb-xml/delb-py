@@ -130,7 +130,6 @@ detached = true
 
 [tool.hatch.envs.docs]
 dependencies = [
-    "autoclasstoc~=1.6",
     "sphinxcontrib-fulltoc",
     "sphinx-readable-theme"
 ]
