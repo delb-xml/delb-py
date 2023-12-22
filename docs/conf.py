@@ -15,7 +15,9 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
-import pkg_resources
+from importlib import metadata
+import re
+
 import sphinx_readable_theme
 
 # -- Project information -----------------------------------------------------
@@ -25,9 +27,9 @@ copyright = "2018-2022, Frank Sachsenheim"
 author = "Frank Sachsenheim"
 
 # The full version, including alpha/beta/rc tags
-release = pkg_resources.get_distribution("delb").version
+release = metadata.version(project)
 # The short X.Y version
-version = ""
+version = re.match(r"(^\d+\.\d+).*", release).group(1)
 
 
 # -- General configuration ---------------------------------------------------
