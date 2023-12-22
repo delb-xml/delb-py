@@ -15,8 +15,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-from warnings import warn
 
 from lxml import etree
 
@@ -57,41 +55,6 @@ class ParserOptions:
             resolve_entities=self.resolve_entities,
             strip_cdata=False,
         )
-
-
-def _compat_get_parser(
-    parser: Optional[etree.XMLParser],
-    parser_options: Optional[ParserOptions],
-    collapse_whitesppace: Optional[bool],
-) -> tuple[etree.XMLParser, bool | None]:
-    if parser is not None and parser_options is not None:
-        raise ValueError(
-            "Only either the deprecated `parser` argument or `parser_options` "
-            "argument can be provided."
-        )
-
-    if parser is None:
-        if parser_options is None:
-            if collapse_whitesppace is not None:
-                warn(
-                    "The `collapse_whitespace` argument is deprecated, use the "
-                    "property with the same name on the `parser_options` instead.",
-                    category=DeprecationWarning,
-                    stacklevel=2,
-                )
-                parser_options = ParserOptions(collapse_whitespace=collapse_whitesppace)
-            else:
-                parser_options = ParserOptions()
-        return parser_options._make_parser(), parser_options.collapse_whitespace
-
-    else:
-        warn(
-            "Directly providing a lxml-parser is deprecated, use the "
-            "`parser_options` argument instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return parser, collapse_whitesppace or False
 
 
 __all__ = (ParserOptions.__name__,)

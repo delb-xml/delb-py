@@ -63,7 +63,9 @@ def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, etree._ElementTree):
         return deepcopy(data)
     if isinstance(data, etree._Element):
-        return etree.ElementTree(element=deepcopy(data), parser=config.parser)
+        return etree.ElementTree(
+            element=deepcopy(data), parser=config.parser_options._make_parser()
+        )
     return "The input value is neither an etree.Element or …Tree instance."
 
 
@@ -89,7 +91,9 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, IOBase):
         with suppress(UnsupportedOperation):
             data.seek(0)
-        return etree.parse(cast("IO", data), parser=config.parser)
+        return etree.parse(
+            cast("IO", data), parser=config.parser_options._make_parser()
+        )
     return "The input value is no buffer object."
 
 
@@ -115,7 +119,7 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, str):
         data = data.encode()
     if isinstance(data, bytes):
-        root = etree.fromstring(data, config.parser)
+        root = etree.fromstring(data, config.parser_options._make_parser())
         return etree.ElementTree(element=root)
     return "The input value is not a byte sequence."
 
