@@ -18,12 +18,11 @@ from __future__ import annotations
 import re
 import sys
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from copy import copy
 from functools import partial
 from string import ascii_lowercase
 from typing import TYPE_CHECKING, cast, Any, Optional
-from warnings import warn
 
 if TYPE_CHECKING:
     from lxml import etree
@@ -257,37 +256,6 @@ class _StringMixin:  # pragma: no cover
 
     def zfill(self, width):
         return self._data.zfill(width)
-
-
-def _better_call(f: Callable | property) -> Callable:
-    def decorator(d: Callable) -> Callable:
-        def wrapper(*args, **kwargs):
-            """:meta category: deprecated"""
-            warn(
-                f"{d.__name__} is deprecated, use {f.__name__} instead.",
-                category=DeprecationWarning,
-            )
-            return f(*args, **kwargs)
-
-        d.__doc__ = ":meta: private"
-        return wrapper
-
-    return decorator
-
-
-def _better_yield(f: Callable) -> Callable:
-    def decorator(d: Callable) -> Callable:
-        def wrapper(*args, **kwargs):
-            """:meta category: deprecated"""
-            warn(
-                f"{d.__name__} is deprecated, use {f.__name__} instead.",
-                category=DeprecationWarning,
-            )
-            yield from f(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 
 def _copy_root_siblings(source: etree._Element, target: etree._Element):

@@ -49,8 +49,6 @@ from _delb.names import (
 from _delb.parser import ParserOptions
 from _delb.utils import (
     _StringMixin,
-    _better_call,
-    _better_yield,
     _crunch_whitespace,
     last,
     _random_unused_prefix,
@@ -918,13 +916,10 @@ class NodeBase(ABC):
             yield from parent.iterate_ancestors(*filter)
 
     @abstractmethod
-    def iterate_children(
-        self, *filter: Filter, recurse: bool = False
-    ) -> Iterator[NodeBase]:
+    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
-        :param recurse: Deprecated. Use :meth:`NodeBase.iterate_descendants`.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
 
         :meta category: iter-relatives
@@ -1271,48 +1266,6 @@ class NodeBase(ABC):
         """
         return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
-    # deprecated members
-
-    @_better_call(add_following_siblings)
-    def add_next(self, *nodes):
-        pass
-
-    @_better_call(add_preceding_siblings)
-    def add_previous(self, *nodes):
-        pass
-
-    @_better_yield(iterate_ancestors)
-    def ancestors(self, *filter):
-        pass
-
-    @_better_yield(iterate_following_siblings)
-    def iterate_next_nodes(self, *filter):
-        pass
-
-    @_better_yield(iterate_following)
-    def iterate_next_nodes_in_stream(self, *filter):
-        pass
-
-    @_better_yield(iterate_preceding_siblings)
-    def iterate_previous_nodes(self, *filter):
-        pass
-
-    @_better_yield(iterate_preceding)
-    def iterate_previous_nodes_in_stream(self, *filter):
-        pass
-
-    @_better_call(fetch_following_sibling)
-    def next_node(self, *filter):
-        pass
-
-    @_better_call(fetch_following)
-    def next_node_in_stream(self, *filter):
-        pass
-
-    @_better_call(fetch_preceding)
-    def previous_node_in_stream(self, *filter):
-        pass
-
 
 class _ChildLessNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""
@@ -1332,21 +1285,12 @@ class _ChildLessNode(NodeBase):
             return None
         return parent.document
 
-    def iterate_children(
-        self, *filter: Filter, recurse: bool = False
-    ) -> Iterator[NodeBase]:
+    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         A :term:`generator iterator` that yields nothing.
 
         :meta category: iter-relatives
         """
-        if recurse:
-            warn(
-                "The recurse argument is deprecated in favor for the "
-                "`iterate_descendants` method.",
-                category=DeprecationWarning,
-            )
-
         yield from ()
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
@@ -1374,12 +1318,6 @@ class _ChildLessNode(NodeBase):
                 namespace=namespace,
                 children=children,
             )
-
-    # deprecated
-
-    @_better_yield(iterate_children)
-    def child_nodes(self, *filter, recurse=False):
-        pass
 
 
 class _ElementWrappingNode(NodeBase):
@@ -1549,12 +1487,6 @@ class _ElementWrappingNode(NodeBase):
         result = _wrapper_cache(etree_parent)
         assert isinstance(result, TagNode)
         return result
-
-    # deprecated
-
-    @_better_call(fetch_preceding_sibling)
-    def previous_node(self, *filter):
-        pass
 
 
 class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
@@ -2207,18 +2139,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if queue:
             self[index].add_following_siblings(*queue, clone=clone)
 
-    def iterate_children(
-        self, *filter: Filter, recurse: bool = False
-    ) -> Iterator[NodeBase]:
-        if recurse:
-            warn(
-                "The recurse argument is deprecated in favor for the "
-                "`iterate_descendants` method.",
-                category=DeprecationWarning,
-            )
-            yield from self.iterate_descendants(*filter)
-            return
-
+    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         all_filters = default_filters[-1] + filter
         candidate: NodeBase | None
 
@@ -2518,34 +2439,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return QueryResults(
             (_wrapper_cache(cast("_Element", element)) for element in _results)
         )
-
-    # deprecated
-
-    @_better_call(append_children)
-    def append_child(self, *node, clone=False):
-        pass
-
-    @_better_yield(iterate_children)
-    def child_nodes(self, *filter, recurse=False):
-        pass
-
-    @_better_call(insert_children)
-    def insert_child(self, *node, clone=False):
-        pass
-
-    @_better_call(prepend_children)
-    def prepend_child(self, *node, clone=False):
-        pass
-
-    @property
-    def qualified_name(self):
-        """:meta category: deprecated"""
-        warn(
-            "The property `TagNode.qualified_name` is now named `universal_name`. "
-            "The former will be removed in a future release.",
-            category=DeprecationWarning,
-        )
-        return self.universal_name
 
 
 class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
@@ -3005,12 +2898,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return self._bound_to._tail_sequence_head
         else:
             raise InvalidCodePath
-
-    # deprecated
-
-    @_better_call(fetch_preceding_sibling)
-    def previous_node(self, *filter):
-        pass
 
 
 # contributed node filters and filter wrappers
