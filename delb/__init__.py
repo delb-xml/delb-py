@@ -55,7 +55,7 @@ from _delb.nodes import (
     TextBufferSerializer,
     TextNode,
 )
-from _delb.parser import _compat_get_parser, ParserOptions
+from _delb.parser import ParserOptions
 from _delb.utils import (
     _copy_root_siblings,
     first,
@@ -225,9 +225,6 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
-    :param collapse_whitespace: Deprecated. Use the argument with the same name on the
-                                ``parser_options`` object.
-    :param parser: Deprecated.
     :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
                            parser.
     :param klass: Explicitly define the initialized class. This can be useful for
@@ -243,16 +240,15 @@ class Document(metaclass=DocumentMeta):
     def __new__(
         cls,
         source,
-        collapse_whitespace=None,
-        parser=None,
         parser_options=None,
         klass=None,
         **config_options,
     ):
-        parser, collapse_whitespace = _compat_get_parser(
-            parser, parser_options, collapse_whitespace
-        )
-        config = cls.__process_config(collapse_whitespace, parser, config_options)
+        config = SimpleNamespace()
+        if DocumentMixinBase in cls.__mro__:
+            cls._init_config(config, config_options)
+
+        config.parser_options = parser_options or ParserOptions()
         root = cls.__load_source(source, config)
 
         if klass is None:
@@ -274,7 +270,6 @@ class Document(metaclass=DocumentMeta):
     def __init__(
         self,
         source: Any,
-        collapse_whitespace: Optional[bool] = None,
         parser: Optional[etree.XMLParser] = None,
         parser_options: Optional[ParserOptions] = None,
         klass: Optional[type[Document]] = None,
@@ -282,8 +277,8 @@ class Document(metaclass=DocumentMeta):
     ):
         self.config: SimpleNamespace
         """
-        Beside the used ``parser`` and ``collapsed_whitespace`` option, this property
-        contains the namespaced data that extension classes and loaders may have stored.
+        Beside the ``parser_options``, this property contains the namespaced data that
+        extension classes and loaders may have stored.
         """
         self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
@@ -301,19 +296,9 @@ class Document(metaclass=DocumentMeta):
         Note that nodes can't be removed or replaced.
         """
 
-        if self.config.collapse_whitespace:
-            self.collapse_whitespace()
-
     def __init_subclass__(cls):
         assert cls not in _plugin_manager.document_mixins
         _plugin_manager.document_subclasses.insert(0, cls)
-
-    @classmethod
-    def __process_config(cls, collapse_whitespace, parser, kwargs) -> SimpleNamespace:
-        config = SimpleNamespace(collapse_whitespace=collapse_whitespace, parser=parser)
-        if DocumentMixinBase in cls.__mro__:
-            cls._init_config(config, kwargs)  # type: ignore
-        return config
 
     @classmethod
     def __load_source(cls, source: Any, config: SimpleNamespace) -> TagNode:
@@ -339,6 +324,10 @@ class Document(metaclass=DocumentMeta):
         root = _wrapper_cache(loaded_tree.getroot())
         assert isinstance(root, TagNode)
 
+        if config.parser_options.collapse_whitespace:
+            with altered_default_filters():
+                root._collapse_whitespace()
+
         return root
 
     def __contains__(self, node: NodeBase) -> bool:
@@ -359,7 +348,7 @@ class Document(metaclass=DocumentMeta):
         """
         result = Document(self.root, klass=self.__class__)
         # lxml.etree.XMLParser instances aren't pickable / copyable
-        parser = self.config.__dict__.pop("parser")
+        parser = self.config.parser_options._make_parser()
         result.config = deepcopy(self.config)
         self.config.parser = result.config.parser = parser
         return result

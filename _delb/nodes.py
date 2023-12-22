@@ -46,7 +46,7 @@ from _delb.names import (
     deconstruct_clark_notation,
     Namespaces,
 )
-from _delb.parser import ParserOptions, _compat_get_parser
+from _delb.parser import ParserOptions
 from _delb.utils import (
     _StringMixin,
     _better_call,
@@ -2345,30 +2345,25 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @staticmethod
     def parse(
         text: AnyStr,
-        parser: Optional[etree.XMLParser] = None,
         parser_options: Optional[ParserOptions] = None,
-        collapse_whitespace: Optional[bool] = None,
     ) -> TagNode:
         """
         Parses the given string or bytes sequence into a new tree.
 
         :param text: A serialized XML tree.
-        :param parser: Deprecated.
         :param parser_options: A :class:`delb.ParserOptions` class to configure the used
                                parser.
-        :param collapse_whitespace: Deprecated. Use the argument with the same name on
-                                    the ``parser_options`` object.
         """
         warn(
             "This method will be replaced by another interface in a future version.",
             category=PendingDeprecationWarning,
         )
-        parser, collapse_whitespace = _compat_get_parser(
-            parser, parser_options, collapse_whitespace
-        )
+        parser_options = parser_options or ParserOptions()
+        parser = parser_options._make_parser()
+        assert isinstance(parser, etree.XMLParser)
         result = _wrapper_cache(etree.fromstring(text, parser=parser))
         assert isinstance(result, TagNode)
-        if collapse_whitespace:
+        if parser_options.collapse_whitespace:
             result._collapse_whitespace()
         return result
 
