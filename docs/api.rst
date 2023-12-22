@@ -9,8 +9,6 @@ Documents
 
 .. autoclass:: delb.Document
 
-   .. autoclasstoc::
-
 
 .. _document-loaders:
 
@@ -51,21 +49,16 @@ Comment
 
 .. autoclass:: delb.CommentNode
 
-   .. autoclasstoc::
 
 Processing instruction
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: delb.ProcessingInstructionNode
 
-   .. autoclasstoc::
-
 Tag
 ~~~
 
 .. autoclass:: delb.TagNode
-
-   .. autoclasstoc::
 
 Tag attribute
 ~~~~~~~~~~~~~
@@ -79,8 +72,6 @@ Text
 
 .. autoclass:: delb.TextNode
    :exclude-members: data, maketrans
-
-   .. autoclasstoc::
 
 Node constructors
 ~~~~~~~~~~~~~~~~~
