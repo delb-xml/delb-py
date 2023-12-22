@@ -216,7 +216,7 @@ autodoc_type_aliases = {
 
 # -- Options for intersphinx extension ---------------------------------------
 
-intersphinx_mapping = {"https://docs.python.org/": None}
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 
 # -- Options for doctest extension -------------------------------------------
