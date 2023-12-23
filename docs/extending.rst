@@ -39,10 +39,10 @@ with that name.
 .. warning::
 
     A module that contains plugins and any module it is explicitly or implicitly
-    importing **must not** import anything from the :mod:`delb` module itself,
-    because that would initiate the collection of plugin implementations. And
-    these wouldn't have been completely registered at that point. Import from
-    the :mod:`_delb` module instead.
+    importing **must not** import anything from the :mod:`delb` package, because
+    that would initiate the collection of plugin implementations. And these
+    wouldn't have been completely registered at that point. Import the required
+    module members from the according path in the :mod:`_delb` package instead.
 
 .. caution::
 
