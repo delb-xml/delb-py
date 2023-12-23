@@ -1,3 +1,4 @@
 autodocsumm
 furo
 httpx[http2]
+sphinx-design

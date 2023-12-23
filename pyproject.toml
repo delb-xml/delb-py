@@ -131,7 +131,8 @@ detached = true
 [tool.hatch.envs.docs]
 dependencies = [
     "autodocsumm",
-    "furo"
+    "furo",
+    "sphinx-design"
 ]
 [tool.hatch.envs.docs.scripts]
 build-html = "make -C docs html"
