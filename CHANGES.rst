@@ -107,17 +107,18 @@ News
 - Various documentation improvements, including table of contents for class
   members.
 
-.. _fastcache: https://pypi.org/project/fastcache/
 
 0.1.2 (2019-09-14)
 ------------------
 
 There's nothing super-exciting to report here. It's just getting better.
 
+
 0.1.1 (2019-08-15)
 ------------------
 
 This was quiet boring, it serves updated dependencies for what it's worth.
+
 
 0.1 (2019-05-26)
 ----------------
