@@ -55,13 +55,14 @@ class DocumentMixinBase:
             # this method can be implemented by any extension class
             @classmethod
             def _init_config(cls, config, kwargs):
-                config.my_extension = SimpleNamespace(conf=kwargs.pop(
-                    "my_extension_conf"))
+                config.my_extension = SimpleNamespace(tonality=kwargs.pop(
+                    "my_extension_tonality")
+                )
                 super()._init_config(config, kwargs)
 
             # this method is specific to this extension
             def my_extension_makes_magic(self):
-                play_disco()
+                play_disco(self.config.my_extension.tonality)
     """
 
     def __init_subclass__(cls):
