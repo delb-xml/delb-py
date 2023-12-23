@@ -9,6 +9,5 @@
    api
    extending
    changes
-   glossary
    genindex
    license
