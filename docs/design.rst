@@ -96,78 +96,82 @@ is rather an attribute ``tail`` assigned to that line beginning. The text
 contents of the object that represents the ``hi`` element and its children give
 a good impression how hairy simple tasks can become.
 
-An algorithm that shall remove line beginnings, space representations and
-concatenate broken words would need a function that removes the element objects
-in question while preserving the text fragments in its meaningful sequence
-attached to the ``text`` and ``tail`` properties. In case these have no content,
-their value of ``None`` leads to different operations to concatenate strings.
-Here's a working implementation from the inxs_ library [#fn-inxs]_ for that data
-model:
+An algorithm that shall remove line beginnings (``tei:lb``) as well as space
+representations (``tei:space``) and concatenate broken words would need a
+function that removes the element objects in question while preserving the text
+fragments in its meaningful sequence attached to the ``text`` and ``tail``
+properties of tag elements. In case these have no content, their value of
+``None`` requires other operations to concatenate strings. Here's a working
+implementation from the inxs_ library [#fn-inxs]_ for that data model:
 
-.. code-block:: python
+.. dropdown:: A complete implementation to solve a simple problem
+   :open:
 
-   def remove_elements(
-       *elements: etree.ElementBase,
-       keep_children=False,
-       preserve_text=False,
-       preserve_tail=False
-    ) -> None:
-       """ Removes the given elements from its tree. Unless ``keep_children`` is
-           passed as ``True``, its children vanish with it into void. If
-           ``preserve_text`` is ``True``, the text and tail of a deleted element
-           will be preserved either in its left sibling's tail or its parent's
-           text. """
-       for element in elements:
-           if preserve_text and element.text:
-               previous = element.getprevious()
-               if previous is None:
 
-                   parent = element.getparent()
-                   if parent.text is None:
-                       parent.text = ''
-                   parent.text += element.text
-               else:
-                   if previous.tail is None:
-                       previous.tail = element.text
-                   else:
-                       previous.tail += element.text
+   .. code-block:: python
 
-           if preserve_tail and element.tail:
-               if keep_children and len(element):
-                   if element[-1].tail:
-                       element[-1].tail += element.tail
-                   else:
-                       element[-1].tail = element.tail
-               else:
+       def remove_elements(
+           *elements: etree.ElementBase,
+           keep_children=False,
+           preserve_text=False,
+           preserve_tail=False
+        ) -> None:
+           """ Removes the given elements from its tree. Unless ``keep_children`` is
+               passed as ``True``, its children vanish with it into void. If
+               ``preserve_text`` is ``True``, the text and tail of a deleted element
+               will be preserved either in its left sibling's tail or its parent's
+               text. """
+           for element in elements:
+               if preserve_text and element.text:
                    previous = element.getprevious()
                    if previous is None:
+
                        parent = element.getparent()
                        if parent.text is None:
                            parent.text = ''
-                       parent.text += element.tail
+                       parent.text += element.text
                    else:
-                       if len(element):
-                           if element[-1].tail is None:
-                               element[-1].tail = element.tail
-                           else:
-                               element[-1].tail += element.tail
+                       if previous.tail is None:
+                           previous.tail = element.text
                        else:
-                           if previous.tail is None:
-                               previous.tail = ''
-                           previous.tail += element.tail
+                           previous.tail += element.text
 
-           if keep_children:
-               for child in element:
-                   element.addprevious(child)
-           element.getparent().remove(element)
+               if preserve_tail and element.tail:
+                   if keep_children and len(element):
+                       if element[-1].tail:
+                           element[-1].tail += element.tail
+                       else:
+                           element[-1].tail = element.tail
+                   else:
+                       previous = element.getprevious()
+                       if previous is None:
+                           parent = element.getparent()
+                           if parent.text is None:
+                               parent.text = ''
+                           parent.text += element.tail
+                       else:
+                           if len(element):
+                               if element[-1].tail is None:
+                                   element[-1].tail = element.tail
+                               else:
+                                   element[-1].tail += element.tail
+                           else:
+                               if previous.tail is None:
+                                   previous.tail = ''
+                               previous.tail += element.tail
 
-That by itself is enough to simply remove the ``space`` elements, but also
-considering word-breaking dashes to wrap everything up is a similar piece of
-routine of its own. And these quirks come back to you steadily while actual
-markup is regularly more complex.
+               if keep_children:
+                   for child in element:
+                       element.addprevious(child)
+               element.getparent().remove(element)
 
-Now obviously, the data model that lxml / libxml2 provides is not up to standard
-Python ergonomics to solve text encoding problems.
+That by itself is enough to simply remove the representations of physical
+phenomena, but also considering word-breaking dashes to wrap everything up is a
+similar piece of routine of its own. And these quirks come back to you steadily
+while actual markup is regularly more complex.
+
+Now obviously, the data model that *lxml* / *libxml2* provides is not up to
+standard Python ergonomics to solve text encoding problems.
 
 There must be a better way.
 
