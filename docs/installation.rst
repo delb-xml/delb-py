@@ -21,7 +21,6 @@ From source
 Prerequisites:
 
 - A virtual environment of your project is activated.
-- That virtual environment houses an interpreter for Python 3.7 or later.
 
 Obtain the code with roughly one of:
 
