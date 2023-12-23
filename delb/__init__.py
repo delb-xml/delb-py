@@ -237,7 +237,7 @@ class Document(metaclass=DocumentMeta):
                            parser.
     :param klass: Explicitly define the initialized class. This can be useful for
                   applications that have :ref:`default document subclasses
-                  <extending-subclasses>` in use.
+                  <document-subclasses>` in use.
     :param config: Additional keyword arguments for the configuration of extension
                    classes.
     """

@@ -15,22 +15,39 @@ names with ``delb-`` in order to increase discoverability.
 
 These extension types are currently available:
 
-- document loaders
-- document mixin classes
-- document subclasses
-- XPath functions
+.. grid:: 2
 
-*Loaders* are functions that try to make sense of any given input value, and if
-they can they return a parsed document.
+    .. grid-item-card:: Document loaders
+       :link: document-loaders
+       :link-type: ref
 
-*Mixin classes* add functionality / attributes to the :class:`delb.Document`
-class (instead of inheriting from it). That allows applications to rely
-optionally on the availability of plugins and to combine various extensions.
+       Loaders are functions that try to make sense of any given input value,
+       and if they can they return a parsed document.
 
-*Subclasses* can be used to provide distinct models of arbitrary aspects for
-contents that are represented by a specific encoding. They can optionally
-implement a test method to qualify them as default class for recognized
-contents.
+    .. grid-item-card:: XPath functions
+       :link: xpath-functions
+       :link-type: ref
+
+       Custom XPath functions can be used in XPath predicate expressions.
+
+.. grid:: 2
+
+    .. grid-item-card:: Document mixin classes
+       :link: document-mixins
+       :link-type: ref
+
+       Mixins add functionality / information to :class:`delb.Document` (instead
+       of inheriting from it). That allows applications to rely optionally on
+       the availability of plugins and to combine various extensions.
+
+    .. grid-item-card:: Document subclasses
+       :link: document-subclasses
+       :link-type: ref
+
+       Subclasses can be used to provide distinct models of arbitrary aspects
+       for contents that are represented by a specific encoding. They can
+       optionally implement a test method to qualify themself as default class
+       for recognized contents.
 
 The designated means of communication between extensions is the ``config``
 argument to the loader respectively the instance property of a document instance
@@ -56,6 +73,8 @@ There's also the snakesist_ project that implements the loader and document
 mixin plugin types to interact with eXist-db_ as storage.
 
 
+.. _document-loaders:
+
 Document loaders
 ----------------
 
@@ -64,8 +83,10 @@ Loaders are registered with this decorator:
 .. autofunction:: _delb.plugins.plugin_manager.register_loader
 
 
-Document extensions
--------------------
+.. _document-mixins:
+
+Document mixin classes
+----------------------
 
 Document mixin classes are registered by subclassing them from this base class:
 
@@ -73,7 +94,7 @@ Document mixin classes are registered by subclassing them from this base class:
    :private-members:
 
 
-.. _extending-subclasses:
+.. _document-subclasses:
 
 Document subclasses
 -------------------
@@ -129,6 +150,8 @@ The recommendations as laid out for :meth:`DocumentMixinHooks._init_config
 would process configuration arguments in their ``__init__`` method before
 calling the super class' one.
 
+
+.. _xpath-functions:
 
 XPath functions
 ---------------
