@@ -132,6 +132,7 @@ detached = true
 dependencies = [
     "autodocsumm",
     "furo",
+    "sphinx-copybutton",
     "sphinx-design"
 ]
 [tool.hatch.envs.docs.scripts]
