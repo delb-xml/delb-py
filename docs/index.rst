@@ -9,5 +9,8 @@
    api
    extending
    changes
-   genindex
    license
+   genindex
+   Code Repository <https://github.com/delb-xml/delb-py>
+   Issue Tracker <https://github.com/delb-xml/delb-py/issues>
+   Discussions <https://github.com/delb-xml/delb-py/discussions>
