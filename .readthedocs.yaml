@@ -3,18 +3,16 @@
 version: 2
 
 build:
-  image: latest
+  os: ubuntu-22.04
+  tools:
+    python: 3
 
 formats: all
 
 python:
   version: 3.7
   install:
-    - method: pip
-      path: .
+    - path: .
     - requirements: docs/rtd-dependencies.txt
 
-
-submodules:
-  include:
-    - lxml-stubs
+...
