@@ -3275,10 +3275,12 @@ class DefaultStringOptions:
     applies when node objects are fed to the :py:func:`print` function and in other
     cases where objects are implicitly cast to strings.
 
-    ⚠️
-    Use this once to define behaviour on *application level*. For thread-safe
-    serializations of nodes with diverging parameters use :meth:`NodeBase.serialize`!
-    Think thrice whether you want to use this facility in a library.
+    .. attention::
+
+        Use this once to define behaviour on *application level*. For thread-safe
+        serializations of nodes with diverging parameters use
+        :meth:`NodeBase.serialize`! Think thrice whether you want to use this facility
+        in a library.
     """
 
     align_attributes: ClassWar[bool] = False

@@ -1,3 +1,7 @@
-.sphinxsidebar img.logo { margin-left: 2.15em; max-height: 8rem; }
-.sphinxsidebar p.logo { margin: 0; }
-.sphinxsidebar .toctree-l4 { display: none; }
+article section dl.simple dd { margin-left: 0.618rem }  /* nested lists contain dd wrappers */
+#delb h1 + p img { vertical-align: top }  /* equally align non-/linking badges on the landing page */
+img.sidebar-logo { max-height: 8rem }
+table.autosummary { box-shadow: none; width: 100% }
+table.autosummary tbody { vertical-align: top }
+table.autosummary tr:last-of-type td { border-bottom: none }
+table.autosummary td { border-left: none; border-right: none }

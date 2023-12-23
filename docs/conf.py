@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).parent.resolve() / "sphinx-extensions"))
 from importlib import metadata
 import re
 
-import sphinx_readable_theme
 
 # -- Project information -----------------------------------------------------
 
@@ -48,7 +47,6 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
-    "sphinxcontrib.fulltoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -76,7 +74,8 @@ language = "en"
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
+pygments_style = "sphinx"
+pygments_dark_style = "monokai"
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -85,9 +84,7 @@ pygments_style = None
 # a list of builtin themes.
 #
 
-html_theme = "readable"
-
-html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
+html_theme = "furo"
 
 html_logo = "images/delb_logo.svg"
 
@@ -95,7 +92,12 @@ html_logo = "images/delb_logo.svg"
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "navigation_with_keys": True,
+    "source_repository": "https://github.com/delb-xml/delb-py/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

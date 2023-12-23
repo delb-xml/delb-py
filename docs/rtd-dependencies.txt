@@ -1,5 +1,3 @@
-autoclasstoc~=1.6
+autodocsumm
+furo
 httpx[http2]
-sphinx
-sphinxcontrib-fulltoc
-sphinx-readable-theme
