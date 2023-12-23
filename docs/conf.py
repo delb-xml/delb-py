@@ -3,16 +3,13 @@
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.resolve() / "sphinx-extensions"))
 
 
 from importlib import metadata
@@ -42,6 +39,10 @@ version = re.match(r"(^\d+\.\d+).*", release).group(1)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # in sphinx-extensions
+    "class_members_categories",
+    # from the cheeseshop
+    "autodocsumm",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
