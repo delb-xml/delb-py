@@ -8,7 +8,8 @@ Documents
 ---------
 
 .. autoclass:: delb.Document
-
+   :autosummary:
+   :autosummary-nosignatures:
 
 .. _document-loaders:
 
@@ -48,30 +49,35 @@ Comment
 ~~~~~~~
 
 .. autoclass:: delb.CommentNode
-
+   :autosummary:
+   :autosummary-nosignatures:
 
 Processing instruction
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: delb.ProcessingInstructionNode
+   :autosummary:
+   :autosummary-nosignatures:
 
 Tag
 ~~~
 
 .. autoclass:: delb.TagNode
+   :autosummary:
+   :autosummary-nosignatures:
 
 Tag attribute
 ~~~~~~~~~~~~~
 
 .. autoclass:: delb.nodes.Attribute
-   :exclude-members: data
 
 
 Text
 ~~~~
 
 .. autoclass:: delb.TextNode
-   :exclude-members: data, maketrans
+   :autosummary:
+   :autosummary-nosignatures:
 
 Node constructors
 ~~~~~~~~~~~~~~~~~
