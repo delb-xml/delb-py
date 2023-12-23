@@ -42,6 +42,7 @@ extensions = [
     "class_members_categories",
     # from the cheeseshop
     "autodocsumm",
+    "sphinx_copybutton",
     "sphinx_design",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
