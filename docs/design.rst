@@ -266,6 +266,15 @@ What are your long-term goals with this project?
    created from Tim's ideas.
 
 
+Interesting Resources
+=====================
+
+- `The Annotated XML Specification <https://www.xml.com/axml/axml.html>`_ by
+  co-editor Tim Bray gives cultural, historical and technical insights from a
+  text-processing programmer.
+- The `Xml Sucks <http://wiki.c2.com/?XmlSucks>`_ page sheds light on the
+  perspective of XML usage for non-text documents.
+
 
 .. [#fn-inxs] The ``inxs`` library failed. Yet it made clear which layer in
               Python XML Text handling needs to be fixed.
