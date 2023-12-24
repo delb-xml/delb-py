@@ -140,6 +140,7 @@ build-html = "make -C docs html"
 clean = "make -C docs clean"
 doctest = "make -C docs doctest"
 linkcheck = "make -C docs linkcheck"
+serve = "python -m http.server --directory docs/build/html/"
 
 [tool.hatch.envs.linting]
 dependencies = [
