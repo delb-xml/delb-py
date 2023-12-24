@@ -16,7 +16,7 @@
 
 """
 If ``delb`` is installed with ``https-loader`` as extra, the required
-dependencies for this loader are installed as well. See :doc:`installation`.
+dependencies for this loader are installed as well. See :doc:`/installation`.
 """
 
 

@@ -97,7 +97,7 @@ News
 ~~~~
 
 - Adds a logo. Gracious thanks to sm!
-- Adds :doc:`plugin mechanics <extending>`. Graciae ad infinitum, TC!
+- Adds :doc:`plugin mechanics </api/extending>`. Graciae ad infinitum, TC!
 - CSS and XPath query results are wrapped in :class:`delb.QueryResults`.
 - Adds :attr:`delb.Document.head_nodes` and :attr:`delb.Document.tail_nodes`
   that allow access to the siblings of a root node.
