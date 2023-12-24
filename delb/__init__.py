@@ -213,7 +213,7 @@ class Document(metaclass=DocumentMeta):
     document. For instantiation any object can be passed. A suitable loader must be
     available for the given source. See :ref:`document-loaders` for the default loaders
     that come with this package. Plugins are capable to alter the available loaders,
-    see :doc:`extending`.
+    see :doc:`/api/extending`.
 
     Nodes can be tested for membership in a document:
 

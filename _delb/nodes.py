@@ -1282,8 +1282,7 @@ class NodeBase(ABC):
         namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
         """
-        See `Queries with XPath & CSS`_ for details on the extent of the XPath
-        implementation.
+        See :doc:`/api/querying` for details on the extent of the XPath implementation.
 
         :param expression: A supported XPath 1.0 expression that contains one or more
                            location paths.
@@ -1893,7 +1892,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        See `Queries with XPath & CSS`_ regarding the extent of the supported grammar.
+        See :doc:`/api/querying` regarding the extent of the supported grammar.
 
         Namespace prefixes are delimited with a ``|`` before a name test, for example
         ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
@@ -2386,7 +2385,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
         """
-        See `Queries with XPath & CSS`_ for details on the extent of the XPath
+        See :doc:`/api/querying` for details on the extent of the XPath
         implementation.
 
         :param expression: A supported XPath 1.0 expression that contains one or more
