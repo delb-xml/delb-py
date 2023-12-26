@@ -291,7 +291,7 @@ class Document(metaclass=DocumentMeta):
         self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
         The source URL where a loader obtained the document's contents or
-        :py:obj:`None`.
+        :obj:`None`.
         """
         self.head_nodes = _HeadNodes(self)
         """
@@ -457,7 +457,7 @@ class Document(metaclass=DocumentMeta):
         """
         :param path: The filesystem path to the target file.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
-                       :py:obj:`True`.
+                       :obj:`True`.
         :param encoding: The desired text encoding.
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
@@ -468,8 +468,8 @@ class Document(metaclass=DocumentMeta):
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
-        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
-                        the parameter with the same name.
+        :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
+                        parameter with the same name.
         :param text_width: A positive value indicates that text nodes shall get wrapped
                            at this character position.
                            Indentations are not considered as part of text. This
@@ -518,7 +518,7 @@ class Document(metaclass=DocumentMeta):
         """
         :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
-                       :py:obj:`True`.
+                       :obj:`True`.
         :param encoding: The desired text encoding.
         :param align_attributes: Determines whether attributes' names and values line up
                                  sharply around vertically aligned equal signs.
@@ -529,8 +529,8 @@ class Document(metaclass=DocumentMeta):
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
-        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
-                        the parameter with the same name.
+        :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
+                        parameter with the same name.
         :param text_width: A positive value indicates that text nodes shall get wrapped
                            at this character position.
                            Indentations are not considered as part of text. This

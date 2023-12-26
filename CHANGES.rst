@@ -21,7 +21,7 @@ News
 - *delb* now uses its own XPath implementation, please investigate
   :mod:`_delb.xpath` for details.
 - ⚠️ Many of the nodes' methods that relate to relative nodes have been renamed.
-  Watch out for :py:class:`DeprecationWarning`\s!
+  Watch out for :class:`DeprecationWarning`\s!
 - ⚠️ The method :meth:`delb.NodeBase.iterate_descendants` is added as a
   replacement for the former :meth:`delb.NodeBase.child_nodes` invoked with the
   now deprecated argument ``recurse``.

@@ -756,7 +756,7 @@ class NodeBase(ABC):
         instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :py:obj:`True`.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
 
         :meta category: add-nodes
         """
@@ -781,7 +781,7 @@ class NodeBase(ABC):
         instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :py:obj:`True`.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
 
         :meta category: add-nodes
         """
@@ -799,7 +799,7 @@ class NodeBase(ABC):
     @abstractmethod
     def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
         """
-        :param deep: Clones the whole subtree if :py:obj:`True`.
+        :param deep: Clones the whole subtree if :obj:`True`.
         :param quick_and_unsafe: Creates a deep clone in a quicker manner where text
                                  nodes may get lost. It should be safe with trees that
                                  don't contain subsequent text nodes, e.g. freshly
@@ -823,7 +823,7 @@ class NodeBase(ABC):
         Removes the node from its tree.
 
         :param retain_child_nodes: Keeps the node's descendants in the originating
-                                   tree if :py:obj:`True`.
+                                   tree if :obj:`True`.
         :return: The removed node.
 
         :meta category: remove-node
@@ -835,7 +835,7 @@ class NodeBase(ABC):
     def document(self) -> Optional[Document]:
         """
         The :class:`Document` instance that the node is associated with or
-        :py:obj:`None`.
+        :obj:`None`.
         """
         pass
 
@@ -843,7 +843,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or
-                 :py:obj:`None`.
+                 :obj:`None`.
 
         :meta category: fetch-node
         """
@@ -856,7 +856,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or
-                 :py:obj:`None`.
+                 :obj:`None`.
 
         :meta category: fetch-node
         """
@@ -877,7 +877,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
-                 :py:obj:`None`.
+                 :obj:`None`.
 
         :meta category: fetch-node
         """
@@ -891,7 +891,7 @@ class NodeBase(ABC):
         """
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or
-                 :py:obj:`None`.
+                 :obj:`None`.
 
         :meta category: fetch-node
         """
@@ -916,7 +916,7 @@ class NodeBase(ABC):
     @property
     def index(self) -> Optional[int]:
         """
-        The node's index within the parent's collection of child nodes or :py:obj:`None`
+        The node's index within the parent's collection of child nodes or :obj:`None`
         when the node has no parent.
         """
         parent = self.parent
@@ -1164,7 +1164,7 @@ class NodeBase(ABC):
     @abstractmethod
     def parent(self):
         """
-        The node's parent or :py:obj:`None`.
+        The node's parent or :obj:`None`.
         """
         pass
 
@@ -1212,7 +1212,7 @@ class NodeBase(ABC):
         :class:`TagNode` instance from.
 
         :param node: The replacing node.
-        :param clone: A concrete, replacing node is cloned if :py:obj:`True`.
+        :param clone: A concrete, replacing node is cloned if :obj:`True`.
         :return: The removed node.
 
         :meta category: remove-node
@@ -1247,8 +1247,8 @@ class NodeBase(ABC):
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
-        :param newline: See :py:class:`io.TextIOWrapper` for a detailed explanation of
-                        the parameter with the same name.
+        :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
+                        parameter with the same name.
         :param text_width: A positive value indicates that text nodes shall get wrapped
                            at this character position.
                            Indentations are not considered as part of text. This
@@ -1752,7 +1752,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :py:obj:`True`.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
 
         :meta category: add-nodes
         """
@@ -1814,7 +1814,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         <node xmlns:ns0="http://namespace" ns0:bar="1"/>
 
         Unlike with typical Python mappings, requesting a non-existing attribute
-        doesn't evoke a :exc:`KeyError`, instead :py:obj:`None` is returned.
+        doesn't evoke a :exc:`KeyError`, instead :obj:`None` is returned.
         """
         return self._attributes
 
@@ -2132,7 +2132,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :param index: The index at which the first of the given nodes will be inserted,
                       the remaining nodes are added afterwards in the given order.
         :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :py:obj:`True`.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
 
         :meta category: add-nodes
         """
@@ -2334,7 +2334,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         instances from.
 
         :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :py:obj:`True`.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
 
         :meta category: add-nodes
         """
@@ -2486,7 +2486,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     >>> "Sir" in TextNode("Sir Bedevere the Wise")
     True
 
-    Attributes that rely to child nodes yield nothing respectively :py:obj:`None`.
+    Attributes that rely to child nodes yield nothing respectively :obj:`None`.
     """
 
     __slots__ = ("_appended_text_node", "_bound_to", "__content", "_position")
@@ -3270,9 +3270,9 @@ class StringSerializer(SerializerBase):
 class DefaultStringOptions:
     """
     This object's class variables are used to configure the serialization parameters
-    that are applied when nodes are coerced to :py:class:`str` objects. Hence it also
-    applies when node objects are fed to the :py:func:`print` function and in other
-    cases where objects are implicitly cast to strings.
+    that are applied when nodes are coerced to :class:`str` objects. Hence it also
+    applies when node objects are fed to the :func:`print` function and in other cases
+    where objects are implicitly cast to strings.
 
     .. attention::
 
@@ -3300,8 +3300,8 @@ class DefaultStringOptions:
     """
     newline: ClassWar[None | str] = None
     """
-    See :py:class:`io.TextIOWrapper` for a detailed explanation of the parameter with
-    the same name.
+    See :class:`io.TextIOWrapper` for a detailed explanation of the parameter with the
+    same name.
     """
     text_width: ClassWar[int] = 0
     """
