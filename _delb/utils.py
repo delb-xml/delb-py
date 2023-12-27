@@ -295,14 +295,7 @@ def first(iterable: Iterable) -> Optional[Any]:
 def get_traverser(from_left=True, depth_first=True, from_top=True):
     """
     Returns a function that can be used to traverse a (sub)tree with the given node as
-    root. While traversing the given root node is yielded at some point.
-
-    The returned functions have this signature:
-
-    .. code-block:: python
-
-        def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-            ...
+    root.
 
     :param from_left: The traverser yields sibling nodes from left to right if
                       :obj:`True`, or starting from the right if :obj:`False`.
@@ -311,8 +304,16 @@ def get_traverser(from_left=True, depth_first=True, from_top=True):
                         favored if :obj:`False`.
     :param from_top: The traverser starts yielding nodes with the lowest depth if
                      :obj:`True`. When :obj:`False`, again, the opposite is in effect.
-    """
 
+    While traversing the given root node is yielded at some point.
+
+    The returned functions have this signature:
+
+    .. code-block:: python
+
+        def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+            ...
+    """
     result = TRAVERSERS.get((from_left, depth_first, from_top))
     if result is None:
         raise NotImplementedError
