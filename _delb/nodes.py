@@ -489,6 +489,11 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     """
     This function can be either used as as :term:`context manager` or :term:`decorator`
     to define a set of :obj:`default_filters` for the encapsuled code block or callable.
+
+    :param filter: The filters to set or append.
+    :param extend: Extends the currently active filters with the given ones instead of
+                   replacing them.
+
     These are then applied in all operations that allow node filtering, like
     :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
     indexed access to child nodes.
@@ -502,10 +507,6 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
 
     As the default filters shadow comments and processing instructions by default,
     use no argument to unset this in order to access all type of nodes.
-
-    :param filter: The filters to set or append.
-    :param extend: Extends the currently active filters with the given ones instead of
-                   replacing them.
     """
     global default_filters
 
@@ -750,15 +751,14 @@ class NodeBase(ABC):
         """
         Adds one or more nodes to the right of the node this method is called on.
 
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :meta category: Methods to add nodes to a tree
+
         The nodes can be concrete instances of any node type or rather abstract
         descriptions in the form of strings or objects returned from the :func:`tag`
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-
-        :meta category: add-nodes
         """
         if node:
             this, queue = self._prepare_new_relative(node, clone)
@@ -775,15 +775,14 @@ class NodeBase(ABC):
         """
         Adds one or more nodes to the left of the node this method is called on.
 
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :meta category: Methods to add nodes to a tree
+
         The nodes can be concrete instances of any node type or rather abstract
         descriptions in the form of strings or objects returned from the :func:`tag`
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-
-        :meta category: add-nodes
         """
         if node:
             this, queue = self._prepare_new_relative(node, clone)
@@ -816,6 +815,8 @@ class NodeBase(ABC):
     def depth(self) -> int:
         """
         The depth (or level) of the node in its tree.
+
+        :meta category: Node properties
         """
         pass
 
@@ -827,8 +828,7 @@ class NodeBase(ABC):
         :param retain_child_nodes: Keeps the node's descendants in the originating
                                    tree if :obj:`True`.
         :return: The removed node.
-
-        :meta category: remove-node
+        :meta category: Methods to remove a node
         """
         pass
 
@@ -838,6 +838,8 @@ class NodeBase(ABC):
         """
         The :class:`Document` instance that the node is associated with or
         :obj:`None`.
+
+        :meta category: Related document and nodes properties
         """
         pass
 
@@ -848,8 +850,7 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or
                  :obj:`None`.
-
-        :meta category: fetch-node
+        :meta category: Methods to fetch a relative node
         """
         try:
             return next(self.iterate_following(*filter))
@@ -863,8 +864,7 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or
                  :obj:`None`.
-
-        :meta category: fetch-node
+        :meta category: Methods to fetch a relative node
         """
         all_filters = default_filters[-1] + filter
         candidate = self._fetch_following_sibling()
@@ -886,8 +886,7 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
                  :obj:`None`.
-
-        :meta category: fetch-node
+        :meta category: Methods to fetch a relative node
         """
         try:
             return next(self.iterate_preceding(*filter))
@@ -902,8 +901,7 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or
                  :obj:`None`.
-
-        :meta category: fetch-node
+        :meta category: Methods to fetch a relative node
         """
         pass
 
@@ -912,6 +910,8 @@ class NodeBase(ABC):
     def first_child(self) -> Optional[NodeBase]:
         """
         The node's first child node.
+
+        :meta category: Related document and nodes properties
         """
         pass
 
@@ -920,6 +920,8 @@ class NodeBase(ABC):
     def full_text(self) -> str:
         """
         The concatenated contents of all text node descendants in document order.
+
+        :meta category: Node content properties
         """
         pass
 
@@ -928,6 +930,8 @@ class NodeBase(ABC):
         """
         The node's index within the parent's collection of child nodes or :obj:`None`
         when the node has no parent.
+
+        :meta category: Node properties
         """
         parent = self.parent
 
@@ -948,8 +952,7 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
                  to top.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         parent = self.parent
         if parent:
@@ -965,8 +968,7 @@ class NodeBase(ABC):
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         pass
 
@@ -979,8 +981,7 @@ class NodeBase(ABC):
                        yielded.
         :return: A :term:`generator iterator` that yields the descending nodes of the
                  node.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         pass
 
@@ -992,8 +993,7 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the following nodes in
                  document order.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         for node in self._iterate_following():
             if all(f(node) for f in chain(default_filters[-1], filter)):
@@ -1034,8 +1034,7 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  right.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         next_node = self.fetch_following_sibling(*filter)
         while next_node is not None:
@@ -1050,8 +1049,7 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the previous nodes in document
                  order.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         for node in self._iterate_preceding():
             if all(f(node) for f in filter):
@@ -1091,8 +1089,7 @@ class NodeBase(ABC):
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  left.
-
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         previous_node = self.fetch_preceding_sibling(*filter)
         while previous_node is not None:
@@ -1102,13 +1099,21 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def last_child(self) -> Optional[NodeBase]:
-        """The node's last child node."""
+        """
+        The node's last child node.
+
+        :meta category: Related document and nodes properties
+        """
         pass
 
     @property
     @abstractmethod
     def last_descendant(self) -> Optional[NodeBase]:
-        """The node's last descendant."""
+        """
+        The node's last descendant.
+
+        :meta category: Related document and nodes properties
+        """
         pass
 
     @property
@@ -1116,6 +1121,8 @@ class NodeBase(ABC):
     def namespaces(self):
         """
         The prefix to namespace :term:`mapping` of the node.
+
+        :meta category: Node properties
         """
         pass
 
@@ -1185,6 +1192,8 @@ class NodeBase(ABC):
     def parent(self):
         """
         The node's parent or :obj:`None`.
+
+        :meta category: Related document and nodes properties
         """
         pass
 
@@ -1234,8 +1243,7 @@ class NodeBase(ABC):
         :param node: The replacing node.
         :param clone: A concrete, replacing node is cloned if :obj:`True`.
         :return: The removed node.
-
-        :meta category: remove-node
+        :meta category: Methods to remove a node
         """
         if self.parent is None:
             raise InvalidOperation(
@@ -1305,16 +1313,15 @@ class NodeBase(ABC):
         Queries the tree with an XPath expression with this node as initial context
         node.
 
-        See :doc:`/api/querying` for details on the extent of the XPath implementation.
-
         :param expression: A supported XPath 1.0 expression that contains one or more
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
                            namespaces. The declarations that were used in a document's
                            source serialisat serve as fallback.
         :return: All nodes that match the evaluation of the provided XPath expression.
+        :meta category: Methods to query the tree
 
-        :meta category: query-nodes
+        See :doc:`/api/querying` for details on the extent of the XPath implementation.
         """
         return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
@@ -1346,7 +1353,7 @@ class _ChildLessNode(NodeBase):
         """
         A :term:`generator iterator` that yields nothing.
 
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         yield from ()
 
@@ -1354,7 +1361,7 @@ class _ChildLessNode(NodeBase):
         """
         A :term:`generator iterator` that yields nothing.
 
-        :meta category: iter-relatives
+        :meta category: Methods to iterate over related node
         """
         yield from ()
 
@@ -1562,6 +1569,8 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     def content(self) -> str:
         """
         The comment's text.
+
+        :meta category: Node content properties
         """
         return cast("str", self._etree_obj.text)
 
@@ -1596,6 +1605,8 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     def content(self) -> str:
         """
         The processing instruction's text.
+
+        :meta category: Node content properties
         """
         return cast("str", self._etree_obj.text)
 
@@ -1607,6 +1618,8 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     def target(self) -> str:
         """
         The processing instruction's target.
+
+        :meta category: Node content properties
         """
         etree_obj = self._etree_obj
         assert isinstance(etree_obj, etree._ProcessingInstruction)
@@ -1776,15 +1789,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         Adds one or more nodes as child nodes after any existing to the child nodes of
         the node this method is called on.
 
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :meta category: Methods to add nodes to a tree
+
         The nodes can be concrete instances of any node type or rather abstract
         descriptions in the form of strings or objects returned from the :func:`tag`
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-
-        :meta category: add-nodes
         """
         if not node:
             return
@@ -1807,6 +1819,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def attributes(self) -> TagAttributes:
         """
         A :term:`mapping` that can be used to access the node's attributes.
+
+        :meta category: Node content properties
 
         >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
         >>> node.attributes
@@ -1925,20 +1939,22 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        See :doc:`/api/querying` regarding the extent of the supported grammar.
-
-        Namespace prefixes are delimited with a ``|`` before a name test, for example
-        ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
-        to the default namespace or have no namespace and whose name is ``metadata``
-        and have a namespace that is mapped to the ``svg`` prefix.
+        Queries the tree with a CSS selector expression with this node as initial
+        context node.
 
         :param expression: A CSS selector expression.
         :param namespaces: A mapping of prefixes that are used in the expression to
                            namespaces. If omitted, the node's definition is used.
         :return: All nodes that match the evaluation of the provided CSS selector
                  expression.
+        :meta category: Methods to query the tree
 
-        :meta category: query-nodes
+        See :doc:`/api/querying` regarding the extent of the supported grammar.
+
+        Namespace prefixes are delimited with a ``|`` before a name test, for example
+        ``div svg|metadata`` selects all descendants of ``div`` named nodes that belong
+        to the default namespace or have no namespace and whose name is ``metadata``
+        and have a namespace that is mapped to the ``svg`` prefix.
         """
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
@@ -2012,8 +2028,17 @@ class TagNode(_ElementWrappingNode, NodeBase):
     ) -> TagNode:
         """
         Fetches a single node that is locatable by the provided XPath expression. If
-        the node doesn't exist, the non-existing branch will be created. These rules
-        are imperative in your endeavour:
+        the node doesn't exist, the non-existing branch will be created.
+
+        :param expression: An XPath expression that can unambiguously locate a
+                           descending node in a tree that has any state.
+        :param namespaces: An optional mapping of prefixes to namespaces. The
+                           declarations that were used in a document's source serialisat
+                           serve as fallback.
+        :return: The existing or freshly created node descibed with ``expression``.
+        :meta category: Methods to query the tree
+
+        These rules are imperative in your endeavour:
 
         - All location steps must use the child axis.
         - Each step needs to provide a name test.
@@ -2034,15 +2059,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         True
         >>> str(root)
         '<root><child a="b"><grandchild/></child></root>'
-
-        :param expression: An XPath expression that can unambiguously locate a
-                           descending node in a tree that has any state.
-        :param namespaces: An optional mapping of prefixes to namespaces. The
-                           declarations that were used in a document's source serialisat
-                           serve as fallback.
-        :return: The existing or freshly created node descibed with ``expression``.
-
-        :meta category: query-nodes
         """
         ast = parse_xpath(expression)
         if not ast._is_unambiguously_locatable:
@@ -2126,6 +2142,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         This is a shortcut to retrieve and set the ``id``  attribute in the XML
         namespace. The client code is responsible to pass properly formed id names.
+
+        :meta category: Node content properties
         """
         return cast("str", self.attributes.get(XML_ATT_ID))
 
@@ -2154,17 +2172,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         Inserts one or more child nodes.
 
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-
         :param index: The index at which the first of the given nodes will be inserted,
                       the remaining nodes are added afterwards in the given order.
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :meta category: Methods to add nodes to a tree
 
-        :meta category: add-nodes
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
         """
         if index < 0:
             raise ValueError("Index must be zero or a positive integer.")
@@ -2250,6 +2267,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def local_name(self) -> str:
         """
         The node's name.
+
+        :meta category: Node properties
         """
         return cast("str", QName(self._etree_obj).localname)
 
@@ -2261,6 +2280,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def location_path(self) -> str:
         """
         An unambiguous XPath location path that points to this node from its tree root.
+
+        :meta category: Node properties
         """
         if self.parent is None:
             return "/."
@@ -2284,6 +2305,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def namespace(self) -> Optional[str]:
         """
         The node's namespace.
+
+        :meta category: Node properties
         """
         # weirdly QName fails in some cases when called with an etree._Element
         return QName(self._etree_obj.tag).namespace  # type: ignore
@@ -2341,6 +2364,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def prefix(self) -> Optional[str]:
         """
         The prefix that the node's namespace is currently mapped to.
+
+        :meta category: Node properties
         """
         target = QName(self._etree_obj).namespace
 
@@ -2358,15 +2383,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         Adds one or more nodes as child nodes before any existing to the child nodes of
         the node this method is called on.
 
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :meta category: Methods to add nodes to a tree
+
         The nodes can be concrete instances of any node type or rather abstract
         descriptions in the form of strings or objects returned from the :func:`tag`
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-
-        :meta category: add-nodes
         """
         self.insert_children(0, *node, clone=clone)
 
@@ -2393,6 +2417,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def universal_name(self) -> str:
         """
         The node's qualified name in `Clark notation`_.
+
+        :meta category: Node properties
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
@@ -2658,6 +2684,8 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     def content(self) -> str:
         """
         The node's text content.
+
+        :meta category: Node content properties
         """
         if self._position is DATA:
             assert isinstance(self._bound_to, _Element)

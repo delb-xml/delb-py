@@ -210,10 +210,22 @@ class DocumentMeta(type):
 class Document(metaclass=DocumentMeta):
     """
     This class is the entrypoint to obtain a representation of an XML encoded text
-    document. For instantiation any object can be passed. A suitable loader must be
-    available for the given source. See :ref:`document-loaders` for the default loaders
-    that come with this package. Plugins are capable to alter the available loaders,
-    see :doc:`/api/extending`.
+    document.
+
+    :param source: Anything that the configured loaders can make sense of to return a
+                   parsed document tree.
+    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
+                           parser.
+    :param klass: Explicitly define the initialized class. This can be useful for
+                  applications that have :ref:`default document subclasses
+                  <document-subclasses>` in use.
+    :param config: Additional keyword arguments for the configuration of extension
+                   classes.
+
+    For instantiation any object can be passed. A suitable loader must be available for
+    the given source. See :ref:`document-loaders` for the default loaders that come with
+    this package. Plugins are capable to alter the available loaders, see
+    :doc:`/api/extending`.
 
     Nodes can be tested for membership in a document:
 
@@ -230,16 +242,6 @@ class Document(metaclass=DocumentMeta):
     >>> document = Document("<root/>")
     >>> str(document)
     '<?xml version="1.0" encoding="UTF-8"?><root/>'
-
-    :param source: Anything that the configured loaders can make sense of to return a
-                   parsed document tree.
-    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
-                           parser.
-    :param klass: Explicitly define the initialized class. This can be useful for
-                  applications that have :ref:`default document subclasses
-                  <document-subclasses>` in use.
-    :param config: Additional keyword arguments for the configuration of extension
-                   classes.
     """
 
     _loaders: tuple[Loader, ...]
