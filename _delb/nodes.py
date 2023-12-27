@@ -345,7 +345,7 @@ class _TagDefinition(NamedTuple):
     Instances of this class describe tag nodes that are constructed from the context
     they are used in (commonly additions to a tree) and the properties that this
     description holds. For the sake of slick code they are not instantiated directly,
-    but with the :func:`tag` function.
+    but with the :func:`delb.tag` function.
     """
 
     local_name: str

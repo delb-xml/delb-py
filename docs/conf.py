@@ -211,10 +211,13 @@ autodoc_default_options = {
 }
 
 autodoc_type_aliases = {
-    "Filter": "_delb.typing.Filter",
-    "LoaderResult": "_delb.typing.LoaderResult",
-    "NodeSource": "_delb.typing.NodeSource",
-    "_WrapperCache": "_delb.typing._WrapperCache",
+    "Filter": "delb.typing.Filter",
+    "Loader": "delb.typing.Loader",
+    "LoaderConstraint": "delb.typing.LoaderConstraint",
+    "LoaderResult": "delb.typing.LoaderResult",
+    "NamespaceDeclarations": "delb.typing.NamespaceDeclarations",
+    "NodeBase": "delb.NodeBase",
+    "NodeSource": "delb.typing.NodeSource",
 }
 
 

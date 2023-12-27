@@ -52,6 +52,9 @@ Node constructors
 Filters
 -------
 
+The following implementations are shipped with the library. Also see
+:class:`delb.typing.Filter`
+
 Default filters
 ~~~~~~~~~~~~~~~
 
