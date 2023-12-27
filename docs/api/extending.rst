@@ -18,7 +18,7 @@ These extension types are currently available:
 .. grid:: 2
 
     .. grid-item-card:: Document loaders
-       :link: document-loaders
+       :link: custom-document-loaders
        :link-type: ref
 
        Loaders are functions that try to make sense of any given input value,
@@ -73,7 +73,7 @@ There's also the snakesist_ project that implements the loader and document
 mixin plugin types to interact with eXist-db_ as storage.
 
 
-.. _document-loaders:
+.. _custom-document-loaders:
 
 Document loaders
 ----------------
