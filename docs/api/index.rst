@@ -11,5 +11,6 @@ API Documentation
    querying
    transformations
    utilities
+   typing
    exceptions
    extending

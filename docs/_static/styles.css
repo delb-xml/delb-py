@@ -1,5 +1,6 @@
 article section dl.simple dd { margin-left: 0.618rem }  /* nested lists contain dd wrappers */
 #delb h1 + p img { vertical-align: top }  /* equally align non-/linking badges on the landing page */
+dl.py + p { margin-top: 2rem } p + dl.py { margin-top: 0 }  /* Improve spacing around class docs */
 img.sidebar-logo { max-height: 8rem }
 table.autosummary { box-shadow: none; width: 100% }
 table.autosummary tbody { vertical-align: top }
