@@ -352,7 +352,9 @@ class Document(metaclass=DocumentMeta):
 
     def clone(self) -> Document:
         """
-        :return: Another instance with the duplicated contents.
+        Clones the document with its contents.
+
+        :return: A new document instance.
         """
         result = Document(self.root, klass=self.__class__)
         # lxml.etree.XMLParser instances aren't pickable / copyable
@@ -455,6 +457,8 @@ class Document(metaclass=DocumentMeta):
         text_width: int = 0,
     ):
         """
+        Saves the serialized document contents to a file.
+
         :param path: The filesystem path to the target file.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.
@@ -516,6 +520,8 @@ class Document(metaclass=DocumentMeta):
         text_width: int = 0,
     ):
         """
+        Writes the serialized document contents to a :term:`file-like object`.
+
         :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.

@@ -799,6 +799,8 @@ class NodeBase(ABC):
     @abstractmethod
     def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
         """
+        Creates a new node of the same type with duplicated contents.
+
         :param deep: Clones the whole subtree if :obj:`True`.
         :param quick_and_unsafe: Creates a deep clone in a quicker manner where text
                                  nodes may get lost. It should be safe with trees that
@@ -841,6 +843,8 @@ class NodeBase(ABC):
 
     def fetch_following(self, *filter: Filter) -> Optional[NodeBase]:
         """
+        Retrieves the next filter matching node on the following axis.
+
         :param filter: Any number of :term:`filter` s.
         :return: The next node in document order that matches all filters or
                  :obj:`None`.
@@ -854,6 +858,8 @@ class NodeBase(ABC):
 
     def fetch_following_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         """
+        Retrieves the next filter matching node on the following-sibling axis.
+
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the right that matches all filters or
                  :obj:`None`.
@@ -875,6 +881,8 @@ class NodeBase(ABC):
 
     def fetch_preceding(self, *filter: Filter) -> Optional[NodeBase]:
         """
+        Retrieves the next filter matching node on the preceding axis.
+
         :param filter: Any number of :term:`filter` s.
         :return: The previous node in document order that matches all filters or
                  :obj:`None`.
@@ -889,6 +897,8 @@ class NodeBase(ABC):
     @abstractmethod
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         """
+        Retrieves the next filter matching node on the preceding-sibling axis.
+
         :param filter: Any number of :term:`filter` s.
         :return: The next sibling to the left that matches all filters or
                  :obj:`None`.
@@ -932,6 +942,8 @@ class NodeBase(ABC):
 
     def iterate_ancestors(self, *filter: Filter) -> Iterator[TagNode]:
         """
+        Iterator over the filter matching nodes on the ancestor axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
@@ -948,6 +960,8 @@ class NodeBase(ABC):
     @abstractmethod
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the child axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
@@ -959,6 +973,8 @@ class NodeBase(ABC):
     @abstractmethod
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the ancestor axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the descending nodes of the
@@ -970,6 +986,8 @@ class NodeBase(ABC):
 
     def iterate_following(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the following axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the following nodes in
@@ -1010,6 +1028,8 @@ class NodeBase(ABC):
 
     def iterate_following_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the following-sibling axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
@@ -1024,6 +1044,8 @@ class NodeBase(ABC):
 
     def iterate_preceding(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the preceding axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the previous nodes in document
@@ -1063,6 +1085,8 @@ class NodeBase(ABC):
 
     def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
+        Iterator over the filter matching nodes on the preceding-sibling axis.
+
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
@@ -1078,17 +1102,13 @@ class NodeBase(ABC):
     @property
     @abstractmethod
     def last_child(self) -> Optional[NodeBase]:
-        """
-        The node's last child node.
-        """
+        """The node's last child node."""
         pass
 
     @property
     @abstractmethod
     def last_descendant(self) -> Optional[NodeBase]:
-        """
-        The node's last descendant.
-        """
+        """The node's last descendant."""
         pass
 
     @property
@@ -1282,6 +1302,9 @@ class NodeBase(ABC):
         namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
         """
+        Queries the tree with an XPath expression with this node as initial context
+        node.
+
         See :doc:`/api/querying` for details on the extent of the XPath implementation.
 
         :param expression: A supported XPath 1.0 expression that contains one or more
@@ -1301,7 +1324,12 @@ class _ChildLessNode(NodeBase):
 
     __slots__ = ()
 
-    first_child = last_child = last_descendant = None
+    first_child = None
+    """ The node's first child. """
+    last_child = None
+    """ The node's last child node. """
+    last_descendant = None
+    """ The node's last descendant. """
 
     @property
     def depth(self) -> int:
@@ -1323,6 +1351,11 @@ class _ChildLessNode(NodeBase):
         yield from ()
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
+        """
+        A :term:`generator iterator` that yields nothing.
+
+        :meta category: iter-relatives
+        """
         yield from ()
 
     def new_tag_node(
@@ -1776,7 +1809,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     @property
     def attributes(self) -> TagAttributes:
         """
-        A :term:`mapping` that can be used to query and alter the node's attributes.
+        A :term:`mapping` that can be used to access the node's attributes.
 
         >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
         >>> node.attributes
@@ -2387,19 +2420,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         expression: str,
         namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
-        """
-        See :doc:`/api/querying` for details on the extent of the XPath
-        implementation.
-
-        :param expression: A supported XPath 1.0 expression that contains one or more
-                           location paths.
-        :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. The declarations that were used in a document's
-                           source serialisat serve as fallback.
-        :return: All nodes that match the evaluation of the provided XPath expression.
-
-        :meta category: query-nodes
-        """
         result = super().xpath(expression=expression, namespaces=namespaces)
         if __debug__ and all(isinstance(n, TagNode) for n in result):
             try:
