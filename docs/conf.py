@@ -40,6 +40,7 @@ version = re.match(r"(^\d+\.\d+).*", release).group(1)
 extensions = [
     # in sphinx-extensions
     "class_members_categories",
+    "namedtuples",
     # from the cheeseshop
     "autodocsumm",
     "sphinx_copybutton",
