@@ -39,3 +39,4 @@ Methods that add nodes to a tree take a variety of input data:
 Definitions that are used for convenient tree building are held in:
 
 .. autoclass:: _delb.nodes._TagDefinition
+   :no-inherited-members:
