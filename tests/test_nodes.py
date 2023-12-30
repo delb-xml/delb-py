@@ -86,9 +86,8 @@ def test_insert_issue_in_a_more_complex_situation():
     document = Document("<root><foo><div1><bar><div2/></bar> </div1></foo></root>")
     for node in document.root.css_select("bar,foo"):
         node.detach(retain_child_nodes=True)
-    assert (
-        str(document) == "<?xml version='1.0' encoding='UTF-8'?>"
-        "<root><div1><div2/> </div1></root>"
+    assert str(document) == (
+        '<?xml version="1.0" encoding="UTF-8"?>' "<root><div1><div2/> </div1></root>"
     )
 
 

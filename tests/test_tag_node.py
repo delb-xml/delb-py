@@ -131,7 +131,7 @@ def test_detach_and_document_property():
     assert node.parent is None
     assert node.document is None
     assert root.document is document
-    assert str(document) == "<?xml version='1.0' encoding='UTF-8'?><root/>"
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
 
 
 def test_detach_node_with_tail_1():

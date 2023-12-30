@@ -14,7 +14,7 @@ from delb import (
 )
 from _delb.nodes import DETACHED
 
-from tests.utils import assert_documents_are_semantical_equal, count_pis
+from tests.utils import assert_documents_are_semantical_equal
 
 
 @pytest.mark.parametrize(
@@ -57,7 +57,7 @@ def test_align_attributes(indentation, out):
             "  ",
             '<root><a>hi</a><b x="foo"><c/></b></root>',
             """\
-             <?xml version='1.0' encoding='UTF-8'?>
+             <?xml version="1.0" encoding="UTF-8"?>
              <root>
                <a>hi</a>
                <b x="foo">
@@ -91,8 +91,8 @@ def test_significant_whitespace_is_saved(result_file):
     root[2].append_children("world!")
 
     document.save(result_file)
-    assert (
-        result_file.read_text() == "<?xml version='1.0' encoding='UTF-8'?>"
+    assert result_file.read_text() == (
+        '<?xml version="1.0" encoding="UTF-8"?>'
         "<text><hi>Hello</hi> <hi>world!</hi></text>"
     )
 
@@ -106,7 +106,7 @@ def test_significant_whitespace_is_saved(result_file):
     )
 
     assert result_file.read_text().splitlines() == [
-        "<?xml version='1.0' encoding='UTF-8'?>",
+        '<?xml version="1.0" encoding="UTF-8"?>',
         "<text>",
         "  <hi>Hello</hi>",
         "   ",  # FIXME?
@@ -154,30 +154,33 @@ def test_single_nodes(declarations, node_constructor, args, out):
 
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
-    Document(files_path / "root_siblings.xml").clone().save(result_file)
-    assert count_pis(result_file) == {
-        '<?another-target ["it", "could", "be", "anything"]?>': 1,
-        '<?target some="processing" instructions="here"?>': 2,
-    }
+    origin_path = files_path / "root_siblings.xml"
+    Document(origin_path).save(result_file, indentation="  ")
 
-    assert result_file.read_text() == (
-        "<?xml version='1.0' encoding='UTF-8'?>"
-        '<?target some="processing" instructions="here"?>'
-        '<?another-target ["it", "could", "be", "anything"]?>'
-        "<!-- a comment -->"
-        '<?target some="processing" instructions="here"?>'
-        "<root/>"
-        "<!-- end -->"
+    assert (
+        origin_path.read_text()
+        == result_file.read_text()
+        == (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<?target some="processing" instructions="here"?>\n'
+            '<?another-target ["it", "could", "be", "anything"]?>\n'
+            "<!-- a comment -->\n"
+            '<?target some="processing" instructions="here"?>\n'
+            "<root/>\n"
+            "<!-- end -->\n"
+        )
     )
 
 
 def test_transparency(files_path, result_file):
+    parser_options = ParserOptions(collapse_whitespace=False)
     for file in (x for x in files_path.glob("[!tei_]*.xml")):
-        Document(file, parser_options=ParserOptions(collapse_whitespace=False)).save(
-            result_file
-        )
+        origin = Document(file, parser_options=parser_options)
+        origin.save(result_file)
+        _copy = Document(file, parser_options=parser_options)
         assert_documents_are_semantical_equal(file, result_file)
-        assert count_pis(file) == count_pis(result_file)
+        assert origin.head_nodes == _copy.head_nodes
+        assert origin.tail_nodes == _copy.tail_nodes
 
 
 @pytest.mark.parametrize(
@@ -279,5 +282,5 @@ def test_text_width(files_path, indentation, text_width, out):
 
 def test_xml_declaration(files_path):
     assert str(Document(files_path / "tei_marx_manifestws_1848.TEI-P5.xml")).startswith(
-        "<?xml version='1.0' encoding='UTF-8'?>"
+        '<?xml version="1.0" encoding="UTF-8"?>'
     )

@@ -1,6 +1,5 @@
 import re
 import sys
-from collections import Counter
 
 from xmldiff import main as xmldiff
 
@@ -45,12 +44,6 @@ def assert_nodes_are_in_document_order(*nodes):
         if index_one == index_two:
             continue
         raise AssertionError
-
-
-def count_pis(source):
-    with source.open("rt") as f:
-        pi_strings = find_processing_instructions(f.read())
-    return Counter(x[0] for x in pi_strings if not x[0].startswith("<?xml"))
 
 
 @altered_default_filters()

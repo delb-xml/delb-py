@@ -120,7 +120,7 @@ def test_mro():
 def test_set_root():
     document = Document("<root><node/></root>")
     document.root = document.root[0].detach()
-    assert str(document) == "<?xml version='1.0' encoding='UTF-8'?><node/>"
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
 
     document_2 = Document("<root><replacement/>parts</root>")
     with pytest.raises(ValueError, match="detached node"):
@@ -140,8 +140,8 @@ def test_root_siblings():
 
     assert len(head_nodes) == len(tail_nodes) == 2
 
-    assert (
-        str(document) == "<?xml version='1.0' encoding='UTF-8'?><?Blood Fire?>"
+    assert str(document) == (
+        '<?xml version="1.0" encoding="UTF-8"?><?Blood Fire?>'
         "<!-- I Roy --><root/><!-- Prince Jazzbo --><?over out?>"
     )
 

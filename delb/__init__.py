@@ -228,7 +228,7 @@ class Document(metaclass=DocumentMeta):
 
     >>> document = Document("<root/>")
     >>> str(document)
-    "<?xml version='1.0' encoding='UTF-8'?><root/>"
+    '<?xml version="1.0" encoding="UTF-8"?><root/>'
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
@@ -488,7 +488,7 @@ class Document(metaclass=DocumentMeta):
             )
 
     def __serialize(self, serializer, encoding, indentation):
-        declaration = f"<?xml version='1.0' encoding='{encoding.upper()}'?>"
+        declaration = f'<?xml version="1.0" encoding="{encoding.upper()}"?>'
         if indentation:
             declaration += "\n"
         serializer.buffer.write(declaration)
@@ -496,8 +496,11 @@ class Document(metaclass=DocumentMeta):
             serializer.serialize_node(node)
         with altered_default_filters():
             serializer.serialize_root(self.root)
-        for node in self.tail_nodes:
-            serializer.serialize_node(node)
+        if self.tail_nodes:
+            if indentation:
+                serializer.buffer.write("\n")
+            for node in self.tail_nodes:
+                serializer.serialize_node(node)
 
     def write(
         self,
