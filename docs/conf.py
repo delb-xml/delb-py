@@ -221,6 +221,31 @@ autodoc_type_aliases = {
     "NodeSource": "delb.typing.NodeSource",
 }
 
+# -- Options for autodocsumm extension ---------------------------------------
+
+MEMBER_SECTIONS_ORDER = (
+    "Node properties",
+    "content properties",
+    "Related",
+    "Attributes",
+    "query",
+    "fetch",
+    "iterate",
+    "add nodes",
+    "remove",
+    "Methods",
+    "",  # fallback returns lowest weight
+)
+
+
+def autodocsumm_sections_sort(item: str) -> int:
+    for weight, substring in enumerate(MEMBER_SECTIONS_ORDER):
+        if substring in item:
+            return weight
+
+
+autodocsumm_section_sorter = autodocsumm_sections_sort
+
 
 # -- Options for intersphinx extension ---------------------------------------
 
