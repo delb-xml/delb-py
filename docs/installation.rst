@@ -87,4 +87,4 @@ Several of the *just* recipes rely on hatch_.
 .. _hatch: https://hatch.pypa.io/
 .. _just: https://just.systems/
 .. _pip: https://pip.pypa.io/
-.. _pipx: https://pypa.github.io/pipx/
+.. _pipx: https://pipx.pypa.io/stable/

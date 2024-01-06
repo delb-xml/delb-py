@@ -284,9 +284,9 @@ Interesting Resources
 .. _dom api: https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model
 .. _gnome: https://www.gnome.org/
 .. _inxs: http://inxs.readthedocs.org/
-.. _libxml2: http://xmlsoft.org/
-.. _lxml: http://lxml.de/
+.. _libxml2: https://gitlab.gnome.org/GNOME/libxml2
+.. _lxml: https://lxml.de/
 .. _mypyc: https://mypyc.readthedocs.io/
 .. _no fun: https://www.youtube.com/watch?v=5sSKH0iXWo8
-.. _open document format: http://opendocumentformat.org/
-.. _xml-tei: http://tei-c.org/
+.. _open document format: https://opendocumentformat.org/
+.. _xml-tei: https://tei-c.org/

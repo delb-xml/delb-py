@@ -163,4 +163,4 @@ Custom XPath functions are registered with this decorator:
 
 .. _eXist-db: https://exist-db.org/
 .. _provide entrypoint metadata: https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata
-.. _snakesist: https://github.com/03b8/snakesist
+.. _snakesist: https://github.com/delb-xml/snakesist
