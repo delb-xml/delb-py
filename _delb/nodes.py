@@ -2992,7 +2992,7 @@ class SerializerBase:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.buffer.flush()
 
-    def __collect_prefixes(self, root: TagNode):
+    def __collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNode)
             for namespace in {node.namespace} | {
@@ -3001,34 +3001,45 @@ class SerializerBase:
                 if namespace in self.__prefixes:
                     continue
 
+                prefix: str | None
                 if namespace is None:
-                    if "" in self.__prefixes.values():
-                        # hence there's a default namespace in use
-                        self.__new_namespace_declaration(namespace)
-                    else:
-                        self.__prefixes[None] = ""
+                    for other_namespace, prefix in self.__prefixes.items():
+                        if prefix == "":
+                            # hence there's a default namespace in use, it needs to use
+                            # a prefix though as an empty namespace can't be declared
+                            assert other_namespace
+                            self.__new_namespace_declaration(other_namespace)
+                            break
+                    self.__prefixes[None] = ""
                     continue
 
+                # TODO unlike lxml, delb will probably not keep the individual
+                #      namespace declarations per node in its representation.
+                #      that should render a lot of the following unnecessary
+
+                # with the lxml backend, a node retains prefix declarations from the
+                # parsed source
+                self.__namespaces._fallback = node.namespaces
                 try:
-                    self.__namespaces._fallback = node.namespaces
                     prefix = self.__namespaces.lookup_prefix(namespace)
-
-                    if prefix is None:
-                        if "" in self.__prefixes.values():
-                            # hence there's an empty namespace in use
-                            self.__prefixes[namespace] = ""
-                            namespace = None
-                            raise KeyError
-                        else:
-                            prefix = ""
-                    else:
-                        prefix = prefix + ":"
-
-                    self.__prefixes[namespace] = prefix
-
                 except KeyError:
                     assert isinstance(namespace, str)
                     self.__new_namespace_declaration(namespace)
+                    continue
+
+                if prefix is not None:
+                    # that found prefix still needs a colon for faster serialisat
+                    # composition later
+                    self.__prefixes[namespace] = f"{prefix}:"
+
+                else:  # now we need to come up with a new prefix
+                    if "" not in self.__prefixes.values():
+                        # be bold and claim to be the default
+                        self.__prefixes[namespace] = ""
+
+                    else:
+                        assert isinstance(namespace, str)
+                        self.__new_namespace_declaration(namespace)
 
     def _init_config(
         self,

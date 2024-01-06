@@ -73,10 +73,25 @@ def test_indentation(indentation, _in, out):
 
 
 def test_empty_below_default_namespace():
-    # as there's a default namespace, a prefix must be declared for an empty namespace
+    # as there's a default namespace and a namespace can't be empty, a prefix must be
+    # supplied for all namespaces
     root = Document("<root xmlns='http://fo.org/'/>").root
     root.append_children(new_tag_node(local_name="node", namespace=None))
-    assert str(root) == '<root xmlns="http://fo.org/" xmlns:ns0=""><ns0:node/></root>'
+    assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
+
+
+@pytest.mark.parametrize(
+    ("_in", "out"),
+    (
+        (
+            '<r xmlns="d1"><b xmlns="d2"/></r>',
+            '<r xmlns="d1" xmlns:ns0="d2"><ns0:b/></r>',
+        ),
+        ('<r><b xmlns="d"/></r>', '<r xmlns:ns0="d"><ns0:b/></r>'),
+    ),
+)
+def test_prefix_collection_and_generation(_in, out):
+    assert str(Document(_in).root) == out
 
 
 def test_significant_whitespace_is_saved(result_file):
