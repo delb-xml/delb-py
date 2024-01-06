@@ -138,8 +138,8 @@ class Namespaces(Mapping):
 
     def lookup_prefix(self, namespace: str) -> Optional[str]:
         """
-        Resolves a namespace while considering namespace declarations of ascending
-        nodes.
+        Resolves a namespace to a prefix while considering namespace declarations of
+        ascending nodes.
         """
         if namespace in self.__prefixes_lookup_cache:
             return self.__prefixes_lookup_cache[namespace]
@@ -164,6 +164,10 @@ class Namespaces(Mapping):
             scope = scope._fallback
 
         if result is None:
+            # this is necessary, b/c with the lxml semantics, a None value represents
+            # the default namespace's empty prefix; they're carried over to avoid
+            # conversions that'd affect too much operations.
+            # TODO when changing this, mind that there's a code depending on this:
             raise KeyError(f"The namespace `{namespace}` hasn't been declared.")
 
         self.__prefixes_lookup_cache[namespace] = result
