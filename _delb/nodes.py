@@ -564,12 +564,10 @@ class Attribute(_StringMixin):
     def namespace(self) -> Optional[str]:
         """The attribute's namespace"""
         namespace: bytes | str | None
-
-        if self._key.startswith("{"):
-            return deconstruct_clark_notation(self._key)[0]
-
         namespace, _ = deconstruct_clark_notation(self._key)
+
         if namespace is None:
+            # retrieve the default namespace or None
             namespace = self._attributes.namespaces.get(None)
 
         if isinstance(namespace, bytes):
