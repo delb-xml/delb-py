@@ -76,7 +76,6 @@ class Namespaces(Mapping):
     __slots__ = (
         "__data",
         "_fallback",
-        "__hash",
         "__prefixes_lookup_cache",
     )
 
@@ -111,21 +110,12 @@ class Namespaces(Mapping):
             else fallback
         )
 
-        data_hash = hash(tuple(self.__data.items()))
-        if isinstance(self._fallback, Namespaces):
-            self.__hash = hash((data_hash, hash(self._fallback)))
-        else:
-            self.__hash = data_hash
-
         self.__prefixes_lookup_cache: dict[str, str | None] = {
             v: k for k, v in GLOBAL_NAMESPACES.items()
         }
 
     def __getitem__(self, item) -> str:
         return self.__data.get(item) or self._fallback[item]
-
-    def __hash__(self) -> int:
-        return self.__hash
 
     def __iter__(self) -> Iterator[str | None]:
         return iter(self.__data)

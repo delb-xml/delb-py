@@ -1332,14 +1332,6 @@ class _ElementWrappingNode(NodeBase):
         self._etree_obj = etree_element
         self._tail_node = TextNode(etree_element, position=TAIL)
 
-        namespaces = Namespaces(self._etree_obj.nsmap)
-        # TODO eventually review whether this is the only piece that benefits from
-        #      hashing names.Namespace
-        if self.parent is not None and namespaces == self.parent.namespaces:
-            self.__namespaces = self.parent.namespaces
-        else:
-            self.__namespaces = namespaces
-
     def __copy__(self) -> _ElementWrappingNode:
         return self.clone(deep=False)
 
@@ -1482,7 +1474,7 @@ class _ElementWrappingNode(NodeBase):
 
     @property
     def namespaces(self) -> Namespaces:
-        return self.__namespaces
+        return Namespaces(self._etree_obj.nsmap)
 
     @property
     def parent(self) -> Optional[TagNode]:
