@@ -1,5 +1,6 @@
 import pytest
 
+from _delb.nodes import _wrapper_cache
 from delb import (
     altered_default_filters,
     is_tag_node,
@@ -107,46 +108,47 @@ def test_wrapper_consistency():
             "text": id(text),
         }
 
-    document = Document("<root><foo><div1><div2/>text</div1></foo></root>")
+    with _wrapper_cache:
+        document = Document("<root><foo><div1><div2/>text</div1></foo></root>")
 
-    root = document.root
-    foo = root.first_child
-    div1 = foo.first_child
-    div2 = div1.first_child
-    text = div1.last_child
+        root = document.root
+        foo = root.first_child
+        div1 = foo.first_child
+        div2 = div1.first_child
+        text = div1.last_child
 
-    original_ids = node_ids()
+        original_ids = node_ids()
 
-    div1.detach()
-    foo = root.first_child
-    div2 = div1.first_child
-    text = div1.last_child
-    assert node_ids() == original_ids
+        div1.detach()
+        foo = root.first_child
+        div2 = div1.first_child
+        text = div1.last_child
+        assert node_ids() == original_ids
 
-    foo.detach()
-    assert node_ids() == original_ids
+        foo.detach()
+        assert node_ids() == original_ids
 
-    root.insert_children(0, div1)
-    div1 = root.first_child
-    div2 = div1.first_child
-    text = div1.last_child
-    assert node_ids() == original_ids
+        root.insert_children(0, div1)
+        div1 = root.first_child
+        div2 = div1.first_child
+        text = div1.last_child
+        assert node_ids() == original_ids
 
-    other_doc = Document(str(document))
-    div1 = other_doc.css_select("div1").first
-    div2 = other_doc.css_select("div2").first
-    div2.detach()
-    div1.insert_children(0, div2)
+        other_doc = Document(str(document))
+        div1 = other_doc.css_select("div1").first
+        div2 = other_doc.css_select("div2").first
+        div2.detach()
+        div1.insert_children(0, div2)
 
-    div1 = document.css_select("div1").first
-    div2 = document.css_select("div2").first
+        div1 = document.css_select("div1").first
+        div2 = document.css_select("div2").first
 
-    div2.detach()
-    div1 = root.first_child
-    text = div1.first_child
-    assert node_ids() == original_ids
+        div2.detach()
+        div1 = root.first_child
+        text = div1.first_child
+        assert node_ids() == original_ids
 
-    div1.insert_children(0, div2)
+        div1.insert_children(0, div2)
 
 
 def test_invalid_operations():
