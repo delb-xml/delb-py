@@ -73,12 +73,22 @@ def test_detach_sustains_attributes():
         "<root xmlns='https://default.ns'><node foo='bar'/></root>"
     ).root.first_child
     attributes = node.attributes
-    attributes_copy = dict(attributes)
+    attributes_copy = attributes.as_dict_with_strings()
 
     node.detach()
 
     assert node.attributes is attributes
     assert node.attributes == attributes_copy
+
+
+def test_namespaced_attributes():
+    root = Document('<root xmlns="http://foo.org" b="c"/>').root
+    for key, attribute in root.attributes.items():
+        assert key == "{http://foo.org}b"
+        assert attribute.namespace == "http://foo.org"
+        assert attribute.local_name == "b"
+        assert attribute.universal_name == key
+        assert attribute.value == "c"
 
 
 def test_update():

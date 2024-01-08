@@ -661,7 +661,13 @@ class TagAttributes(MutableMapping):
             return None
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self._etree_attrib)  # type: ignore
+        results = []
+        for key in self._etree_attrib:
+            assert isinstance(key, str)
+            attribute = self.__getitem__(key)
+            assert isinstance(attribute, Attribute)
+            results.append(attribute.universal_name)
+        return iter(results)
 
     def __len__(self) -> int:
         return len(self._etree_attrib)
