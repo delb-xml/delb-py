@@ -609,7 +609,15 @@ class Attribute(_StringMixin):
 
 
 class TagAttributes(MutableMapping):
-    """A data type to access a :term:`tag node`'s attributes."""
+    """
+    A data type to access a :term:`tag node`'s attributes.
+
+    Note that due to the current lxml backend there's no distinction between attributes
+    with no namespace and such in the default namespace, both variants access the same
+    data. If you you managed yourself into a position where that matters, the only
+    technical solution is to re-encode the document to not contain any empty namespace.
+    This will not be an issue with delb 0.7, according to the plan.
+    """
 
     __slots__ = ("_attributes", "_etree_attrib", "namespaces")
 
