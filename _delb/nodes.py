@@ -2387,7 +2387,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         result = super().xpath(expression=expression, namespaces=namespaces)
         if __debug__ and all(isinstance(n, TagNode) for n in result):
             try:
-                etree_result = self._etree_xpath(expression)
+                etree_result = self._etree_xpath(expression, namespaces=namespaces)
             except NotImplementedError:
                 # might stem from flaws in LegacyXPathExpression
                 pass
@@ -2400,9 +2400,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return result
 
     # REMOVE eventually
-    def _etree_xpath(self, expression: str) -> QueryResults:
+    def _etree_xpath(
+        self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
+    ) -> QueryResults:
         etree_obj = self._etree_obj
-        namespaces = etree_obj.nsmap
+        if namespaces is None:
+            namespaces = etree_obj.nsmap
         compat_namespaces: etree._DictAnyStr
         xpath_expression = LegacyXPathExpression(expression)
 
