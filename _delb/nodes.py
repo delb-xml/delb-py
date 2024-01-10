@@ -536,7 +536,7 @@ class Attribute(_StringMixin):
         self._key = key
 
     def __repr__(self):
-        return repr(self.value)
+        return f'{self.universal_name}="{self.value}"'
 
     def _set_new_key(self, namespace, name):
         old_key = self._key
@@ -1601,9 +1601,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     Attribute values and child nodes can be obtained with the subscript notation.
 
-    >>> root = Document('<root x="0"><child_1/>child_2<child_3/></root>').root
-    >>> root["x"]
-    '0'
+    >>> root = Document('<root x="y"><child_1/>child_2<child_3/></root>').root
+    >>> print(root["x"])
+    y
     >>> print(root[0])
     <child_1/>
     >>> print(root[-1])
