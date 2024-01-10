@@ -100,7 +100,7 @@ def test_update():
 def test_various_attribute_operations(sample_document):
     # une assemblage from back in the days
     milestone = sample_document.root[1][0]
-    assert milestone.attributes == {"unit": "page"}
+    assert milestone.attributes == {"{https://name.space}unit": "page"}
 
     attributes = Document('<node xmlns="default" foo="0" bar="0"/>').root.attributes
     del attributes["foo"]

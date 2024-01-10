@@ -702,7 +702,7 @@ class TagAttributes(MutableMapping):
 
     def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
-        return {str(k): str(v) for k, v in self._etree_attrib.items()}
+        return {a.universal_name: a.value for a in self.values()}
 
     def get(self, key, default=None):
         result = self[key]
