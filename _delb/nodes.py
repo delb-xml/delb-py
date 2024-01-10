@@ -629,6 +629,23 @@ class TagAttributes(MutableMapping):
     def __contains__(self, item: Any) -> bool:
         return self[item] is not None
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Mapping):
+            return False
+
+        if len(self) != len(other):
+            return False
+
+        if isinstance(other, TagAttributes):
+            for key, value in self.items():
+                assert isinstance(value, Attribute)
+                other_value = other[value.namespace : value.local_name]  # type: ignore
+                if (other_value is None) or (value != other_value):
+                    return False
+            return True
+
+        return self.as_dict_with_strings() == other
+
     def __delitem__(self, key: str | slice):
         if isinstance(key, str):
             pass

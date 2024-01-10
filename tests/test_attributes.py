@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import pytest
 
 from delb import new_tag_node, Document, InvalidOperation
@@ -58,6 +60,52 @@ def test_attribute_object():
         attribute.value
     with pytest.raises(InvalidOperation):
         attribute.value = "obsolete"
+
+
+def test_comparison():
+    document = Document(
+        dedent(
+            """\
+    <root>
+        <a xml:id="x"/>
+        <b id="x"/>
+        <c id="x"/>
+        <d id="x" od="y"/>
+        <p:e xmlns:p="https://u.rl" p:id="x" p:od="y"/>
+    </root>
+    """
+        )
+    )
+    a = document.css_select("a").first
+    b = document.css_select("b").first
+    c = document.css_select("c").first
+    d = document.css_select("d").first
+    e = document.css_select("p|e", namespaces={"p": "https://u.rl"}).first
+
+    assert a.attributes == a.attributes
+    assert a.attributes != b.attributes
+    assert a.attributes != c.attributes
+    assert a.attributes != d.attributes
+    assert a.attributes != e.attributes
+    assert a.attributes == {"{http://www.w3.org/XML/1998/namespace}id": "x"}
+
+    assert b.attributes == b.attributes
+    assert b.attributes == c.attributes
+    assert b.attributes != d.attributes
+    assert b.attributes != e.attributes
+    assert b.attributes == {"id": "x"}
+
+    assert c.attributes == c.attributes
+    assert c.attributes != d.attributes
+    assert c.attributes != e.attributes
+    assert c.attributes == {"id": "x"}
+
+    assert d.attributes == d.attributes
+    assert d.attributes != e.attributes
+    assert d.attributes == {"od": "y", "id": "x"}
+
+    assert e.attributes == e.attributes
+    assert e.attributes == {"{https://u.rl}od": "y", "{https://u.rl}id": "x"}
 
 
 def test_delete_namespaced_attribute():
