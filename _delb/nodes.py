@@ -592,7 +592,7 @@ class Attribute(_StringMixin):
     @property
     def value(self) -> str:
         """The attribute's value."""
-        value = self._attributes._etree_attrib.get(self._key)
+        value: bytes | str | None = self._attributes._etree_attrib.get(self._key)
         if value is None:
             raise InvalidOperation("The attribute was removed from its node.")
         return value.decode() if isinstance(value, bytes) else value
