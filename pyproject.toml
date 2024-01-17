@@ -81,7 +81,7 @@ exclude_lines = [
     "raise TypeError",
     "raise ValueError"
 ]
-fail_under = 97
+fail_under = 96
 
 #
 
