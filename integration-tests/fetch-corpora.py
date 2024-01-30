@@ -69,7 +69,147 @@ ARCHIVE_DESCRIPTIONS: Final = (
         archive_documents_root="disco-main/tei/all-periods-per-author/",
         target_directory="DISCO",
     ),
-    Archive(  # mixed bag of XML encodings, .svg are ignored though
+    # the level2 encodings in the COST-ELTeC corpora are heavily segmented into large
+    # trees as a result of lemmatisation. that'd make the tests more time-consuming
+    # while the markup is less interesting with regards to diverse phenomena. thus only
+    # the smaller set with norwegian texts was selected at this level.
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-cze/archive/master.tar.gz",
+        archive_documents_root="ELTeC-cze-master/level1/",
+        target_directory="ELTeC/cze",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-deu/archive/master.tar.gz",
+        archive_documents_root="ELTeC-deu-master/level1/",
+        target_directory="ELTeC/deu",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-eng/archive/master.tar.gz",
+        archive_documents_root="ELTeC-eng-master/level1/",
+        target_directory="ELTeC/eng",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-eng-ext/archive/master.tar.gz",
+        archive_documents_root="ELTeC-eng-ext-master/level1/",
+        target_directory="ELTeC/eng-ext",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-fra/archive/master.tar.gz",
+        archive_documents_root="ELTeC-fra-master/level1/",
+        target_directory="ELTeC/fra",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-fra-ext1/archive/master.tar.gz",
+        archive_documents_root="ELTeC-fra-ext1-master/level1/",
+        target_directory="ELTeC/fra-ext1",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-fra-ext2/archive/main.tar.gz",
+        archive_documents_root="ELTeC-fra-ext2-main/level1/",
+        target_directory="ELTeC/fra-ext2",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-gre/archive/master.tar.gz",
+        archive_documents_root="ELTeC-gre-master/level1/",
+        target_directory="ELTeC/gre",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-gsw/archive/master.tar.gz",
+        archive_documents_root="ELTeC-gsw-master/level0/",
+        target_directory="ELTeC/gsw",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-hrv/archive/master.tar.gz",
+        archive_documents_root="ELTeC-hrv-master/level1/",
+        target_directory="ELTeC/hrv",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-hun/archive/master.tar.gz",
+        archive_documents_root="ELTeC-hun-master/level1/",
+        target_directory="ELTeC/hun",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-ita/archive/master.tar.gz",
+        archive_documents_root="ELTeC-ita-master/level1/",
+        target_directory="ELTeC/ita",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-lav/archive/master.tar.gz",
+        archive_documents_root="ELTeC-lav-master/level1/",
+        target_directory="ELTeC/lav",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-lit/archive/master.tar.gz",
+        archive_documents_root="ELTeC-lit-master/level1/",
+        target_directory="ELTeC/lit",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-lit-ext/archive/main.tar.gz",
+        archive_documents_root="ELTeC-lit-ext-main/level1/",
+        target_directory="ELTeC/lit-ext",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-nor/archive/master.tar.gz",
+        archive_documents_root="ELTeC-nor-master/level2/",
+        target_directory="ELTeC/nor",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-pol/archive/master.tar.gz",
+        archive_documents_root="ELTeC-pol-master/level1/",
+        target_directory="ELTeC/pol",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-por/archive/master.tar.gz",
+        archive_documents_root="ELTeC-por-master/level1/",
+        target_directory="ELTeC/por",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-por-ext/archive/master.tar.gz",
+        archive_documents_root="ELTeC-por-ext-master/level1/",
+        target_directory="ELTeC/por-ext",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-rom/archive/master.tar.gz",
+        archive_documents_root="ELTeC-rom-master/level1/",
+        target_directory="ELTeC/rom",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-rus/archive/master.tar.gz",
+        archive_documents_root="ELTeC-rus-master/level0/",
+        target_directory="ELTeC/rus",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-slv/archive/master.tar.gz",
+        archive_documents_root="ELTeC-slv-master/level1/",
+        target_directory="ELTeC/slv",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-spa/archive/master.tar.gz",
+        archive_documents_root="ELTeC-spa-master/level1/",
+        target_directory="ELTeC/spa",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-srp/archive/master.tar.gz",
+        archive_documents_root="ELTeC-srp-master/level1/",
+        target_directory="ELTeC/srp",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-srp-ext/archive/master.tar.gz",
+        archive_documents_root="ELTeC-srp-ext-master/level1/",
+        target_directory="ELTeC/srp-ext",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-swe/archive/master.tar.gz",
+        archive_documents_root="ELTeC-swe-master/level1/",
+        target_directory="ELTeC/swe",
+    ),
+    Archive(
+        url="https://github.com/COST-ELTeC/ELTeC-ukr/archive/master.tar.gz",
+        archive_documents_root="ELTeC-ukr-master/level1/",
+        target_directory="ELTeC/ukr",
+    ),
+    Archive(
+        # mixed bag of XML encodings, .svg are ignored though
         url="https://github.com/faustedition/faust-xml/archive/master.tar.gz",
         archive_documents_root="faust-xml-master/xml/",
         target_directory="faust-edition",
@@ -150,7 +290,7 @@ async def fetch_archive(archive_description: Archive):
     target_folder = CORPORA_PATH / archive_description.target_directory
     if SKIP_EXISTING and target_folder.exists():
         return
-    target_folder.mkdir(exist_ok=True)
+    target_folder.mkdir(exist_ok=True, parents=True)
 
     with TemporaryFile(suffix=".tar.gz") as archive_file:
         await fetch_resource(archive_description.url, archive_file)
