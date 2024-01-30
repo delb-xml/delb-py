@@ -21,6 +21,8 @@ from typing import Final, NamedTuple
 
 from httpx import AsyncClient, HTTPError
 
+import delb
+
 
 # constants
 
@@ -132,10 +134,6 @@ def make_archive_filter(archive_description: Archive) -> callable:
 # there's no business like business
 
 
-async def crawl_webpage():
-    pass
-
-
 async def fetch_archive(archive_description: Archive):
     target_folder = CORPORA_PATH / archive_description.target_directory
     if SKIP_EXISTING and target_folder.exists():
@@ -152,6 +150,24 @@ async def fetch_archive(archive_description: Archive):
         print(f"Extracted {archive_file.name} to {target_folder}")
 
 
+async def fetch_sturm_edition():
+    base_url = "https://sturm-edition.de/api/files/"
+    target_folder = CORPORA_PATH / "sturm-edition"
+    if SKIP_EXISTING and target_folder.exists():
+        return
+    target_folder.mkdir(exist_ok=True)
+
+    for item in delb.Document(base_url).css_select("idno"):
+        filename = item.full_text
+        if filename in ("Q.01.19151120.JVH.01.xml", "Q.01.19150315.JVH.01.xml"):
+            # these are empty files
+            continue
+        with (target_folder / filename).open("wb") as f:
+            await fetch_resource(base_url + filename, f)
+
+    print(f"Fetched all files referenced in {base_url}")
+
+
 # cli
 
 
@@ -160,7 +176,7 @@ async def main():
     async with asyncio.TaskGroup() as tasks:
         for archive_description in ARCHIVE_DESCRIPTIONS:
             tasks.create_task(fetch_archive(archive_description))
-        tasks.create_task(crawl_webpage())
+        tasks.create_task(fetch_sturm_edition())
     await http_client.aclose()
 
 
