@@ -2,10 +2,20 @@
 
 # not yet included
 #
-# XML file with references to files:
-# https://sturm-edition.de/api/files/
-# flat crawl:
-# https://celt.ucc.ie/publishd.html
+# epigraphic datasets
+# https://github.com/Brown-University-Library/iip-texts/tree/master/epidoc-filesf
+# https://github.com/Brown-University-Library/usep-data/tree/master/xml_inscriptions/transcribed
+#
+# includes hieroglyphs, but has some encoding errors
+# https://github.com/simondschweitzer/aed-tei/tree/master/files
+#
+# several repos w/ south asian epigraphics, still growing:
+# https://github.com/orgs/erc-dharma/repositories
+#
+# epigraphic zips:
+# https://amsacta.unibo.it/id/eprint/5863/1/IGCYR-GVCYR%20v.03.zip
+# https://inslib.kcl.ac.uk/irt2009/redist/inscr/irt2009_inscriptions.zip
+#
 # deep crawlin':
 # https://gams.uni-graz.at/archive/objects/container:mws-gesamt/methods/sdef:Context/get?locale=fr&mode=&context=
 
@@ -79,11 +89,13 @@ ARCHIVE_DESCRIPTIONS: Final = (
         target_directory="papyri",
     ),
     Archive(
+        # digital born
         url="https://github.com/i-d-e/ride/archive/master.tar.gz",
         archive_documents_root="ride-master/tei_all/",
         target_directory="ride-reviews",
     ),
 )
+
 
 SKIP_EXISTING: Final = bool(os.environ.get("SKIP_EXISTING", ""))
 
@@ -147,7 +159,8 @@ async def fetch_archive(archive_description: Archive):
             path=target_folder,
             filter=make_archive_filter(archive_description),
         )
-        print(f"Extracted {archive_file.name} to {target_folder}")
+
+    print(f"Extracted {archive_file.name} to {target_folder}")
 
 
 async def fetch_sturm_edition():
