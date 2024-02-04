@@ -1679,16 +1679,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     @overload
-    def __getitem__(self, item: str) -> Optional[Attribute]:
-        ...
+    def __getitem__(self, item: str) -> Optional[Attribute]: ...
 
     @overload
-    def __getitem__(self, item: int) -> NodeBase:
-        ...
+    def __getitem__(self, item: int) -> NodeBase: ...
 
     @overload
-    def __getitem__(self, item: slice) -> list[NodeBase]:
-        ...
+    def __getitem__(self, item: slice) -> list[NodeBase]: ...
 
     def __getitem__(self, item):
         if isinstance(item, str):
@@ -3108,9 +3105,9 @@ class SerializerBase:
 
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
-            data[
-                self.__prefixes[attribute.namespace] + attribute.local_name
-            ] = f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
+            data[self.__prefixes[attribute.namespace] + attribute.local_name] = (
+                f'''"{self.sanitize_text(attribute.value).replace('"', "&quot;")}"'''
+            )
 
         return data
 
