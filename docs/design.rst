@@ -83,7 +83,7 @@ Now it is time for an example, given this document snippet:
 Here's a graphical representation of the markup with etree's elements and their
 text and tail attributes:
 
-.. image:: images/etree-model-example.png
+.. image:: images/etree-model-example.webp
 
 When thinking about a paragraph of text, a way to conceptualize it is as a
 sequence of sentences, formed by a series of words, a sequence of graphemes,
@@ -185,7 +185,7 @@ with a better locatability, here's another graphical representation of the
 markup example from above with text content in an emancipated, dedicated node
 type:
 
-.. image:: images/dom-model-example.png
+.. image:: images/dom-model-example.webp
 
 Note that text containing attributes appear in document order which promises
 an eased lookaround.
