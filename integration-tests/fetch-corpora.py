@@ -56,10 +56,7 @@ ARCHIVE_DESCRIPTIONS: Final = (
     Archive(
         # all textual content is encoded w/o linefeeds
         # external DTDs for entities are used
-        url="https://github.com/funkyfuture/casebooks-data/archive/master.tar.gz",
-        # TODO use this URL when https://github.com/CasebooksProject/casebooks-data/pull/1
-        # was merged:
-        # url="https://github.com/CasebooksProject/casebooks-data/archive/master.tar.gz",
+        url="https://github.com/CasebooksProject/casebooks-data/archive/master.tar.gz",
         archive_documents_root="casebooks-data-master/cases/",
         target_directory="casebooks",
         extra_files={"casebooks-data-master/schema/entities.dtd": "entities.dtd"},
