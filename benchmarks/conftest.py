@@ -13,6 +13,6 @@ def _collect_garbage():
     gc.collect()
 
 
-@pytest.fixture()
+@pytest.fixture
 def docs():
     return DOCUMENTS

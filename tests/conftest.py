@@ -14,22 +14,22 @@ RESULTS_FILE = FILES_PATH / ".result.xml"
 _referenced_objects_for_wrapper_cache_tests = {}
 
 
-@pytest.fixture()
+@pytest.fixture
 def files_path():
     return FILES_PATH
 
 
-@pytest.fixture()
+@pytest.fixture
 def long_term_references():
     return _referenced_objects_for_wrapper_cache_tests
 
 
-@pytest.fixture()
+@pytest.fixture
 def result_file():
     return RESULTS_FILE
 
 
-@pytest.fixture()
+@pytest.fixture
 def queries_sample():
     return Document(
         """\
@@ -48,7 +48,7 @@ def _reset_serializer():
     DefaultStringOptions.reset_defaults()
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_document():
     return Document(
         '<doc xmlns="https://name.space">'
