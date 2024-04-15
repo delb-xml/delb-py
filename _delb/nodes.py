@@ -2284,14 +2284,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :meta category: Node properties
         """
         if self.parent is None:
-            return "/."
+            return "/*"
 
         with altered_default_filters(is_tag_node):
             steps = list(self.iterate_ancestors())
             steps.pop()  # root
             steps.reverse()
             steps.append(self)
-            return "".join(f"/*[{n.index+1}]" for n in steps)  # type: ignore
+            return "/*" + "".join(f"/*[{cast('int', n.index)+1}]" for n in steps)
 
     @altered_default_filters()
     def merge_text_nodes(self):

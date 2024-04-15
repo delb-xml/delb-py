@@ -415,7 +415,7 @@ class Document(metaclass=DocumentMeta):
 
     @property
     def root(self) -> TagNode:
-        """The root node of a document tree."""
+        """The root node of a document's *content* tree."""
         return self.__root_node__
 
     @root.setter

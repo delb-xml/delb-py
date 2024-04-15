@@ -1,7 +1,7 @@
 import pytest
 
 from _delb.xpath.ast import Axis
-from delb import altered_default_filters, is_tag_node, Document, TextNode
+from delb import altered_default_filters, is_tag_node, Document, TagNode, TextNode
 
 
 def test_any_name_test():
@@ -59,13 +59,15 @@ def test_axes_order(name, start_name, expected_order):
                     break
 
         assert node.local_name == start_name
-        result = "".join(n.local_name for n in axis.evaluate(node, {}))
+        result = "".join(
+            n.local_name for n in axis.evaluate(node, {}) if isinstance(n, TagNode)
+        )
         assert result == expected_order
 
 
 def test_contributed_function_text():
     document = Document("<root><a>foo</a><b>bar</b><c>f<x/>oo</c></root>")
-    result = document.xpath("/child::node()[text()='foo']")
+    result = document.xpath("//*[text()='foo']")
     assert result.size == 1
     assert result.first.local_name == "a"
 
@@ -73,7 +75,7 @@ def test_contributed_function_text():
 def test_custom_functions():
     # this is used as example in the xpath module docstring
     document = Document("<root><node/><node foo='BAR'/></root>")
-    result = document.xpath("/*[is-last() and lowercase(@foo)='bar']")
+    result = document.xpath("//*[is-last() and lowercase(@foo)='bar']")
     assert result.size == 1
     assert result.first["foo"] == "BAR"
 
@@ -92,14 +94,14 @@ def test_evaluation_from_text_node():
 
 def test_multiple_identical_location_paths():
     document = Document("<root><foo/></root>")
-    assert document.xpath("/foo | /foo").size == 1
+    assert document.xpath("//foo | //foo").size == 1
 
 
 def test_multiple_predicates():
     document = Document(
         "<root><n x='1'/><n a='' x='2'/><n a='' x='3'/><n x='4'/><n a='' x='5'/></root>"
     )
-    result = document.xpath("/n[@a][2]")
+    result = document.xpath("//n[@a][2]")
     assert result.size == 1
     assert result.first["x"] == "3"
 

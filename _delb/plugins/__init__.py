@@ -223,7 +223,7 @@ class PluginManager:
 
 
             document = Document("<root><node/><node foo='BAR'/></root>")
-            print(document.xpath("/*[is-last() and lowercase(@foo)='bar']").first)
+            print(document.xpath("//*[is-last() and lowercase(@foo)='bar']").first)
 
         .. testoutput::
 

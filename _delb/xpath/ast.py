@@ -46,6 +46,33 @@ xpath_functions = _plugin_manager.xpath_functions
 # helper
 
 
+class _DocumentNode:
+    """
+    This class mimics enough behaviour of a node to act as item in a node set for
+    evaluation of absolute location paths.
+    It represents what is defined as "root node" in `section 5.1`_ of the XPath 1.0
+    specs, which is not the same as :attr:`Document.root`. It's a structural equivalent
+    of the :class:`Document` class and used solely for the evaluation of XPath
+    expressions.
+
+    .. _section 5.1: https://www.w3.org/TR/1999/REC-xpath-19991116/#root-node
+    """
+
+    __slots__ = ("__root_node",)
+
+    def __init__(self, node: NodeBase):
+        while node.parent is not None:
+            node = node.parent
+        self.__root_node = node
+
+    def iterate_descendants(self, *args) -> Iterator[NodeBase]:
+        yield self.__root_node
+        yield from self.__root_node.iterate_descendants(*args)
+
+    def iterate_children(self, *args) -> Iterator[NodeBase]:
+        yield self.__root_node
+
+
 def ensure_prefix(func):
     @wraps(func)
     def wrapper(self, node, **kwargs):
@@ -156,14 +183,18 @@ class Axis(Node):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
-    def ancestor(self, node: NodeBase) -> Iterator[NodeBase]:
+    def ancestor(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         yield from node.iterate_ancestors()
+        yield _DocumentNode(node)
 
-    def ancestor_or_self(self, node: NodeBase) -> Iterator[NodeBase]:
+    def ancestor_or_self(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         yield node
         yield from node.iterate_ancestors()
+        yield _DocumentNode(node)
 
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
+    def evaluate(
+        self, node: _DocumentNode | NodeBase, namespaces: Namespaces
+    ) -> Iterator[NodeBase]:
         yield from self.generator(node)
 
     def child(self, node: NodeBase) -> Iterator[NodeBase]:
@@ -182,10 +213,12 @@ class Axis(Node):
     def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_following_siblings()
 
-    def parent(self, node: NodeBase) -> Iterator[NodeBase]:
+    def parent(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         parent = node.parent
         if parent:
             yield parent
+        else:
+            yield _DocumentNode(node)
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node.iterate_preceding()
@@ -222,17 +255,15 @@ class LocationPath(Node):
                 node_set=parent_paths_result_generator, namespaces=namespaces
             )
 
-        elif self.absolute:
-            first_node = node
-            assert first_node is not None
-            root = last(first_node.iterate_ancestors()) or first_node
-            yield from self.location_steps[0].evaluate(
-                node_set=(root,), namespaces=namespaces
-            )
-
         else:
+            node_set: Iterable[_DocumentNode | NodeBase]
+            if self.absolute:
+                node_set = (_DocumentNode(node),)
+            else:
+                node_set = (node,)
+
             yield from self.location_steps[0].evaluate(
-                node_set=(node,), namespaces=namespaces
+                node_set=node_set, namespaces=namespaces
             )
 
     def _is_unambiguously_locatable(self) -> bool:
@@ -275,7 +306,7 @@ class LocationStep(Node):
             return self._anders_predicates._derived_attributes
 
     def evaluate(
-        self, node_set: Iterable[NodeBase], namespaces: Namespaces
+        self, node_set: Iterable[_DocumentNode | NodeBase], namespaces: Namespaces
     ) -> Iterator[NodeBase]:
         yielded_nodes = set()
         for node in node_set:
@@ -285,7 +316,9 @@ class LocationStep(Node):
                     yielded_nodes.add(_id)
                     yield result_node
 
-    def _evaluate(self, node: NodeBase, namespaces: Namespaces) -> Sequence[NodeBase]:
+    def _evaluate(
+        self, node: _DocumentNode | NodeBase, namespaces: Namespaces
+    ) -> Sequence[NodeBase]:
         node_test = self.node_test
         predicates = self.predicates
 
@@ -348,6 +381,7 @@ class XPathExpression(Node):
         yielded_nodes: set[int] = set()
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):
+                assert not isinstance(result, _DocumentNode)
                 _id = id(result)
                 if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
@@ -407,7 +441,7 @@ class NodeTypeTest(NodeTestNode):
         self.type_name = type_name
 
     def evaluate(self, node: NodeBase, namespaces) -> bool:
-        return _is_node_of_type(node, self.type_name)
+        return _is_node_of_type(node, self.type_name) or isinstance(node, _DocumentNode)
 
 
 class ProcessingInstructionTest(NodeTypeTest):
