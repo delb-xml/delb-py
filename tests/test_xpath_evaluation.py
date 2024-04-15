@@ -4,6 +4,13 @@ from _delb.xpath.ast import Axis
 from delb import altered_default_filters, is_tag_node, Document, TextNode
 
 
+def test_any_name_test():
+    document = Document("<root><node/><node xmlns='http://foo.bar'/></root>")
+
+    assert document.xpath("//*").size == 3
+    assert document.xpath("//p:*", namespaces={"p": "http://foo.bar"}).size == 1
+
+
 @pytest.mark.parametrize(
     ("name", "start_name", "expected_order"),
     (

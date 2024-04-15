@@ -364,6 +364,23 @@ class XPathExpression(Node):
 # node tests
 
 
+class AnyNameTest(NodeTestNode):
+    __slots__ = ("prefix",)
+
+    def __init__(self, prefix: Optional[str]):
+        self.prefix = prefix
+
+    @ensure_prefix
+    def evaluate(self, node: NodeBase, namespaces) -> bool:
+        if not _is_node_of_type(node, "TagNode"):
+            return False
+
+        if self.prefix is None:
+            return True
+
+        return cast("TagNode", node).namespace == namespaces.get(self.prefix)
+
+
 class NameMatchTest(NodeTestNode):
     __slots__ = ("local_name", "prefix")
 
@@ -381,25 +398,6 @@ class NameMatchTest(NodeTestNode):
         ):
             return False
         return node.local_name == self.local_name
-
-
-class NameStartTest(NodeTestNode):
-    __slots__ = ("prefix", "start")
-
-    def __init__(self, prefix: Optional[str], start: str):
-        self.prefix = prefix
-        self.start = start
-
-    @ensure_prefix
-    def evaluate(self, node: NodeBase, namespaces) -> bool:
-        if not _is_node_of_type(node, "TagNode"):
-            return False
-        node = cast("TagNode", node)
-        if (self.prefix or None in namespaces) and node.namespace != namespaces.get(
-            self.prefix
-        ):
-            return False
-        return node.local_name.startswith(self.start)
 
 
 class NodeTypeTest(NodeTestNode):

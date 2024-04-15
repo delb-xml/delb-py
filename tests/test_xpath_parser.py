@@ -5,6 +5,7 @@ import pytest
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath import _css_to_xpath, parse
 from _delb.xpath.ast import (
+    AnyNameTest,
     AnyValue,
     AttributeValue,
     Axis,
@@ -14,7 +15,6 @@ from _delb.xpath.ast import (
     LocationPath,
     LocationStep,
     NameMatchTest,
-    NameStartTest,
     NodeTypeTest,
     ProcessingInstructionTest,
     XPathExpression,
@@ -68,6 +68,8 @@ def test_css_selectors(selector):
             r"signature.",
         ),
         ("*[@lang", r" 1 \(`\[@lang`\): `\[` is never closed\."),
+        ("foo*", r"3 \(`\*`\): Unrecognized expression\."),
+        ("/p:foo*", r"6 \(`\*`\): Unrecognized expression\."),
         ("*.", r" 1 \(`\.`\): Unrecognized expression\."),
         ("*[~lang]", r" 2 \(`~lang\]`\): Unrecognized token\."),
     ),
@@ -114,11 +116,22 @@ def test_invalid_expressions(expression, string):
             ),
         ),
         (
-            "/foo*",
+            "/*",
             XPathExpression(
                 [
                     LocationPath(
-                        [LocationStep(Axis("child"), NameStartTest(None, "foo"))],
+                        [LocationStep(Axis("child"), AnyNameTest(None))],
+                        absolute=True,
+                    )
+                ]
+            ),
+        ),
+        (
+            "/foo:*",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [LocationStep(Axis("child"), AnyNameTest("foo"))],
                         absolute=True,
                     )
                 ]

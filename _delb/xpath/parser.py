@@ -24,6 +24,7 @@ from typing import Iterator, Sequence
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath.ast import (
+    AnyNameTest,
     AnyValue,
     AttributeValue,
     Axis,
@@ -34,7 +35,6 @@ from _delb.xpath.ast import (
     LocationPath,
     LocationStep,
     NameMatchTest,
-    NameStartTest,
     NodeTestNode,
     NodeTypeTest,
     ProcessingInstructionTest,
@@ -235,7 +235,11 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
 
     # name test's prefix
 
-    if initial_tokens_match(tokens, (TokenType.NAME, TokenType.COLON, TokenType.NAME)):
+    if initial_tokens_match(
+        tokens, (TokenType.NAME, TokenType.COLON, TokenType.NAME)
+    ) or initial_tokens_match(
+        tokens, (TokenType.NAME, TokenType.COLON, TokenType.ASTERISK)
+    ):
         assert isinstance(tokens[0], Token)
         prefix = tokens[0].string
         tokens = tokens[2:]
@@ -261,13 +265,8 @@ def parse_location_step(tokens: TokenTree) -> LocationStep:  # noqa: C901
         node_test = NodeTypeTest(NODE_TYPE_TEST_MAPPING[tokens[0].string])
         tokens = tokens[3:]
 
-    elif initial_tokens_match(tokens, (TokenType.NAME, TokenType.ASTERISK)):
-        assert isinstance(tokens[0], Token)
-        node_test = NameStartTest(prefix, tokens[0].string)
-        tokens = tokens[2:]
-
     elif initial_tokens_match(tokens, (TokenType.ASTERISK,)):
-        node_test = NameStartTest(prefix, "")
+        node_test = AnyNameTest(prefix)
         tokens = tokens[1:]
 
     elif initial_tokens_match(tokens, (TokenType.NAME,)):
