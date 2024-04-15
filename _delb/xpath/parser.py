@@ -440,4 +440,4 @@ def parse(expression: str) -> XPathExpression:
         raise e
 
 
-__all__ = (parse.__name__,)  # type: ignore
+__all__ = ("parse",)

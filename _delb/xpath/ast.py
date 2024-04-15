@@ -21,12 +21,12 @@ import sys
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from functools import wraps
 from textwrap import indent
-from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
+from typing import TYPE_CHECKING, cast, Any, Final, NamedTuple, Optional
 
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.plugins import plugin_manager as _plugin_manager
-from _delb.utils import _is_node_of_type, last
+from _delb.utils import _is_node_of_type
 
 # REMOVE when support for Python 3.7 is dropped
 if sys.version_info < (3, 8):
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
 
 
-xpath_functions = _plugin_manager.xpath_functions
+xpath_functions: Final = _plugin_manager.xpath_functions
 
 
 # helper
@@ -248,11 +248,9 @@ class LocationPath(Node):
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
         if self.parent_path:
-            parent_paths_result_generator = self.parent_path.evaluate(
-                node=node, namespaces=namespaces
-            )
             yield from self.location_steps[-1].evaluate(
-                node_set=parent_paths_result_generator, namespaces=namespaces
+                node_set=self.parent_path.evaluate(node=node, namespaces=namespaces),
+                namespaces=namespaces,
             )
 
         else:
@@ -458,7 +456,7 @@ class ProcessingInstructionTest(NodeTypeTest):
         return cast("ProcessingInstructionNode", node).target == self.target
 
 
-# evaluation
+# predicate evaluation
 
 
 class AnyValue(EvaluationNode):
