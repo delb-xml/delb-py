@@ -362,6 +362,7 @@ def _random_unused_prefix(namespaces: etree._NSMap) -> str:
 
 
 def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
+    node_index_cache: dict[int, int] = {}
     sorter = _NodesSorter()
     for node in nodes:
         if not _is_node_of_type(node, "TagNode"):
@@ -369,12 +370,21 @@ def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase
                 "Support for sorting other node types than TagNodes isn't scheduled"
                 "yet."
             )
+
         node = cast("TagNode", node)
-        if node.parent is None:
-            path = []
-        else:
-            path = [int(x[2:-1]) for x in node.location_path.split("/")[1:]]
-        sorter.add(path, node)
+        ancestors_indexes = []
+
+        while node.parent is not None:
+            node_id = id(node)
+            if node_id in node_index_cache:
+                index = node_index_cache[node_id]
+            else:
+                assert node.index is not None
+                node_index_cache[node_id] = index = node.index
+            ancestors_indexes.append(index)
+            node = node.parent
+
+        sorter.add(tuple(reversed(ancestors_indexes)), node)
     yield from sorter.emit()
 
 

@@ -1960,9 +1960,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @property
     def depth(self) -> int:
-        if self.parent is None:
-            return 0
-        return self.location_path.count("/")
+        result = 0
+        node = self
+        while node.parent:
+            node = node.parent
+            result += 1
+        return result
 
     @altered_default_filters()
     def detach(self, retain_child_nodes: bool = False) -> _ElementWrappingNode:
