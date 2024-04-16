@@ -21,11 +21,12 @@ import sys
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from functools import wraps
 from textwrap import indent
-from typing import TYPE_CHECKING, cast, Any, Final, NamedTuple, Optional
+from typing import TYPE_CHECKING, cast, Any,  NamedTuple, Optional
 
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.plugins import plugin_manager as _plugin_manager
+from _delb.typing import Final
 from _delb.utils import _is_node_of_type
 
 # REMOVE when support for Python 3.7 is dropped
