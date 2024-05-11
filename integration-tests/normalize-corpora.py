@@ -5,7 +5,9 @@ import re
 from functools import partial
 from pathlib import Path
 from typing import Final
-from sys import argv, stderr
+from sys import argv
+
+from utils import indicate_progress
 
 CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
 
@@ -42,14 +44,14 @@ async def normalize_file(file: Path):
 
     if subs:
         file.write_bytes(contents)
-    stderr.write("✓")
+    indicate_progress()
 
 
 async def main():
     root = CORPORA_PATH
     if len(argv) > 1:
         root /= argv[1]
-    print(root)
+    print(f"Normalizing contents of {root}")
     async with asyncio.TaskGroup() as tasks:
         for file in root.rglob("*.xml"):
             tasks.create_task(normalize_file(file))

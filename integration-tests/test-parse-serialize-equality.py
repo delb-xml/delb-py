@@ -9,6 +9,8 @@ from typing import Final
 from _delb.plugins.core_loaders import path_loader
 from delb import compare_trees, Document, FailedDocumentLoading, ParserOptions
 
+from utils import indicate_progress
+
 
 BATCH_SIZE: Final = 64
 CPU_COUNT: Final = mp.cpu_count()
@@ -26,7 +28,8 @@ def parse_serialize_compare(file: Path):
 
     try:
         document = Document(
-            file, parser_options=ParserOptions(collapse_whitespace=False)
+            file,
+            parser_options=ParserOptions(collapse_whitespace=False, unplugged=True),
         )
     except FailedDocumentLoading as exc:
         print(
@@ -57,7 +60,7 @@ def parse_serialize_compare(file: Path):
     # TODO? compare with lxml as well
     else:
         result_file.unlink()
-        stderr.write("✓")
+        indicate_progress()
 
 
 def dispatch_batch(files_list: list[Path]):
@@ -65,14 +68,15 @@ def dispatch_batch(files_list: list[Path]):
         try:
             parse_serialize_compare(file)
         except Exception as e:
-            print(f"\nUnhandled exception while testing {file}: {e}", end="")
+            print(f"\nUnhandled exception while testing {file}: {e}")
 
 
 def main():
-    counter = 0
     mp.set_start_method("forkserver")
 
+    counter = 0
     dispatched_tasks = []
+
     with mp.Pool(CPU_COUNT) as pool:
         for file_list in batched(CORPORA_PATH.rglob("*.xml"), n=BATCH_SIZE):
             dispatched_tasks.append(
