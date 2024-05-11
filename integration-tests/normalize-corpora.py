@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Final
 from sys import argv
 
+import tqdm
+
 from utils import indicate_progress
 
 CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
@@ -33,18 +35,19 @@ adjust_casebooks_dtd_path = partial(
 cr_ent_to_lf = partial(re.compile(re.escape(b"&#xd;"), flags=re.IGNORECASE).subn, b"\n")
 
 
-async def normalize_file(file: Path):
+async def normalize_file(file: Path, indicate: callable = indicate_progress):
     match file.parent.name:
         case "casebooks":
             contents, subs = adjust_casebooks_dtd_path(file.read_bytes())
         case "papyri":
             contents, subs = cr_ent_to_lf(file.read_bytes())
         case _:
+            indicate()
             return
 
     if subs:
         file.write_bytes(contents)
-    indicate_progress()
+    indicate()
 
 
 async def main():
@@ -52,9 +55,11 @@ async def main():
     if len(argv) > 1:
         root /= argv[1]
     print(f"Normalizing contents of {root}")
+    files = list(root.rglob("*.xml"))
+    pbar = tqdm.tqdm(total=len(files), mininterval=.5)
     async with asyncio.TaskGroup() as tasks:
-        for file in root.rglob("*.xml"):
-            tasks.create_task(normalize_file(file))
+        for file in files:
+            tasks.create_task(normalize_file(file, pbar.update))
 
 
 if __name__ == "__main__":
