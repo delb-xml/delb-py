@@ -196,6 +196,7 @@ coverage-report = """
 [tool.hatch.envs.integration-tests]
 dependencies = [
     "pytest-httpx",
+    "tenacity",
     "tqdm",
 ]
 [tool.hatch.envs.integration-tests.scripts]
