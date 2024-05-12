@@ -192,14 +192,3 @@ coverage-report = """
         --cov=_delb --cov=delb \
         tests
 """
-
-[tool.hatch.envs.integration-tests]
-dependencies = [
-    "pytest-httpx",
-    "tenacity",
-    "tqdm",
-]
-[tool.hatch.envs.integration-tests.scripts]
-fetch = "python integration-tests/fetch-corpora.py"
-normalize = "python integration-tests/normalize-corpora.py"
-test = "python integration-tests/test-*"
