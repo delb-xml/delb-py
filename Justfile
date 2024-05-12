@@ -10,7 +10,7 @@ benchmarks:
 
 # normalize Python code
 black:
-    black benchmarks _delb delb tests
+    black benchmarks _delb delb integration-tests tests
 
 # runs tests (except loaders) and reports uncovered lines
 coverage-report:

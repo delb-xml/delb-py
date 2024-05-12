@@ -30,6 +30,7 @@ from tempfile import TemporaryFile
 from typing import Final, NamedTuple
 
 from httpx import AsyncClient, HTTPError
+from tenacity import retry, wait_random_exponential
 
 import delb
 
@@ -49,7 +50,8 @@ CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
 
 ARCHIVE_DESCRIPTIONS: Final = (
     Archive(
-        url="https://github.com/Brown-University-Library/atalanta-texts/archive/master.tar.gz",
+        url="https://github.com/Brown-University-Library/atalanta-texts/archive"
+        "/master.tar.gz",
         archive_documents_root="atalanta-texts-master/",
         target_directory="atalanta",
     ),
@@ -221,7 +223,7 @@ ARCHIVE_DESCRIPTIONS: Final = (
         url="https://github.com/funkyfuture/idp.data/archive/master.tar.gz",
         # TODO use this URL when https://github.com/papyri/idp.data/pull/391
         # was merged:
-        # url="https://github.com/papyri/idp.data/archive/master.tar.gz",
+        # url="https://github.com/papyri/idp.data/archive/master.tar.gz",  # noqa: E800
         archive_documents_root="idp.data-master/",
         target_directory="papyri",
     ),
@@ -243,6 +245,7 @@ SKIP_EXISTING: Final = bool(os.environ.get("SKIP_EXISTING", ""))
 http_client: Final = AsyncClient()
 
 
+@retry(wait=wait_random_exponential(multiplier=1, max=120))
 async def fetch_resource(url: str, destination: io.BufferedWriter) -> bool:
     async with http_client.stream("GET", url, follow_redirects=True) as response:
         try:

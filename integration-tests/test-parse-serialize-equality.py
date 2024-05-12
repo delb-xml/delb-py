@@ -3,8 +3,9 @@
 import multiprocessing as mp
 from itertools import batched
 from pathlib import Path
-from sys import stderr
 from typing import Final
+
+from tqdm import tqdm
 
 from _delb.plugins.core_loaders import path_loader
 from delb import compare_trees, Document, FailedDocumentLoading, ParserOptions
@@ -26,7 +27,8 @@ def parse_serialize_compare(file: Path):
 
     try:
         document = Document(
-            file, parser_options=ParserOptions(collapse_whitespace=False)
+            file,
+            parser_options=ParserOptions(collapse_whitespace=False, unplugged=True),
         )
     except FailedDocumentLoading as exc:
         print(
@@ -53,11 +55,9 @@ def parse_serialize_compare(file: Path):
         or not compare_trees(document.root, result_document.root)
     ):
         print(f"\nUnequal document produced from: {file.name}", end="")
-        stderr.write("🕱")
     # TODO? compare with lxml as well
     else:
         result_file.unlink()
-        stderr.write("✓")
 
 
 def dispatch_batch(files_list: list[Path]):
@@ -65,16 +65,18 @@ def dispatch_batch(files_list: list[Path]):
         try:
             parse_serialize_compare(file)
         except Exception as e:
-            print(f"\nUnhandled exception while testing {file}: {e}", end="")
+            print(f"\nUnhandled exception while testing {file}: {e}")
 
 
 def main():
-    counter = 0
     mp.set_start_method("forkserver")
 
+    all_files = tuple(CORPORA_PATH.rglob("*.xml"))
     dispatched_tasks = []
+    progressbar = tqdm(total=len(all_files), mininterval=0.5, unit_scale=True)
+
     with mp.Pool(CPU_COUNT) as pool:
-        for file_list in batched(CORPORA_PATH.rglob("*.xml"), n=BATCH_SIZE):
+        for file_list in batched(all_files, n=BATCH_SIZE):
             dispatched_tasks.append(
                 pool.apply_async(
                     dispatch_batch,
@@ -82,16 +84,12 @@ def main():
                 )
             )
 
-            counter += 1
-
             while len(dispatched_tasks) >= CPU_COUNT:
-                for task in dispatched_tasks:
-                    if task.ready():
-                        dispatched_tasks.remove(task)
+                for task in (t for t in dispatched_tasks if t.ready()):
+                    dispatched_tasks.remove(task)
+                    progressbar.update(n=BATCH_SIZE)
 
-            stderr.flush()
-
-    print(f"\n\nTested against ~{counter*BATCH_SIZE} documents.")
+    print(f"\n\nTested against {len(all_files)} documents.")
 
 
 if __name__ == "__main__":
