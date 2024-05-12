@@ -4,6 +4,9 @@ This folder serves as playground for tests of basic functionality against many
 XML documents, mostly TEI encodings. They are supposed to be executed with
 major code change proposals and before releases.
 
+The `requirements.txt` should contain a list of all libraries needed to run the
+scripts beside `delb`.
+
 ## Test corpus
 
 Place document collections into the `corpora` folder. The `fetch-corpora.py`
@@ -17,8 +20,8 @@ use *delb* for transformations with regards to the conclusions of that issue.
 
 The `normalize-corpora.py` script addresses issues that were found in the text
 encodings and must be run after fetching test data.
-One of the corpus folder names can be passed as argument to the script in order
-to process only this one's contents.
+The corpus folder names can be passed as arguments to the script in order to
+process only those contents.
 
 ## Tests
 
