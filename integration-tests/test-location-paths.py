@@ -1,17 +1,20 @@
 #!/bin/env python3
 
+from __future__ import annotations
+
 import multiprocessing as mp
 import random
-from collections.abc import Iterable
-from itertools import chain
+from itertools import batched, chain
 from pathlib import Path
-from sys import stderr
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+from tqdm import tqdm
 
 from _delb.plugins.core_loaders import path_loader
 from delb import is_tag_node, Document, FailedDocumentLoading, ParserOptions
 
-from utils import indicate_progress
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 BATCH_SIZE: Final = 64
 CPU_COUNT: Final = mp.cpu_count()
@@ -43,14 +46,11 @@ def verify_location_paths(file: Path):
             continue
 
         query_results = document.xpath(node.location_path)
-        if query_results.size == 1 and query_results.first is node:
-            indicate_progress()
-        else:
+        if not (query_results.size == 1 and query_results.first is node):
             print(
                 f"\nXPath query `{node.location_path}` in {file} yielded unexpected "
                 "results."
             )
-            stderr.write("🕱")
 
 
 def dispatch_batch(files: Iterable[Path]):
@@ -64,39 +64,26 @@ def dispatch_batch(files: Iterable[Path]):
 def main():
     mp.set_start_method("forkserver")
 
-    all_counter = counter = 0
-    selected_files = []
+    all_files = tuple(CORPORA_PATH.rglob("*.xml"))
+    all_files_size = len(all_files)
+    sample_size = int(all_files_size / 100 * DOCUMENT_SAMPLES_PERCENT)
+    selected_files = random.choices(all_files, k=sample_size)
+    del all_files
+
     dispatched_tasks = []
+    progressbar = tqdm(total=sample_size, mininterval=0.5, unit_scale=True)
 
     with mp.Pool(CPU_COUNT) as pool:
-        for file in CORPORA_PATH.rglob("*.xml"):
-            all_counter += 1
-            if random.randint(1, 100) > DOCUMENT_SAMPLES_PERCENT:
-                continue
-
-            selected_files.append(file)
-            counter += 1
-            if len(selected_files) < BATCH_SIZE:
-                continue
-
-            dispatched_tasks.append(
-                pool.apply_async(dispatch_batch, (tuple(selected_files),))
-            )
-            selected_files.clear()
-
+        for batch in batched(selected_files, n=BATCH_SIZE):
+            dispatched_tasks.append(pool.apply_async(dispatch_batch, (batch,)))
             while len(dispatched_tasks) >= CPU_COUNT:
-                for task in dispatched_tasks:
-                    if task.ready():
-                        dispatched_tasks.remove(task)
-
-            stderr.flush()
-
-    dispatch_batch(selected_files)
-    stderr.flush()
+                for task in (t for t in dispatched_tasks if t.ready()):
+                    dispatched_tasks.remove(task)
+                    progressbar.update(n=BATCH_SIZE)
 
     print(
-        f"\n\nTested against {counter} *randomly* selected out of {all_counter} "
-        "documents."
+        f"\n\nTested against {sample_size} *randomly* selected out of "
+        f"{len(all_files_size)} documents."
         f"\n{LOCATIONS_PATHS_SAMPLES_PERCENT}% of the tag nodes' `location_path` "
         f"attribute were verified per document."
     )

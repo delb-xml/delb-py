@@ -3,13 +3,12 @@
 import multiprocessing as mp
 from itertools import batched
 from pathlib import Path
-from sys import stderr
 from typing import Final
+
+from tqdm import tqdm
 
 from _delb.plugins.core_loaders import path_loader
 from delb import compare_trees, Document, FailedDocumentLoading, ParserOptions
-
-from utils import indicate_progress
 
 
 BATCH_SIZE: Final = 64
@@ -56,11 +55,9 @@ def parse_serialize_compare(file: Path):
         or not compare_trees(document.root, result_document.root)
     ):
         print(f"\nUnequal document produced from: {file.name}", end="")
-        stderr.write("🕱")
     # TODO? compare with lxml as well
     else:
         result_file.unlink()
-        indicate_progress()
 
 
 def dispatch_batch(files_list: list[Path]):
@@ -74,11 +71,12 @@ def dispatch_batch(files_list: list[Path]):
 def main():
     mp.set_start_method("forkserver")
 
-    counter = 0
+    all_files = tuple(CORPORA_PATH.rglob("*.xml"))
     dispatched_tasks = []
+    progressbar = tqdm(total=len(all_files), mininterval=0.5, unit_scale=True)
 
     with mp.Pool(CPU_COUNT) as pool:
-        for file_list in batched(CORPORA_PATH.rglob("*.xml"), n=BATCH_SIZE):
+        for file_list in batched(all_files, n=BATCH_SIZE):
             dispatched_tasks.append(
                 pool.apply_async(
                     dispatch_batch,
@@ -86,16 +84,12 @@ def main():
                 )
             )
 
-            counter += 1
-
             while len(dispatched_tasks) >= CPU_COUNT:
-                for task in dispatched_tasks:
-                    if task.ready():
-                        dispatched_tasks.remove(task)
+                for task in (t for t in dispatched_tasks if t.ready()):
+                    dispatched_tasks.remove(task)
+                    progressbar.update(n=BATCH_SIZE)
 
-            stderr.flush()
-
-    print(f"\n\nTested against ~{counter*BATCH_SIZE} documents.")
+    print(f"\n\nTested against {len(all_files)} documents.")
 
 
 if __name__ == "__main__":
