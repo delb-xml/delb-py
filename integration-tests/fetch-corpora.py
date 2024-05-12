@@ -30,6 +30,7 @@ from tempfile import TemporaryFile
 from typing import Final, NamedTuple
 
 from httpx import AsyncClient, HTTPError
+from tenacity import retry, wait_random_exponential
 
 import delb
 
@@ -243,6 +244,7 @@ SKIP_EXISTING: Final = bool(os.environ.get("SKIP_EXISTING", ""))
 http_client: Final = AsyncClient()
 
 
+@retry(wait=wait_random_exponential(multiplier=1, max=120))
 async def fetch_resource(url: str, destination: io.BufferedWriter) -> bool:
     async with http_client.stream("GET", url, follow_redirects=True) as response:
         try:
