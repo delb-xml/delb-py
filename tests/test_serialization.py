@@ -14,7 +14,7 @@ from delb import (
 )
 from _delb.nodes import DETACHED
 
-from tests.utils import assert_documents_are_semantical_equal
+from tests.utils import assert_equal_trees
 
 
 @pytest.mark.parametrize(
@@ -193,7 +193,7 @@ def test_transparency(files_path, result_file):
         origin = Document(file, parser_options=parser_options)
         origin.save(result_file)
         _copy = Document(file, parser_options=parser_options)
-        assert_documents_are_semantical_equal(file, result_file)
+        assert_equal_trees(origin.root, _copy.root)
         assert origin.head_nodes == _copy.head_nodes
         assert origin.tail_nodes == _copy.tail_nodes
 

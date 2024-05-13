@@ -1,15 +1,16 @@
 import re
 import sys
 
-from xmldiff import main as xmldiff
-
-from delb import altered_default_filters
+from delb import (
+    altered_default_filters,
+    compare_trees,
+    NodeBase,
+)
 
 find_processing_instructions = re.compile(r"(<\?\w\S*?(\s.*?)?\?>)").findall
 
 
-# REMOVE when support for Python 3.9 is dropped
-if sys.version_info < (3, 10):
+if sys.version_info < (3, 10):  # DROPWITH Python 3.9
     from itertools import tee
 
     def pairwise(iterable):
@@ -21,11 +22,11 @@ else:
     from itertools import pairwise
 
 
-def assert_documents_are_semantical_equal(old, new):
-    changes = xmldiff.diff_files(
-        str(old), str(new), diff_options={"F": 1.0, "ratio_mode": "accurate"}
-    )
-    assert not changes, changes
+@altered_default_filters()
+def assert_equal_trees(a: NodeBase, b: NodeBase):
+    result = compare_trees(a, b)
+    if not result:
+        raise AssertionError(str(result))
 
 
 def assert_nodes_are_in_document_order(*nodes):
