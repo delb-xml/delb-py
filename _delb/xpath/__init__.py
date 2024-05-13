@@ -72,7 +72,7 @@ from typing import Collection, Iterable, Iterator, Mapping, Sequence
 from cssselect import GenericTranslator
 
 from _delb.names import Namespaces
-from _delb.utils import sort_nodes_in_document_order
+from _delb.utils import _sort_nodes_in_document_order
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
@@ -141,7 +141,7 @@ class QueryResults(Sequence["NodeBase"]):
         Returns another :class:`QueryResults` instance where the contained nodes are
         sorted in document order.
         """
-        return QueryResults(sort_nodes_in_document_order(self))
+        return QueryResults(_sort_nodes_in_document_order(self))
 
     @property
     def last(self) -> Optional[NodeBase]:
