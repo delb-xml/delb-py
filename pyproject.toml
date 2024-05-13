@@ -117,7 +117,6 @@ features = ["https-loader"]
 [tool.hatch.envs.benchmarks]
 dependencies = [
     "pytest-benchmark",
-    "xmldiff"
 ]
 [tool.hatch.envs.benchmarks.scripts]
 run = """
@@ -182,7 +181,6 @@ check = "mypy _delb delb"
 dependencies = [
     "pytest-cov",
     "pytest-httpx",
-    "xmldiff"
 ]
 [tool.hatch.envs.unit-tests.scripts]
 check = "python -m pytest --cov=_delb --cov=delb tests"
