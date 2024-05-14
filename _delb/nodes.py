@@ -2573,7 +2573,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     def __repr__(self):
         if self._exists:
             return (
-                f'<{self.__class__.__name__}(text="{self}", '
+                f'<{self.__class__.__name__}(text="{self.content}", '
                 f"pos={self._position}) [{hex(id(self))}]>"
             )
         else:
