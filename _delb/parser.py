@@ -23,8 +23,8 @@ class ParserOptions:
     """
     The configuration options that define an XML parser's behaviour.
 
-    :param collapse_whitespace: :meth:`Collapse the content's whitespace
-                                <delb.Document.collapse_whitespace>`.
+    :param reduce_whitespace: :meth:`Reduce the content's whitespace
+                                <delb.Document.reduce_whitespace>`.
     :param remove_comments: Ignore comments.
     :param remove_processing_instructions: Don't include processing instructions in the
                                            parsed tree.
@@ -34,13 +34,13 @@ class ParserOptions:
 
     def __init__(
         self,
-        collapse_whitespace: bool = False,
+        reduce_whitespace: bool = False,
         remove_comments: bool = False,
         remove_processing_instructions: bool = False,
         resolve_entities: bool = True,
         unplugged: bool = False,
     ):
-        self.collapse_whitespace = collapse_whitespace
+        self.reduce_whitespace = reduce_whitespace
         self.remove_comments = remove_comments
         self.remove_processing_instructions = remove_processing_instructions
         self.resolve_entities = resolve_entities

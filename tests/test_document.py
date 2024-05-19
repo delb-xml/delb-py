@@ -6,7 +6,6 @@ from delb import (
     Document,
     DocumentMixinBase,
     TagNode,
-    TextNode,
     new_comment_node,
     new_processing_instruction_node,
 )
@@ -27,7 +26,7 @@ def test_clone():
     document.clone()
 
 
-def test_collapse_whitespace():
+def test_reduce_whitespace():
     document = Document(
         """
     <root>
@@ -41,7 +40,7 @@ def test_collapse_whitespace():
     """
     )
 
-    document.collapse_whitespace()
+    document.reduce_whitespace()
     root = document.root
 
     assert root.first_child.full_text == "I Roy - Touting I Self"
@@ -54,15 +53,12 @@ def test_collapse_whitespace():
         '<docImprint><hi rendition="#g">Veröffentlicht im</hi> <docDate>'
         '<hi rendition="#g">Februar</hi> 1848</docDate>.</docImprint>'
     )
-
-    hi_1 = document.root.first_child
-    assert hi_1._etree_obj.tail == " "
-    x = hi_1.fetch_following_sibling()
-    assert isinstance(x, TextNode)
-    assert x.content == " "
-
-    document.collapse_whitespace()
+    document.reduce_whitespace()
     assert document.root.full_text == "Veröffentlicht im Februar 1848."
+
+    document = Document("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
+    document.reduce_whitespace()
+    assert document.root.full_text == "Hello    world!"
 
 
 def test_contains():

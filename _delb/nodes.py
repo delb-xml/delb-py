@@ -1893,48 +1893,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         return result
 
-    def _collapse_whitespace(self, normalize_space: str = "default"):
-        with _wrapper_cache:
-            normalize_space = cast(
-                "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
-            )
-
-            if normalize_space == "default":
-                for child_node in self.iterate_children():
-                    if not isinstance(child_node, TextNode):
-                        continue
-
-                    crunched = _crunch_whitespace(child_node.content)
-                    crunched_stripped = crunched.strip()
-
-                    if (
-                        crunched_stripped  # has non-whitespace content
-                        and crunched[0] == " "  # begins w/ whitespace
-                        and cast("int", child_node.index) > 0  # isn't first child
-                    ):
-                        child_node.content = f" {crunched_stripped}"
-                    elif (
-                        crunched[-1] == " "  # ends w/ whitespace
-                        and child_node is not self.first_child
-                        and child_node is not self.last_child
-                    ) or (
-                        crunched_stripped  # has non-whitespace content
-                        and crunched[-1] == " "  # ends w/ whitespace
-                        and child_node is self.first_child
-                        and child_node is not self.last_child
-                    ):
-                        child_node.content = f"{crunched.strip()} "
-                    elif len(self) == 1 and crunched == " ":
-                        # is only child and contains only whitespace
-                        child_node.content = " "
-                    else:
-                        child_node.content = crunched_stripped
-            else:
-                assert normalize_space == "preserve"
-
-            for child_node in self.iterate_children(is_tag_node):
-                cast("TagNode", child_node)._collapse_whitespace(normalize_space)
-
     def css_select(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
@@ -2359,8 +2317,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         assert isinstance(parser, etree.XMLParser)
         result = _wrapper_cache(etree.fromstring(text, parser=parser))
         assert isinstance(result, TagNode)
-        if parser_options.collapse_whitespace:
-            result._collapse_whitespace()
+        if parser_options.reduce_whitespace:
+            result._reduce_whitespace()
         return result
 
     @property
@@ -2396,6 +2354,48 @@ class TagNode(_ElementWrappingNode, NodeBase):
         instances from.
         """
         self.insert_children(0, *node, clone=clone)
+
+    def _reduce_whitespace(self, normalize_space: str = "default"):
+        with _wrapper_cache:
+            normalize_space = cast(
+                "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
+            )
+
+            if normalize_space == "default":
+                for child_node in self.iterate_children():
+                    if not isinstance(child_node, TextNode):
+                        continue
+
+                    crunched = _crunch_whitespace(child_node.content)
+                    crunched_stripped = crunched.strip()
+
+                    if (
+                        crunched_stripped  # has non-whitespace content
+                        and crunched[0] == " "  # begins w/ whitespace
+                        and cast("int", child_node.index) > 0  # isn't first child
+                    ):
+                        child_node.content = f" {crunched_stripped}"
+                    elif (
+                        crunched[-1] == " "  # ends w/ whitespace
+                        and child_node is not self.first_child
+                        and child_node is not self.last_child
+                    ) or (
+                        crunched_stripped  # has non-whitespace content
+                        and crunched[-1] == " "  # ends w/ whitespace
+                        and child_node is self.first_child
+                        and child_node is not self.last_child
+                    ):
+                        child_node.content = f"{crunched_stripped} "
+                    elif len(self) == 1 and crunched == " ":
+                        # is only child and contains only whitespace
+                        child_node.content = " "
+                    else:
+                        child_node.content = crunched_stripped
+            else:
+                assert normalize_space == "preserve"
+
+            for child_node in self.iterate_children(is_tag_node):
+                cast("TagNode", child_node)._reduce_whitespace(normalize_space)
 
     def serialize(
         self,
