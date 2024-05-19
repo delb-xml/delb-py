@@ -26,7 +26,7 @@ def parse_serialize_compare(file: Path):
 
     try:
         document = Document(
-            file, parser_options=ParserOptions(collapse_whitespace=False)
+            file, parser_options=ParserOptions(reduce_whitespace=False)
         )
     except FailedDocumentLoading as exc:
         print(

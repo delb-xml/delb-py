@@ -334,9 +334,9 @@ class Document(metaclass=DocumentMeta):
         root = _wrapper_cache(loaded_tree.getroot())
         assert isinstance(root, TagNode)
 
-        if config.parser_options.collapse_whitespace:
+        if config.parser_options.reduce_whitespace:
             with altered_default_filters():
-                root._collapse_whitespace()
+                root._reduce_whitespace()
 
         return root
 
@@ -366,15 +366,8 @@ class Document(metaclass=DocumentMeta):
         return result
 
     def collapse_whitespace(self):
-        """
-        Collapses whitespace as described here:
-        https://wiki.tei-c.org/index.php/XML_Whitespace#Recommendations
-
-        Implicitly merges all neighbouring text nodes.
-        """
-        self.merge_text_nodes()
-        with altered_default_filters():
-            self.root._collapse_whitespace()
+        warn("This method was renamed to `reduce_whitespace`.", DeprecationWarning)
+        self.reduce_whitespace()
 
     def css_select(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
@@ -412,6 +405,19 @@ class Document(metaclass=DocumentMeta):
         return self.root.new_tag_node(
             local_name=local_name, attributes=attributes, namespace=namespace
         )
+
+    def reduce_whitespace(self):
+        """
+        Collapses and trims whitespace as described in these `TEI recommendation`_.
+        Text in (sub-)trees with structured data should be trimmed further in
+        subsequent processing.
+        Implicitly merges all neighbouring text nodes.
+
+        .. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace
+        """
+        self.merge_text_nodes()
+        with altered_default_filters():
+            self.root._reduce_whitespace()
 
     @property
     def root(self) -> TagNode:
