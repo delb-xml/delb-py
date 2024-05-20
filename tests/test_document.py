@@ -6,7 +6,6 @@ from delb import (
     Document,
     DocumentMixinBase,
     TagNode,
-    TextNode,
     new_comment_node,
     new_processing_instruction_node,
 )
@@ -25,44 +24,6 @@ def test_config_initialization():
 def test_clone():
     document = Document("<root/>", playground_property="foo")
     document.clone()
-
-
-def test_collapse_whitespace():
-    document = Document(
-        """
-    <root>
-        <title>
-            I Roy -
-            <hi>Touting I Self</hi>
-        </title>
-        <matrix xml:space="preserve">HB 243 A  Re</matrix>
-        <matrix xml:space="preserve">HB 243 B\tRe</matrix>
-    </root>
-    """
-    )
-
-    document.collapse_whitespace()
-    root = document.root
-
-    assert root.first_child.full_text == "I Roy - Touting I Self"
-    assert root.css_select("matrix")[0].full_text == "HB 243 A  Re"
-    assert root.css_select("matrix")[1].full_text == "HB 243 B\tRe"
-
-    #
-
-    document = Document(
-        '<docImprint><hi rendition="#g">Veröffentlicht im</hi> <docDate>'
-        '<hi rendition="#g">Februar</hi> 1848</docDate>.</docImprint>'
-    )
-
-    hi_1 = document.root.first_child
-    assert hi_1._etree_obj.tail == " "
-    x = hi_1.fetch_following_sibling()
-    assert isinstance(x, TextNode)
-    assert x.content == " "
-
-    document.collapse_whitespace()
-    assert document.root.full_text == "Veröffentlicht im Februar 1848."
 
 
 def test_contains():
@@ -117,14 +78,42 @@ def test_mro():
     )
 
 
-def test_set_root():
-    document = Document("<root><node/></root>")
-    document.root = document.root[0].detach()
-    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
+# see also test_tag_node::test_reduce_whitespace
+def test_reduce_whitespace():
+    document = Document(
+        """
+    <root>
+        <title>
+            I Roy -
+            <hi>Touting I Self</hi>
+        </title>
+        <matrix xml:space="preserve">HB 243 A  Re</matrix>
+        <matrix xml:space="preserve">HB 243 B\tRe</matrix>
+    </root>
+    """
+    )
 
-    document_2 = Document("<root><replacement/>parts</root>")
-    with pytest.raises(ValueError, match="detached node"):
-        document.root = document_2.root[0]
+    document.reduce_whitespace()
+    root = document.root
+
+    assert root.first_child.full_text == "I Roy - Touting I Self"
+    assert root.css_select("matrix")[0].full_text == "HB 243 A  Re"
+    assert root.css_select("matrix")[1].full_text == "HB 243 B\tRe"
+
+    #
+
+    document = Document(
+        '<docImprint><hi rendition="#g">Veröffentlicht im</hi> <docDate>'
+        '<hi rendition="#g">Februar</hi> 1848</docDate>.</docImprint>'
+    )
+    document.reduce_whitespace()
+    assert document.root.full_text == "Veröffentlicht im Februar 1848."
+
+    #
+
+    document = Document("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
+    document.reduce_whitespace()
+    assert document.root.full_text == "Hello    world!"
 
 
 def test_root_siblings():
@@ -155,6 +144,16 @@ def test_root_siblings():
 
     with pytest.raises(InvalidOperation):
         tail_nodes.pop(0)
+
+
+def test_set_root():
+    document = Document("<root><node/></root>")
+    document.root = document.root[0].detach()
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
+
+    document_2 = Document("<root><replacement/>parts</root>")
+    with pytest.raises(ValueError, match="detached node"):
+        document.root = document_2.root[0]
 
 
 def test_xpath(files_path):

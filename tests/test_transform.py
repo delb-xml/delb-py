@@ -99,7 +99,7 @@ def test_transformation_options():
             <choice><sic>taeteraetae</sic><corr>täterätä</corr></choice>
         </root>
         """,
-        parser_options=ParserOptions(collapse_whitespace=True),
+        parser_options=ParserOptions(reduce_whitespace=True),
     )
     transformation = ResolveChoice()
     result = transformation(document.root)
@@ -116,7 +116,7 @@ def test_transformation_sequence():
             <div copyOf="#d1"/>
         </root>
         """,
-        parser_options=ParserOptions(collapse_whitespace=True),
+        parser_options=ParserOptions(reduce_whitespace=True),
     )
     transformation = TransformationSequence(
         ResolveCopyOf, ResolveChoice(ResolveChoiceOptions(corr=False))
@@ -135,7 +135,7 @@ def test_transformation_sequence_sequence():
             <name>caro</name>
             <name>boudi</name>
         </cast>""",
-        parser_options=ParserOptions(collapse_whitespace=True),
+        parser_options=ParserOptions(reduce_whitespace=True),
     )
     root = Document("<doc><body><ul/></body></doc>").root
     transformation = TransformationSequence(

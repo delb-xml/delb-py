@@ -172,7 +172,7 @@ def test_bindings(sample_document):
 def test_construction():
     root = Document(
         "<root><node>one</node> two </root>",
-        parser_options=ParserOptions(collapse_whitespace=True),
+        parser_options=ParserOptions(reduce_whitespace=True),
     ).root
     node, two = tuple(x for x in root.iterate_children())
     one = node[0]

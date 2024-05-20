@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class TEIDocument(Document):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.collapse_whitespace()
+        self.reduce_whitespace()
         self.text_characters = len(self.root.full_text)
 
     @staticmethod

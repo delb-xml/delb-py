@@ -460,6 +460,16 @@ def test_make_node_in_context_with_namespace():
     assert node._etree_obj.tag == "{https://name.space}foo"
 
 
+@pytest.mark.parametrize(
+    ("text_nodes", "expected_count"),
+    (([""], 0), ([" "], 1), ([" ", " "], 1), (["", "", tag("child"), "", ""], 1)),
+)
+def test_merge_text_nodes(text_nodes, expected_count):
+    node = new_tag_node("node", children=text_nodes)
+    node.merge_text_nodes()
+    assert len(node) == expected_count
+
+
 def test_names(sample_document):
     root = sample_document.root
 
@@ -564,6 +574,14 @@ def test_fetch_preceding_sibling():
     a = b.fetch_preceding_sibling()
     assert a is not None
     assert a.local_name == "a"
+
+
+# see also test_document::test_reduce_whitespace
+def test_reduce_whitespace():
+    node = new_tag_node("node", children=[""])
+    assert len(node) == 1
+    node._reduce_whitespace()
+    assert len(node) == 0
 
 
 def test_sample_document_structure(sample_document):

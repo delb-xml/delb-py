@@ -114,7 +114,7 @@ def test_significant_whitespace_is_saved(result_file):
     document.save(result_file, indentation="  ")
 
     assert (
-        Document(result_file, parser_options=ParserOptions(collapse_whitespace=True))
+        Document(result_file, parser_options=ParserOptions(reduce_whitespace=True))
         .xpath("hi")
         .first.fetch_following_sibling()
         == " "
@@ -188,7 +188,7 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
 
 
 def test_transparency(files_path, result_file):
-    parser_options = ParserOptions(collapse_whitespace=False)
+    parser_options = ParserOptions(reduce_whitespace=False)
     for file in (x for x in files_path.glob("[!tei_]*.xml")):
         origin = Document(file, parser_options=parser_options)
         origin.save(result_file)
