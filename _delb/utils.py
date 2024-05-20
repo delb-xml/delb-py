@@ -361,7 +361,7 @@ def _random_unused_prefix(namespaces: etree._NSMap) -> str:
     )
 
 
-def sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
+def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
     node_index_cache: dict[int, int] = {}
     sorter = _NodesSorter()
     for node in nodes:
@@ -429,5 +429,5 @@ __all__: tuple[str, ...] = (
     first.__name__,
     get_traverser.__name__,
     last.__name__,
-    sort_nodes_in_document_order.__name__,
+    _sort_nodes_in_document_order.__name__,
 )
