@@ -2357,6 +2357,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     def _reduce_whitespace(self, normalize_space: str = "default"):
         with _wrapper_cache:
+            empty_nodes: list[TextNode] = []
             normalize_space = cast(
                 "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
             )
@@ -2376,7 +2377,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     ):
                         child_node.content = f" {crunched_stripped}"
                     elif (
-                        crunched[-1] == " "  # ends w/ whitespace
+                        crunched  # is not empty
+                        and crunched[-1] == " "  # ends w/ whitespace
                         and child_node is not self.first_child
                         and child_node is not self.last_child
                     ) or (
@@ -2389,10 +2391,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     elif len(self) == 1 and crunched == " ":
                         # is only child and contains only whitespace
                         child_node.content = " "
-                    else:
+                    elif crunched_stripped:
                         child_node.content = crunched_stripped
+                    else:
+                        empty_nodes.append(child_node)
             else:
                 assert normalize_space == "preserve"
+
+            for child_node in empty_nodes:
+                child_node.detach()
 
             for child_node in self.iterate_children(is_tag_node):
                 cast("TagNode", child_node)._reduce_whitespace(normalize_space)
@@ -2783,7 +2790,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self._appended_text_node = None
         self._bound_to = None
         self._position = DETACHED
-        self.content = content
+        self.content = content or ""
 
         assert self.parent is None
         assert self._fetch_following_sibling() is None

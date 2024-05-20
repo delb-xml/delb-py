@@ -78,6 +78,7 @@ def test_mro():
     )
 
 
+# see also test_tag_node::test_reduce_whitespace
 def test_reduce_whitespace():
     document = Document(
         """
@@ -107,6 +108,8 @@ def test_reduce_whitespace():
     )
     document.reduce_whitespace()
     assert document.root.full_text == "Veröffentlicht im Februar 1848."
+
+    #
 
     document = Document("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
     document.reduce_whitespace()
