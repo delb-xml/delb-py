@@ -2355,54 +2355,59 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         self.insert_children(0, *node, clone=clone)
 
+    @altered_default_filters()
     def _reduce_whitespace(self, normalize_space: str = "default"):
         with _wrapper_cache:
-            empty_nodes: list[TextNode] = []
-            normalize_space = cast(
-                "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
-            )
+            self.merge_text_nodes()
+            self._reduce_whitespace_routine(normalize_space)
 
-            if normalize_space == "default":
-                for child_node in self.iterate_children():
-                    if not isinstance(child_node, TextNode):
-                        continue
+    def _reduce_whitespace_routine(self, normalize_space: str):
+        empty_nodes: list[TextNode] = []
+        normalize_space = cast(
+            "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
+        )
 
-                    crunched = _crunch_whitespace(child_node.content)
-                    crunched_stripped = crunched.strip()
+        if normalize_space == "default":
+            for child_node in self.iterate_children():
+                if not isinstance(child_node, TextNode):
+                    continue
 
-                    if (
-                        crunched_stripped  # has non-whitespace content
-                        and crunched[0] == " "  # begins w/ whitespace
-                        and cast("int", child_node.index) > 0  # isn't first child
-                    ):
-                        child_node.content = f" {crunched_stripped}"
-                    elif (
-                        crunched  # is not empty
-                        and crunched[-1] == " "  # ends w/ whitespace
-                        and child_node is not self.first_child
-                        and child_node is not self.last_child
-                    ) or (
-                        crunched_stripped  # has non-whitespace content
-                        and crunched[-1] == " "  # ends w/ whitespace
-                        and child_node is self.first_child
-                        and child_node is not self.last_child
-                    ):
-                        child_node.content = f"{crunched_stripped} "
-                    elif len(self) == 1 and crunched == " ":
-                        # is only child and contains only whitespace
-                        child_node.content = " "
-                    elif crunched_stripped:
-                        child_node.content = crunched_stripped
-                    else:
-                        empty_nodes.append(child_node)
-            else:
-                assert normalize_space == "preserve"
+                crunched = _crunch_whitespace(child_node.content)
+                crunched_stripped = crunched.strip()
 
-            for child_node in empty_nodes:
-                child_node.detach()
+                if (
+                    crunched_stripped  # has non-whitespace content
+                    and crunched[0] == " "  # begins w/ whitespace
+                    and cast("int", child_node.index) > 0  # isn't first child
+                ):
+                    child_node.content = f" {crunched_stripped}"
+                elif (
+                    crunched  # is not empty
+                    and crunched[-1] == " "  # ends w/ whitespace
+                    and child_node is not self.first_child
+                    and child_node is not self.last_child
+                ) or (
+                    crunched_stripped  # has non-whitespace content
+                    and crunched[-1] == " "  # ends w/ whitespace
+                    and child_node is self.first_child
+                    and child_node is not self.last_child
+                ):
+                    child_node.content = f"{crunched_stripped} "
+                elif len(self) == 1 and crunched == " ":
+                    # is only child and contains only whitespace
+                    child_node.content = " "
+                elif crunched_stripped:
+                    child_node.content = crunched_stripped
+                else:
+                    empty_nodes.append(child_node)
+        else:
+            assert normalize_space == "preserve"
 
-            for child_node in self.iterate_children(is_tag_node):
-                cast("TagNode", child_node)._reduce_whitespace(normalize_space)
+        for child_node in empty_nodes:
+            child_node.detach()
+
+        for child_node in self.iterate_children(is_tag_node):
+            cast("TagNode", child_node)._reduce_whitespace_routine(normalize_space)
 
     def serialize(
         self,

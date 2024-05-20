@@ -335,8 +335,7 @@ class Document(metaclass=DocumentMeta):
         assert isinstance(root, TagNode)
 
         if config.parser_options.reduce_whitespace:
-            with altered_default_filters():
-                root._reduce_whitespace()
+            root._reduce_whitespace()
 
         return root
 
@@ -415,9 +414,7 @@ class Document(metaclass=DocumentMeta):
 
         .. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace
         """
-        self.merge_text_nodes()
-        with altered_default_filters():
-            self.root._reduce_whitespace()
+        self.root._reduce_whitespace()
 
     @property
     def root(self) -> TagNode:
