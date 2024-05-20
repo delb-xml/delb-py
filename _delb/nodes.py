@@ -2258,9 +2258,20 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def merge_text_nodes(self):
         """
         Merges all consecutive text nodes in the subtree into one.
+        Text nodes without content are dropped.
         """
-        for node in self.iterate_descendants(is_text_node):
-            node._merge_appended_text_nodes()
+        with _wrapper_cache:
+            empty_nodes: list[TextNode] = []
+
+            for node in self.iterate_descendants():
+                if not isinstance(node, TextNode):
+                    continue
+                node._merge_appended_text_nodes()
+                if not node.content:
+                    empty_nodes.append(node)
+
+            for node in empty_nodes:
+                node.detach()
 
     @property
     def namespace(self) -> Optional[str]:

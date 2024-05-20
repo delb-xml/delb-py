@@ -460,6 +460,16 @@ def test_make_node_in_context_with_namespace():
     assert node._etree_obj.tag == "{https://name.space}foo"
 
 
+@pytest.mark.parametrize(
+    ("child_nodes", "expected_count"),
+    (([""], 0), ([" "], 1), ([" ", " "], 1), (["", "", tag("child"), "", ""], 1)),
+)
+def test_merge_text_nodes(child_nodes, expected_count):
+    node = new_tag_node("node", children=child_nodes)
+    node.merge_text_nodes()
+    assert len(node) == expected_count
+
+
 def test_names(sample_document):
     root = sample_document.root
 
