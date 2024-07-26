@@ -24,8 +24,7 @@ from _delb.exceptions import XPathParsingError
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-
-    from _delb.typing import Final
+    from typing import Final
 
 
 # constants & data structures

@@ -31,8 +31,9 @@ from _delb.plugins.core_loaders import buffer_loader
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from types import SimpleNamespace
+    from typing import Final
 
-    from _delb.typing import Final, LoaderResult
+    from _delb.typing import LoaderResult
 
 
 try:

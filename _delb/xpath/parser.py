@@ -43,7 +43,8 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 if TYPE_CHECKING:
-    from _delb.typing import Final, TypeAlias
+    from typing import Final
+    from _delb.typing import TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[Union[TokenType, None]]  # noqa: SIM907
