@@ -156,7 +156,8 @@ dependencies = [
     "flake8-pyprojecttoml",
     "flake8-pytest-style",
     "flake8-use-fstring",
-    "flake8-use-pathlib",
+    # FIXME? this needs an update (uses pkg_resources), but isn't pressing
+    # "flake8-use-pathlib",
     "flake8-rst-docstrings",
     "flake8-simplify",
     "flake8-sphinx-links",
