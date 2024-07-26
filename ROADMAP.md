@@ -10,7 +10,7 @@
     - or explicity `parse_one_node` and `parse_multiple_nodes`?
 - the tree building will be based on (SaX-like) event parsers for which a common
   abstract interface needs to be defined, considering concrete implementations of
-  adapers for:
+  adapters for:
     - `lxml.etree.XMLPullParser`
     - `xml.sax`
     - possibly a Python wrapper for `quick-xml` in a separate package
