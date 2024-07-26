@@ -20,7 +20,8 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Iterator, Optional
 
 if TYPE_CHECKING:
-    from _delb.typing import Final, NamespaceDeclarations
+    from typing import Final
+    from _delb.typing import NamespaceDeclarations
 
 XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"

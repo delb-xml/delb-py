@@ -26,7 +26,7 @@
 
 ## 0.7
 
-- drop support for Python 3.7 & 3.8
+- drop support for Python 3.8
 - a native implementation of the data model
 - add a node type for CDATA
 - provide means to build a wheel with *mypyc*

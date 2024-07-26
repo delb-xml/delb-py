@@ -34,10 +34,6 @@ if TYPE_CHECKING:
 
     from _delb.nodes import NodeBase, _TagDefinition
 
-if sys.version_info < (3, 8):  # DROPWITH Python 3.7
-    from typing_extensions import Final
-else:
-    from typing import Final
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
     from typing_extensions import Self
@@ -56,7 +52,6 @@ LoaderConstraint: TypeAlias = Union[Loader, "Iterable[Loader]", None]
 
 __all__ = (
     "Filter",
-    "Final",
     "Loader",
     "LoaderConstraint",
     "LoaderResult",

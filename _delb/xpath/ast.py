@@ -17,9 +17,8 @@ from __future__ import annotations
 
 import inspect
 import operator
-import sys
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from functools import wraps
+from functools import cached_property, wraps
 from textwrap import indent
 from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
 
@@ -28,17 +27,11 @@ from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsing
 from _delb.plugins import plugin_manager as _plugin_manager
 from _delb.utils import _is_node_of_type
 
-# REMOVE when support for Python 3.7 is dropped
-if sys.version_info < (3, 8):
-    cached_property = property
-else:
-    from functools import cached_property
-
 
 if TYPE_CHECKING:
+    from typing import Final
     from _delb.names import Namespaces
     from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
-    from _delb.typing import Final
 
 
 xpath_functions: Final = _plugin_manager.xpath_functions
