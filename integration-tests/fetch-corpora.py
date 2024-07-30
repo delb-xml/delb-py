@@ -215,9 +215,13 @@ ARCHIVE_DESCRIPTIONS: Final = (
         target_directory="ELTeC/ukr",
     ),
     Archive(
+        url="https://github.com/funkyfuture/faust-xml/archive/fixes.tar.gz",
+        archive_documents_root="faust-xml-fixes/xml/",
+        # TODO use this again, when merged:
+        #      https://github.com/faustedition/faust-xml/pull/726
         # mixed bag of XML encodings, .svg are ignored though
-        url="https://github.com/faustedition/faust-xml/archive/master.tar.gz",
-        archive_documents_root="faust-xml-master/xml/",
+        # url="https://github.com/faustedition/faust-xml/archive/master.tar.gz",
+        # archive_documents_root="faust-xml-master/xml/",
         target_directory="faust-edition",
     ),
     Archive(
