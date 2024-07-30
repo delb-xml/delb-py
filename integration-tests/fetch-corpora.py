@@ -220,8 +220,8 @@ ARCHIVE_DESCRIPTIONS: Final = (
         # TODO use this again, when merged:
         #      https://github.com/faustedition/faust-xml/pull/726
         # mixed bag of XML encodings, .svg are ignored though
-        # url="https://github.com/faustedition/faust-xml/archive/master.tar.gz",
-        # archive_documents_root="faust-xml-master/xml/",
+        # url="https://github.com/faustedition/faust-xml/archive/master.tar.gz",  # noqa: E501,E800
+        # archive_documents_root="faust-xml-master/xml/",  # noqa: E800
         target_directory="faust-edition",
     ),
     Archive(
