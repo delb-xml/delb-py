@@ -37,11 +37,19 @@ if TYPE_CHECKING:
 
 
 try:
+    import h2  # type: ignore
+except ImportError:
+    http2 = False
+else:
+    http2 = True
+    del h2
+
+try:
     import httpx  # noqa: F401
 except ImportError:
     __all__: tuple[str, ...] = ()
 else:
-    DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=True)
+    DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=http2)
 
     class HttpsStreamWrapper(IOBase):
         __slots__ = ("_generator", "_response")
