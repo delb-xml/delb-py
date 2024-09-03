@@ -78,44 +78,6 @@ def test_mro():
     )
 
 
-# see also test_tag_node::test_reduce_whitespace
-def test_reduce_whitespace():
-    document = Document(
-        """
-    <root>
-        <title>
-            I Roy -
-            <hi>Touting I Self</hi>
-        </title>
-        <matrix xml:space="preserve">HB 243 A  Re</matrix>
-        <matrix xml:space="preserve">HB 243 B\tRe</matrix>
-    </root>
-    """
-    )
-
-    document.reduce_whitespace()
-    root = document.root
-
-    assert root.first_child.full_text == "I Roy - Touting I Self"
-    assert root.css_select("matrix")[0].full_text == "HB 243 A  Re"
-    assert root.css_select("matrix")[1].full_text == "HB 243 B\tRe"
-
-    #
-
-    document = Document(
-        '<docImprint><hi rendition="#g">Veröffentlicht im</hi> <docDate>'
-        '<hi rendition="#g">Februar</hi> 1848</docDate>.</docImprint>'
-    )
-    document.reduce_whitespace()
-    assert document.root.full_text == "Veröffentlicht im Februar 1848."
-
-    #
-
-    document = Document("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
-    document.reduce_whitespace()
-    assert document.root.full_text == "Hello    world!"
-
-
 def test_root_siblings():
     document = Document("<root/>")
     head_nodes = document.head_nodes
