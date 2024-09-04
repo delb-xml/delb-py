@@ -25,3 +25,6 @@ indent_size = 2
 [Justfile]
 indent_style = space
 indent_size = 4
+
+[tests/test_reduce_whitespace.py]
+trim_trailing_whitespace = false
