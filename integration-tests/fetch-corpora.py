@@ -252,7 +252,7 @@ ARCHIVE_DESCRIPTIONS: Final = (
     ),
     Archive(
         url="https://github.com/oeuvres/verne/archive/gh-pages.tar.gz",
-        archive_documents_root="verne-master/",
+        archive_documents_root="verne-gh-pages/",
         target_directory="verne",
     ),
 )
