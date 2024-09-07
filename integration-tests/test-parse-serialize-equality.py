@@ -3,6 +3,8 @@
 import multiprocessing as mp
 from itertools import batched
 from pathlib import Path
+from sys import stdout
+from traceback import print_exception
 from typing import Final
 
 from tqdm import tqdm
@@ -31,30 +33,30 @@ def parse_serialize_compare(file: Path):
             parser_options=ParserOptions(reduce_whitespace=False, unplugged=True),
         )
     except FailedDocumentLoading as exc:
-        print(
-            f"\nFailed to load {file.name}: {exc.excuses[path_loader]}",
-            end="",
-        )
+        print(f"Failed to load {file.name}: {exc.excuses[path_loader]}")
         return
 
     try:
         document.save(result_file, indentation="", text_width=0)
     except Exception as e:
-        print(f"\nFailed to save {file.name}: {e}", end="")
+        print(f"Failed to save {file.name}:")
+        print_exception(e, file=stdout)
         return
 
     try:
         result_document = Document(result_file)
     except Exception as e:
-        print(f"\nFailed loading re-serialized {file.name}: {e}", end="")
+        print(f"Failed loading re-serialized {file.name}:")
+        print_exception(e, file=stdout)
         return
 
     if (
         document.head_nodes != result_document.head_nodes
         or document.tail_nodes != document.tail_nodes
-        or not compare_trees(document.root, result_document.root)
+        or not (difference := compare_trees(document.root, result_document.root))
     ):
-        print(f"\nUnequal document produced from: {file.name}", end="")
+        print(f"Unequal document produced from {file.name}:")
+        print(difference)
     # TODO? compare with lxml as well
     else:
         result_file.unlink()
@@ -65,7 +67,8 @@ def dispatch_batch(files_list: list[Path]):
         try:
             parse_serialize_compare(file)
         except Exception as e:
-            print(f"\nUnhandled exception while testing {file}: {e}")
+            print(f"Unhandled exception while testing {file}:")
+            print_exception(e, file=stdout)
 
 
 def main():
@@ -89,7 +92,7 @@ def main():
                     dispatched_tasks.remove(task)
                     progressbar.update(n=BATCH_SIZE)
 
-    print(f"\n\nTested against {len(all_files)} documents.")
+    print(f"\nTested against {len(all_files)} documents.")
 
 
 if __name__ == "__main__":
