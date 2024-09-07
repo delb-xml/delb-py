@@ -20,6 +20,14 @@ def test_empty_text_node():
     assert len(node) == 0
 
 
+def test_empty_before_stripable_node():
+    document = Document("<root> 1<b/></root>")
+    document.root.insert_children(0, "")
+    document.reduce_whitespace()
+    assert len(document.root) == 2
+    assert document.root.full_text == "1"
+
+
 def test_milestone_tag_with_altering_whitespace_neighbour():
     document = Document("<p><hi>then</hi> give<lb/> the</p>")
     document.reduce_whitespace()
@@ -28,6 +36,21 @@ def test_milestone_tag_with_altering_whitespace_neighbour():
     document = Document("<p><hi>then</hi> give <lb/>the</p>")
     document.reduce_whitespace()
     assert " give " in document.root.full_text
+
+
+def test_nodes_in_between():
+    # this is about the "; E…, s. xi" part in a specific context
+    document = Document("<head>G… I, <t>H… in E…</t>; E…, s. xi<hi>x</hi></head>")
+    document.reduce_whitespace()
+    assert document.root.full_text == "G… I, H… in E…; E…, s. xix"
+
+    document = Document("<head>G… I, <t>H… in E…</t>\n; E…, s. xi<hi>x</hi></head>")
+    document.reduce_whitespace()
+    assert document.root.full_text == "G… I, H… in E… ; E…, s. xix"
+
+    document = Document("<head>G… I, <t>H… in E…</t>; E…, s. xi  <hi>x</hi></head>")
+    document.reduce_whitespace()
+    assert document.root.full_text == "G… I, H… in E…; E…, s. xi x"
 
 
 def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: N802
