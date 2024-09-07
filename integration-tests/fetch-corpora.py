@@ -57,6 +57,12 @@ CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
 
 ARCHIVE_DESCRIPTIONS: Final = (
     Archive(
+        url="https://github.com/StanfordUniversityLibraries/ap_tei/archive"
+        "/master.tar.gz",
+        archive_documents_root="ap_tei-master/",
+        target_directory="archives-parlementaires",
+    ),
+    Archive(
         url="https://github.com/Brown-University-Library/atalanta-texts/archive"
         "/master.tar.gz",
         archive_documents_root="atalanta-texts-master/",
@@ -243,6 +249,11 @@ ARCHIVE_DESCRIPTIONS: Final = (
         url="https://github.com/i-d-e/ride/archive/master.tar.gz",
         archive_documents_root="ride-master/tei_all/",
         target_directory="ride-reviews",
+    ),
+    Archive(
+        url="https://github.com/oeuvres/verne/archive/gh-pages.tar.gz",
+        archive_documents_root="verne-master/",
+        target_directory="verne",
     ),
 )
 
