@@ -30,7 +30,7 @@ def verify_location_paths(file: Path):
         document = Document(
             file,
             parser_options=ParserOptions(
-                collapse_whitespace=False, resolve_entities=False, unplugged=True
+                reduce_whitespace=False, resolve_entities=False, unplugged=True
             ),
         )
     except FailedDocumentLoading as exc:
