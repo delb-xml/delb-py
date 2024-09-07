@@ -32,6 +32,7 @@ from typing import (
     Any,
     AnyStr,
     ClassVar as ClassWar,
+    Literal,
     NamedTuple,
     Optional,
 )
@@ -2098,6 +2099,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def full_text(self) -> str:
         return "".join(str(x) for x in self.iterate_descendants(is_text_node))
 
+    def _get_normalize_space_directive(
+        self, normalize_space: Literal["default", "preserve"]
+    ) -> Literal["default", "preserve"]:
+        attribute_value = self.attributes.get(XML_ATT_SPACE)
+
+        if attribute_value is None:
+            return normalize_space
+
+        if attribute_value in ("default", "preserve"):
+            return attribute_value
+
+        warn(
+            "Encountered and ignoring an invalid `xml:space` attribute: "
+            + attribute_value,
+            category=UserWarning,
+        )
+        return normalize_space
+
     @property
     def id(self) -> Optional[str]:
         """
@@ -2367,58 +2386,81 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self.insert_children(0, *node, clone=clone)
 
     @altered_default_filters()
-    def _reduce_whitespace(self, normalize_space: str = "default"):
+    def _reduce_whitespace(
+        self, normalize_space: Literal["default", "preserve"] = "default"
+    ):
         with _wrapper_cache:
-            self.merge_text_nodes()
-            self._reduce_whitespace_routine(normalize_space)
+            self._reduce_whitespace_of_descendants(normalize_space)
 
-    def _reduce_whitespace_routine(self, normalize_space: str):
-        empty_nodes: list[TextNode] = []
-        normalize_space = cast(
-            "str", self.attributes.get(XML_ATT_SPACE, normalize_space)
-        )
+    def _reduce_whitespace_of_descendants(
+        self, normalize_space: Literal["default", "preserve"]
+    ):
+        child_nodes = list(self.iterate_children())
+        if not child_nodes:
+            return
 
-        if normalize_space == "default":
-            for child_node in self.iterate_children():
-                if not isinstance(child_node, TextNode):
-                    continue
+        child_node: NodeBase
 
-                crunched = _crunch_whitespace(child_node.content)
-                crunched_stripped = crunched.strip()
-
-                if (
-                    crunched_stripped  # has non-whitespace content
-                    and crunched[0] == " "  # begins w/ whitespace
-                    and cast("int", child_node.index) > 0  # isn't first child
-                ):
-                    child_node.content = f" {crunched_stripped}"
-                elif (
-                    crunched  # is not empty
-                    and crunched[-1] == " "  # ends w/ whitespace
-                    and child_node is not self.first_child
-                    and child_node is not self.last_child
-                ) or (
-                    crunched_stripped  # has non-whitespace content
-                    and crunched[-1] == " "  # ends w/ whitespace
-                    and child_node is self.first_child
-                    and child_node is not self.last_child
-                ):
-                    child_node.content = f"{crunched_stripped} "
-                elif len(self) == 1 and crunched == " ":
-                    # is only child and contains only whitespace
-                    child_node.content = " "
-                elif crunched_stripped:
-                    child_node.content = crunched_stripped
-                else:
-                    empty_nodes.append(child_node)
-        else:
-            assert normalize_space == "preserve"
-
-        for child_node in empty_nodes:
+        for child_node in [
+            n for n in child_nodes if isinstance(n, TextNode) and n.content == ""
+        ]:
+            child_nodes.remove(child_node)
             child_node.detach()
+        if not child_nodes:
+            return
 
-        for child_node in self.iterate_children(is_tag_node):
-            cast("TagNode", child_node)._reduce_whitespace_routine(normalize_space)
+        normalize_space = self._get_normalize_space_directive(normalize_space)
+        for child_node in (n for n in child_nodes if isinstance(n, TagNode)):
+            child_node._reduce_whitespace_of_descendants(normalize_space)
+
+        if normalize_space == "preserve":
+            return
+
+        for child_node in (n for n in child_nodes if isinstance(n, TextNode)):
+            if reduced_content := self._reduce_whitespace_content(
+                child_node.content,
+                child_node is child_nodes[0],
+                child_node is child_nodes[-1],
+            ):
+                child_node.content = reduced_content
+            else:
+                child_node.detach()
+
+    def _reduce_whitespace_content(
+        self, content: str, is_first: bool, is_last: bool
+    ) -> str:
+        collapsed = _crunch_whitespace(content)
+        collapsed_and_stripped = collapsed.strip()
+        has_non_whitespace_content = bool(collapsed_and_stripped)
+        has_trailing_whitespace = collapsed.endswith(" ")
+
+        # 1 Retain one leading space
+        #   if the node isn't first, has non-space content, and has leading space.
+        if not is_first and has_non_whitespace_content and collapsed.startswith(" "):
+            result = f" {collapsed_and_stripped}"
+        else:
+            result = collapsed_and_stripped
+
+        # Retain one trailing space
+        if (
+            # 2 … if the node isn't last, isn't first, and has trailing space.
+            (not (is_last or is_first) and has_trailing_whitespace)
+            or
+            # 3 … if the node isn't last, is first, has trailing space, and has
+            #   non-space content.
+            (
+                not is_last
+                and is_first
+                and has_trailing_whitespace
+                and has_non_whitespace_content
+            )
+            or
+            # 4 … if the node is an only child and only has space content.
+            (is_first and is_last and not has_non_whitespace_content)
+        ):
+            result += " "
+
+        return result
 
     def serialize(
         self,
