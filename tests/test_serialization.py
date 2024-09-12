@@ -182,7 +182,7 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
             "<!-- a comment -->\n"
             '<?target some="processing" instructions="here"?>\n'
             "<root/>\n"
-            "<!-- end -->\n"
+            "<!-- end -->"
         )
     )
 

@@ -20,12 +20,12 @@ from collections.abc import Iterator, MutableSequence, Sequence
 from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, BinaryIO, Optional
+from typing import TYPE_CHECKING, overload, Any, BinaryIO, Optional
 from warnings import warn
 
 from lxml import etree
 
-from _delb.exceptions import FailedDocumentLoading, InvalidOperation
+from _delb.exceptions import FailedDocumentLoading, InvalidCodePath, InvalidOperation
 from _delb.plugins import (
     core_loaders,
     plugin_manager as _plugin_manager,
@@ -99,24 +99,70 @@ class _RootSiblingsContainer(ABC, MutableSequence):
             and all(a == b for a, b in zip(iter(self), iter(other)))
         )
 
-    def __getitem__(self, index):
-        # TODO? slices
+    @overload
+    def __getitem__(self, index: int) -> CommentNode | ProcessingInstructionNode:
+        pass
 
+    @overload
+    def __getitem__(
+        self, index: slice
+    ) -> list[CommentNode | ProcessingInstructionNode]:
+        pass
+
+    @altered_default_filters()
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self.__getitem_item(index)
+        elif isinstance(index, slice):
+            return self.__getitem_slice(index)
+        else:
+            raise TypeError
+
+    def __getitem_item(self, index: int) -> CommentNode | ProcessingInstructionNode:
         if index < 0:
             index = len(self) + index
 
         if len(self) <= index:
             raise IndexError("Node index out of range.")
 
-        if index == 0:
-            return self._get_first()
+        first_item = self._get_first()
+        if first_item is None:
+            raise IndexError
 
-        with altered_default_filters():
-            for i, result in enumerate(
-                self._get_first().iterate_following_siblings(), start=1
-            ):
-                if i == index:
-                    return result
+        assert isinstance(first_item, (CommentNode, ProcessingInstructionNode))
+
+        if index == 0:
+            return first_item
+
+        for i, result_item in enumerate(
+            first_item.iterate_following_siblings(), start=1
+        ):
+            if i == index:
+                assert isinstance(result_item, (CommentNode, ProcessingInstructionNode))
+                return result_item
+
+        raise InvalidCodePath
+
+    def __getitem_slice(
+        self, index: slice
+    ) -> list[CommentNode | ProcessingInstructionNode]:
+        if index.step is not None and index.step < 1:
+            raise ValueError("Negative steps aren't supported yet.")
+
+        i = index.start or 0
+        result_list = []
+        step = index.step or 1
+        if index.stop is None:
+            stop = len(self)
+        elif index.stop < 0:
+            stop = len(self) + index.stop
+        else:
+            stop = index.stop
+
+        while i < stop:
+            result_list.append(self[i])
+            i += step
+        return result_list
 
     def __setitem__(self, index, node):
         # https://stackoverflow.com/q/54562097/
@@ -497,20 +543,23 @@ class Document(metaclass=DocumentMeta):
                 text_width=text_width,
             )
 
-    def __serialize(self, serializer, encoding, indentation):
-        declaration = f'<?xml version="1.0" encoding="{encoding.upper()}"?>'
-        if indentation:
-            declaration += "\n"
-        serializer.buffer.write(declaration)
-        for node in self.head_nodes:
-            serializer.serialize_node(node)
-        with altered_default_filters():
-            serializer.serialize_root(self.root)
-        if self.tail_nodes:
-            if indentation:
-                serializer.buffer.write("\n")
-            for node in self.tail_nodes:
-                serializer.serialize_node(node)
+    @altered_default_filters()
+    def __serialize(self, serializer, encoding: str, indentation: str):
+        possible_newline = "\n" if indentation else ""
+
+        serializer.buffer.write(
+            f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
+        )
+        with _wrapper_cache:
+            for node in self.head_nodes:
+                serializer.buffer.write(str(node) + possible_newline)
+            with altered_default_filters():
+                serializer.serialize_root(self.root)
+            if self.tail_nodes:
+                serializer.buffer.write(possible_newline)
+                for node in self.tail_nodes[:-1]:
+                    serializer.buffer.write(str(node) + possible_newline)
+                serializer.buffer.write(str(self.tail_nodes[-1]))
 
     def write(
         self,
