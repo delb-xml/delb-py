@@ -14,7 +14,7 @@ from delb import (
 )
 from delb.exceptions import InvalidOperation
 
-from tests.utils import assert_nodes_are_in_document_order
+from tests.utils import assert_nodes_are_in_document_order, skip_long_running_test
 
 
 def is_pagebreak(node):
@@ -393,6 +393,7 @@ def test_last_descendant():
     assert c.last_descendant is None
 
 
+@skip_long_running_test
 def test_location_path_and_xpath_concordance(files_path):
     for doc_path in files_path.glob("*.xml"):
         document = Document(doc_path)

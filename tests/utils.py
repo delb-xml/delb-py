@@ -1,5 +1,8 @@
+import os
 import re
 import sys
+
+import pytest
 
 from delb import (
     altered_default_filters,
@@ -55,3 +58,9 @@ def index_path(node):
         node = node.parent
     result.reverse()
     return result
+
+
+skip_long_running_test = pytest.mark.skipif(
+    os.environ.get("SKIP_LONG_RUNNING_TESTS") is not None,
+    reason="Long running tests are supposed to be skipped.",
+)

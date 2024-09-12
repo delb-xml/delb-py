@@ -81,6 +81,12 @@ hatch
 
 Several of the *just* recipes rely on hatch_.
 
+pytest
+~~~~~~
+
+You can skip some long running tests by invoking pytest in a context where the
+environment variable ``SKIP_LONG_RUNNING_TESTS`` is defined.
+
 
 .. _black: https://black.readthedocs.io/
 .. _editable: https://packaging.python.org/guides/distributing-packages-using-setuptools/#working-in-development-mode
