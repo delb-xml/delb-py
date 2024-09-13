@@ -54,7 +54,7 @@ class Archive(NamedTuple):
 
 CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
 
-FILE_SIZE_LIMIT: Final = 10 * 1024 ** 2
+FILE_SIZE_LIMIT: Final = 10 * 1024**2
 
 ARCHIVE_DESCRIPTIONS: Final = (
     Archive(
