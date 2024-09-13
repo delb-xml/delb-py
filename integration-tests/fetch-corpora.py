@@ -54,6 +54,7 @@ class Archive(NamedTuple):
 
 CORPORA_PATH: Final = Path(__file__).parent.resolve() / "corpora"
 
+FILE_SIZE_LIMIT: Final = 10 * 1024 ** 2
 
 ARCHIVE_DESCRIPTIONS: Final = (
     Archive(
@@ -284,6 +285,9 @@ def make_archive_filter(archive_description: Archive) -> callable:
     def _filter(member: tarfile.TarInfo, path: str) -> tarfile.TarInfo | None:
         member = tarfile.data_filter(member, path)
         if member is None:
+            return None
+
+        if member.size > FILE_SIZE_LIMIT:
             return None
 
         member_path = member.name
