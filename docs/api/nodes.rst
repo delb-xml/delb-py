@@ -74,8 +74,3 @@ Contributed filters
 .. autofunction:: delb.is_text_node
 
 .. autofunction:: delb.not_
-
-String serialization
---------------------
-
-.. autoclass:: delb.DefaultStringOptions

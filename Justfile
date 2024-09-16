@@ -12,7 +12,7 @@ benchmarks:
 black:
     black benchmarks _delb delb integration-tests tests
 
-# runs tests (except loaders) and reports uncovered lines
+# runs tests and reports coverage
 coverage-report:
     hatch run unit-tests:coverage-report
 
@@ -53,6 +53,7 @@ release: tests
 
 # watch, build and serve HTML documentation at 0.0.0.0:8000
 serve-docs:
+    mkdir -p {{ justfile_directory() }}/docs/build/html || true
     hatch run docs:serve
 
 # build and open HTML documentation

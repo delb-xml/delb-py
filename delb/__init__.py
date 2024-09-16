@@ -286,8 +286,8 @@ class Document(metaclass=DocumentMeta):
     >>> text_node.clone() in document
     False
 
-    The string coercion of a document yields an XML encoded stream as string. Its
-    appearance can be configured via :class:`DefaultStringOptions`.
+    The string coercion of a document yields an XML encoded stream as string. See
+    :doc:`/api/serialization` for details.
 
     >>> document = Document("<root/>")
     >>> str(document)
@@ -566,7 +566,8 @@ class Document(metaclass=DocumentMeta):
         pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
-        Writes the serialized document contents to a :term:`file-like object`.
+        Writes the serialized document contents to a :term:`file-like object`. See
+        :doc:`/api/serialization` for details.
 
         :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: *Deprecated.* Adds indentation for human consumers when

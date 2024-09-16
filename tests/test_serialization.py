@@ -232,6 +232,30 @@ def test_single_nodes(pretty_format_options, namespaces, node_constructor, args,
 
 
 @pytest.mark.parametrize(
+    ("source", "prefix", "align_attributes", "width"),
+    (
+        # this contains many interesting phenomena for wrapped content
+        ("tei_gsa_390707", "gsa_390707", False, 77),
+        # these test the examples in the docs
+        ("serialization-example-input", "serialization-example-indented", True, 0),
+        ("serialization-example-input", "serialization-example-wrapped", False, 59),
+    ),
+)
+def test_text_document_production(files_path, source, prefix, align_attributes, width):
+    document = Document(files_path / f"{source}.xml")
+    result_path = files_path / f"{prefix}-result.xml"
+    reference_path = files_path / f"{prefix}-reference.xml"
+
+    document.save(
+        result_path,
+        pretty_format_options=PrettyFormatOptions(
+            align_attributes=align_attributes, indentation="  ", text_width=width
+        ),
+    )
+    assert result_path.read_text() == reference_path.read_text()
+
+
+@pytest.mark.parametrize(
     ("indentation", "text_width", "out"),
     (
         (
@@ -367,21 +391,6 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
         indentation="  ", text_width=text_width
     )
     assert str(paragraph) == dedent(expected)
-
-
-def test_text_wrapped_document(files_path):
-    # this contains many interesting pehnomena
-    document = Document(files_path / "tei_gsa_390707.xml")
-    result_path = files_path / "gsa_390707-wrapped-result.xml"
-    reference_path = files_path / "gsa_390707-wrapped-reference.xml"
-
-    document.save(
-        result_path,
-        pretty_format_options=PrettyFormatOptions(
-            align_attributes=False, indentation="  ", text_width=77
-        ),
-    )
-    assert result_path.read_text() == reference_path.read_text()
 
 
 @pytest.mark.parametrize(
