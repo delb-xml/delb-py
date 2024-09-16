@@ -16,7 +16,7 @@ benchmarks:
 black:
     pipx run black benchmarks _delb delb integration-tests tests
 
-# runs tests (except loaders) and reports uncovered lines
+# runs tests and reports coverage
 coverage-report:
     pipx run hatch run unit-tests:coverage-report
 
@@ -55,6 +55,7 @@ release: _assert_no_dev_version tests
 
 # watch, build and serve HTML documentation at 0.0.0.0:8000
 serve-docs:
+    mkdir -p {{ justfile_directory() }}/docs/build/html || true
     pipx run hatch run docs:serve
 
 # build and open HTML documentation

@@ -1279,7 +1279,8 @@ class NodeBase(ABC):
         pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
-        Returns a string that contains the serialization of the node.
+        Returns a string that contains the serialization of the node. See
+        :doc:`/api/serialization` for details.
 
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
@@ -1702,7 +1703,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     0
 
     As seen in the examples above, a tag nodes string representation yields a serialized
-    XML representation of a sub-/tree.
+    XML representation of a sub-/tree. See :doc:`/api/serialization` for details.
     """
 
     __slots__ = (
@@ -3836,7 +3837,7 @@ class PrettyFormatOptions(NamedTuple):
     compute.
 
     When it's employed, it will always insert a newline after any node unless this
-    wouldn't vanish when trimming whitespace.
+    wouldn't vanish when collapsing and trimming whitespace.
 
     The serialization respects when a tag node bears the ``xml:space`` attribute with
     the value ``preserve``. But if any descendent of such annotated node signals to
