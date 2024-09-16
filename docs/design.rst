@@ -267,7 +267,7 @@ What are your long-term goals with this project?
 
 
 Interesting Resources
-=====================
+---------------------
 
 - `The Annotated XML Specification <https://www.xml.com/axml/axml.html>`_ by
   co-editor Tim Bray gives cultural, historical and technical insights from a

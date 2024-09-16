@@ -133,6 +133,7 @@ detached = true
 dependencies = [
     "autodocsumm",
     "furo",
+    "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design"
 ]
@@ -141,7 +142,7 @@ build-html = "make -C docs html"
 clean = "make -C docs clean"
 doctest = "make -C docs doctest"
 linkcheck = "make -C docs linkcheck"
-serve = "python -m http.server --directory docs/build/html/"
+serve = "sphinx-autobuild --open-browser --delay 2 --watch _delb --watch delb docs docs/build/html/"
 
 [tool.hatch.envs.linting]
 dependencies = [

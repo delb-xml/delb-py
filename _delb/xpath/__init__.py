@@ -87,8 +87,8 @@ _css_translator = GenericTranslator()
 
 class QueryResults(Sequence["NodeBase"]):
     """
-    A container that includes the results of a CSS selector or XPath query with some
-    helpers for better readable Python expressions.
+    A container with the the results of a CSS selector or XPath query with some helpers
+    for better readable Python expressions.
     """
 
     def __init__(self, results: Iterable[NodeBase]):

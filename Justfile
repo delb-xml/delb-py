@@ -51,8 +51,8 @@ release: tests
     hatch build
     hatch publish
 
-# build and serve HTML documentation at 0.0.0.0:8000
-serve-docs: docs
+# watch, build and serve HTML documentation at 0.0.0.0:8000
+serve-docs:
     hatch run docs:serve
 
 # build and open HTML documentation
