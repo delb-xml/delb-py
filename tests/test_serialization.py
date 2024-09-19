@@ -13,7 +13,7 @@ from delb import (
     PrettyFormatOptions,
     TextNode,
 )
-from _delb.nodes import DETACHED
+from _delb.nodes import DETACHED, Serializer
 from tests.conftest import TEI_FILES
 
 from tests.utils import assert_equal_trees, skip_long_running_test
@@ -117,29 +117,32 @@ def test_indentation(indentation, _in, out):
 
 
 @pytest.mark.parametrize(
-    ("_in", "open_tag"),
+    ("_in", "prefixes"),
     (
         (
             '<r xmlns="d1"><b xmlns="d2"/></r>',
-            '<r xmlns="d1" xmlns:ns0="d2">',
+            {"d1": "", "d2": "ns0:"},
         ),
-        ('<r><b xmlns="d"/></r>', '<r xmlns:ns0="d">'),
+        ('<r><b xmlns="d"/></r>', {None: "", "d": "ns0:"}),
         (
             """\
-            <r xmlns="d1">
+            <r>
               <b>
-                <c xmlns:ignored="d2"/>
+                <ignored:c xmlns:ignored="d"/>
               </b>
-              <d xmlns:wanted="d2"/>
+              <wanted:d xmlns:wanted="d"/>
             </r>""",
-            '<r xmlns="d1" xmlns:wanted="d2">',
+            {None: "", "d": "wanted:"},
         ),
+        ('<root xmlns:x="d" x:y=""/>', {None: "", "d": "x:"}),
     ),
 )
-def test_prefix_collection_and_generation(_in, open_tag):
-    # all namespace declarations are included in the root node
-    # definitions from higher levels are preferred
-    assert str(Document(_in).root).startswith(open_tag)
+def test_prefix_collection_and_generation(_in, prefixes):
+    # all namespace declarations are included in the root node.
+    # definitions from higher levels are preferred.
+    serializer = Serializer(None)
+    serializer._collect_prefixes(Document(_in).root)
+    assert serializer._prefixes == prefixes
 
 
 @pytest.mark.parametrize(
