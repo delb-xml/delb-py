@@ -758,9 +758,9 @@ class NodeBase(ABC):
 
     def __str__(self) -> str:
         return self.serialize(
+            format_options=DefaultStringOptions.format_options,
             namespaces=DefaultStringOptions.namespaces,
             newline=DefaultStringOptions.newline,
-            pretty_format_options=DefaultStringOptions.pretty_format_options,
         )
 
     def add_following_siblings(self, *node: NodeSource, clone: bool = False):
@@ -1274,27 +1274,27 @@ class NodeBase(ABC):
     def serialize(
         self,
         *,
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
         Returns a string that contains the serialization of the node. See
         :doc:`/api/serialization` for details.
 
+        :param format_options: An instance of :class:`FormatOptions` can be provided to
+                               configure formatting.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param pretty_format_options: An instance of :class:`PrettyFormatOptions` can be
-                                      provided to configure formatting.
         """
         serializer = _get_serializer(
             _StringWriter(newline=newline),
+            format_options=format_options,
             namespaces=namespaces,
-            pretty_format_options=pretty_format_options,
         )
         with _wrapper_cache:
             serializer.serialize_node(self)
@@ -2475,14 +2475,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def serialize(
         self,
         *,
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         serializer = _get_serializer(
             _StringWriter(newline=newline),
+            format_options=format_options,
             namespaces=namespaces,
-            pretty_format_options=pretty_format_options,
         )
         with _wrapper_cache:
             serializer.serialize_root(self)
@@ -3115,31 +3115,28 @@ def not_(*filter: Filter) -> Filter:
 
 def _get_serializer(
     writer: _SerializationWriter,
+    format_options: Optional[FormatOptions],
     namespaces: Optional[NamespaceDeclarations],
-    pretty_format_options: Optional[PrettyFormatOptions],
 ) -> Serializer:
-    if pretty_format_options is None:
+    if format_options is None:
         return Serializer(
             writer=writer,
             namespaces=namespaces,
         )
 
-    if (
-        pretty_format_options.indentation
-        and not pretty_format_options.indentation.isspace()
-    ):
+    if format_options.indentation and not format_options.indentation.isspace():
         raise ValueError("Invalid indentation characters.")
 
-    if pretty_format_options.text_width:
+    if format_options.text_width:
         return TextWrappingSerializer(
             writer=writer,
-            pretty_format_options=pretty_format_options,
+            format_options=format_options,
             namespaces=namespaces,
         )
     else:
         return PrettySerializer(
             writer=writer,
-            pretty_format_options=pretty_format_options,
+            format_options=format_options,
             namespaces=namespaces,
         )
 
@@ -3343,13 +3340,13 @@ class PrettySerializer(Serializer):
     def __init__(
         self,
         writer: _SerializationWriter,
-        pretty_format_options: PrettyFormatOptions,
+        format_options: FormatOptions,
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
         super().__init__(writer, namespaces=namespaces)
-        self._align_attributes = pretty_format_options.align_attributes
-        self.indentation = pretty_format_options.indentation
+        self._align_attributes = format_options.align_attributes
+        self.indentation = format_options.indentation
         self._level = 0
         self._serialization_root: None | TagNode = None
         self._space_preserving_serializer = Serializer(
@@ -3502,22 +3499,22 @@ class TextWrappingSerializer(PrettySerializer):
     def __init__(
         self,
         writer: _SerializationWriter,
-        pretty_format_options: PrettyFormatOptions,
+        format_options: FormatOptions,
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
-        if pretty_format_options.text_width < 1:
+        if format_options.text_width < 1:
             raise ValueError
         self.writer: _LengthTrackingWriter
         super().__init__(
             writer=_LengthTrackingWriter(writer.buffer),
-            pretty_format_options=pretty_format_options,
+            format_options=format_options,
             namespaces=namespaces,
         )
         self._line_fitting_serializer = _LineFittingSerializer(
             self.writer, namespaces=self._namespaces
         )
-        self._width = pretty_format_options.text_width
+        self._width = format_options.text_width
 
     @property
     def _available_space(self):
@@ -3830,7 +3827,7 @@ class TextWrappingSerializer(PrettySerializer):
             yield text
 
 
-class PrettyFormatOptions(NamedTuple):
+class FormatOptions(NamedTuple):
     """
     Instances of this class can be used to define serialization formatting that is
     not so hard to interpret for instances of Homo sapiens s., but more costly to
@@ -3888,25 +3885,25 @@ class DefaultStringOptions:
     See :class:`io.TextIOWrapper` for a detailed explanation of the parameter with the
     same name.
     """
-    pretty_format_options: ClassWar[None | PrettyFormatOptions] = None
+    format_options: ClassWar[None | FormatOptions] = None
     """
-    An instance of :class:`PrettyFormatOptions` can be provided to configure formatting.
+    An instance of :class:`FormatOptions` can be provided to configure formatting.
     """
 
     @classmethod
     def _get_serializer(cls) -> Serializer:
         return _get_serializer(
             _StringWriter(newline=cls.newline),
+            format_options=cls.format_options,
             namespaces=cls.namespaces,
-            pretty_format_options=cls.pretty_format_options,
         )
 
     @classmethod
     def reset_defaults(cls):
         """Restores the factory settings."""
+        cls.format_options = None
         cls.namespaces = None
         cls.newline = None
-        cls.pretty_format_options = None
 
 
 class _SerializationWriter(ABC):
@@ -3973,8 +3970,8 @@ __all__ = (
     Attribute.__name__,
     CommentNode.__name__,
     DefaultStringOptions.__name__,
+    FormatOptions.__name__,
     NodeBase.__name__,
-    PrettyFormatOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagAttributes.__name__,

@@ -50,8 +50,8 @@ from _delb.nodes import (
     tag,
     CommentNode,
     DefaultStringOptions,
+    FormatOptions,
     NodeBase,
-    PrettyFormatOptions,
     PrettySerializer,
     ProcessingInstructionNode,
     Serializer,
@@ -501,9 +501,9 @@ class Document(metaclass=DocumentMeta):
         pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
-        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
         Saves the serialized document contents to a file. See :doc:`/api/serialization`
@@ -513,23 +513,23 @@ class Document(metaclass=DocumentMeta):
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.
         :param encoding: The desired text encoding.
+        :param format_options: An instance of :class:`FormatOptions` can be
+                               provided to configure formatting.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param pretty_format_options: An instance of :class:`PrettyFormatOptions` can be
-                                      provided to configure formatting.
         """
         with path.open("bw") as file:
             self.write(
                 buffer=file,
                 pretty=pretty,
                 encoding=encoding,
+                format_options=format_options,
                 namespaces=namespaces,
                 newline=newline,
-                pretty_format_options=pretty_format_options,
             )
 
     @altered_default_filters()
@@ -561,9 +561,9 @@ class Document(metaclass=DocumentMeta):
         pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
-        pretty_format_options: Optional[PrettyFormatOptions] = None,
     ):
         """
         Writes the serialized document contents to a :term:`file-like object`. See
@@ -573,21 +573,21 @@ class Document(metaclass=DocumentMeta):
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.
         :param encoding: The desired text encoding.
+        :param format_options: An instance of :class:`FormatOptions` can be provided to
+                               configure formatting.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param pretty_format_options: An instance of :class:`PrettyFormatOptions` can be
-                                      provided to configure formatting.
         """
         if pretty is not None:
             warn(
                 "The `pretty` argument is deprecated, for the legacy behaviour provide "
                 "`indentation` as two spaces instead."
             )
-            pretty_format_options = PrettyFormatOptions(
+            format_options = FormatOptions(
                 align_attributes=False, indentation="  " if pretty else "", text_width=0
             )
 
@@ -596,8 +596,8 @@ class Document(metaclass=DocumentMeta):
                 _TextBufferWriter(
                     TextIOWrapper(buffer), encoding=encoding, newline=newline
                 ),
+                format_options=format_options,
                 namespaces=namespaces,
-                pretty_format_options=pretty_format_options,
             ),
             encoding=encoding,
         )
@@ -617,9 +617,9 @@ __all__ = (
     CommentNode.__name__,
     DefaultStringOptions.__name__,
     Document.__name__,
+    FormatOptions.__name__,
     Namespaces.__name__,
     ParserOptions.__name__,
-    PrettyFormatOptions.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     TagNode.__name__,

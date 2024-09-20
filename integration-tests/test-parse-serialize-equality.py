@@ -20,8 +20,8 @@ from delb import (
     compare_trees,
     Document,
     FailedDocumentLoading,
+    FormatOptions,
     ParserOptions,
-    PrettyFormatOptions,
 )
 
 
@@ -57,12 +57,10 @@ def save_and_compare_file(
     origin: Document,
     work_fs: MemoryFS,
     result_file: Path,
-    pretty_format_options: None | PrettyFormatOptions,
+    format_options: None | FormatOptions,
     reduce_whitespace: bool,
 ):
-    if not save_file(
-        origin, work_fs, result_file, pretty_format_options=pretty_format_options
-    ):
+    if not save_file(origin, work_fs, result_file, format_options=format_options):
         return
 
     if (
@@ -106,7 +104,7 @@ def parse_and_serialize_and_compare(src_fs: OSFS, work_fs: MemoryFS, file: Path)
         origin,
         work_fs,
         file.with_stem(f"{file.stem}-tabbed"),
-        PrettyFormatOptions(align_attributes=False, indentation="\t", text_width=0),
+        FormatOptions(align_attributes=False, indentation="\t", text_width=0),
         True,
     )
 
@@ -114,7 +112,7 @@ def parse_and_serialize_and_compare(src_fs: OSFS, work_fs: MemoryFS, file: Path)
         origin,
         work_fs,
         file.with_stem(f"{file.stem}-wrapped"),
-        PrettyFormatOptions(align_attributes=False, indentation="  ", text_width=77),
+        FormatOptions(align_attributes=False, indentation="  ", text_width=77),
         True,
     )
 

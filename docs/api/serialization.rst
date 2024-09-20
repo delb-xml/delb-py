@@ -7,10 +7,10 @@ Overview
 *delb* allows users to produce well-readable, content-agnostic XML
 serializations as well-readable as they can get.
 
-The formatting options are controlled with the :class:`delb.PrettyFormatOptions`
-that are either passed to serialization methods like :meth:`delb.Document.save`
-and :meth:`delb.TagNode.serialize` or setting the class property
-:obj:`delb.DefaultStringOptions.pretty_format_options` for any conversions of
+The formatting options are controlled with the :class:`delb.FormatOptions` that
+are either passed to serialization methods like :meth:`delb.Document.save` and
+:meth:`delb.TagNode.serialize` or setting the class property
+:obj:`delb.DefaultStringOptions.format_options` for any conversions of
 documents and nodes to strings (e.g. with :func:`print` or :class:`str`) on the
 general application level. Passing / Setting :obj:`None` lets the serializer
 simply dump a tree's contents to an XML stream without any extra efforts.
@@ -40,8 +40,8 @@ standalone units, neither are the contributed implementations suited for
 derivations nor is the architecture ready for extensions in that regard yet.
 
 
-Example and comparison to other means of production
----------------------------------------------------
+Examples and comparison to other means of production
+----------------------------------------------------
 
 As an example this input is given:
 
@@ -65,7 +65,7 @@ Just indentation, no content wrapping and aligned attributes
 
         document.save(
           path,
-          pretty_format_options = PrettyFormatOptions(
+          format_options = FormatOptions(
             align_attributes=True,
             indentation="  ",
             text_width=0
@@ -93,7 +93,7 @@ With text wrapping
 
         document.save(
           path,
-          pretty_format_options = PrettyFormatOptions(
+          format_options = FormatOptions(
             align_attributes=False,
             indentation="  ",
             text_width=59
@@ -142,7 +142,7 @@ Configuration interfaces
 
 .. autoclass:: delb.DefaultStringOptions
 
-.. autoclass:: delb.PrettyFormatOptions
+.. autoclass:: delb.FormatOptions
    :no-inherited-members:
 
 
