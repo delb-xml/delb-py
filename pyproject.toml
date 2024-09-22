@@ -106,7 +106,21 @@ rst-roles = "attr,class,doc,exc,func,meth,obj,ref,term"
 #
 
 [tool.hatch.build.targets.sdist]
-only-include = ["_delb", "delb", "CITATION.cff"]
+only-include = [
+    "benchmarks",
+    "_delb",
+    "delb",
+    "docs",
+    "tests",
+    ".editorconfig",
+    "CHANGES.rst",
+    "CITATION.cff",
+    "delb_logo.svg",
+    "Justfile",
+    "LICENSE.txt",
+    "pyproject.toml",
+    "README.rst",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["_delb", "delb"]
