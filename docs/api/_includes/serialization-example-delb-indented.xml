@@ -1,32 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document xmlns:pi="https://pirates.code/">
-  <header>
-    Über suum venire vetuit.
-  </header>
-  <identifiers>
-    <id>
-      5dcebaa4-8760-4286-be7a-6b25fd6ae0f0
-    </id>
-    <id>
-      15b0c526-585f-4daf-a45f-411929ffbd61
-    </id>
-  </identifiers>
-  <locations>
-    <shelf>
-      A0
-    </shelf>
-    <shelf>
-      B1c
-    </shelf>
-  </locations>
-  <contributors>
-    <contributor
-            height="~5&quot;"
-       pi:greeting="Ay'e!"
-    >
-      Ed Teach
-    </contributor>
-  </contributors>
+  <head>
+    <title>
+      Über suum venire vetuit.
+    </title>
+    <identifiers>
+      <id>
+        5dcebaa4-8760-4286-be7a-6b25fd6ae0f0
+      </id>
+      <id>
+        15b0c526-585f-4daf-a45f-411929ffbd61
+      </id>
+    </identifiers>
+    <locations>
+      <shelf>
+        A0
+      </shelf>
+      <shelf>
+        B1c
+      </shelf>
+    </locations>
+    <contributors>
+      <contributor
+              height="~5&quot;"
+         pi:greeting="Ay'e!"
+      >
+        Ed Teach
+      </contributor>
+    </contributors>
+  </head>
   <body>
     <text>
       <lb/>Liquidae voluptatis et liberae potest. Atqui pugnantibus et
