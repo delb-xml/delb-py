@@ -127,7 +127,7 @@ class Namespaces(Mapping):
     def __str__(self) -> str:
         return str(self.__data)
 
-    def lookup_prefix(self, namespace: str) -> Optional[str]:
+    def lookup_prefix(self, namespace: str) -> str | None:
         """
         Resolves a namespace to a prefix while considering namespace declarations of
         ascending nodes.
