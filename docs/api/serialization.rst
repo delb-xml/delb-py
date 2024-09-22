@@ -19,12 +19,12 @@ The default "pretty formatting" is best suited to align structured data, it
 adds newline and optional indentation to mark content nesting without adding or
 removing (text encoding related) significant whitespace.
 
-The provided text wrapping implementation also always assumes that a document
+The provided content wrapping implementation also always assumes that a document
 contains mixed content (i.e. both structured and text data) while it prefers a
-continuous presentation of (possibly encoded) text over single tag elements per
-line(s). It's currently quiet expensive to compute. It also doesn't account for
-combining Unicode encodings so that wrapped text lengths are determined by the
-number of Unicode codepoints, not the actually represented glyphs.
+continuous presentation of several nodes on a line with a constrained width.
+It's currently quiet expensive to compute. It also doesn't account for combining
+Unicode encodings so that wrapped text lengths are determined by the number of
+codepoints, not the actually represented glyphs.
 
 Serializations that alter whitespace for indentation or wrapping also apply a
 general reduction of insignificant whitespace as recommended in this

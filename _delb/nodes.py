@@ -3833,8 +3833,9 @@ class FormatOptions(NamedTuple):
     not so hard to interpret for instances of Homo sapiens s., but more costly to
     compute.
 
-    When it's employed, it will always insert a newline after any node unless this
-    wouldn't vanish when collapsing and trimming whitespace.
+    When it's employed whitespace contents will be collapsed and trimmed, newlines will
+    be inserted to improve readability, but only where further whitespace reduction
+    would drop it again.
 
     The serialization respects when a tag node bears the ``xml:space`` attribute with
     the value ``preserve``. But if any descendent of such annotated node signals to
