@@ -47,7 +47,7 @@ As an example this input is given:
 
 .. dropdown:: Source stream
 
-    .. literalinclude:: serialization-example-input.xml
+    .. literalinclude:: _includes/serialization-example-input.xml
        :language: xml
        :linenos:
 
@@ -74,14 +74,15 @@ Just indentation, no content wrapping and aligned attributes
 
 .. dropdown:: Product
 
-    .. literalinclude:: serialization-example-delb-indented.xml
+    .. literalinclude:: _includes/serialization-example-delb-indented.xml
        :language: xml
        :linenos:
+       :emphasize-lines: 2,5,25-26
 
 - l.2) namespace declarations are consolidated at the root node
 - l.2) attribute values are contained by double quotes for better readability
-- l.4) Unicode characters are produced where the input used an entity reference
-- l.24-25) this is the ``align_attributes`` option in action
+- l.5) Unicode characters are produced where the input used an entity reference
+- l.25-26) this is the ``align_attributes`` option in action
 
 
 With text wrapping
@@ -102,13 +103,14 @@ With text wrapping
 
 .. dropdown:: Product
 
-    .. literalinclude:: serialization-example-delb-wrapped.xml
+    .. literalinclude:: _includes/serialization-example-delb-wrapped.xml
        :language: xml
        :linenos:
+       :emphasize-lines: 9,28
 
-- l.8) lacking semantic knowledge, also structured data is placed onto one line
+- l.9) lacking semantic knowledge, also structured data is placed onto one line
   when it fits
-- l.26) nested content is kept on one line if it fits
+- l.28) nested content is kept on one line if it fits
 
 
 lxml
@@ -124,14 +126,15 @@ lxml
 
 .. dropdown:: Product
 
-    .. literalinclude:: serialization-example-lxml.xml
+    .. literalinclude:: _includes/serialization-example-lxml.xml
        :language: xml
        :linenos:
+       :emphasize-lines: 2-4,6,20-34
 
 - l.2-4) still defines an unused named entity
 - l.6) a character reference is produced where Unicode could have been used
 - l.20-33) there's no wrapping option
-- l.21-33) broken indentation
+- l.21-34) unpleasing indentation
 - l.28) opening tag is kept on the started line though a newline would be a
   proper substitute for the preceding space in encoded text
 - l.28-31) related content is spread over lines
