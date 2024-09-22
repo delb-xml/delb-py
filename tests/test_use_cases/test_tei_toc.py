@@ -1,16 +1,10 @@
 from __future__ import annotations
 
-import pytest
-import sys
-
-if sys.version_info < (3, 7):
-    pytest.skip("Requires Python 3.7.", allow_module_level=True)
-
-
 from dataclasses import dataclass
 from typing import Optional
 
 from delb import Document, NodeBase, TagNode
+from _delb.utils import _crunch_whitespace
 
 
 def is_pagebreak(node: NodeBase) -> bool:
@@ -45,27 +39,23 @@ class TableOfContents:
     """Not a table but a tree of a document's sections."""
 
     def __init__(self, document):
-        self.document = document
+        self.document: Document = document
 
     @property
     def back_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level back sections."""
-        back_nodes = self.document.xpath("./text/back")
-        if back_nodes:
-            assert len(back_nodes) == 1
-            back_node = back_nodes[0]
-            return self._parse_sections(back_node, 0)
+        if back_nodes := self.document.xpath("./text/back"):
+            assert back_nodes.size == 1
+            return self._parse_sections(back_nodes.first, 0)
         else:
             return ()
 
     @property
     def body_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level body sections."""
-        body_nodes = self.document.xpath("./text/body")
-        if body_nodes:
-            assert len(body_nodes) == 1
-            body_node = body_nodes[0]
-            return self._parse_sections(body_node, 0)
+        if body_nodes := self.document.xpath("./text/body"):
+            assert body_nodes.size == 1
+            return self._parse_sections(body_nodes.first, 0)
         else:
             return ()
 
@@ -88,43 +78,30 @@ class TableOfContents:
 
     def _parse_sections(self, node: TagNode, level: int) -> tuple[TOCSection, ...]:
         result = []
-        for index, section_element in enumerate(node.xpath("./div")):
+        for index, section_node in enumerate(node.xpath("./div")):
             pages_range = (
-                section_element.fetch_preceding(is_pagebreak).attributes.get("n"),
-                self._find_sections_last_page(section_element),
+                section_node.fetch_preceding(is_pagebreak).attributes.get("n"),
+                section_node.last_descendant.fetch_preceding(
+                    is_pagebreak
+                ).attributes.get("n"),
             )
             result.append(
                 TOCSection(
-                    index,
-                    level,
-                    pages_range,
-                    self._parse_sections(section_element, level + 1),
-                    self._find_sections_title(section_element),
-                    section_element.location_path,
+                    index=index,
+                    level=level,
+                    pages_range=pages_range,
+                    subsections=self._parse_sections(section_node, level + 1),
+                    title=self._find_sections_title(section_node),
+                    location_path=section_node.location_path,
                 )
             )
         return tuple(result)
 
     @staticmethod
-    def _find_sections_last_page(section_node: TagNode) -> str:
-        sections_last_node = section_node.last_child
-        while sections_last_node.last_child is not None:
-            sections_last_node = sections_last_node.last_child
-
-        pagebreak = sections_last_node.fetch_preceding(is_pagebreak)
-
-        return pagebreak.attributes.get("n")
-
-    @staticmethod
     def _find_sections_title(element) -> Optional[str]:
         for xpath in ("./head", "./table/head"):
-            head_elements = element.xpath(xpath)
-            if head_elements:
-                text = head_elements[0].full_text.strip()
-                text = text.replace("\n", " ")
-                while "  " in text:
-                    text = text.replace("  ", " ")
-                return text
+            if head_elements := element.xpath(xpath):
+                return _crunch_whitespace(head_elements[0].full_text).strip()
 
 
 def test_table_of_contents(files_path):
