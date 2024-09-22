@@ -23,6 +23,8 @@ Features
 - Consistent design regarding names and callables' signatures.
 - Shadows comments and processing instructions by default.
 - Querying with XPath and CSS expressions.
+- Serializations that may fulfil the promise of XML's well-readability to an
+  unwitnessed degree and even don't mess up whitespace.
 
 
 Development status

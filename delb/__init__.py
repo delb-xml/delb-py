@@ -33,6 +33,7 @@ from _delb.plugins import (
 )
 from _delb.names import Namespaces
 from _delb.nodes import (
+    _get_serializer,
     _is_tag_or_text_node,
     _wrapper_cache,
     altered_default_filters,
@@ -49,10 +50,13 @@ from _delb.nodes import (
     tag,
     CommentNode,
     DefaultStringOptions,
+    FormatOptions,
     NodeBase,
+    PrettySerializer,
     ProcessingInstructionNode,
+    Serializer,
     TagNode,
-    TextBufferSerializer,
+    _TextBufferWriter,
     TextNode,
 )
 from _delb.parser import ParserOptions
@@ -282,8 +286,8 @@ class Document(metaclass=DocumentMeta):
     >>> text_node.clone() in document
     False
 
-    The string coercion of a document yields an XML encoded stream as string. Its
-    appearance can be configured via :class:`DefaultStringOptions`.
+    The string coercion of a document yields an XML encoded stream as string. See
+    :doc:`/api/serialization` for details.
 
     >>> document = Document("<root/>")
     >>> str(document)
@@ -389,13 +393,9 @@ class Document(metaclass=DocumentMeta):
         return node.document is self
 
     def __str__(self) -> str:
-        with DefaultStringOptions._get_serializer() as serializer:
-            self.__serialize(
-                serializer=serializer,
-                encoding="utf-8",
-                indentation=serializer.indentation,
-            )
-            return serializer.result
+        serializer = DefaultStringOptions._get_serializer()
+        self.__serialize(serializer=serializer, encoding="utf-8")
+        return serializer.writer.result
 
     def clone(self) -> Document:
         """
@@ -501,65 +501,59 @@ class Document(metaclass=DocumentMeta):
         pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
-        align_attributes: bool = False,
-        indentation: str = "",
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
-        text_width: int = 0,
     ):
         """
-        Saves the serialized document contents to a file.
+        Saves the serialized document contents to a file. See :doc:`/api/serialization`
+        for details.
 
         :param path: The filesystem path to the target file.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.
         :param encoding: The desired text encoding.
-        :param align_attributes: Determines whether attributes' names and values line up
-                                 sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents one time per
-                            depth level. A non-empty string implies line-breaks between
-                            nodes as well.
+        :param format_options: An instance of :class:`FormatOptions` can be
+                               provided to configure formatting.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param text_width: A positive value indicates that text nodes shall get wrapped
-                           at this character position.
-                           Indentations are not considered as part of text. This
-                           parameter's purposed to define reasonable widths for text
-                           displays that can be scrolled horizontally.
         """
         with path.open("bw") as file:
             self.write(
                 buffer=file,
                 pretty=pretty,
                 encoding=encoding,
-                align_attributes=align_attributes,
-                indentation=indentation,
+                format_options=format_options,
                 namespaces=namespaces,
                 newline=newline,
-                text_width=text_width,
             )
 
     @altered_default_filters()
-    def __serialize(self, serializer, encoding: str, indentation: str):
-        possible_newline = "\n" if indentation else ""
+    def __serialize(
+        self,
+        serializer: Serializer,
+        encoding: str,
+    ):
+        possible_newline = "\n" if isinstance(serializer, PrettySerializer) else ""
 
-        serializer.buffer.write(
+        serializer.writer(
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
         )
         with _wrapper_cache:
             for node in self.head_nodes:
-                serializer.buffer.write(str(node) + possible_newline)
+                serializer.writer(str(node) + possible_newline)
             with altered_default_filters():
                 serializer.serialize_root(self.root)
             if self.tail_nodes:
-                serializer.buffer.write(possible_newline)
+                serializer.writer(possible_newline)
                 for node in self.tail_nodes[:-1]:
-                    serializer.buffer.write(str(node) + possible_newline)
-                serializer.buffer.write(str(self.tail_nodes[-1]))
+                    serializer.writer(str(node) + possible_newline)
+                serializer.writer(str(self.tail_nodes[-1]))
+        serializer.writer.buffer.flush()
 
     def write(
         self,
@@ -567,57 +561,46 @@ class Document(metaclass=DocumentMeta):
         pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
-        align_attributes: bool = False,
-        indentation: str = "",
+        format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
-        newline: None | str,
-        text_width: int = 0,
+        newline: None | str = None,
     ):
         """
-        Writes the serialized document contents to a :term:`file-like object`.
+        Writes the serialized document contents to a :term:`file-like object`. See
+        :doc:`/api/serialization` for details.
 
         :param buffer: A :term:`file-like object` that the document is written to.
         :param pretty: *Deprecated.* Adds indentation for human consumers when
                        :obj:`True`.
         :param encoding: The desired text encoding.
-        :param align_attributes: Determines whether attributes' names and values line up
-                                 sharply around vertically aligned equal signs.
-        :param indentation: This string prefixes descending nodes' contents one time per
-                            depth level. A non-empty string implies line-breaks between
-                            nodes as well.
+        :param format_options: An instance of :class:`FormatOptions` can be provided to
+                               configure formatting.
         :param namespaces: A mapping of prefixes to namespaces. These are overriding
                            possible declarations from a parsed serialisat that the
                            document instance stems from. Prefixes for undeclared
                            namespaces are enumerated with the prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
-        :param text_width: A positive value indicates that text nodes shall get wrapped
-                           at this character position.
-                           Indentations are not considered as part of text. This
-                           parameter's purposed to define reasonable widths for text
-                           displays that can be scrolled horizontally.
         """
         if pretty is not None:
             warn(
                 "The `pretty` argument is deprecated, for the legacy behaviour provide "
                 "`indentation` as two spaces instead."
             )
-            align_attributes = False
-            indentation = "  " if pretty else ""
-            text_width = 0
-
-        with TextBufferSerializer(
-            buffer=TextIOWrapper(buffer),
-            encoding=encoding,
-            align_attributes=align_attributes,
-            indentation=indentation,
-            namespaces=namespaces,
-            newline=newline,
-            text_width=text_width,
-        ) as serializer:
-            self.__serialize(
-                serializer=serializer, encoding=encoding, indentation=indentation
+            format_options = FormatOptions(
+                align_attributes=False, indentation="  " if pretty else "", width=0
             )
+
+        self.__serialize(
+            serializer=_get_serializer(
+                _TextBufferWriter(
+                    TextIOWrapper(buffer), encoding=encoding, newline=newline
+                ),
+                format_options=format_options,
+                namespaces=namespaces,
+            ),
+            encoding=encoding,
+        )
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
@@ -634,6 +617,7 @@ __all__ = (
     CommentNode.__name__,
     DefaultStringOptions.__name__,
     Document.__name__,
+    FormatOptions.__name__,
     Namespaces.__name__,
     ParserOptions.__name__,
     ProcessingInstructionNode.__name__,

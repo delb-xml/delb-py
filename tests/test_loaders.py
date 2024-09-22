@@ -8,7 +8,7 @@ from delb import Document
 
 
 TEST_FILE = (
-    Path(__file__).resolve().parent / "files" / "tei_marx_manifestws_1848.TEI-P5.xml"
+    Path(__file__).resolve().parent / "files" / "marx_manifestws_1848.TEI-P5.xml"
 )
 TEST_CONTENTS = TEST_FILE.read_text()
 

@@ -9,6 +9,8 @@ from delb import DefaultStringOptions, Document
 
 FILES_PATH = Path(__file__).parent / "files"
 RESULTS_FILE = FILES_PATH / ".result.xml"
+TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
+XML_FILES = tuple(FILES_PATH.glob("[!.]*.xml"))
 
 
 _referenced_objects_for_wrapper_cache_tests = {}

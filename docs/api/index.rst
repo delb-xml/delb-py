@@ -9,6 +9,7 @@ API Documentation
    documents
    nodes
    querying
+   serialization
    transformations
    utilities
    typing

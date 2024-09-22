@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="../schema/casebooks.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="../schema/casebooks.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<!DOCTYPE TEI [<!ENTITY % entities SYSTEM "./entities.dtd"> %entities; ]>
+<TEI xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.tei-c.org/ns/1.0" xmlns:cb="http://www.magicandmedicine.hps.cam.ac.uk/ns/1.0">
+<teiHeader>
+<fileDesc>
+<titleStmt>
+<title xml:id="main_title">CASE80043</title>
+<funder>Wellcome Trust (Programme Grant 090619, 2010-14 and Strategic Award 104083, 2014-18)</funder>
+</titleStmt>
+<publicationStmt>
+<publisher>The Casebooks Project</publisher>
+<pubPlace>Cambridge</pubPlace>
+<date when="2014-03-25">25 March 2014</date>
+</publicationStmt>
+<seriesStmt>
+<title level="s">The casebooks of Simon Forman and Richard Napier, 1596–1634: a digital edition</title>
+<respStmt><name>Lauren Kassell</name><name>Michael Hawkins</name><name>Robert Ralley</name><name>John Young</name><name>Joanne Edge</name><name>Janet Yvonne Martin-Portugues</name><name>Natalie Kaoukji</name><resp>(eds.)</resp></respStmt>
+</seriesStmt>
+<sourceDesc>
+<bibl type="positionOnPage">p. 213/uS, p. 214/uS, p. 215/uS, p. 216/uS</bibl>
+<msDesc>
+<msIdentifier>
+<country>UK</country>
+<settlement>Oxford</settlement>
+<repository>Bodleian Library</repository>
+<collection>Ashmole Mss</collection>
+<idno n="1488">MS Ashmole 1488, pp. 213-216</idno>
+<altIdentifier type="fn_number"><idno n="UnnamedVol">Unnamed volume</idno></altIdentifier>
+</msIdentifier>
+<msContents>
+<msItem>
+<locus from="0213" to="0216"/>
+<title sameAs="#main_title"/>
+</msItem>
+</msContents>
+</msDesc>
+</sourceDesc>
+</fileDesc>
+<charDecl><glyph xml:id="crossedp">
+        <glyphName>CROSSED LOWERCASE P</glyphName>
+        <mapping type="standard">p</mapping>
+        <mapping type="PUA">U+E670</mapping>
+    </glyph></charDecl>
+<encodingDesc>
+<samplingDecl xml:id="standardSampling"><p>Only the ‘question’ section of each consultation has been transcribed. This is the part of the entry that typically features the date and time of the consultation, the patient’s name, and an indication of the nature of the enquiry. Often, it also includes further details such as the querent’s identity if he or she is not the same person as the patient, the patient’s age, address, occupation and relation to the querent or any third parties mentioned. In the vast majority of cases, this information is contained within the first paragraph of the record although it is not uncommon, especially in Napier’s entries, for this information to be scattered throughout the entry.</p></samplingDecl>
+</encodingDesc>
+<profileDesc>
+<handNotes>
+<handNote sameAs="#rnapier">Richard Napier</handNote>
+</handNotes>
+<langUsage>
+<language ident="en">English</language>
+</langUsage>
+<textClass xml:base="../master-lists/consultation-types.xml">
+<catRef target="#prescription"/>
+</textClass>
+<particDesc>
+<listPerson>
+<person xml:id="rnapier">
+<persName><forename>Richard</forename> <surname>Napier</surname></persName>
+<sex value="1">M</sex>
+</person>
+<person xml:id="me">
+<persName><roleName>Lady</roleName> <forename>Magdalen</forename> <surname>Egerton</surname></persName>
+<sex value="2">F</sex>
+</person>
+<person xml:id="ae">
+<persName><roleName>Lady</roleName> <forename>Alice</forename> <surname evidence="external">Egerton</surname></persName>
+<sex value="2">F</sex>
+</person>
+</listPerson>
+</particDesc>
+<settingDesc>
+<p><date when="1633-05-14" n="Tuesday"/></p>
+<cb:consultation>
+<cb:astrologer resp="#mhawkins" ref="#rnapier"/>
+<cb:consultant ref="#rnapier"/>
+<cb:practice name="napier"/>
+<cb:querent ref="#rnapier" evidence="conjecture" present="yes"/>
+<cb:subject ref="#me #ae" present="unclear"/>
+<cb:topic key="treatment"><person sameAs="#me"/><person sameAs="#ae"/></cb:topic>
+</cb:consultation>
+</settingDesc>
+</profileDesc>
+<revisionDesc>
+<change when="2015-03-17">Transcription by <name xml:id="bbrogan">Boyd Brogan</name> converted to XML by <name xml:id="rralley">Robert Ralley</name>.</change>
+<change when="2015-04-27">Checked by <name xml:id="jyoung">John Young</name>.</change>
+<change when="2017-03-09">Milestone coding added by <name sameAs="#rralley">Robert Ralley</name>.</change>
+<change when="2017-03-31">Rechecked by <name sameAs="#jyoung">John Young</name>.</change>
+<change when="2018-06-06">Checked against original by <name xml:id="jedge">Joanne Edge</name>.</change>
+</revisionDesc>
+</teiHeader>
+
+    <facsimile>
+        <graphic xml:id="NULL0.jpg" url="NULL0.jpg" n="213" width="5914" height="8530"/>
+        <graphic xml:id="NULL1.jpg" url="NULL1.jpg" n="214" width="5832" height="8431"/>
+        <graphic xml:id="NULL2.jpg" url="NULL2.jpg" n="215" width="5956" height="8530"/>
+        <graphic xml:id="NULL3.jpg" url="NULL3.jpg" n="216" width="5956" height="8530"/>
+    </facsimile>
+<text xml:lang="en">
+<body><div>
+<milestone unit="question" spanTo="#questionEnd1"/>
+<head rend="center">A note of Directions for the noble lady Magdalen <lb/>Egerton may 14<hi rend="superscript">th</hi> 1633.</head><anchor xml:id="questionEnd1"/>
+<milestone unit="treatment" spanTo="#treatmentEnd1"/>
+<p><lb/>first give<del type="strikethrough"><gap extent="1" unit="chars" reason="del"/></del> <add place="supralinear">her</add> onc a weeke 5 pils especially 2 or 3 days before the <lb/>new moone &amp; the full moone</p>
+<p><lb/>But in case the flushing should come, observe the former <lb/>directions &amp; doe as you have seene me to doe</p>
+<p><lb/><subst><del type="over"><gap reason="del" extent="1" unit="chars"/></del><add place="over">Th</add></subst>at is give her a clyster. of Hamec the weight of six <lb/>sixpences. that is thre shillings <subst><del type="over"><gap reason="del" extent="1" unit="chars"/></del><add place="over">m</add></subst>ixing it with <choice><orig>I</orig><reg>J</reg></choice>erapicra
+<lb/>c<choice><orig>ō</orig><reg>om</reg></choice>posita the weight of twelfe pence sweete <subst><del type="over"><gap reason="del" extent="1" unit="chars"/></del><add place="over">b</add></subst>utter on <lb/>sponefull salt a sponefull.</p>
+<p><lb/>And that night apply a pigeon slitte the bloody <choice><orig><g ref="#crossedp"></g></orig><reg>par</reg></choice>te to the <lb/>soales of the feete to each foote going to her bed &amp; halfe <lb/>a pigeon to the nape of the neck.</p>
+<p><lb/>In the morning <del type="strikethrough">apply</del> give her 5 pils very early to sleepe <lb/>on them. or els another clyster as you did before in <lb/>the after noone betwixt 3 &amp; 4. &amp; pigeons agayne to the <lb/>soales of her feete</p>
+<p><lb/>onc a fortnight you may apply to the outsyde of the <lb/><subst><del type="strikethrough">foote</del> <add place="marginLeft">right leg</add></subst> two leaches. &amp; a week after two leaches to <lb/>the outsyde of the left leg. this to p<choice><orig><hi rend="superscript">r</hi></orig><reg>re</reg></choice>vent</p>
+<p><lb/>But if the flushing heate will not leave her suddenly <lb/>then it is good to apply 4 leaches to the emrod <lb/>vaynes.</p>
+<p><lb/>onc in a month it weare very <choice><sic>behoofehull</sic><corr cert="high">behoofefull</corr></choice> to take four <lb/>graynes of the vomyting pouder &amp; to soake it all night in thre <lb/>onces of white <subst><del type="over"><gap reason="del" extent="1" unit="chars"/></del><add place="over">w</add></subst>yne on the gentle hot embers then in the <lb/>morning to passe it thorough a lynen cloath into a cup &amp; to Drink <lb/>it fasting all at once &amp; hot buttered posset Drink always after casting</p>
+<p><lb/>If at any tyme you feare <choice><orig>y<hi rend="superscript">t</hi></orig><reg>that</reg></choice> her flushing heate will come on <lb/>her. then you may be pleased to give her a vomyte <lb/>to evacuate the humours. &amp; a <del type="strikethrough">cl<gap reason="del" extent="1" unit="chars"/></del> washing clyster of clere <lb/>hot posset Drink 3 quarters of a pint, sweete butter two sponefuls <lb/>Hony a sponefull &amp; white salt a sponefull. &amp; if you please <lb/>the next day about four of the clock a purging clyster of hamec <lb/>&amp; <choice><orig>I</orig><reg>J</reg></choice>erapicra <choice><orig>w<hi rend="superscript">ch</hi></orig><reg>which</reg></choice> is before described</p>
+<pb xml:id="p214" n="214"/>
+<p><lb/>If it so happen <choice><orig>y<hi rend="superscript">t</hi></orig><reg>that</reg></choice> before you can make ready this <lb/>purging dyet Drink <choice><orig>w<hi rend="superscript">ch</hi></orig><reg>which</reg></choice> followeth the flushing heate should <lb/><subst><del type="strikethrough">Bine</del> <add place="supralinear">be feared</add></subst></p>
+<p><lb/>Brine four <add place="supralinear">or five</add> gallons of good Ale worte &amp; when it is t<choice><orig>ū</orig><reg>un</reg></choice>ned <lb/>into a fitting &amp; a convenient barle Then Take of <lb/>Sene six onces, of rubarbe, Agarick, turbith of each on <lb/>once <add place="supralinear">sliced</add> a halfe. &amp; of Calamus aromaticus, sassafras, sarza<lb type="hyphenated"/>perilla of each two onces sliced licoras anys seedes of each sliced <lb/>&amp; bruised four onces, cinamon nutmeg of each brused halfe an <lb/>once citron &amp; lemon pils of each a quarter of an once whit <lb/>&amp; yellow sanders sliced of each a quarter of an once, Divide <lb/>all the stuffe into 3 lynen bags having a peeble stone in <lb/>each bag after it is a weeke old, Drink of it libe<lb/>rally as you Did <choice><orig>w<hi rend="superscript">th</hi></orig><reg>with</reg></choice> <choice><orig>v</orig><reg>u</reg></choice>s &amp; eate no flesh. till it hath <lb/><subst><del type="over">d</del><add place="over">w</add></subst>rought well/ you may Drink hot posset Drinke to <lb/>set it a working. &amp; may dyne <choice><orig>w<hi rend="superscript">th</hi></orig><reg>with</reg></choice> potched egs &amp; so m<gap extent="unclear" reason="binding"/> <lb/>it at sup<choice><orig><g ref="#crossedp"></g></orig><reg>per</reg></choice>.</p>
+<p><lb/>If I say you c<choice><orig>ā</orig><reg>an</reg></choice> not p<choice><orig><hi rend="superscript">r</hi></orig><reg>re</reg></choice>pare this purging dyet drink <lb/>soone inough to p<choice><orig><hi rend="superscript">r</hi></orig><reg>re</reg></choice>vent her infirmity. Then be pleased <lb/>to make this purging Decoction following</p>
+<p><lb/>Take of Sene on once &amp; a halfe turbith on once &amp; a halfe, Aga<lb/>rick mechoic<choice><orig>ā</orig><reg>am</reg></choice> &amp; rubarbe of each six Drams the Weight of a dram <lb/>is about six pence, mirabolans Called Chelulæ &amp; Citrini of each <lb/>on once all fynely sliced. hermedactils two onces sliced, licoras &amp; anys seeds <lb/>of each an ounce &amp; a halfe boyle all these in six pints of water &amp; two <lb/>pints of white wyne boyle it to halfe strayne it. of this the lady Magda<lb/>len is to take six onces &amp; to adde to it two sponefuls of syrope of roses <lb/>&amp; to Drink it for 3 mornings but the lady Alce is to take but <lb/>four onces of this licour &amp; to adde to it two sponefuls of syrope of roses.</p>
+<p><lb/>The oyntment we <choice><orig>v</orig><reg>u</reg></choice>sed to <choice><orig>y<hi rend="superscript">e</hi></orig><reg>the</reg></choice> lady Magdalen was c<choice><orig>ō</orig><reg>om</reg></choice>pounded <lb/>of oyle of lillyes two onces of Capons greace two sponefuls of oynt<lb/><add place="marginLeft">ment of</add> Dialthea a sponefull all weare melted &amp; so <choice><orig>v</orig><reg>u</reg></choice>sed</p>
+<p><lb/>&amp; also her former playster some 3 onces eyther to be applyed <lb/><unclear reason="hand" cert="low">be</unclear>t<unclear reason="hand" cert="low">wix</unclear>t her shoulders &amp; also the soales of her feete <lb/>&amp; on of those playsters to be applyed to the lady A<subst><del type="over">c</del><add place="over">l</add></subst>ces <lb/>splene.</p><anchor xml:id="treatmentEnd1"/>
+</div>
+<div><pb xml:id="p215" n="215"/>
+<milestone unit="question" spanTo="#questionEnd2"/>
+<head rend="center">For the Lady Alce</head><anchor xml:id="questionEnd2"/>
+<milestone unit="treatment" spanTo="#treatmentEnd2"/>
+<p><lb/>When you shall see especiall cause <choice><sic>they</sic><corr>then</corr></choice> give to <lb/>the lady two sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <choice><orig>w<hi rend="superscript">th</hi></orig><reg>with</reg></choice> a sponefull of white wyne let her Drink it <lb/>fasting, taking always after laying <choice><orig>v</orig><reg>u</reg></choice>p of the stomack cleere <lb/>hot posset Drinke</p>
+<p><lb/>If her ladyship c<choice><orig>ō</orig><reg>om</reg></choice>playne of any gryping in her belly or any <lb/>ach of her head then give this clyster.</p>
+<p><lb/>Take of motherworte, wild thyme, lovage, rosemary, balme of <lb/>each a quarter of a handfull bay beryes, <choice><orig>I</orig><reg>J</reg></choice>unipor beryes, <lb/>anys seedes Dill seedes of each a sponefull flours of c<choice><orig>ā</orig><reg>am</reg></choice>momyll <lb/>a very litle boyle all in a quarte of posset Drinke made <lb/>of malmesye or white muskadyn &amp; milke of each a <lb/>pinte take away the Curde &amp; boyle all the forenamed <lb/>species in it to halfe, strayne it &amp; Take halfe a pinte <lb/>of this decoction melt in it a sponefull of sweete butter, <lb/>hony a sponefull, white salt a sponefull. let this be <lb/>her clyster.</p>
+<p><lb/>If you see occasion give her 5 litle pils Weighing about <lb/>four pence about 5 in the morning</p>
+<p><lb/><add place="supralinear">let her smell to Her pomander.</add></p>
+<p><lb/>And there after give the lady of the gentle purging <lb/>decoction before named in the Description of it for the <lb/>lady Magdalen. giving her of this Decoction four onces. syrope <lb/>of roses a sponefull, &amp; of the <del type="strikethrough">elect</del> purging electuary p<choice><orig><hi rend="superscript">r</hi></orig><reg>re</reg></choice>pared <lb/>for the lady Alce the Weight of ten pence let albe well <lb/>dissol<choice><orig>u</orig><reg>v</reg></choice>ed &amp; give her this potion blood warme fasting betwixt six<unclear cert="medium" reason="hand"><del type="strikethrough">t</del></unclear> <lb/>&amp; seaven &amp; thin broath two hours after.</p>
+<p><lb/>When you make of the purging dyet Ale, then be pleased <lb/>to give her a good Draught of it in the same maner <lb/>as her ladyship tooke it here with <choice><orig>v</orig><reg>u</reg></choice>s at <placeName>linford</placeName></p>
+<pb xml:id="p216" n="216"/>
+<p><lb/>you have thre ounces of c<choice><orig>ō</orig><reg>om</reg></choice>fortable lozenges to give <lb/><choice><orig>v</orig><reg>u</reg></choice>nto the lady Alce <del type="strikethrough"><gap reason="del" extent="1" unit="chars"/></del> on lozeng in a day for 3 or 4 <lb/>mornings togeather fasting especially after a vomyte <lb/>or a purge. &amp; so to be <choice><orig>v</orig><reg>u</reg></choice>sed as occasion shalbe <lb/>mynistred</p><anchor xml:id="treatmentEnd2"/>
+</div>
+</body>
+</text>
+</TEI>

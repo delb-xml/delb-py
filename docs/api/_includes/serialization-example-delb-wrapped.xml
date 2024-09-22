@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns:pi="https://pirates.code/">
+  <head>
+    <title>Über suum venire vetuit.</title>
+    <identifiers>
+      <id>5dcebaa4-8760-4286-be7a-6b25fd6ae0f0</id>
+      <id>15b0c526-585f-4daf-a45f-411929ffbd61</id>
+    </identifiers>
+    <locations> <shelf>A0</shelf> <shelf>B1c</shelf> </locations>
+    <contributors>
+      <contributor height="~5&quot;" pi:greeting="Ay'e!">
+        Ed Teach
+      </contributor>
+    </contributors>
+  </head>
+  <body>
+    <text>
+      <lb/>Liquidae voluptatis et liberae potest. Atqui
+      pugnantibus et <hi>contra</hi>riis studiis consiliisque
+      semper utens nihil <lb/>quieti videre, nihil tranquilli
+      potest. <lb/>Quodsi vitam omnem continent, neglegentur?
+      <lb/>Nam, ut sint illa vendibiliora, haec uberiora certe
+      sunt. Quamquam id quidem licebit iis existimare, qui
+      legerint. Nos autem hanc omnem quaestionem de finibus
+      bonorum et malorum, <lb/>id est voluptatem. Homines optimi
+      non intellegunt totam rationem everti, <lb/>si ita res se
+      habeat. Nam si ea sola voluptas esset,
+      <choice><sic>que</sic><corr>quae</corr></choice>
+      quasi delapsa <lb/>de caelo est ad quiete vivendum,
+      caritatem, praesertim cum omnino nulla sit causa peccandi.
+      Quae enim cupiditates a natura proficiscuntur, <lb/>facile
+      explentur sine ulla iniuria, quae autem inanes sunt, iis
+      parendum non est. <lb/>Nihil enim desiderabile
+      concupiscunt, plusque in ipsa iniuria detrimenti est quam
+      in.
+    </text>
+  </body>
+</document>

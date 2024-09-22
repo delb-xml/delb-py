@@ -37,9 +37,7 @@ class DTABfDocument(TEIDocument):
 
 
 def test_klass(files_path):
-    document = Document(
-        files_path / "tei_marx_manifestws_1848.TEI-P5.xml", klass=Document
-    )
+    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml", klass=Document)
     assert not isinstance(document, DTABfDocument)
 
 
@@ -49,7 +47,7 @@ def test_no_subclass():
 
 @pytest.mark.parametrize(
     "filename",
-    ("tei_marx_manifestws_1848.TEI-P5.xml", "tei_stevenson_treasure_island.xml"),
+    ("marx_manifestws_1848.TEI-P5.xml", "tei_stevenson_treasure_island.xml"),
 )
 def test_tei_subclass(files_path, filename):
     document = Document(files_path / filename)

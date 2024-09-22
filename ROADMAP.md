@@ -43,3 +43,8 @@
 - drop any remaining checks against lxml equivalents
 - remove all remaining deprecated features
 - performance optimizations
+
+## Unscheduled
+
+- a proper serialization implementation with focus on performance and possibly
+  extendability
