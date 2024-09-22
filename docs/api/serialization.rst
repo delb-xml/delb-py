@@ -149,6 +149,26 @@ Configuration interfaces
    :no-inherited-members:
 
 
+Recipes
+-------
+
+Given that applications usually handle documents with a simple basic structure,
+one can easily come up with solutions to produce streams with mixed formatting.
+
+.. dropdown:: Production
+
+  .. literalinclude:: _includes/serialization-mixed-format-recipe.py
+     :language: python
+     :start-after: # mark docs inclusion start
+     :end-before: # mark docs inclusion end
+
+.. dropdown:: Product
+
+  .. literalinclude:: _includes/serialization-example-mixed-format.xml
+     :language: xml
+
+
+
 .. [1] For example with :meth:`Document.reduce_whitespace`.
 .. [2] With enabled :attr:`ParserOptions.reduce_whitespace`.
 
