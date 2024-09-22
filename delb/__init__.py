@@ -588,7 +588,7 @@ class Document(metaclass=DocumentMeta):
                 "`indentation` as two spaces instead."
             )
             format_options = FormatOptions(
-                align_attributes=False, indentation="  " if pretty else "", text_width=0
+                align_attributes=False, indentation="  " if pretty else "", width=0
             )
 
         self.__serialize(

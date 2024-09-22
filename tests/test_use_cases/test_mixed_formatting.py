@@ -41,7 +41,7 @@ class MixedFormatting(Transformation):
             FormatOptions(
                 align_attributes=False,
                 indentation=self.options.indentation,
-                text_width=0,
+                width=0,
             ),
         )
 
@@ -55,7 +55,7 @@ class MixedFormatting(Transformation):
             FormatOptions(
                 align_attributes=False,
                 indentation=self.options.indentation,
-                text_width=self.options.text_width,
+                width=self.options.text_width,
             ),
         )
 

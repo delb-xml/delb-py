@@ -3127,7 +3127,7 @@ def _get_serializer(
     if format_options.indentation and not format_options.indentation.isspace():
         raise ValueError("Invalid indentation characters.")
 
-    if format_options.text_width:
+    if format_options.width:
         return TextWrappingSerializer(
             writer=writer,
             format_options=format_options,
@@ -3503,7 +3503,7 @@ class TextWrappingSerializer(PrettySerializer):
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
-        if format_options.text_width < 1:
+        if format_options.width < 1:
             raise ValueError
         self.writer: _LengthTrackingWriter
         super().__init__(
@@ -3514,7 +3514,7 @@ class TextWrappingSerializer(PrettySerializer):
         self._line_fitting_serializer = _LineFittingSerializer(
             self.writer, namespaces=self._namespaces
         )
-        self._width = format_options.text_width
+        self._width = format_options.width
 
     @property
     def _available_space(self):
@@ -3848,10 +3848,9 @@ class FormatOptions(NamedTuple):
     Determines whether attributes' names and values line up sharply around vertically
     aligned equal signs.
     """
-    indentation: str = "  "
+    indentation: str = "\t"
     """ This string prefixes descending nodes' contents one time per depth level. """
-    # TODO should this default to 0 due to the necessary resources for wrapping?
-    text_width: int = 89
+    width: int = 0
     """
     A positive value indicates that text nodes shall get wrapped at this character
     position. Indentations are not considered as part of text. This parameter is

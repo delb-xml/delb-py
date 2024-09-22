@@ -43,7 +43,7 @@ from tests.utils import assert_equal_trees, skip_long_running_test
 )
 def test_align_attributes(indentation, out):
     DefaultStringOptions.format_options = FormatOptions(
-        align_attributes=True, indentation=indentation, text_width=0
+        align_attributes=True, indentation=indentation, width=0
     )
     node = new_tag_node(
         "chimeney",
@@ -105,7 +105,7 @@ def test_empty_below_default_namespace():
 )
 def test_indentation(indentation, _in, out):
     DefaultStringOptions.format_options = FormatOptions(
-        align_attributes=False, indentation=indentation, text_width=0
+        align_attributes=False, indentation=indentation, width=0
     )
     document = Document(_in, parser_options=ParserOptions(reduce_whitespace=True))
     serialisat = str(document)
@@ -156,7 +156,7 @@ def test_prefix_collection_and_generation(_in, prefixes):
             ),
         ),
         (
-            FormatOptions(align_attributes=False, indentation="  ", text_width=4),
+            FormatOptions(align_attributes=False, indentation="  ", width=4),
             """\
             <?xml version="1.0" encoding="UTF-8"?>
             <text>
@@ -189,9 +189,9 @@ def test_significant_whitespace_is_saved(result_file, format_options, out):
     "format_options",
     (
         None,
-        FormatOptions(align_attributes=True, indentation="", text_width=0),
-        FormatOptions(align_attributes=False, indentation="  ", text_width=0),
-        FormatOptions(align_attributes=False, indentation="\t", text_width=89),
+        FormatOptions(align_attributes=True, indentation="", width=0),
+        FormatOptions(align_attributes=False, indentation="  ", width=0),
+        FormatOptions(align_attributes=False, indentation="\t", width=89),
     ),
 )
 @pytest.mark.parametrize(
@@ -250,7 +250,7 @@ def test_text_document_production(files_path, source, prefix, align_attributes, 
     document.save(
         result_path,
         format_options=FormatOptions(
-            align_attributes=align_attributes, indentation="  ", text_width=width
+            align_attributes=align_attributes, indentation="  ", width=width
         ),
     )
     assert result_path.read_text() == reference_path.read_text()
@@ -344,7 +344,7 @@ def test_text_document_production(files_path, source, prefix, align_attributes, 
 def test_text_width(files_path, indentation, text_width, out):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     paragraph = document.xpath("//p")[14]
-    format_options = FormatOptions(indentation=indentation, text_width=text_width)
+    format_options = FormatOptions(indentation=indentation, width=text_width)
     DefaultStringOptions.format_options = format_options
     assert paragraph.serialize(format_options=format_options) == str(paragraph) == out
 
@@ -383,7 +383,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
     assert "\t" not in paragraph.full_text
 
     DefaultStringOptions.format_options = FormatOptions(
-        indentation="  ", text_width=text_width
+        indentation="  ", width=text_width
     )
     assert str(paragraph) == dedent(expected)
 
@@ -392,7 +392,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
     ("format_options", "_in", "out"),
     (
         (
-            FormatOptions(align_attributes=False, indentation="", text_width=60),
+            FormatOptions(align_attributes=False, indentation="", width=60),
             """<p><lb/>When you shall see especiall cause then give to <lb/>the lady two
             sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <glyph/></p>""",
             """\
@@ -403,7 +403,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
             </p>""",
         ),
         (
-            FormatOptions(align_attributes=False, indentation="", text_width=77),
+            FormatOptions(align_attributes=False, indentation="", width=77),
             """<p><lb/>When you shall see especiall cause <choice><sic>they</sic><corr>then</corr></choice> give to <lb/>the lady two sponefuls &amp; a halfe of the vomyting syrope <lb/>mixed <glyph/></p>""",  # noqa: E501
             """\
             <p>
@@ -413,7 +413,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
             </p>""",
         ),
         (
-            FormatOptions(align_attributes=False, indentation="  ", text_width=77),
+            FormatOptions(align_attributes=False, indentation="  ", width=77),
             """\
             <p>“Come, come!” he said, from his corner. “Don't go on in that way, Mr. Gridley. You are only
              a little low. We are all of us a little low, sometimes. <hi>I</hi> am. Hold up, hold up!
@@ -429,7 +429,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
             </p>""",  # noqa: E501
         ),
         (
-            FormatOptions(align_attributes=False, indentation="  ", text_width=77),
+            FormatOptions(align_attributes=False, indentation="  ", width=77),
             """\
             <layout columns="1" ruledLines="22" writtenLines="21">
                <!--  xml:id="LO16" -->
@@ -448,7 +448,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
             </layout>""",  # noqa: E501
         ),
         (
-            FormatOptions(align_attributes=False, indentation="  ", text_width=77),
+            FormatOptions(align_attributes=False, indentation="  ", width=77),
             """\
             <layout columns="2" ruledLines="23" writtenLines="22">
                <!-- xml:id="LO15??" -->
@@ -466,7 +466,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
             </layout>""",  # noqa: E501
         ),
         (
-            FormatOptions(align_attributes=False, indentation="  ", text_width=77),
+            FormatOptions(align_attributes=False, indentation="  ", width=77),
             """\
             <text>
                <div>
@@ -517,10 +517,10 @@ def test_text_wrapping(format_options, _in, out):
         {"indentation": ""},
         {"indentation": "  "},
         {"indentation": "\t"},
-        {"text_width": 0},
-        {"text_width": 1},
-        {"text_width": 77},
-        {"indentation": "  ", "text_width": 77},
+        {"width": 0},
+        {"width": 1},
+        {"width": 77},
+        {"indentation": "  ", "width": 77},
     ),
 )
 def test_that_no_extra_whitespace_is_produced(_in, format_options):
@@ -557,12 +557,12 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
     "format_options",
     (
         None,
-        FormatOptions(align_attributes=False, indentation="", text_width=0),
-        FormatOptions(align_attributes=False, indentation="  ", text_width=0),
-        FormatOptions(align_attributes=True, indentation="\t", text_width=0),
-        FormatOptions(align_attributes=False, indentation="", text_width=77),
-        FormatOptions(align_attributes=False, indentation="  ", text_width=77),
-        FormatOptions(align_attributes=True, indentation="  ", text_width=77),
+        FormatOptions(align_attributes=False, indentation="", width=0),
+        FormatOptions(align_attributes=False, indentation="  ", width=0),
+        FormatOptions(align_attributes=True, indentation="\t", width=0),
+        FormatOptions(align_attributes=False, indentation="", width=77),
+        FormatOptions(align_attributes=False, indentation="  ", width=77),
+        FormatOptions(align_attributes=True, indentation="  ", width=77),
     ),
 )
 def test_transparency(file, format_options, result_file):
@@ -587,10 +587,10 @@ def test_transparency(file, format_options, result_file):
 
 
 @pytest.mark.parametrize(
-    ("text_width", "out"),
+    ("width", "out"),
     (
         (
-            0,
+            FormatOptions().width,
             """\
             <root>
               <a/>A
@@ -599,7 +599,7 @@ def test_transparency(file, format_options, result_file):
             </root>""",
         ),
         (
-            FormatOptions().text_width,
+            89,
             """\
             <root>
               <a/>A <b xml:space="preserve"><x/><y/><z/></b> Z<c/>
@@ -607,10 +607,8 @@ def test_transparency(file, format_options, result_file):
         ),
     ),
 )
-def test_xml_space(text_width, out):
-    DefaultStringOptions.format_options = FormatOptions(
-        indentation="  ", text_width=text_width
-    )
+def test_xml_space(width, out):
+    DefaultStringOptions.format_options = FormatOptions(indentation="  ", width=width)
 
     # preserve in a subtree
     root = Document(
@@ -623,7 +621,7 @@ def test_xml_space(text_width, out):
     assert str(root) == '<root xml:space="preserve"><t/></root>'
 
     # illegal values are ignored
-    if text_width == 0:
+    if width == 0:
         root = Document('<root xml:space="illegal"><t/></root>').root
         assert str(root) == dedent(
             """\
