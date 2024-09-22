@@ -40,8 +40,8 @@ standalone units, neither are the contributed implementations suited for
 derivations nor is the architecture ready for extensions in that regard yet.
 
 
-Examples and comparison to other means of production
-----------------------------------------------------
+Examples and comparisons
+------------------------
 
 As an example this input is given:
 
@@ -56,8 +56,8 @@ Note that there's no indication of the document's type or schema.
 delb
 ~~~~
 
-Just indentation, no content wrapping and aligned attributes
-............................................................
+Indentation and aligned attributes
+..................................
 
 .. dropdown:: Production
 
@@ -85,8 +85,8 @@ Just indentation, no content wrapping and aligned attributes
 - l.25-26) this is the ``align_attributes`` option in action
 
 
-With text wrapping
-..................
+Text wrapping
+.............
 
 .. dropdown:: Production
 
@@ -151,6 +151,9 @@ Configuration interfaces
 
 Recipes
 -------
+
+High Level Mixed Formatting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Given that applications usually handle documents with a simple basic structure,
 one can easily come up with solutions to produce streams with mixed formatting.
