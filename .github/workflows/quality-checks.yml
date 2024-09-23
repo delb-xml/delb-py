@@ -22,16 +22,24 @@ on:
 
 jobs:
 
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.baipp.outputs.supported_python_classifiers_json_array }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: hynek/build-and-inspect-python-package@v2
+        id: baipp
+
   unit-tests:
+    needs: ["build"]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
-          - 3.8  # 2024-10
-          - 3.9  # 2025-10
-          - "3.10"  # 2026-10
-          - "3.11"  # 2027-10
-          - "3.12"  # 2028-10
+        python-version: ${{ fromJson(needs.build.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,8 +48,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@v2
-      - run: pip install hatch
-      - run: just pytest
+      - run: pipx install hatch
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - run: |
+          rm -r _delb delb
+          test "$(find dist -name 'delb-*.whl' | wc -l)" -eq 1
+          export WHEEL_PATH="$(find dist -name 'delb-*.whl')"
+          just pytest
 
   other-quality-checks:
     runs-on: ubuntu-latest
@@ -59,7 +75,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: extractions/setup-just@v2
-      - run: pip install hatch
+      - run: pipx install hatch
       - run: just ${{ matrix.target }}
 
 ...
