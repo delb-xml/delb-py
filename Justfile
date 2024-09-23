@@ -2,7 +2,7 @@ default: tests
 
 
 version := `hatch version`
-
+ci-suffix := if env_var_or_default("CI", "false") == "true" { "-ci" } else { "" }
 
 # run benchmarks
 benchmarks:
@@ -36,7 +36,7 @@ mypy:
 
 # run the complete testsuite
 pytest:
-    hatch run unit-tests:check
+    hatch run unit-tests{{ci-suffix}}:check
 
 # release the current version on github & the PyPI
 release: tests
