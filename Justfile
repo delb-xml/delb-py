@@ -4,6 +4,11 @@ default: tests
 version := `hatch version`
 ci-suffix := if env_var_or_default("CI", "false") == "true" { "-ci" } else { "" }
 
+_assert_no_dev_version:
+  #!/usr/bin/env python3
+  if "-dev" in "{{version}}":
+    raise SystemExit(1)
+
 # run benchmarks
 benchmarks:
     hatch run benchmarks:run
@@ -38,18 +43,14 @@ mypy:
 pytest:
     hatch run unit-tests{{ci-suffix}}:check
 
-# release the current version on github & the PyPI
-release: tests
-    test "{{trim_end_match(version, '-dev')}}" = "{{version}}" || false
+# release the current version on github & (transitively) the PyPI
+release: _assert_no_dev_version tests
     {{just_executable()}} -f {{justfile()}} update-citation-file
     git add CITATION.cff
     git commit -m "Updates CITATION.cff"
     git tag {{version}}
     git push origin main
     git push origin {{version}}
-    hatch clean
-    hatch build
-    hatch publish
 
 # watch, build and serve HTML documentation at 0.0.0.0:8000
 serve-docs:
