@@ -16,8 +16,8 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, overload, Any
 
 if sys.version_info < (3, 10):  # DROPWITH Python3.9
     from importlib_metadata import entry_points
@@ -27,8 +27,14 @@ else:
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
-
-    from _delb.typing import Loader, LoaderConstraint
+    from delb import Document
+    from _delb.typing import (
+        GenericDecorated,
+        Loader,
+        LoaderConstraint,
+        SecondOrderDecorator,
+        XPathFunction,
+    )
 
 
 class DocumentMixinBase:
@@ -93,10 +99,10 @@ class DocumentMixinBase:
 
 class PluginManager:
     def __init__(self):
-        self.document_mixins: list[type] = []
-        self.document_subclasses: list[type] = []
+        self.document_mixins: list[type[DocumentMixinBase]] = []
+        self.document_subclasses: list[type[Document]] = []
         self.loaders: list[Loader] = []
-        self.xpath_functions: dict[str, Callable] = {}
+        self.xpath_functions: dict[str, XPathFunction] = {}
 
     @staticmethod
     def load_plugins():
@@ -108,7 +114,7 @@ class PluginManager:
 
     def register_loader(
         self, before: LoaderConstraint = None, after: LoaderConstraint = None
-    ) -> Callable:
+    ) -> SecondOrderDecorator:
         """
         Registers a document loader.
 
@@ -200,7 +206,15 @@ class PluginManager:
 
         return registrar
 
-    def register_xpath_function(self, arg: Callable | str) -> Callable:
+    @overload
+    def register_xpath_function(self, arg: str) -> SecondOrderDecorator: ...
+
+    @overload
+    def register_xpath_function(self, arg: GenericDecorated) -> GenericDecorated: ...
+
+    def register_xpath_function(
+        self, arg: str | GenericDecorated
+    ) -> SecondOrderDecorator | GenericDecorated:
         """
         Custom XPath functions can be defined as shown in the following example. The
         first argument to a function is always an instance of
@@ -231,7 +245,7 @@ class PluginManager:
         """
         if isinstance(arg, str):
 
-            def wrapper(func):
+            def wrapper(func: XPathFunction) -> XPathFunction:
                 self.xpath_functions[arg] = func
                 return func
 
