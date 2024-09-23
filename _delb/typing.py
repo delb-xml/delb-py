@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import sys
 
-from typing import TYPE_CHECKING, Any, Mapping, Union  # noqa: UNT001
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Union, TypeVar  # noqa: UNT001
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
     from types import SimpleNamespace
 
     if sys.version_info < (3, 10):  # DROPWITH Python 3.9
@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from lxml import etree
 
     from _delb.nodes import NodeBase, _TagDefinition
+    from _delb.xpath.ast import EvaluationContext
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
@@ -41,6 +42,9 @@ else:
     from typing import Self
 
 
+GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
+SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"
+
 Filter: TypeAlias = "Callable[[NodeBase], bool]"
 NamespaceDeclarations: TypeAlias = Mapping[str | None, str]
 NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
@@ -48,6 +52,8 @@ NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
 LoaderResult: TypeAlias = Union["etree._ElementTree", str]
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = Union[Loader, "Iterable[Loader]", None]
+
+XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 
 
 __all__ = (

@@ -26,17 +26,17 @@ if TYPE_CHECKING:
 
 
 @plugin_manager.register_xpath_function
-def concat(_, *strings: str) -> str:
+def concat(_: EvaluationContext, *strings: str) -> str:
     return "".join(strings)
 
 
 @plugin_manager.register_xpath_function
-def contains(_, string: str, substring: str) -> bool:
+def contains(_: EvaluationContext, string: str, substring: str) -> bool:
     return substring in string
 
 
 @plugin_manager.register_xpath_function
-def boolean(_, value: Any) -> bool:
+def boolean(_: EvaluationContext, value: Any) -> bool:
     return bool(value)
 
 
@@ -46,7 +46,7 @@ def last(context: EvaluationContext) -> int:
 
 
 @plugin_manager.register_xpath_function("not")
-def _not(_, value: Any) -> bool:
+def _not(_: EvaluationContext, value: Any) -> bool:
     return not value
 
 
@@ -56,7 +56,7 @@ def position(context: EvaluationContext) -> int:
 
 
 @plugin_manager.register_xpath_function("starts-with")
-def starts_with(_, string: str, prefix: str) -> bool:
+def starts_with(_: EvaluationContext, string: str, prefix: str) -> bool:
     return string.startswith(prefix)
 
 
