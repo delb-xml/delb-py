@@ -12,5 +12,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
             python-version: "3.12"
-      - run: pip install hatch
+      - run: pipx install hatch
       - run: hatch run docs:linkcheck
