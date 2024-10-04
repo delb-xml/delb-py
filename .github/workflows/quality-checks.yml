@@ -22,26 +22,59 @@ on:
 
 jobs:
 
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.baipp.outputs.supported_python_classifiers_json_array }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: hynek/build-and-inspect-python-package@v2
+        id: baipp
+
   unit-tests:
+    needs: ["build"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: extractions/setup-just@v2
+      - run: pipx install hatch
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - run: tar xf dist/*.tar.gz --strip-components=1
+      - uses: actions/setup-python@v5
+        with:
+          cache: pip
+          python-version: 3.x
+      - run: just pytest
+
+  compatibility-tests:
+    needs: ["build", "unit-tests"]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
-          - 3.8  # 2024-10
-          - 3.9  # 2025-10
-          - "3.10"  # 2026-10
-          - "3.11"  # 2027-10
-          - "3.12"  # 2028-10
+        python-version: ${{ fromJson(needs.build.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
+          cache: pip
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@v2
-      - run: pip install hatch
-      - run: just pytest
+      - run: pipx install hatch
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - run: |
+          rm -r _delb delb
+          test "$(find dist -name 'delb-*.whl' | wc -l)" -eq 1
+          just test-wheel "$(find dist -name 'delb-*.whl')"
 
   other-quality-checks:
     runs-on: ubuntu-latest
@@ -57,9 +90,10 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          cache: pip
+          python-version: "3.x"
       - uses: extractions/setup-just@v2
-      - run: pip install hatch
+      - run: pipx install hatch
       - run: just ${{ matrix.target }}
 
 ...

@@ -3,6 +3,10 @@ default: tests
 
 version := `hatch version`
 
+_assert_no_dev_version:
+  #!/usr/bin/env python3
+  if "dev" in "{{version}}":
+    raise SystemExit(1)
 
 # run benchmarks
 benchmarks:
@@ -38,18 +42,14 @@ mypy:
 pytest:
     hatch run unit-tests:check
 
-# release the current version on github & the PyPI
-release: tests
-    test "{{trim_end_match(version, '-dev')}}" = "{{version}}" || false
+# release the current version on github & (transitively) the PyPI
+release: _assert_no_dev_version tests
     {{just_executable()}} -f {{justfile()}} update-citation-file
     git add CITATION.cff
     git commit -m "Updates CITATION.cff"
     git tag {{version}}
     git push origin main
     git push origin {{version}}
-    hatch clean
-    hatch build
-    hatch publish
 
 # watch, build and serve HTML documentation at 0.0.0.0:8000
 serve-docs:
@@ -61,6 +61,10 @@ show-docs: docs
 
 # run all tests on normalized code
 tests: black code-lint mypy pytest doctest
+
+# run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
+test-wheel $WHEEL_PATH:
+    hatch run test-wheel:check
 
 # Generates and validates CITATION.cff
 update-citation-file:
