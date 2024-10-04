@@ -63,6 +63,7 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
+          cache: pip
           python-version: ${{ matrix.python-version }}
       - uses: extractions/setup-just@v2
       - run: pipx install hatch
@@ -89,7 +90,8 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          cache: pip
+          python-version: "3.x"
       - uses: extractions/setup-just@v2
       - run: pipx install hatch
       - run: just ${{ matrix.target }}
