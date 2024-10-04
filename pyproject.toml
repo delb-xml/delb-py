@@ -210,7 +210,7 @@ coverage-report = """
 template = "unit-tests"
 skip-install = true
 extra-dependencies = [
-    "delb @ {root:uri}/{args}",
+    "delb @ {root:uri}/{env:WHEEL_PATH}",
 ]
 [tool.hatch.envs.test-wheel.scripts]
 check = "python -m pytest tests"
