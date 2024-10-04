@@ -37,6 +37,23 @@ jobs:
   unit-tests:
     needs: ["build"]
     runs-on: ubuntu-latest
+    steps:
+      - uses: extractions/setup-just@v2
+      - run: pipx install hatch
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - run: tar xf dist/*.tar.gz --strip-components=1
+      - uses: actions/setup-python@v5
+        with:
+          cache: pip
+          python-version: 3.x
+      - run: just pytest
+
+  compatibility-tests:
+    needs: ["build", "unit-tests"]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ${{ fromJson(needs.build.outputs.python-versions) }}
@@ -56,8 +73,7 @@ jobs:
       - run: |
           rm -r _delb delb
           test "$(find dist -name 'delb-*.whl' | wc -l)" -eq 1
-          export WHEEL_PATH="$(find dist -name 'delb-*.whl')"
-          just pytest
+          just test-wheel "$(find dist -name 'delb-*.whl')"
 
   other-quality-checks:
     runs-on: ubuntu-latest
