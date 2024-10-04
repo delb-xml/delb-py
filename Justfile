@@ -63,8 +63,8 @@ show-docs: docs
 tests: black code-lint mypy pytest doctest
 
 # run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
-test-wheel wheel_path:
-    hatch run test-wheel:check {{wheel_path}}
+test-wheel $WHEEL_PATH:
+    hatch run test-wheel:check
 
 # Generates and validates CITATION.cff
 update-citation-file:
