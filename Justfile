@@ -2,11 +2,10 @@ default: tests
 
 
 version := `hatch version`
-ci-suffix := if env_var_or_default("CI", "false") == "true" { "-ci" } else { "" }
 
 _assert_no_dev_version:
   #!/usr/bin/env python3
-  if "-dev" in "{{version}}":
+  if "dev" in "{{version}}":
     raise SystemExit(1)
 
 # run benchmarks
@@ -41,7 +40,7 @@ mypy:
 
 # run the complete testsuite
 pytest:
-    hatch run unit-tests{{ci-suffix}}:check
+    hatch run unit-tests:check
 
 # release the current version on github & (transitively) the PyPI
 release: _assert_no_dev_version tests
@@ -62,6 +61,10 @@ show-docs: docs
 
 # run all tests on normalized code
 tests: black code-lint mypy pytest doctest
+
+# run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
+test-wheel wheel_path:
+    hatch run test-wheel:check {{wheel_path}}
 
 # Generates and validates CITATION.cff
 update-citation-file:
