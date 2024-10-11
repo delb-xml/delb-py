@@ -1,7 +1,7 @@
 ---
 
 name: Publish delb
-on:
+on:  # yamllint disable-line
   push:
     tags: ["*"]
 
@@ -21,7 +21,9 @@ jobs:
       name: pypi
       url: https://pypi.org/p/delb
     permissions:
-        id-token: write
+      id-token: write
+      contents: write
+
     steps:
       - name: Download package
         uses: actions/download-artifact@v4
@@ -30,5 +32,13 @@ jobs:
           path: dist
       - name: Upload package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Install dependencies for creating GH release
+        run: pip install panflute pypandoc sphinx
+      # TODO build docs, so that objects.inv is available
+      - name: Create GH release
+        run: >-
+          python .github/scripts/make-github-release.py ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 ...
