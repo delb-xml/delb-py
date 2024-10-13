@@ -42,12 +42,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          sparse-checkout: 'CHANGES.rst'
-      - name: Install dependencies for creating GH release
-        run: pip install panflute pypandoc sphinx
-      # TODO build docs, so that objects.inv is available
-      - name: Create GH release
-        run: >-
+      - uses: actions/setup-python@v5
+        with:
+          cache: pip
+          python-version: 3.x
+      - uses: extractions/setup-just@v2
+      - run: pipx install hatch
+      - run: just docs
+      - run: pip install panflute pypandoc sphinx
+      - run: >-
           python .github/scripts/make-github-release.py ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
