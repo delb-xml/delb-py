@@ -12,9 +12,8 @@ jobs:
     with:
       ref: ${{ env.GITHUB_REF_NAME }}
 
-  upload:
+  pypi:
     name: Publish to the cheeseshop
-    if: startsWith(github.ref, 'refs/tags/')
     needs: ["build-and-test"]
     runs-on: ubuntu-latest
     environment:
@@ -22,7 +21,6 @@ jobs:
       url: https://pypi.org/p/delb
     permissions:
       id-token: write
-      contents: write
 
     steps:
       - name: Download package
@@ -32,6 +30,19 @@ jobs:
           path: dist
       - name: Upload package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  github:
+    name: Create a Github release
+    needs: ["build-and-test"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          sparse-checkout: 'CHANGES.rst'
       - name: Install dependencies for creating GH release
         run: pip install panflute pypandoc sphinx
       # TODO build docs, so that objects.inv is available
