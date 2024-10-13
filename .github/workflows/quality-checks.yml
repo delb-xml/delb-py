@@ -25,7 +25,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      python-versions: ${{ steps.baipp.outputs.supported_python_classifiers_json_array }}
+      python-versions: >-
+        ${{ steps.baipp.outputs.supported_python_classifiers_json_array }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,8 +82,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - code-lint
           - doctest
+          - lint
           - mypy
     steps:
       - uses: actions/checkout@v4

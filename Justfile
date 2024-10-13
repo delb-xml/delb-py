@@ -20,10 +20,6 @@ black:
 coverage-report:
     hatch run unit-tests:coverage-report
 
-# code linting with flake8
-code-lint:
-    hatch run linting:check
-
 # generate Sphinx HTML documentation, including API docs
 docs:
     hatch run docs:clean
@@ -33,6 +29,11 @@ docs:
 doctest:
     hatch run docs:clean
     hatch run docs:doctest
+
+# code & data linting with flake8 & yamllint
+lint:
+    hatch run linting:check
+    pipx run yamllint $(find . -name "*.yaml" -or -name "*.yml")
 
 # run static type checks with mypy
 mypy:
@@ -60,7 +61,7 @@ show-docs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-tests: black code-lint mypy pytest doctest
+tests: black lint mypy pytest doctest
 
 # run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
 test-wheel $WHEEL_PATH:

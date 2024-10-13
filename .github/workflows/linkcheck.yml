@@ -1,3 +1,5 @@
+---
+
 name: Check documentation's hyperlinks
 
 on:
@@ -11,6 +13,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-            python-version: "3.x"
+          python-version: "3.x"
       - run: pipx install hatch
       - run: hatch run docs:linkcheck
+
+...
