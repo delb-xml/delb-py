@@ -1,7 +1,7 @@
 default: tests
 
 
-version := `hatch version`
+version := `pipx run hatch version`
 
 _assert_no_dev_version:
   #!/usr/bin/env python3
