@@ -52,8 +52,7 @@ Developer toolbox
 -----------------
 
 The repository includes configurations so that beside a suited Python
-interpreter three tools need to be available globally. pipx_ is the recommended
-facilitation to install the Python implemented tools *black* and *hatch*.
+interpreter two tools need to be available globally.
 
 just
 ~~~~
@@ -68,18 +67,19 @@ the default recipe::
 
     …/delb-py $ just
 
-black
-~~~~~
+Both, the recipes in the ``Justfile`` as well as various sections in the
+``pyproject.toml``, are prescriptive how different aspects are to be applied or
+tested.
 
-It's recommended to configure the used editors and IDEs to enforce black_'s code
-style, but it can also be applied with::
+pipx
+~~~~
 
-    …/delb-py $ just black
+pipx_, often available from distributions' repositories, is required to invoke
+various Python tools without explicitly installing them.
 
-hatch
-~~~~~
 
-Several of the *just* recipes rely on hatch_.
+Development guidelines
+----------------------
 
 pytest
 ~~~~~~
@@ -88,9 +88,7 @@ You can skip some long running tests by invoking pytest in a context where the
 environment variable ``SKIP_LONG_RUNNING_TESTS`` is defined.
 
 
-.. _black: https://black.readthedocs.io/
 .. _editable: https://packaging.python.org/guides/distributing-packages-using-setuptools/#working-in-development-mode
-.. _hatch: https://hatch.pypa.io/
 .. _just: https://just.systems/
 .. _pip: https://pip.pypa.io/
 .. _pipx: https://pipx.pypa.io/stable/

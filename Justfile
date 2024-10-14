@@ -10,39 +10,39 @@ _assert_no_dev_version:
 
 # run benchmarks
 benchmarks:
-    hatch run benchmarks:run
+    pipx run hatch run benchmarks:run
 
 # normalize Python code
 black:
-    black benchmarks _delb delb integration-tests tests
+    pipx run black benchmarks _delb delb integration-tests tests
 
 # runs tests (except loaders) and reports uncovered lines
 coverage-report:
-    hatch run unit-tests:coverage-report
+    pipx run hatch run unit-tests:coverage-report
 
 # generate Sphinx HTML documentation, including API docs
 docs:
-    hatch run docs:clean
-    hatch run docs:build-html
+    pipx run hatch run docs:clean
+    pipx run hatch run docs:build-html
 
 # verifies testable code snippets in the HTML documentation
 doctest:
-    hatch run docs:clean
-    hatch run docs:doctest
+    pipx run hatch run docs:clean
+    pipx run hatch run docs:doctest
 
 # code & data & document linting with doc8 & flake8 & yamllint
 lint:
     pipx run doc8 --max-line-length=80 docs
-    hatch run linting:check
+    pipx run hatch run linting:check
     pipx run yamllint $(find . -name "*.yaml" -or -name "*.yml")
 
 # run static type checks with mypy
 mypy:
-    hatch run mypy:check
+    pipx run hatch run mypy:check
 
 # run the complete testsuite
 pytest:
-    hatch run unit-tests:check
+    pipx run hatch run unit-tests:check
 
 # release the current version on github & (transitively) the PyPI
 release: _assert_no_dev_version tests
@@ -55,7 +55,7 @@ release: _assert_no_dev_version tests
 
 # watch, build and serve HTML documentation at 0.0.0.0:8000
 serve-docs:
-    hatch run docs:serve
+    pipx run hatch run docs:serve
 
 # build and open HTML documentation
 show-docs: docs
@@ -66,8 +66,8 @@ tests: black lint mypy pytest doctest
 
 # run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
 test-wheel $WHEEL_PATH:
-    hatch run test-wheel:check
+    pipx run hatch run test-wheel:check
 
 # Generates and validates CITATION.cff
 update-citation-file:
-    hatch run citation-file:cff-from-621
+    pipx run cff-from-621

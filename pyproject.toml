@@ -139,10 +139,6 @@ run = """
         --benchmark-timer=time.process_time benchmarks
 """
 
-[tool.hatch.envs.citation-file]
-dependencies = ["cff-from-621"]
-detached = true
-
 [tool.hatch.envs.docs]
 dependencies = [
     "autodocsumm",
@@ -186,11 +182,11 @@ check = "flake8 benchmarks _delb delb integration-tests tests"
 [tool.hatch.envs.mypy]
 dependencies = [
     "lxml-stubs",
-    "mypy~=1.0"
+    "mypy"
 ]
 skipinstall = true
 [tool.hatch.envs.mypy.scripts]
-check = "mypy _delb delb"
+check = "mypy  _delb delb"
 
 [tool.hatch.envs.unit-tests]
 dependencies = [
