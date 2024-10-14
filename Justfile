@@ -30,8 +30,9 @@ doctest:
     hatch run docs:clean
     hatch run docs:doctest
 
-# code & data linting with flake8 & yamllint
+# code & data & document linting with doc8 & flake8 & yamllint
 lint:
+    pipx run doc8 --max-line-length=80 docs
     hatch run linting:check
     pipx run yamllint $(find . -name "*.yaml" -or -name "*.yml")
 
