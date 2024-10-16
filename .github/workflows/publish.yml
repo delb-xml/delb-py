@@ -10,7 +10,7 @@ jobs:
   build-and-test:
     uses: ./.github/workflows/quality-checks.yml
     with:
-      ref: ${{ env.GITHUB_REF_NAME }}
+      ref: ${{ github.ref }}
 
   pypi:
     name: Publish to the cheeseshop
