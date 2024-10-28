@@ -25,7 +25,7 @@ from contextlib import suppress
 from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
-from typing import TYPE_CHECKING, cast, Any, IO
+from typing import TYPE_CHECKING, cast, Any
 
 from lxml import etree
 
@@ -76,7 +76,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     :attr:`Document.config` attribute.
     """
     if isinstance(data, Path):
-        config.source_url = f"file://{data}"
+        config.source_url = data.as_uri()
         with data.open("r") as file:
             return buffer_loader(file, config)
     return "The input value is not a pathlib.Path instance."
@@ -88,6 +88,12 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     This loader loads a document from a :term:`file-like object`.
     """
     if isinstance(data, IOBase):
+        if (
+            not hasattr(config, "source_url")
+            and (name := getattr(data, "name", None)) is not None
+            and (path := Path(name)).is_file()
+        ):
+            config.source_url = path.as_uri()
         with suppress(UnsupportedOperation):
             data.seek(0)
         return etree.parse(
