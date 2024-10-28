@@ -23,7 +23,8 @@ def test_etree_loader():
     tree = etree.parse(str(TEST_FILE))
     root = tree.getroot()
 
-    document = Document(root)
+    with pytest.deprecated_call():
+        document = Document(root)
     assert document.root._etree_obj is not root
     assert document.source_url is None
 

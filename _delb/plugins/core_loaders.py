@@ -26,6 +26,7 @@ from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, cast, Any
+from warnings import warn
 
 from lxml import etree
 
@@ -60,8 +61,16 @@ def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     :class:`lxml.etree._ElementTree` instances.
     """
     if isinstance(data, etree._ElementTree):
+        warn(
+            "lxml's etree models will not be usable inputs with the contributed core loaders.",
+            category=DeprecationWarning,
+        )
         return deepcopy(data)
     if isinstance(data, etree._Element):
+        warn(
+            "lxml's etree models will not be usable inputs with the contributed core loaders.",
+            category=DeprecationWarning,
+        )
         return etree.ElementTree(
             element=deepcopy(data), parser=config.parser_options._make_parser()
         )
