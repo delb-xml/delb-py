@@ -151,6 +151,28 @@ lxml
 - l.28-31) related content is spread over lines
 
 
+xml.dom.minidom
+~~~~~~~~~~~~~~~
+
+.. dropdown:: Production
+
+    .. code-block::
+
+        with Path("serialization-example-minidom.xml").open("bw") as f:
+            document.toprettyxml("  ", encoding="utf-8", standalone=True)
+
+.. dropdown:: Product
+
+    .. literalinclude:: _includes/serialization-example-minidom.xml
+       :language: xml
+       :linenos:
+       :emphasize-lines: 2-4,6-7,41,56
+
+Many of the previous flaws manifest as well with this implementation from the
+standard library. There's excessive additional whitespace, also of significance
+after each ``lb`` tag.
+
+
 Configuration interfaces
 ------------------------
 
