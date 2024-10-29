@@ -75,7 +75,7 @@ Indentation and aligned attributes
     .. code-block::
 
         document.save(
-          path,
+          Path("serialization-example-delb-indented.xml"),
           format_options = FormatOptions(
             align_attributes=True,
             indentation="  ",
@@ -104,7 +104,7 @@ Text wrapping
     .. code-block::
 
         document.save(
-          path,
+          Path("serialization-example-delb-wrapped.xml"),
           format_options = FormatOptions(
             align_attributes=False,
             indentation="  ",
@@ -132,7 +132,7 @@ lxml
     .. code-block::
 
         etree.indent(tree)
-        with (p / "serialization-example-lxml.xml").open("bw") as f:
+        with Path("serialization-example-lxml.xml").open("bw") as f:
             tree.write(f, pretty_print=True)
 
 .. dropdown:: Product
