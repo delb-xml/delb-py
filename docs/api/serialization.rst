@@ -39,6 +39,17 @@ As its stands custom serialization algorithms should be implemented as
 standalone units, neither are the contributed implementations suited for
 derivations nor is the architecture ready for extensions in that regard yet.
 
+A re-implementation has performance as primary goal later in the beta phase may
+then allow customizations. Ideas can be contributed and discussed in `this
+thread`_.
+
+.. [1] For example with :meth:`Document.reduce_whitespace`.
+.. [2] With enabled :attr:`ParserOptions.reduce_whitespace`.
+
+.. _references: https://www.w3.org/TR/REC-xml/#sec-references
+.. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace
+.. _this thread: https://github.com/delb-xml/delb-py/discussions/101
+
 
 Examples and comparisons
 ------------------------
@@ -147,34 +158,3 @@ Configuration interfaces
 
 .. autoclass:: delb.FormatOptions
    :no-inherited-members:
-
-
-Recipes
--------
-
-High Level Mixed Formatting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Given that applications usually handle documents with a simple basic structure,
-one can easily come up with solutions to produce streams with mixed formatting.
-
-.. dropdown:: Production
-
-  .. literalinclude:: _includes/serialization-mixed-format-recipe.py
-     :language: python
-     :start-after: # mark docs inclusion start
-     :end-before: # mark docs inclusion end
-
-.. dropdown:: Product
-
-  .. literalinclude:: _includes/serialization-example-mixed-format.xml
-     :language: xml
-
-
-
-.. [1] For example with :meth:`Document.reduce_whitespace`.
-.. [2] With enabled :attr:`ParserOptions.reduce_whitespace`.
-
-
-.. _references: https://www.w3.org/TR/REC-xml/#sec-references
-.. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace
