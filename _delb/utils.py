@@ -292,7 +292,7 @@ def first(iterable: Iterable) -> Optional[Any]:
         raise TypeError
 
 
-def get_traverser(from_left=True, depth_first=True, from_top=True):
+def get_traverser(*, from_left=True, depth_first=True, from_top=True):
     """
     Returns a function that can be used to traverse a (sub)tree with the given node as
     root.
