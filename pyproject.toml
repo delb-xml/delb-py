@@ -41,7 +41,7 @@ dependencies = [
 https-loader = "_delb.plugins.https_loader"
 
 [project.optional-dependencies]
-https-loader = ["httpx[brotli,http2]"]
+https-loader = ["httpx[http2]"]
 
 [project.urls]
 Changelog = "https://delb.readthedocs.io/en/latest/changes.html"
