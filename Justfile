@@ -32,7 +32,7 @@ doctest:
 
 # code & data & document linting with doc8 & flake8 & yamllint
 lint:
-    pipx run doc8 --max-line-length=80 docs
+    pipx run doc8 --ignore-path docs/build --max-line-length=80 docs
     pipx run hatch run linting:check
     pipx run yamllint $(find . -name "*.yaml" -or -name "*.yml")
 
