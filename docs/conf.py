@@ -19,7 +19,7 @@ import re
 # -- Project information -----------------------------------------------------
 
 project = "delb"
-copyright = "2018-2022, Frank Sachsenheim"
+copyright = "2018-'24, Frank Sachsenheim"
 author = "Frank Sachsenheim"
 
 # The full version, including alpha/beta/rc tags
