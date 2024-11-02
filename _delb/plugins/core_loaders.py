@@ -101,8 +101,10 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     if isinstance(data, IOBase):
         if (
             not hasattr(config, "source_url")
-            and (name := getattr(data, "name", None)) is not None
-            and (path := Path(name)).is_file()
+            and isinstance(name := getattr(data, "name", None), (bytes, str))
+            and (
+                path := Path(name if isinstance(name, str) else name.decode())
+            ).is_file()
         ):
             config.source_url = path.as_uri()
         with suppress(UnsupportedOperation):
