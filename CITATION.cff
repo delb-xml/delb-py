@@ -2,8 +2,8 @@
 title: delb
 abstract: A library that provides an ergonomic model for XML encoded text documents
   (e.g. with TEI-XML).
-version: 0.5-rc0
-date-released: '2024-11-02'
+version: 0.5-rc1
+date-released: '2024-11-03'
 cff-version: 1.2.0
 type: software
 authors:
