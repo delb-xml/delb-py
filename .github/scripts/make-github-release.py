@@ -67,7 +67,7 @@ def make_github_release(notes: str, version: str):
 
 
 def make_release_notes(version: str) -> str:
-    os.environ["DELB_DOCS_BASE_URL"] = f"https://delb.readthedocs.io/en/{version}/"
+    os.environ["DELB_DOCS_BASE_URL"] = f"https://delb.readthedocs.io/{version}/"
     return (
         convert_text(
             extract_relevant_contents(version),
