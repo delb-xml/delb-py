@@ -39,8 +39,8 @@ As its stands custom serialization algorithms should be implemented as
 standalone units, neither are the contributed implementations suited for
 derivations nor is the architecture ready for extensions in that regard yet.
 
-A re-implementation has performance as primary goal later in the beta phase may
-then allow customizations. Ideas can be contributed and discussed in `this
+A re-implementation that has performance as primary goal later in the beta phase
+shall then allow customizations. Ideas can be contributed and discussed in `this
 thread`_.
 
 .. [1] For example with :meth:`Document.reduce_whitespace`.
