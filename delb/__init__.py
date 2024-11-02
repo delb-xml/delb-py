@@ -206,6 +206,7 @@ class _RootSiblingsContainer(ABC, MutableSequence):
     def _iter_all(self) -> Iterator[NodeBase]:
         pass
 
+
 class _Epilogue(_RootSiblingsContainer):
     def _add_first(self, node):
         self._document.root.add_following_siblings(node)
@@ -228,7 +229,6 @@ class _Prologue(_RootSiblingsContainer):
     def _iter_all(self):
         with altered_default_filters():
             yield from self._document.root.iterate_preceding_siblings()
-
 
 
 class DocumentMeta(type):
