@@ -11,7 +11,7 @@ CWD = Path().cwd()
 
 
 date_pattern = r"\(\d\d\d\d-\d\d-\d\d\)"
-version_pattern = r"\d+\.\d+(\.\d+)?(rc\d+)?"
+version_pattern = r"\d+\.\d+(\.\d+)?-?(rc\d+)?"
 
 matches_version_header = re.compile(rf"^{version_pattern} {date_pattern}$").match
 
