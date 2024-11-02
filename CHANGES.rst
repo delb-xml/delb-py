@@ -12,6 +12,44 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
+0.5-rc0 (2024-11-02)
+--------------------
+
+This iteration took quiet long to complete as it presumably solved the hardest
+problem on the way to shed off the essential dependency on ``lxml``, also
+resulting in human-friendly serializations that achieve unprecedented clarity.
+The library's robustness is now proven with integration tests that are verified
+against eleven diverse TEI encoded corpora that sum up to more than 360k
+documents with a total volume of 3.33 GB.
+
+News
+~~~~
+
+- *delb* is now autonomously serializing contents, the :doc:`api/serialization`
+  chapter details current capabilities and interfaces.
+- The `HTML documentation`_ received a big revision for pleasant discovery and
+  reading.
+- Methods that add nodes to a tree now return the added concrete nodes.
+- The new :func:`delb.compare_trees` is available to compare nested
+  contents.
+- ⚠️ :attr:`delb.ParserOptions.collapse_whitespace` was renamed to
+  :attr:`delb.ParserOptions.reduce_whitespace`, as there is now
+  :meth:`delb.Document.reduce_whitespace` to reflect that they also trim
+  excessive whitespace.
+- ⚠️ :attr:`delb.Document.head_nodes` was renamed to
+  :attr:`delb.Document.prologue`, :attr:`delb.Document.tail_nodes` to
+  :attr:`delb.Document.epilogue`.
+- ⚠️ :func:`delb.get_traverser` now only accepts keyword arguments.
+- ⚠️ Support for Python 3.7 was removed.
+- Support for Python 3.12 and 3.13 was added.
+- ⚠️ The :func:`_delb.plugins.core_loaders.etree_loader` is marked as
+  deprecated.
+
+Previously deprecated contents have been removed.
+
+.. _HTML documentation: https://delb.readthedocs.io/
+
+
 0.4 (2022-11-02)
 ----------------
 
