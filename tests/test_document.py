@@ -80,32 +80,36 @@ def test_mro():
 
 def test_root_siblings():
     document = Document("<root/>")
-    head_nodes = document.head_nodes
-    tail_nodes = document.tail_nodes
+    prologue = document.prologue
+    with pytest.deprecated_call():
+        assert document.head_nodes is prologue
+    epilogue = document.epilogue
+    with pytest.deprecated_call():
+        assert document.tail_nodes is epilogue
 
-    head_nodes.append(new_comment_node(" I Roy "))
-    head_nodes.insert(0, new_processing_instruction_node("Blood", "Fire"))
+    prologue.append(new_comment_node(" I Roy "))
+    prologue.insert(0, new_processing_instruction_node("Blood", "Fire"))
 
-    tail_nodes.prepend(new_comment_node(" Prince Jazzbo "))
-    tail_nodes.append(new_processing_instruction_node("over", "out"))
+    epilogue.prepend(new_comment_node(" Prince Jazzbo "))
+    epilogue.append(new_processing_instruction_node("over", "out"))
 
-    assert len(head_nodes) == len(tail_nodes) == 2
+    assert len(prologue) == len(epilogue) == 2
 
     assert str(document) == (
         '<?xml version="1.0" encoding="UTF-8"?><?Blood Fire?>'
         "<!-- I Roy --><root/><!-- Prince Jazzbo --><?over out?>"
     )
 
-    assert head_nodes[0].target == "Blood"
-    assert head_nodes[-1].content == " I Roy "
+    assert prologue[0].target == "Blood"
+    assert prologue[-1].content == " I Roy "
 
-    tail_nodes += [new_comment_node("")]
-
-    with pytest.raises(InvalidOperation):
-        tail_nodes.append("nah")
+    epilogue += [new_comment_node("")]
 
     with pytest.raises(InvalidOperation):
-        tail_nodes.pop(0)
+        epilogue.append("nah")
+
+    with pytest.raises(InvalidOperation):
+        epilogue.pop(0)
 
 
 def test_set_root():

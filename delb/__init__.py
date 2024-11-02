@@ -206,8 +206,19 @@ class _RootSiblingsContainer(ABC, MutableSequence):
     def _iter_all(self) -> Iterator[NodeBase]:
         pass
 
+class _Epilogue(_RootSiblingsContainer):
+    def _add_first(self, node):
+        self._document.root.add_following_siblings(node)
 
-class _HeadNodes(_RootSiblingsContainer):
+    def _get_first(self):
+        return first(self._iter_all())
+
+    def _iter_all(self):
+        with altered_default_filters():
+            yield from self._document.root.iterate_following_siblings()
+
+
+class _Prologue(_RootSiblingsContainer):
     def _add_first(self, node):
         self._document.root.add_preceding_siblings(node)
 
@@ -218,17 +229,6 @@ class _HeadNodes(_RootSiblingsContainer):
         with altered_default_filters():
             yield from self._document.root.iterate_preceding_siblings()
 
-
-class _TailNodes(_RootSiblingsContainer):
-    def _add_first(self, node):
-        self._document.root.add_following_siblings(node)
-
-    def _get_first(self):
-        return first(self._iter_all())
-
-    def _iter_all(self):
-        with altered_default_filters():
-            yield from self._document.root.iterate_following_siblings()
 
 
 class DocumentMeta(type):
@@ -295,7 +295,7 @@ class Document(metaclass=DocumentMeta):
     """
 
     _loaders: tuple[Loader, ...]
-    __slots__ = ("__root_node__", "config", "head_nodes", "source_url", "tail_nodes")
+    __slots__ = ("__root_node__", "config", "epilogue", "prologue", "source_url")
 
     def __new__(
         cls,
@@ -345,12 +345,12 @@ class Document(metaclass=DocumentMeta):
         The source URL where a loader obtained the document's contents or
         :obj:`None`.
         """
-        self.head_nodes = _HeadNodes(self)
+        self.prologue = _Prologue(self)
         """
         A list-like accessor to the nodes that precede the document's root node.
         Note that nodes can't be removed or replaced.
         """
-        self.tail_nodes = _TailNodes(self)
+        self.epilogue = _Epilogue(self)
         """
         A list-like accessor to the nodes that follow the document's root node.
         Note that nodes can't be removed or replaced.
@@ -422,6 +422,11 @@ class Document(metaclass=DocumentMeta):
         :attr:`root <Document.root>` node.
         """
         return self.root.css_select(expression, namespaces=namespaces)
+
+    @property
+    def head_nodes(self):
+        warn("This attribute was renamed to `prologue`.", DeprecationWarning)
+        return self.prologue
 
     def merge_text_nodes(self):
         """
@@ -544,16 +549,21 @@ class Document(metaclass=DocumentMeta):
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
         )
         with _wrapper_cache:
-            for node in self.head_nodes:
+            for node in self.prologue:
                 serializer.writer(str(node) + possible_newline)
             with altered_default_filters():
                 serializer.serialize_root(self.root)
-            if self.tail_nodes:
+            if self.epilogue:
                 serializer.writer(possible_newline)
-                for node in self.tail_nodes[:-1]:
+                for node in self.epilogue[:-1]:
                     serializer.writer(str(node) + possible_newline)
-                serializer.writer(str(self.tail_nodes[-1]))
+                serializer.writer(str(self.epilogue[-1]))
         serializer.writer.buffer.flush()
+
+    @property
+    def tail_nodes(self):
+        warn("This attribute was renamed to `epilogue`.", DeprecationWarning)
+        return self.epilogue
 
     def write(
         self,
