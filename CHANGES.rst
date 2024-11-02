@@ -12,7 +12,7 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.5-rc0 (2024-11-02)
+0.5-rc1 (2024-11-02)
 --------------------
 
 This iteration took quiet long to complete as it presumably solved the hardest
