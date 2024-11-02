@@ -53,6 +53,16 @@ def test_add_preceding_node():
     assert str(root) == "<root>xy<z/><boundary/><a/></root>"
 
 
+def test_append_children():
+    root = Document("<root/>").root
+    result = root.append_children(tag("a"), "b")
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert isinstance(result[0], TagNode)
+    assert isinstance(result[1], TextNode)
+    assert str(root) == "<root><a/>b</root>"
+
+
 def test_append_no_child():
     root = Document("<root/>").root
     root.append_children()
@@ -296,7 +306,11 @@ def test_insert_children():
     root = Document("<root><a>c</a></root>").root
     a = root[0]
 
-    a.insert_children(0, tag("b"))
+    result = a.insert_children(0, tag("b"))
+    assert isinstance(result, tuple)
+    assert len(result) == 1
+    assert isinstance(result[0], TagNode)
+
     assert str(root) == "<root><a><b/>c</a></root>"
 
     a.insert_children(0, "|aaa|")
@@ -307,6 +321,9 @@ def test_insert_children():
 
     a.insert_children(1, "-")
     assert str(root) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
+
+    a.insert_children(3, new_tag_node("aaaa"))
+    assert str(root) == "<root><a>|aa|-|aaa|<aaaa/><b/>c</a></root>"
 
 
 def test_insert_first_child():
@@ -530,7 +547,10 @@ def test_prefix():
 
 def test_prepend_children():
     root = Document("<root><b/></root>").root
-    root.prepend_children(tag("a"))
+    result = root.prepend_children(tag("a"))
+    assert isinstance(result, tuple)
+    assert len(result) == 1
+    assert isinstance(result[0], TagNode)
     assert str(root) == "<root><a/><b/></root>"
 
 

@@ -431,7 +431,8 @@ def tag(*args):  # noqa: C901
     ... ])
     >>> str(root)
     '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
-    >>> root.append_children(tag("addendum"))
+    >>> root.append_children(tag("addendum"))  # doctest: +ELLIPSIS
+    (<TagNode("addendum", {}, /*/*[3]) [0x...]>,)
     >>> str(root)[-26:]
     '</items><addendum/></root>'
     """
@@ -763,12 +764,15 @@ class NodeBase(ABC):
             newline=DefaultStringOptions.newline,
         )
 
-    def add_following_siblings(self, *node: NodeSource, clone: bool = False):
+    def add_following_siblings(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         """
         Adds one or more nodes to the right of the node this method is called on.
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were added.
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
@@ -776,23 +780,30 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if node:
-            this, queue = self._prepare_new_relative(node, clone)
-            self._validate_sibling_operation(this)
-            self._add_following_sibling(this)
-            if queue:
-                this.add_following_siblings(*queue, clone=clone)
+        if not node:
+            return ()
+
+        this, queue = self._prepare_new_relative(node, clone)
+        self._validate_sibling_operation(this)
+        self._add_following_sibling(this)
+        result: tuple[NodeBase, ...] = (this,)
+        if queue:
+            result += this.add_following_siblings(*queue, clone=clone)
+        return result
 
     @abstractmethod
     def _add_following_sibling(self, node: NodeBase):
         pass
 
-    def add_preceding_siblings(self, *node: NodeSource, clone: bool = False):
+    def add_preceding_siblings(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         """
         Adds one or more nodes to the left of the node this method is called on.
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were added.
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
@@ -800,12 +811,16 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if node:
-            this, queue = self._prepare_new_relative(node, clone)
-            self._validate_sibling_operation(this)
-            self._add_preceding_sibling(this)
-            if queue:
-                this.add_preceding_siblings(*queue, clone=clone)
+        if not node:
+            return ()
+
+        this, queue = self._prepare_new_relative(node, clone)
+        self._validate_sibling_operation(this)
+        self._add_preceding_sibling(this)
+        result: tuple[NodeBase, ...] = (this,)
+        if queue:
+            result += this.add_preceding_siblings(*queue, clone=clone)
+        return result
 
     @abstractmethod
     def _add_preceding_sibling(self, node: NodeBase):
@@ -1792,13 +1807,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
 
-    def append_children(self, *node: NodeSource, clone: bool = False):
+    def append_children(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         """
         Adds one or more nodes as child nodes after any existing to the child nodes of
         the node this method is called on.
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were appended.
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
@@ -1807,21 +1825,23 @@ class TagNode(_ElementWrappingNode, NodeBase):
         instances from.
         """
         if not node:
-            return
+            return ()
 
         queue: Sequence[NodeSource]
 
-        last_child = self.last_child
-
-        if last_child is None:
+        if (last_child := self.last_child) is None:
             last_child, queue = self._prepare_new_relative(node, clone=clone)
             self.__add_first_child(last_child)
+            result: tuple[NodeBase, ...] = (last_child,)
 
         else:
             queue = node
+            result = ()
 
         if queue:
-            last_child.add_following_siblings(*queue, clone=clone)
+            result += last_child.add_following_siblings(*queue, clone=clone)
+
+        return result
 
     @property
     def attributes(self) -> TagAttributes:
@@ -2157,7 +2177,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
             return None
         return super().index
 
-    def insert_children(self, index: int, *node: NodeSource, clone: bool = False):
+    def insert_children(
+        self, index: int, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         """
         Inserts one or more child nodes.
 
@@ -2165,6 +2187,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                       the remaining nodes are added afterwards in the given order.
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were inserted.
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
@@ -2181,20 +2204,22 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise IndexError("The given index is beyond the target's size.")
 
         this, *queue = node
+        result: tuple[NodeBase, ...]
 
         if index == 0:
             if children_count:
-                self[0].add_preceding_siblings(this, clone=clone)
+                result = self[0].add_preceding_siblings(this, clone=clone)
             else:
-                self.__add_first_child(
-                    self._prepare_new_relative((this,), clone=clone)[0]
-                )
+                result = (self._prepare_new_relative((this,), clone=clone)[0],)
+                self.__add_first_child(result[0])
 
         else:
-            self[index - 1].add_following_siblings(this, clone=clone)
+            result = self[index - 1].add_following_siblings(this, clone=clone)
 
         if queue:
-            self[index].add_following_siblings(*queue, clone=clone)
+            result += self[index].add_following_siblings(*queue, clone=clone)
+
+        return result
 
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         all_filters = default_filters[-1] + filter
@@ -2378,13 +2403,16 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 return prefix
         raise InvalidCodePath
 
-    def prepend_children(self, *node: NodeBase, clone: bool = False) -> None:
+    def prepend_children(
+        self, *node: NodeBase, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         """
         Adds one or more nodes as child nodes before any existing to the child nodes of
         the node this method is called on.
 
         :param node: The node(s) to be added.
         :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were prepended.
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
@@ -2392,7 +2420,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        self.insert_children(0, *node, clone=clone)
+        return self.insert_children(0, *node, clone=clone)
 
     @altered_default_filters()
     def _reduce_whitespace(

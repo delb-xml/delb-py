@@ -16,14 +16,24 @@ from delb.exceptions import InvalidOperation
 
 def test_add_preceding_siblings():
     root = Document("<root><e1/></root>").root
-    root[0].add_preceding_siblings(tag("e2"), tag("e3"))
+    result = root[0].add_preceding_siblings(tag("e2"), tag("e3"))
     assert str(root) == "<root><e3/><e2/><e1/></root>"
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert all(isinstance(n, TagNode) for n in result)
+    assert result[0].local_name == "e2"
+    assert result[1].local_name == "e3"
 
 
 def test_add_following_siblings():
     root = Document("<root><e1/></root>").root
-    root[0].add_following_siblings(tag("e2"), tag("e3"))
+    result = root[0].add_following_siblings(tag("e2"), tag("e3"))
     assert str(root) == "<root><e1/><e2/><e3/></root>"
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert all(isinstance(n, TagNode) for n in result)
+    assert result[0].local_name == "e2"
+    assert result[1].local_name == "e3"
 
 
 def test_iterate_ancestors():
@@ -44,12 +54,6 @@ def test_iterate_ancestors():
 def test_ancestors_of_detached_node():
     node = TextNode("x")
     assert tuple(node.iterate_ancestors()) == ()
-
-
-def test_insert_children():
-    root = Document("<root><a>b</a></root>").root
-    root[0].insert_children(1, root.new_tag_node("c"))
-    assert str(root) == "<root><a>b<c/></a></root>"
 
 
 def test_comment_is_ignored():
