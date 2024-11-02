@@ -11,3 +11,4 @@ pip-wheel-metadata/
 .pytest_cache/
 # in tests/files ; but hatchling doesn't consider a .gitignore there
 .result.xml
+*-result.xml
