@@ -1,3 +1,5 @@
+import pytest
+
 from delb import (
     Document,
     is_comment_node,
@@ -71,6 +73,24 @@ def test_comment_node():
             str(root.document)
             == '<?xml version="1.0" encoding="UTF-8"?><!--before--><root/><!--after-->'
         )
+
+
+@pytest.mark.parametrize("content", ("a--z", "foo-"))
+def test_invalid_comment_content(content):
+    with pytest.raises(ValueError, match=r"Invalid Comment content\."):
+        new_comment_node(content)
+    node = new_comment_node("comment")
+    with pytest.raises(ValueError, match=r"Invalid Comment content\."):
+        node.content = content
+
+
+@pytest.mark.parametrize("target", ("xml", "XML", "xMl", ""))
+def test_invalid_pi_target(target):
+    with pytest.raises(ValueError, match=r".* target name\."):
+        new_processing_instruction_node(target, "data")
+    node = new_processing_instruction_node("target", "data")
+    with pytest.raises(ValueError, match=r".* target name\."):
+        node.target = target
 
 
 def test_processing_instruction_node():

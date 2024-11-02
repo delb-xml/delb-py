@@ -292,6 +292,7 @@ def new_comment_node(content: str) -> CommentNode:
     :param content: The comment's content a.k.a. text.
     :return: The newly created comment node.
     """
+    CommentNode._validate_content(content)
     result = _wrapper_cache(etree.Comment(content))
     assert isinstance(result, CommentNode)
     return result
@@ -307,6 +308,7 @@ def new_processing_instruction_node(
     :param content: The processing instruction's text.
     :return: The newly created processing instruction node.
     """
+    ProcessingInstructionNode._validate_target_value(target)
     result = _wrapper_cache(etree.PI(target, content))
     assert isinstance(result, ProcessingInstructionNode)
     return result
@@ -1601,7 +1603,13 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
     @content.setter
     def content(self, value: str):
+        self._validate_content(value)
         self._etree_obj.text = value
+
+    @staticmethod
+    def _validate_content(value: str):
+        if "--" in value or value.endswith("-"):
+            raise ValueError("Invalid Comment content.")
 
 
 class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
@@ -1655,9 +1663,18 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
     @target.setter
     def target(self, value: str):
+        self._validate_target_value(value)
         etree_obj = self._etree_obj
         assert isinstance(etree_obj, etree._ProcessingInstruction)
         etree_obj.target = value
+
+    @staticmethod
+    def _validate_target_value(value):
+        if not value:
+            # TODO this should rather validate that value is a valid XML name
+            raise ValueError("Invalid target name.")
+        if value.lower() == "xml":
+            raise ValueError(f"{value} is a reserved target name.")
 
 
 class TagNode(_ElementWrappingNode, NodeBase):
