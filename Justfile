@@ -14,7 +14,7 @@ benchmarks:
 
 # normalize Python code
 black:
-    pipx run black benchmarks _delb delb integration-tests tests
+    pipx run black benchmarks _delb delb tests
 
 # runs tests and reports coverage
 coverage-report:
