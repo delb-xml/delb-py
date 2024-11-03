@@ -46,7 +46,7 @@ GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
 SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"
 
 Filter: TypeAlias = "Callable[[NodeBase], bool]"
-NamespaceDeclarations: TypeAlias = Mapping[str | None, str]
+NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
 NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
 
 LoaderResult: TypeAlias = Union["etree._ElementTree", str]
