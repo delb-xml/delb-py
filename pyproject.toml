@@ -46,7 +46,7 @@ https-loader = ["httpx[http2]"]
 [project.urls]
 Changelog = "https://delb.readthedocs.io/latest/changes.html"
 Documentation = "https://delb.readthedocs.io/"
-"Issue tracker" = "https://github.com/delb-xml/delb-py/issues"
+Issues = "https://github.com/delb-xml/delb-py/issues"
 Repository = "https://github.com/delb-xml/delb-py"
 
 #
