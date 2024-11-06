@@ -71,11 +71,10 @@ omit = [
 ]
 
 [tool.coverage.report]
-exclude_lines = [
+exclude_also = [
     "def __repr__",
     "if TYPE_CHECKING:",
     "pass",
-    "pragma: no cover",
     "raise InvalidCodePath",
     "raise NotImplementedError",
     "raise TypeError",
