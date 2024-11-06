@@ -79,7 +79,7 @@ Indentation and aligned attributes
           format_options = FormatOptions(
             align_attributes=True,
             indentation="  ",
-            text_width=0
+            width=0,
           )
         )
 
@@ -108,7 +108,7 @@ Text wrapping
           format_options = FormatOptions(
             align_attributes=False,
             indentation="  ",
-            text_width=59
+            width=59,
           )
         )
 
