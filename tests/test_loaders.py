@@ -1,3 +1,4 @@
+from contextlib import chdir
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,10 @@ TEST_FILE_URI = f"file://{TEST_FILE}"
 
 def test_buffer_loader():
     with TEST_FILE.open("r") as f:
+        document = Document(f)
+    assert document.source_url == TEST_FILE_URI
+
+    with chdir(TEST_FILE.parent), Path(TEST_FILE.name).open("r") as f:
         document = Document(f)
     assert document.source_url == TEST_FILE_URI
 
@@ -47,6 +52,10 @@ def test_http_s_loader(httpx_mock, s):
 
 def test_path_loader():
     document = Document(TEST_FILE)
+    assert document.source_url == TEST_FILE_URI
+
+    with chdir(TEST_FILE.parent):
+        document = Document(Path(TEST_FILE.name))
     assert document.source_url == TEST_FILE_URI
 
 
