@@ -1,4 +1,3 @@
-from contextlib import chdir
 from pathlib import Path
 
 import pytest
@@ -6,6 +5,8 @@ from lxml import etree
 from pytest_httpx import IteratorStream
 
 from delb import Document
+
+from tests.utils import chdir
 
 TEST_FILE = (
     Path(__file__).resolve().parent / "files" / "marx_manifestws_1848.TEI-P5.xml"

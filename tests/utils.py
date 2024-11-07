@@ -25,6 +25,21 @@ else:
     from itertools import pairwise
 
 
+if sys.version_info < (3, 11):  # DROPWITH Python 3.10
+    from contextlib import contextmanager
+    from pathlib import Path
+
+    @contextmanager
+    def chdir(path: Path):
+        state = Path.cwd()
+        os.chdir(path)
+        yield
+        os.chdir(state)
+
+else:
+    from contextlib import chdir  # noqa: F401
+
+
 @altered_default_filters()
 def assert_equal_trees(a: NodeBase, b: NodeBase):
     result = compare_trees(a, b)
