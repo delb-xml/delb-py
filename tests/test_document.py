@@ -1,11 +1,15 @@
 import gc
+import sys
+from pathlib import Path
 from typing import Final
 
 import pytest
+
 from delb import (
     CommentNode,
     Document,
     DocumentMixinBase,
+    FormatOptions,
     ProcessingInstructionNode,
     TagNode,
     TextNode,
@@ -234,3 +238,19 @@ def test_xpath(files_path):
         assert page_break.attributes["n"] == "I"
 
     assert j == 0
+
+
+def test_write_to_buffer(result_file: Path) -> None:
+    doc = Document(
+        '<root><node attr="val"/></root>'
+    )
+    with result_file.open('bw+') as f:
+        doc.write(f, format_options=FormatOptions(indentation='  '))
+
+
+def test_write_to_stdout(capsys) -> None:
+    doc = Document(
+        '<root><node attr="val"/></root>'
+    )
+    doc.write(sys.stdout.buffer, format_options=FormatOptions(indentation='  '))
+    assert '<root>' in capsys.readouterr().out
