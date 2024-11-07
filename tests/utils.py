@@ -47,7 +47,7 @@ def assert_equal_trees(a: NodeBase, b: NodeBase):
         raise AssertionError(str(result))
 
 
-def assert_nodes_are_in_document_order(*nodes):
+def assert_nodes_are_in_document_order(*nodes: NodeBase):
     # this test avoids usage of .location_path and .xpath
     # it also can test all node types
     if len(nodes) <= 1:
@@ -57,16 +57,19 @@ def assert_nodes_are_in_document_order(*nodes):
             assert_nodes_are_in_document_order(*node_pair)
         return
 
-    for index_one, index_two in zip(index_path(nodes[0]), index_path(nodes[1])):
-        if index_one < index_two:
+    lhn, rhn = nodes
+    assert lhn is not rhn
+
+    for lhn_index, rhn_index in zip(index_path(lhn), index_path(rhn)):
+        if lhn_index < rhn_index:
             return
-        if index_one == index_two:
+        if lhn_index == rhn_index:
             continue
         raise AssertionError
 
 
 @altered_default_filters()
-def index_path(node):
+def index_path(node: NodeBase):
     result = []
     while node.parent is not None:
         result.append(node.index)

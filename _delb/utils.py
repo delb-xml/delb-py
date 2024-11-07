@@ -375,15 +375,16 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
         node = cast("TagNode", node)
         ancestors_indexes = []
 
-        while node.parent is not None:
-            node_id = id(node)
+        cursor = node
+        while cursor.parent is not None:
+            node_id = id(cursor)
             if node_id in node_index_cache:
                 index = node_index_cache[node_id]
             else:
-                assert node.index is not None
-                node_index_cache[node_id] = index = node.index
+                assert cursor.index is not None
+                node_index_cache[node_id] = index = cursor.index
             ancestors_indexes.append(index)
-            node = node.parent
+            cursor = cursor.parent
 
         sorter.add(tuple(reversed(ancestors_indexes)), node)
     yield from sorter.emit()

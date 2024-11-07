@@ -17,7 +17,9 @@ def test_as_sequences(queries_sample):
 
 def test_document_order(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    assert_nodes_are_in_document_order(*document.xpath("//pb").in_document_order())
+    ordered_nodes = document.xpath("//pb").in_document_order()
+    assert all(n.local_name == "pb" for n in ordered_nodes)
+    assert_nodes_are_in_document_order(*ordered_nodes)
 
 
 def test_equality():
