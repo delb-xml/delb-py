@@ -12,7 +12,7 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.5-rc1 (2024-11-02)
+0.5-rc2 (unreleased)
 --------------------
 
 This iteration took quiet long to complete as it presumably solved the hardest
@@ -36,6 +36,8 @@ News
   :attr:`delb.ParserOptions.reduce_whitespace`, as there is now
   :meth:`delb.Document.reduce_whitespace` to reflect that they also trim
   excessive whitespace.
+- ⚠️ The Xpath evaluation expressions of absolute paths on the child axis in the
+  first location step is fixed. Consider to double check your usages.
 - ⚠️ :attr:`delb.Document.head_nodes` was renamed to
   :attr:`delb.Document.prologue`, :attr:`delb.Document.tail_nodes` to
   :attr:`delb.Document.epilogue`.
