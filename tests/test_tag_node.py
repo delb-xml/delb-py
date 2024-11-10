@@ -70,14 +70,18 @@ def test_append_no_child():
 
 
 def test_clone_quick_and_unsafe(sample_document):
-    assert str(sample_document.root.clone(deep=True, quick_and_unsafe=True)) == str(
-        sample_document.root
-    )
+    with pytest.deprecated_call():
+        assert str(sample_document.root.clone(deep=True, quick_and_unsafe=True)) == str(
+            sample_document.root
+        )
 
     root = Document("<root>node a</root>").root
     root.append_children("|node b")
 
-    assert str(root.clone(deep=True, quick_and_unsafe=True)) == "<root>node a</root>"
+    with pytest.deprecated_call():
+        assert (
+            str(root.clone(deep=True, quick_and_unsafe=True)) == "<root>node a</root>"
+        )
 
 
 def test_contains():

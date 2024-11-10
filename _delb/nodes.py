@@ -829,16 +829,14 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
+    def clone(
+        self, deep: bool = False, quick_and_unsafe: bool | None = None
+    ) -> NodeBase:
         """
         Creates a new node of the same type with duplicated contents.
 
         :param deep: Clones the whole subtree if :obj:`True`.
-        :param quick_and_unsafe: Creates a deep clone in a quicker manner where text
-                                 nodes may get lost. It should be safe with trees that
-                                 don't contain subsequent text nodes, e.g. freshly
-                                 parsed, unaltered documents of after
-                                 :meth:`TagNode.merge_text_nodes` has been applied.
+        :param quick_and_unsafe: Deprecated.
         :return: A copy of the node.
         """
         pass
@@ -1478,8 +1476,14 @@ class _ElementWrappingNode(NodeBase):
             previous._add_following_sibling(node)
 
     def clone(
-        self, deep: bool = False, quick_and_unsafe: bool = False
+        self, deep: bool = False, quick_and_unsafe: bool | None = None
     ) -> _ElementWrappingNode:
+        if quick_and_unsafe is not None:
+            warn(
+                "The `quick_and_unsafe` argument will be removed.",
+                category=DeprecationWarning,
+            )
+
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
         return _wrapper_cache(etree_clone)
@@ -1908,9 +1912,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self._attributes
 
     @altered_default_filters()
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> TagNode:
-        # a faster implementation may be to not clear a cloned element's children and
-        # to clone appended text nodes afterwards
+    def clone(
+        self, deep: bool = False, quick_and_unsafe: bool | None = None
+    ) -> TagNode:
+        if quick_and_unsafe is not None:
+            warn(
+                "The `quick_and_unsafe` argument will be removed.",
+                category=DeprecationWarning,
+            )
 
         if deep and quick_and_unsafe:
             result = _wrapper_cache(deepcopy(self._etree_obj))
@@ -2796,7 +2805,15 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(self, deep: bool = False, quick_and_unsafe: bool = False) -> NodeBase:
+    def clone(
+        self, deep: bool = False, quick_and_unsafe: bool | None = None
+    ) -> NodeBase:
+        if quick_and_unsafe is not None:
+            warn(
+                "The `quick_and_unsafe` argument will be removed.",
+                category=DeprecationWarning,
+            )
+
         assert self.content is not None
         return self.__class__(self.content)
 
