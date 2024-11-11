@@ -60,10 +60,13 @@ XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 __all__ = (
     "AttributeAccessor",
     "Filter",
+    "GenericDecorated",
     "Loader",
     "LoaderConstraint",
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "SecondOrderDecorator",
     "Self",
+    "XPathFunction",
 )
