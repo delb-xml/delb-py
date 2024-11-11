@@ -1695,10 +1695,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
     Attributes and nodes can be tested for membership in a node.
 
     >>> root = Document('<root ham="spam"><child/></root>').root
-    >>> child = root.first_child
     >>> "ham" in root
     True
-    >>> child in root
+    >>> root.first_child in root
     True
 
     Nodes can be copied. Note that this relies on :meth:`TagNode.clone`.
@@ -1718,7 +1717,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
     >>> root[0] == root[2]
     False
 
-    Attribute values and child nodes can be obtained with the subscript notation.
+    Attribute values and child nodes can be obtained, set and deleted with the subscript
+    notation.
 
     >>> root = Document('<root x="y"><child_1/>child_2<child_3/></root>').root
     >>> print(root["x"])
@@ -1762,6 +1762,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
         else:
             raise TypeError(
                 "Argument must be a node instance or an attribute name. "
+                + ATTRIBUTE_ACCESSOR_MSG
+            )
+
+    def __delitem__(self, item: AttributeAccessor | int):
+        if isinstance(item, (str, tuple)):
+            del self.attributes[item]
+        elif isinstance(item, int):
+            self[item].detach(retain_child_nodes=False)
+        elif isinstance(item, slice):
+            if isinstance(item.start, int) or isinstance(item.stop, int):
+                raise NotImplementedError(
+                    "This will be implemented in a later version."
+                )
+            else:
+                del self.attributes[(item.start, item.stop)]
+        else:
+            raise TypeError(
+                "Argument must be an integer or an attribute name. "
                 + ATTRIBUTE_ACCESSOR_MSG
             )
 
@@ -1818,6 +1836,29 @@ class TagNode(_ElementWrappingNode, NodeBase):
             f'<{self.__class__.__name__}("{self.universal_name}", '
             f"{self.attributes}, {self.location_path}) [{hex(id(self))}]>"
         )
+
+    @overload
+    def __setitem__(self, item: int, value: NodeSource): ...
+
+    @overload
+    def __setitem__(self, item: AttributeAccessor, value: str | Attribute): ...
+
+    def __setitem__(self, item, value):
+        if isinstance(item, (slice, str, tuple)):
+            self.attributes[item] = value
+        elif isinstance(item, int):
+            children_size = len(self)
+            if not children_size and item == 0:
+                self.__add_first_child(value)
+            else:
+                if not 0 <= item < children_size:
+                    raise IndexError
+                self[item].replace_with(value)
+        else:
+            raise TypeError(
+                "Argument must be an integer or an attribute name. "
+                + ATTRIBUTE_ACCESSOR_MSG
+            )
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)

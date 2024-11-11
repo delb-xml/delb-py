@@ -123,6 +123,20 @@ def test_deepcopy():
     assert clone[0] is not node[0]
 
 
+def test_delitem():
+    namespace = "https://foo"
+    root = Document(f"<root xmlns='{namespace}' A='' B='' C=''><a/></root>").root
+    del root["A"]
+    del root[namespace:"B"]
+    del root[(namespace, "C")]
+    del root[0]
+    assert str(root) == f'<root xmlns="{namespace}"/>'
+    with pytest.raises(IndexError):
+        del root[0]
+    with pytest.raises(KeyError):
+        del root["A"]
+
+
 def test_depth():
     document = Document("<root><a><b/></a></root>")
 
@@ -267,10 +281,14 @@ def test_full_text():
 
 
 def test_getitem():
-    document = Document('<root ham="spam"><a/><b/><c/><d/></root>')
+    namespace = "http://foo"
+    document = Document(f'<root xmlns="{namespace}" ham="spam"><a/><b/><c/><d/></root>')
     root = document.root
 
     assert root["ham"] == "spam"
+    assert root[namespace:"ham"] == "spam"
+    assert root[(namespace, "ham")] == "spam"
+
     assert root["foo"] is None
 
     assert root[-1].local_name == "d"
@@ -280,6 +298,9 @@ def test_getitem():
     assert "".join(x.local_name for x in root[:3]) == "abc"
 
     assert "".join(x.local_name for x in root[::-1]) == "dcba"
+
+    with pytest.raises(IndexError):
+        root[4]
 
 
 def test_id_property(files_path):
@@ -644,6 +665,21 @@ def test_set_tag_components():
 
     root.local_name = "root"
     assert str(root) == '<prfx:root xmlns:prfx="https://name.space"/>'
+
+
+def test_set_item():
+    namespace = "http://foo"
+    root = Document("<root/>").root
+    root[0] = tag("b")
+    root[0] = tag("a")
+    root["A"] = "1"
+    root[namespace:"B"] = "2"
+    root[(namespace, "C")] = "3"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2" ns0:C="3"/>'
+    with pytest.raises(IndexError):
+        root[-1] = "text"
+    with pytest.raises(IndexError):
+        root[1] = "text"
 
 
 def test_tag_definition_copies_attributes():
