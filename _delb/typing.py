@@ -41,6 +41,7 @@ if sys.version_info < (3, 11):  # DROPWITH Python 3.10
 else:
     from typing import Self
 
+AttributeAccessor: TypeAlias = Union[slice, str, tuple[str, str]]
 
 GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
 SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"
@@ -57,6 +58,7 @@ XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 
 
 __all__ = (
+    "AttributeAccessor",
     "Filter",
     "Loader",
     "LoaderConstraint",

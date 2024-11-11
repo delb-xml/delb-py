@@ -68,7 +68,12 @@ if TYPE_CHECKING:
     from typing import TextIO
 
     from delb import Document
-    from _delb.typing import Filter, NamespaceDeclarations, NodeSource
+    from _delb.typing import (
+        AttributeAccessor,
+        Filter,
+        NamespaceDeclarations,
+        NodeSource,
+    )
 
 
 # shortcuts
@@ -97,6 +102,13 @@ CCE_TABLE_FOR_TEXT: Final = str.maketrans(
 )
 
 DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
+
+
+ATTRIBUTE_ACCESSOR_MSG: Final = (
+    "An attribute name must be provided as string (either a local name or a "
+    "universal in Clark notation) or as namespace and local name packed in a slice "
+    "or a tuple."
+)
 
 
 # wrapper cache
@@ -647,6 +659,11 @@ class TagAttributes(MutableMapping):
     def __contains__(self, item: Any) -> bool:
         return self[item] is not None
 
+    def __delitem__(self, item: AttributeAccessor):
+        key = self.__etree_key(item)
+        del self._etree_attrib[key]
+        self._attributes.pop(key, None)
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Mapping):
             return False
@@ -664,37 +681,28 @@ class TagAttributes(MutableMapping):
 
         return self.as_dict_with_strings() == other
 
-    def __delitem__(self, key: str | slice):
-        if isinstance(key, str):
-            pass
-        elif isinstance(key, slice) and self.namespaces.get(None) != key.start:
-            key = f"{{{key.start}}}{key.stop}"
-        else:
-            raise TypeError(
-                "Either an attribute name or a slice denoting a namespace and an "
-                "attribute name must be provided."
-            )
-
-        del self._etree_attrib[key]
-        self._attributes.pop(key, None)
-
-    def __getitem__(self, item: str | slice) -> Optional[Attribute]:
+    def __etree_key(self, item: AttributeAccessor) -> str:
         if isinstance(item, str):
             namespace, name = deconstruct_clark_notation(item)
         elif isinstance(item, slice):
             namespace, name = item.start, item.stop
+        elif isinstance(item, tuple):
+            namespace, name = item
         else:
-            raise TypeError(
-                "Either an attribute name or a slice denoting a namespace and an "
-                "attribute name must be provided."
-            )
+            namespace = name = None
+
+        if not (
+            (namespace is None or isinstance(namespace, str)) and isinstance(name, str)
+        ):
+            raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
 
         if namespace and self.namespaces.get(None) != namespace:
-            key = f"{{{namespace}}}{name}"
+            return f"{{{namespace}}}{name}"
         else:
-            key = name
+            return name
 
-        if key in self._etree_attrib:
+    def __getitem__(self, item: AttributeAccessor) -> Optional[Attribute]:
+        if (key := self.__etree_key(item)) in self._etree_attrib:
             result = self._attributes.get(key)
             if result is None:
                 result = Attribute(self, key)
@@ -715,16 +723,8 @@ class TagAttributes(MutableMapping):
     def __len__(self) -> int:
         return len(self._etree_attrib)
 
-    def __setitem__(self, key: str | slice, value: str | Attribute):
-        if isinstance(key, str):
-            pass
-        elif isinstance(key, slice):
-            key = f"{{{key.start}}}{key.stop}"
-        else:
-            TypeError(
-                "Either an attribute name or a slice denoting a namespace and an "
-                "attribute name must be provided."
-            )
+    def __setitem__(self, item: AttributeAccessor, value: str | Attribute):
+        key = self.__etree_key(item)
         if isinstance(value, Attribute):
             value = value.value
         self._etree_attrib[key] = value
@@ -1754,14 +1754,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self._attributes = TagAttributes(self)
         self.__document__: Document | None = None
 
-    def __contains__(self, item: str | NodeBase) -> bool:
-        if isinstance(item, str):
+    def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
+        if isinstance(item, (slice, str, tuple)):
             return item in self.attributes
         elif isinstance(item, NodeBase):
             return any(n is item for n in self.iterate_children())
         else:
             raise TypeError(
-                "Argument must be a string for an attribute name or a node instance."
+                "Argument must be a node instance or an attribute name. "
+                + ATTRIBUTE_ACCESSOR_MSG
             )
 
     def __eq__(self, other: Any) -> bool:
@@ -1773,16 +1774,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     @overload
-    def __getitem__(self, item: str) -> Optional[Attribute]: ...
-
-    @overload
     def __getitem__(self, item: int) -> NodeBase: ...
 
     @overload
-    def __getitem__(self, item: slice) -> list[NodeBase]: ...
+    def __getitem__(self, item: AttributeAccessor) -> Attribute | None: ...
 
     def __getitem__(self, item):
-        if isinstance(item, str):
+        if isinstance(item, (str, tuple)):
             return self.attributes[item]
 
         elif isinstance(item, int):
@@ -1894,6 +1892,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> node = Document('<node xmlns="default" foo="0"/>').root
         >>> node.attributes["default":"foo"] is node.attributes["foo"]
         True
+
+        Similarly an attribute's namespace and local name can be passed as two-value
+        tuple. This form is recommended for dictionaries that are passed to
+        :meth:`delb.TagNode.attributes.update`.
+
+        >>> node = new_tag_node("node", {})
+        >>> node.attributes[("http://namespace", "foo")] = "0"
+        >>> print(node)
+        <node xmlns:ns0="http://namespace" ns0:foo="0"/>
 
         Attributes behave like strings, but also expose namespace, local name and
         value for manipulation.

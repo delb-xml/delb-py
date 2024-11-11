@@ -5,22 +5,44 @@ import pytest
 from delb import new_tag_node, Document, InvalidOperation
 
 
-def test_access_via_node():
-    document = Document('<root ham="spam"/>')
-    assert document.root["ham"] == "spam"
-
+@pytest.mark.parametrize(
+    "accessor",
+    ("ham", "{kitchen.sink}ham", slice("kitchen.sink", "ham"), ("kitchen.sink", "ham")),
+)
+def test_access_with_default_namespace(accessor):
     root = Document('<root xmlns="kitchen.sink" ham="spam"/>').root
+    assert root[accessor] == "spam"
+    assert root.attributes[accessor] == "spam"
+
+    root[accessor] = "eggs"
+    assert root[accessor] == "eggs"
+    del root[accessor]
+    assert "ham" not in root
+    assert "ham" not in root.attributes
+
+    root.attributes[accessor] = "eggs"
+    assert root.attributes[accessor] == "eggs"
+    del root.attributes[accessor]
+    assert accessor not in root
+    assert accessor not in root.attributes
+
+
+def test_access_without_namespace():
+    root = Document('<root ham="spam"/>').root
     assert root["ham"] == "spam"
     assert root.attributes["ham"] == "spam"
-    assert root["{kitchen.sink}ham"] == "spam"
-    assert root.attributes["{kitchen.sink}ham"] == "spam"
-    assert root["kitchen.sink":"ham"] == "spam"
-    assert root.attributes["kitchen.sink":"ham"] == "spam"
 
-    root = Document('<root xmlns:prfx="kitchen.sink" prfx:ham="spam"/>').root
+    root["ham"] = "eggs"
+    assert root["ham"] == "eggs"
+    del root["ham"]
     assert "ham" not in root
-    assert root["{kitchen.sink}ham"] == "spam"
-    assert root["kitchen.sink":"ham"] == "spam"
+    assert "ham" not in root.attributes
+
+    root.attributes["ham"] = "eggs"
+    assert root.attributes["ham"] == "eggs"
+    del root.attributes["ham"]
+    assert "ham" not in root
+    assert "ham" not in root.attributes
 
 
 def test_attribute_object():
@@ -137,6 +159,13 @@ def test_namespaced_attributes():
         assert attribute.local_name == "b"
         assert attribute.universal_name == key
         assert attribute.value == "c"
+
+
+def test_prefixed_source():
+    root = Document('<root xmlns:prfx="kitchen.sink" prfx:ham="spam"/>').root
+    assert "ham" not in root
+    assert root["{kitchen.sink}ham"] == "spam"
+    assert root["kitchen.sink":"ham"] == "spam"
 
 
 def test_update():
