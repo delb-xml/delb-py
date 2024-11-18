@@ -534,7 +534,7 @@ def test_that_no_extra_whitespace_is_produced(_in, format_options):
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
     origin_path = files_path / "root_siblings.xml"
-    Document(origin_path).save(result_file, FormatOptions())
+    Document(origin_path).save(result_file, format_options=FormatOptions())
 
     assert (
         origin_path.read_text()
@@ -623,12 +623,13 @@ def test_xml_space(width, out):
     # illegal values are ignored
     if width == 0:
         root = Document('<root xml:space="illegal"><t/></root>').root
-        assert str(root) == dedent(
-            """\
-            <root xml:space="illegal">
-              <t/>
-            </root>"""
-        )
+        with pytest.warns(UserWarning, match=".*illegal.*"):
+            assert str(root) == dedent(
+                """\
+                <root xml:space="illegal">
+                  <t/>
+                </root>"""
+            )
 
     # and the application's default behaviour is determined by formatting options
     DefaultStringOptions.format_options = None

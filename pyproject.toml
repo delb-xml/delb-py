@@ -210,3 +210,8 @@ extra-dependencies = [
 ]
 [tool.hatch.envs.test-wheel.scripts]
 check = "python -m pytest tests"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error"
+]

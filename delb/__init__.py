@@ -21,7 +21,7 @@ from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, overload, Any, BinaryIO, Optional
-from warnings import warn
+from warnings import catch_warnings, warn
 
 from lxml import etree
 
@@ -601,16 +601,18 @@ class Document(metaclass=DocumentMeta):
                 align_attributes=False, indentation="  " if pretty else "", width=0
             )
 
-        self.__serialize(
-            serializer=_get_serializer(
-                _TextBufferWriter(
-                    TextIOWrapper(buffer), encoding=encoding, newline=newline
+        # TODO figure out what's causing the "unclosed file <_io.TextIOWrapper …>"
+        with catch_warnings(action="ignore", category=ResourceWarning):
+            self.__serialize(
+                serializer=_get_serializer(
+                    _TextBufferWriter(
+                        TextIOWrapper(buffer), encoding=encoding, newline=newline
+                    ),
+                    format_options=format_options,
+                    namespaces=namespaces,
                 ),
-                format_options=format_options,
-                namespaces=namespaces,
-            ),
-            encoding=encoding,
-        )
+                encoding=encoding,
+            )
 
     def xpath(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None

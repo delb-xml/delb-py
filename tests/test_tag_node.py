@@ -286,7 +286,8 @@ def test_getitem():
     root = document.root
 
     assert root["ham"] == "spam"
-    assert root[namespace:"ham"] == "spam"
+    with pytest.deprecated_call():
+        assert root[namespace:"ham"] == "spam"
     assert root[(namespace, "ham")] == "spam"
 
     assert root["foo"] is None
