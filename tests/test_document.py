@@ -131,7 +131,7 @@ def test_xpath(files_path):
 
     assert i == 22
 
-    for j, page_break in enumerate(document.xpath('.//pb[@n="I"]')):
+    for j, page_break in enumerate(document.xpath('//pb[@n="I"]')):
         assert isinstance(page_break, TagNode)
         assert page_break.universal_name == "{http://www.tei-c.org/ns/1.0}pb"
         assert page_break.attributes["n"] == "I"

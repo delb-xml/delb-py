@@ -48,12 +48,12 @@ from that standard:
 If you're accustomed to retrieve attribute values with XPath expressions, employ the
 functionality of the higher programming language at hand like this:
 
-    >>> [x.attributes["target"] for x in root.xpath(".//foo")
+    >>> [x.attributes["target"] for x in root.xpath("//foo")
     ...  if "target" in x.attributes ]  # doctest: +SKIP
 
 Instead of:
 
-    >>> root.xpath(".//foo/@target")  # doctest: +SKIP
+    >>> root.xpath("//foo/@target")  # doctest: +SKIP
 
 See :meth:`_delb.plugins.PluginManager.register_xpath_function` regarding the use of
 custom functions.
