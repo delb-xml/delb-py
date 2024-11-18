@@ -106,8 +106,7 @@ DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
 
 ATTRIBUTE_ACCESSOR_MSG: Final = (
     "An attribute name must be provided as string (either a local name or a "
-    "universal in Clark notation) or as namespace and local name packed in a slice "
-    "or a tuple."
+    "universal in Clark notation) or as namespace and local name packed in a tuple."
 )
 
 
@@ -162,6 +161,7 @@ class _WrapperCache:
                         - 1  # `self.wrappers`
                         - 1  # the iterated tuple
                         - 1  # `node`
+                        - isinstance(node, TagNode)  # node.attributes.__node
                     )
 
                     # if referenced as a document's root node that itself isn't
@@ -241,9 +241,13 @@ class _WrapperCache:
             return
 
         for element, node in tuple(self.wrappers.items()):
-            if getrefcount(node) > 4 + (
-                getattr(node, "__document__", None) is not None
-                and (getrefcount(node.__document__)) == 4
+            if getrefcount(node) > (
+                4
+                + isinstance(node, TagNode)
+                + (
+                    getattr(node, "__document__", None) is not None
+                    and getrefcount(node.__document__) == 4
+                )
             ):
                 continue
 
@@ -328,7 +332,7 @@ def new_processing_instruction_node(
 
 def new_tag_node(
     local_name: str,
-    attributes: Optional[dict[str, str]] = None,
+    attributes: Optional[dict[AttributeAccessor, str]] = None,
     namespace: Optional[str] = None,
     children: Sequence[NodeSource] = (),
 ) -> TagNode:
@@ -349,9 +353,12 @@ def new_tag_node(
     """
 
     result = _wrapper_cache(
-        etree.Element(QName(namespace, local_name).text, attrib=attributes),
+        etree.Element(QName(namespace, local_name).text),
     )
     assert isinstance(result, TagNode)
+    if attributes is not None:
+        for name, value in attributes.items():
+            result.attributes[name] = value
 
     for child in children:
         if isinstance(child, (str, NodeBase, _TagDefinition)):
@@ -377,7 +384,7 @@ class _TagDefinition(NamedTuple):
     """
 
     local_name: str
-    attributes: Optional[dict[str, str]] = None
+    attributes: Optional[dict[AttributeAccessor, str]] = None
     children: tuple[NodeSource, ...] = ()
 
 
@@ -559,55 +566,48 @@ class Attribute(_StringMixin):
     :meth:`delb.TagNode.attributes` documentation for capabilities.
     """
 
-    __slots__ = ("_attributes", "_key")
+    __slots__ = ("_attributes", "_detached_value", "_qualified_name")
 
-    def __init__(self, attributes: TagAttributes, key: str):
-        self._attributes = attributes
-        self._key = key
+    def __init__(self, attributes: TagAttributes, qualified_name: tuple[str, str]):
+        self._attributes: TagAttributes | None = attributes
+        self._detached_value: str | None = None
+        self._qualified_name = qualified_name
 
     def __repr__(self):
-        return f'{self.universal_name}="{self.value}"'
+        return (
+            f'<{self.__class__.__name__}({self.universal_name}="{self.value}")'
+            f" [{hex(id(self))}]>"
+        )
 
-    def _set_new_key(self, namespace, name):
-        old_key = self._key
+    def _set_new_key(self, namespace: str, name: str):
+        if self._qualified_name == (namespace, name):
+            return
 
-        if namespace is None or self._attributes.namespaces.get(None) == namespace:
-            new_key = name
-        else:
-            new_key = f"{{{namespace}}}{name}"
-
-        if new_key != old_key:
-            self._attributes[new_key] = self.value
-            del self._attributes[old_key]
-            self._key = new_key
+        attributes = self._attributes
+        current = self.namespace or "", self.local_name
+        assert attributes is not None
+        attributes[(namespace, name)] = self.value
+        self._qualified_name = (namespace, name)
+        del attributes[current]
+        self._attributes = attributes
 
     @property
     def local_name(self) -> str:
         """The attribute's local name."""
-        return deconstruct_clark_notation(self._key)[1]
+        return self._qualified_name[1]
 
     @local_name.setter
     def local_name(self, name: str):
-        self._set_new_key(self.namespace, name)
+        self._set_new_key(self.namespace or "", name)
 
     @property
     def namespace(self) -> Optional[str]:
         """The attribute's namespace"""
-        namespace: bytes | str | None
-        namespace, _ = deconstruct_clark_notation(self._key)
-
-        if namespace is None:
-            # retrieve the default namespace or None
-            namespace = self._attributes.namespaces.get(None)
-
-        if isinstance(namespace, bytes):
-            namespace = namespace.decode()
-
-        return namespace
+        return self._qualified_name[0] or None
 
     @namespace.setter
     def namespace(self, namespace: Optional[str]):
-        self._set_new_key(namespace, self.local_name)
+        self._set_new_key(namespace or "", self.local_name)
 
     @property
     def universal_name(self) -> str:
@@ -622,17 +622,22 @@ class Attribute(_StringMixin):
     @property
     def value(self) -> str:
         """The attribute's value."""
-        value: bytes | str | None = self._attributes._etree_attrib.get(self._key)
-        if value is None:
-            raise InvalidOperation("The attribute was removed from its node.")
-        return value.decode() if isinstance(value, bytes) else value
+        if self._attributes is None:
+            assert self._detached_value is not None
+            return self._detached_value
+        else:
+            value = self._attributes._etree_attrib[
+                self._attributes._etree_key(self._qualified_name)
+            ]
+            return value.decode() if isinstance(value, bytes) else value
 
     @value.setter
     def value(self, value: str):
-        if self._key in self._attributes._etree_attrib:
-            self._attributes._etree_attrib[self._key] = value
+        if self._attributes is None:
+            self._detached_value = value
         else:
-            raise InvalidOperation("The attribute was removed from its node.")
+            etree_key = self._attributes._etree_key(self._qualified_name)
+            self._attributes._etree_attrib[etree_key] = value
 
     # for utils._StringMixin:
     _data = value
@@ -649,20 +654,31 @@ class TagAttributes(MutableMapping):
     This will not be an issue with delb 0.7, according to the plan.
     """
 
-    __slots__ = ("_attributes", "_etree_attrib", "namespaces")
+    __slots__ = ("_attributes", "_etree_attrib", "namespaces", "__node")
 
     def __init__(self, node: TagNode):
-        self._attributes: dict[str, Attribute] = {}
+        self._attributes: dict[tuple[str, str], Attribute] = {}
         self._etree_attrib: etree._Attrib = node._etree_obj.attrib
         self.namespaces: Namespaces = node.namespaces
+        self.__node = node
 
     def __contains__(self, item: Any) -> bool:
-        return self[item] is not None
+        try:
+            return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
+        except Exception:
+            return False
 
     def __delitem__(self, item: AttributeAccessor):
-        key = self.__etree_key(item)
-        del self._etree_attrib[key]
-        self._attributes.pop(key, None)
+        qualified_name = self.__resolve_accessor(item)
+        attribute = self.get(qualified_name)
+        if attribute is None:
+            raise KeyError
+
+        value = attribute.value
+        del self._etree_attrib[self._etree_key(qualified_name)]
+        del self._attributes[qualified_name]
+        attribute._attributes = None
+        attribute._detached_value = value
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Mapping):
@@ -672,29 +688,17 @@ class TagAttributes(MutableMapping):
             return False
 
         if isinstance(other, TagAttributes):
-            for key, value in self.items():
-                assert isinstance(value, Attribute)
-                other_value = other[value.namespace : value.local_name]  # type: ignore
-                if (other_value is None) or (value != other_value):
+            for key, attribute in self.items():
+                assert isinstance(attribute, Attribute)
+                other_value = other[(attribute.namespace or "", attribute.local_name)]
+                if (other_value is None) or (attribute != other_value):
                     return False
             return True
 
         return self.as_dict_with_strings() == other
 
-    def __etree_key(self, item: AttributeAccessor) -> str:
-        if isinstance(item, str):
-            namespace, name = deconstruct_clark_notation(item)
-        elif isinstance(item, slice):
-            namespace, name = item.start, item.stop
-        elif isinstance(item, tuple):
-            namespace, name = item
-        else:
-            namespace = name = None
-
-        if not (
-            (namespace is None or isinstance(namespace, str)) and isinstance(name, str)
-        ):
-            raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
+    def _etree_key(self, item: tuple[str, str]) -> str:
+        namespace, name = item
 
         if namespace and self.namespaces.get(None) != namespace:
             return f"{{{namespace}}}{name}"
@@ -702,55 +706,71 @@ class TagAttributes(MutableMapping):
             return name
 
     def __getitem__(self, item: AttributeAccessor) -> Optional[Attribute]:
-        if (key := self.__etree_key(item)) in self._etree_attrib:
-            result = self._attributes.get(key)
+        if item in self:
+            qualified_name = self.__resolve_accessor(item)
+            result = self._attributes.get(qualified_name)
             if result is None:
-                result = Attribute(self, key)
-                self._attributes[key] = result
+                result = Attribute(self, qualified_name)
+                self._attributes[qualified_name] = result
             return result
         else:
             return None
 
-    def __iter__(self) -> Iterator[str]:
+    def __iter__(self) -> Iterator[tuple[str, str]]:
         results = []
         for key in self._etree_attrib:
             assert isinstance(key, str)
-            attribute = self.__getitem__(key)
-            assert isinstance(attribute, Attribute)
-            results.append(attribute.universal_name)
+            namespace, name = deconstruct_clark_notation(key)
+            if namespace is None:
+                namespace = self.namespaces.get(None, "")
+            assert isinstance(namespace, str)
+            results.append((namespace, name))
         return iter(results)
 
     def __len__(self) -> int:
         return len(self._etree_attrib)
 
     def __setitem__(self, item: AttributeAccessor, value: str | Attribute):
-        key = self.__etree_key(item)
+        qualified_name = self.__resolve_accessor(item)
+        key = self._etree_key(qualified_name)
         if isinstance(value, Attribute):
             value = value.value
         self._etree_attrib[key] = value
-        self._attributes[key] = Attribute(self, key)
+        self._attributes[qualified_name] = Attribute(self, qualified_name)
 
     def __str__(self):
         return str(self.as_dict_with_strings())
 
     __repr__ = __str__
 
+    def __resolve_accessor(self, item: AttributeAccessor) -> tuple[str, str]:
+        if isinstance(item, str):
+            namespace, name = deconstruct_clark_notation(item)
+        elif isinstance(item, slice):
+            warn(
+                "Using slices to denote fully qualified attribute names is deprecated."
+                "Use two-value tuples (namespace, local name) instead.",
+                category=DeprecationWarning,
+            )
+            namespace, name = item.start, item.stop
+        elif isinstance(item, tuple):
+            namespace, name = item
+        else:
+            namespace = name = None
+
+        if name is None:
+            raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
+
+        if namespace is None:
+            namespace = self.__node.namespace
+            if namespace is None:
+                namespace = ""
+
+        return namespace, name
+
     def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
         return {a.universal_name: a.value for a in self.values()}
-
-    def get(self, key, default=None):
-        result = self[key]
-        return default if result is None else result
-
-    def pop(  # type: ignore
-        self, key: str, default: Optional[str] = None
-    ) -> Optional[str]:
-        if key not in self._etree_attrib:
-            return default
-        result = str(self._etree_attrib.pop(key, ""))
-        self._attributes.pop(key, None)
-        return result
 
 
 # nodes
@@ -1161,7 +1181,7 @@ class NodeBase(ABC):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[AttributeAccessor, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[NodeSource] = (),
     ) -> TagNode:
@@ -1185,7 +1205,7 @@ class NodeBase(ABC):
         self,
         context: _Element,
         local_name: str,
-        attributes: Optional[dict[str, str]],
+        attributes: Optional[dict[AttributeAccessor, str]],
         namespace: Optional[str],
         children: Sequence[NodeSource],
     ) -> TagNode:
@@ -1203,11 +1223,14 @@ class NodeBase(ABC):
         result = _wrapper_cache(
             context.makeelement(
                 tag.text,
-                attrib=attributes,
                 # TODO https://github.com/lxml/lxml-stubs/issues/62
                 nsmap=context.nsmap,  # type: ignore
             ),
         )
+        assert isinstance(result, TagNode)
+        if attributes is not None:
+            for name, value in attributes.items():
+                result.attributes[name] = value
         assert isinstance(result, TagNode)
 
         if children:
@@ -1390,7 +1413,7 @@ class _ChildLessNode(NodeBase):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[AttributeAccessor, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[str | NodeBase | _TagDefinition] = (),
     ) -> TagNode:
@@ -1913,8 +1936,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
         >>> node.attributes
         {'foo': '0', 'bar': '0'}
-        >>> node.attributes.pop("bar")
-        '0'
+        >>> node.attributes.pop("bar")  # doctest: +ELLIPSIS
+        <Attribute(bar="0") [0x...]>
         >>> node.attributes["foo"] = "1"
         >>> node.attributes["peng"] = "1"
         >>> print(node)
@@ -1923,25 +1946,26 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> print(node)
         <node foo="2" peng="1" zong="2"/>
 
-        Namespaced attributes can be accessed by using Python's slice notation. A
-        default namespace can be provided optionally, but it's also found without.
+        Namespaced names are accessed with two-value tuples or a string. The two-value
+        holds the namespace and the local name in that order. A string can either be a
+        fully qualified name in `Clark notation`_ or a local name that belongs to the
+        containing node's namespace.
 
-        >>> node = new_tag_node("node", {})
-        >>> node.attributes["http://namespace":"foo"] = "0"
+        .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
+
+        >>> DefaultStringOptions.namespaces = {None: "http://namespace"}
+        >>> node = new_tag_node(
+        ...     "node",
+        ...     namespace="http://namespace",
+        ... )
+        >>> node.attributes.update({("http://namespace", "foo"): "0"})
         >>> print(node)
-        <node xmlns:ns0="http://namespace" ns0:foo="0"/>
-        >>> node = Document('<node xmlns="default" foo="0"/>').root
-        >>> node.attributes["default":"foo"] is node.attributes["foo"]
+        <node xmlns="http://namespace" foo="0"/>
+        >>> attribute = node.attributes[("http://namespace", "foo")]
+        >>> node.attributes["foo"] is attribute
         True
-
-        Similarly an attribute's namespace and local name can be passed as two-value
-        tuple. This form is recommended for dictionaries that are passed to
-        :meth:`delb.TagNode.attributes.update`.
-
-        >>> node = new_tag_node("node", {})
-        >>> node.attributes[("http://namespace", "foo")] = "0"
-        >>> print(node)
-        <node xmlns:ns0="http://namespace" ns0:foo="0"/>
+        >>> node.attributes["{http://namespace}foo"] is attribute
+        True
 
         Attributes behave like strings, but also expose namespace, local name and
         value for manipulation.
@@ -1950,9 +1974,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> node.attributes["foo"] = "0"
         >>> node.attributes["foo"].local_name = "bar"
         >>> node.attributes["bar"].namespace = "http://namespace"
-        >>> node.attributes["http://namespace":"bar"].value = "1"
+        >>> node.attributes[("http://namespace", "bar")].value = "X"
         >>> print(node)
-        <node xmlns:ns0="http://namespace" ns0:bar="1"/>
+        <node xmlns:ns0="http://namespace" ns0:bar="X"/>
+        >>> "ref-" + node.attributes[("http://namespace", "bar")].lower()
+        'ref-x'
 
         Unlike with typical Python mappings, requesting a non-existing attribute
         doesn't evoke a :exc:`KeyError`, instead :obj:`None` is returned.
@@ -2174,9 +2200,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     if prefix is None and None not in namespaces:
                         new_node.attributes[local_name] = value
                     else:
-                        new_node.attributes[
-                            namespaces[prefix] : local_name  # type: ignore
-                        ] = value
+                        new_node.attributes[(namespaces[prefix], local_name)] = value
 
                 node.append_children(new_node)
                 node = new_node
@@ -2417,7 +2441,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[AttributeAccessor, str]] = None,
         namespace: Optional[str] = None,
         children: Sequence[str | NodeBase | _TagDefinition] = (),
     ) -> TagNode:

@@ -673,7 +673,8 @@ def test_set_item():
     root[0] = tag("b")
     root[0] = tag("a")
     root["A"] = "1"
-    root[namespace:"B"] = "2"
+    with pytest.deprecated_call():
+        root[namespace:"B"] = "2"
     root[(namespace, "C")] = "3"
     assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2" ns0:C="3"/>'
     with pytest.raises(IndexError):

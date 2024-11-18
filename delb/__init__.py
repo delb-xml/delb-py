@@ -72,7 +72,7 @@ from delb.utils import compare_trees
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import Loader, NamespaceDeclarations
+    from _delb.typing import AttributeAccessor, Loader, NamespaceDeclarations
 
 # plugin loading
 
@@ -445,7 +445,7 @@ class Document(metaclass=DocumentMeta):
     def new_tag_node(
         self,
         local_name: str,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[AttributeAccessor, str]] = None,
         namespace: Optional[str] = None,
     ) -> TagNode:
         """

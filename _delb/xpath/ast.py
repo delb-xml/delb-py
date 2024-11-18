@@ -476,7 +476,7 @@ class AttributeValue(EvaluationNode):
             return None
         node = cast("TagNode", node)
         result = node.attributes[
-            context.namespaces.get(self.prefix) : self.local_name  # type: ignore
+            (context.namespaces.get(self.prefix, ""), self.local_name)
         ]
         return "" if result is None else result.value
 
@@ -587,9 +587,7 @@ class HasAttribute(EvaluationNode):
             return False
         node = cast("TagNode", node)
         return (
-            node.attributes[
-                context.namespaces.get(self.prefix) : self.local_name  # type: ignore
-            ]
+            node.attributes[(context.namespaces.get(self.prefix, ""), self.local_name)]
             is not None
         )
 

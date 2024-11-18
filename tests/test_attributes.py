@@ -2,12 +2,13 @@ from textwrap import dedent
 
 import pytest
 
-from delb import new_tag_node, Document, InvalidOperation
+from delb import Document
+from delb.nodes import Attribute
 
 
 @pytest.mark.parametrize(
     "accessor",
-    ("ham", "{kitchen.sink}ham", slice("kitchen.sink", "ham"), ("kitchen.sink", "ham")),
+    ("ham", "{kitchen.sink}ham", ("kitchen.sink", "ham")),
 )
 def test_access_with_default_namespace(accessor):
     root = Document('<root xmlns="kitchen.sink" ham="spam"/>').root
@@ -17,14 +18,58 @@ def test_access_with_default_namespace(accessor):
     root[accessor] = "eggs"
     assert root[accessor] == "eggs"
     del root[accessor]
-    assert "ham" not in root
-    assert "ham" not in root.attributes
+    assert accessor not in root
+    assert accessor not in root.attributes
 
     root.attributes[accessor] = "eggs"
     assert root.attributes[accessor] == "eggs"
     del root.attributes[accessor]
     assert accessor not in root
     assert accessor not in root.attributes
+
+    root.attributes[accessor] = "eggs"
+    attribute = root.attributes.pop(accessor)
+    assert isinstance(attribute, Attribute)
+    assert attribute.namespace == "kitchen.sink"
+    assert attribute.local_name == "ham"
+    assert attribute.value == "eggs"
+    assert accessor not in root.attributes
+
+    with pytest.raises(TypeError):
+        del root.attributes[0]
+
+
+@pytest.mark.parametrize(
+    "accessor",
+    ("{kitchen.sink}ham", ("kitchen.sink", "ham")),
+)
+def test_access_with_other_namespace(accessor):
+    root = Document('<root xmlns:ns="kitchen.sink" ns:ham="spam"/>').root
+    assert root[accessor] == "spam"
+    assert root.attributes[accessor] == "spam"
+
+    root[accessor] = "eggs"
+    assert root[accessor] == "eggs"
+    del root[accessor]
+    assert accessor not in root
+    assert accessor not in root.attributes
+
+    root.attributes[accessor] = "eggs"
+    assert root.attributes[accessor] == "eggs"
+    del root.attributes[accessor]
+    assert accessor not in root
+    assert accessor not in root.attributes
+
+    root.attributes[accessor] = "eggs"
+    attribute = root.attributes.pop(accessor)
+    assert isinstance(attribute, Attribute)
+    assert attribute.namespace == "kitchen.sink"
+    assert attribute.local_name == "ham"
+    assert attribute.value == "eggs"
+    assert accessor not in root.attributes
+
+    with pytest.raises(TypeError):
+        del root.attributes[0]
 
 
 def test_access_without_namespace():
@@ -77,11 +122,12 @@ def test_attribute_object():
     with pytest.raises(TypeError):
         attribute.value = None
 
-    attributes.pop("clam")
-    with pytest.raises(InvalidOperation):
-        attribute.value
-    with pytest.raises(InvalidOperation):
-        attribute.value = "obsolete"
+    attribute = attributes.pop("clam")
+    assert attribute._attributes is None
+    assert attribute.value == "sham"
+    attribute.value = "detached"
+    assert attribute.universal_name == "clam"
+    assert attribute.value == "detached"
 
 
 def test_comparison():
@@ -154,10 +200,10 @@ def test_detach_sustains_attributes():
 def test_namespaced_attributes():
     root = Document('<root xmlns="http://foo.org" b="c"/>').root
     for key, attribute in root.attributes.items():
-        assert key == "{http://foo.org}b"
+        assert key == ("http://foo.org", "b")
         assert attribute.namespace == "http://foo.org"
         assert attribute.local_name == "b"
-        assert attribute.universal_name == key
+        assert attribute.universal_name == "{" + key[0] + "}" + key[1]
         assert attribute.value == "c"
 
 
@@ -165,25 +211,10 @@ def test_prefixed_source():
     root = Document('<root xmlns:prfx="kitchen.sink" prfx:ham="spam"/>').root
     assert "ham" not in root
     assert root["{kitchen.sink}ham"] == "spam"
-    assert root["kitchen.sink":"ham"] == "spam"
+    assert root[("kitchen.sink", "ham")] == "spam"
 
 
 def test_update():
     root = Document("<root><node foo='0'/><node bar='1'/></root>").root
     root.first_child.attributes.update(root.last_child.attributes)
     assert root.first_child.attributes == {"foo": "0", "bar": "1"}
-
-
-def test_various_attribute_operations(sample_document):
-    # une assemblage from back in the days
-    milestone = sample_document.root[1][0]
-    assert milestone.attributes == {"{https://name.space}unit": "page"}
-
-    attributes = Document('<node xmlns="default" foo="0" bar="0"/>').root.attributes
-    del attributes["foo"]
-    del attributes["bar"]
-    with pytest.raises(TypeError):
-        del attributes[0]
-
-    node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
-    assert node.attributes.pop("bar") == "0"
