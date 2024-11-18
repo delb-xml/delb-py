@@ -31,9 +31,6 @@ GLOBAL_NAMESPACES: Final = MappingProxyType(
 )
 GLOBAL_PREFIXES: Final = tuple(GLOBAL_NAMESPACES)
 
-XML_ATT_ID: Final = f"{{{XML_NAMESPACE}}}id"
-XML_ATT_SPACE: Final = f"{{{XML_NAMESPACE}}}space"
-
 
 def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
     """

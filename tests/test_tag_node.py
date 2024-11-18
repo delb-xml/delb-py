@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from _delb.names import XML_ATT_ID
+from _delb.names import XML_NAMESPACE
 from _delb.nodes import DefaultStringOptions, altered_default_filters
 from delb import (
     Document,
@@ -310,10 +310,10 @@ def test_id_property(files_path):
     assert publisher.id == "DTACorpusPublisher"
 
     publisher.id = None
-    assert XML_ATT_ID not in publisher.attributes
+    assert (XML_NAMESPACE, "id") not in publisher.attributes
 
     publisher.id = "foo"
-    assert publisher.attributes[XML_ATT_ID] == "foo"
+    assert publisher.attributes[(XML_NAMESPACE, "id")] == "foo"
 
     with pytest.raises(TypeError):
         publisher.id = 1234

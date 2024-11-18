@@ -43,8 +43,7 @@ from lxml import etree
 from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
 from _delb.names import (
     GLOBAL_PREFIXES,
-    XML_ATT_ID,
-    XML_ATT_SPACE,
+    XML_NAMESPACE,
     deconstruct_clark_notation,
     Namespaces,
 )
@@ -2229,7 +2228,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def _get_normalize_space_directive(
         self, default: Literal["default", "preserve"] = "default"
     ) -> Literal["default", "preserve"]:
-        attribute_value = self.attributes.get(XML_ATT_SPACE)
+        attribute_value = self.attributes.get((XML_NAMESPACE, "space"))
 
         if attribute_value is None:
             return default
@@ -2252,12 +2251,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: Node content properties
         """
-        return cast("str", self.attributes.get(XML_ATT_ID))
+        return self.attributes.get((XML_NAMESPACE, "id"))
 
     @id.setter
     def id(self, value: Optional[str]):
         if value is None:
-            self.attributes.pop(XML_ATT_ID, "")
+            del self.attributes[(XML_NAMESPACE, "id")]
         elif isinstance(value, str):
             root = cast("TagNode", last(self.iterate_ancestors())) or self
             if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
@@ -2265,7 +2264,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     "An xml:id-attribute with that value is already assigned in the "
                     "tree."
                 )
-            self.attributes[XML_ATT_ID] = value
+            self.attributes[(XML_NAMESPACE, "id")] = value
         else:
             raise TypeError("Value must be None or a string.")
 
