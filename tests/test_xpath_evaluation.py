@@ -4,6 +4,10 @@ from _delb.xpath.ast import Axis
 from delb import altered_default_filters, is_tag_node, Document, TagNode, TextNode
 
 
+# TODO remove when empty declarations are used as fallback
+pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
+
+
 def test_any_name_test():
     document = Document("<root><node/><node xmlns='http://foo.bar'/></root>")
 

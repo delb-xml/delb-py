@@ -87,6 +87,8 @@ def test_index():
     assert len(root) == 2
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_insert_issue_in_a_more_complex_situation():
     document = Document("<root><foo><div1><bar><div2/></bar> </div1></foo></root>")
     for node in document.root.css_select("bar,foo"):
@@ -96,6 +98,8 @@ def test_insert_issue_in_a_more_complex_situation():
     )
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_wrapper_consistency():
     # this test is the result of an investigation that asked why
     # `test_insert_issue_in_a_more_complex_situation` failed.

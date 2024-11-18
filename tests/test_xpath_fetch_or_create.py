@@ -4,6 +4,10 @@ from delb import tag, Document
 from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
 
 
+# TODO remove when empty declarations are used as fallback
+pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
+
+
 def test_fetch_or_create_by_xpath():
     root = Document("<root><intermediate/></root>").root
 

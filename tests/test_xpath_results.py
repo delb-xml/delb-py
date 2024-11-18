@@ -1,6 +1,16 @@
+from typing import Final
+
+
+import pytest
 from delb import Document
 
 from tests.utils import assert_nodes_are_in_document_order
+
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
+
+
+# TODO remove when empty declarations are used as fallback
+pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
 
 
 def test_as_sequences(queries_sample):
@@ -17,7 +27,9 @@ def test_as_sequences(queries_sample):
 
 def test_document_order(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    ordered_nodes = document.xpath("//pb").in_document_order()
+    ordered_nodes = document.xpath(
+        "//pb", namespaces={None: TEI_NAMESPACE}
+    ).in_document_order()
     assert all(n.local_name == "pb" for n in ordered_nodes)
     assert_nodes_are_in_document_order(*ordered_nodes)
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import pytest
 
@@ -8,6 +8,9 @@ from delb import Document, TagNode
 
 if TYPE_CHECKING:
     import types
+
+
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
 # this is also used as example in docs/extending.rst
@@ -23,14 +26,18 @@ class TEIDocument(Document):
 
     @property
     def title(self) -> str:
-        return self.css_select('titleStmt title[type="main"]').first.full_text
+        return self.css_select(
+            'titleStmt title[type="main"]', namespaces={None: TEI_NAMESPACE}
+        ).first.full_text
 
 
 class DTABfDocument(TEIDocument):
     @staticmethod
     def __class_test__(root, config) -> bool:
         if TEIDocument.__class_test__(root, config):
-            for node in root.css_select("publicationStmt publisher[xml|id]"):
+            for node in root.css_select(
+                "publicationStmt publisher[xml|id]", namespaces={None: TEI_NAMESPACE}
+            ):
                 if node.id == "DTACorpusPublisher":
                     return True
         return False

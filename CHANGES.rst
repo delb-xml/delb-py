@@ -32,6 +32,10 @@ News
 - Methods that add nodes to a tree now return the added concrete nodes.
 - The new :func:`delb.compare_trees` is available to compare nested
   contents.
+- ⚠️ The use of namespace declarations (to prefixes) that were used in a parsed
+  source stream is deprecated. Notably queries will not use them as fallback
+  when invoked without the ``namespaces`` argument. Instead they *will* likely
+  use the called-on node's namespace as default namespace.
 - ⚠️ :attr:`delb.ParserOptions.collapse_whitespace` was renamed to
   :attr:`delb.ParserOptions.reduce_whitespace`, as there is now
   :meth:`delb.Document.reduce_whitespace` to reflect that they also trim

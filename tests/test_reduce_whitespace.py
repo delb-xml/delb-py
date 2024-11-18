@@ -1,10 +1,15 @@
-from textwrap import dedent
+# test_subclasses implicitly also tests collapsing and trimming
 
+from textwrap import dedent
+from typing import Final
+
+import pytest
 from delb import new_tag_node, Document, TagNode
 
 from tests.utils import assert_equal_trees
 
-# test_subclasses implicitly also tests collapsing and trimming
+
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
 def test_contained_milestone_tags_each_followed_by_whitespace():
@@ -56,12 +61,14 @@ def test_nodes_in_between():
 def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: N802
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     document.reduce_whitespace()
-    imprints = document.xpath("//docImprint")
+    imprints = document.xpath("//docImprint", namespaces={None: TEI_NAMESPACE})
 
     assert imprints[0].full_text == "Veröffentlicht im Februar 1848."
     assert "46, Liverpool Street" in imprints[1].full_text
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_space_preserve():
     document = Document(
         """

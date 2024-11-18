@@ -1,4 +1,5 @@
 from textwrap import dedent
+from typing import Final
 
 import pytest
 
@@ -17,6 +18,9 @@ from _delb.nodes import DETACHED, Serializer
 from tests.conftest import TEI_FILES
 
 from tests.utils import assert_equal_trees, skip_long_running_test
+
+
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
 @pytest.mark.parametrize(
@@ -343,7 +347,7 @@ def test_text_document_production(files_path, source, prefix, align_attributes, 
 )
 def test_text_width(files_path, indentation, text_width, out):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    paragraph = document.xpath("//p")[14]
+    paragraph = document.xpath("//p", namespaces={None: TEI_NAMESPACE})[14]
     format_options = FormatOptions(indentation=indentation, width=text_width)
     DefaultStringOptions.format_options = format_options
     assert paragraph.serialize(format_options=format_options) == str(paragraph) == out
@@ -379,7 +383,9 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
         files_path / "tei_stevenson_treasure_island.xml",
         parser_options=ParserOptions(reduce_whitespace=True),
     )
-    paragraph = document.css_select("fileDesc sourceDesc p").first
+    paragraph = document.css_select(
+        "fileDesc sourceDesc p", namespaces={None: TEI_NAMESPACE}
+    ).first
     assert "\t" not in paragraph.full_text
 
     DefaultStringOptions.format_options = FormatOptions(

@@ -6,6 +6,10 @@ from delb import Document, ParserOptions, tag
 from delb.transform import Transformation, TransformationSequence
 
 
+# TODO remove when empty declarations are used as fallback
+pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
+
+
 class DoNothing(Transformation):
     def transform(self):
         pass
@@ -89,7 +93,7 @@ def test_simple_transformation():
     )
     resolve_copy_of = ResolveCopyOf()
     tree = resolve_copy_of(root, document)
-    assert str(tree) == ("<root><b><c>hi</c></b><a>na?</a></root>")
+    assert str(tree) == "<root><b><c>hi</c></b><a>na?</a></root>"
 
 
 def test_transformation_options():

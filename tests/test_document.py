@@ -1,4 +1,5 @@
 import gc
+from typing import Final
 
 import pytest
 
@@ -12,6 +13,8 @@ from delb import (
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
 
 from tests.plugins import PlaygroundDocumentExtension
+
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
 def test_config_initialization():
@@ -37,6 +40,8 @@ def test_contains():
     assert a not in document_b
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_css_select():
     document = Document("<root><a><b/><c/><b/></a></root>")
 
@@ -125,13 +130,17 @@ def test_set_root():
 def test_xpath(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
 
-    for i, page_break in enumerate(document.xpath("//pb")):
+    for i, page_break in enumerate(
+        document.xpath("//pb", namespaces={None: TEI_NAMESPACE})
+    ):
         assert isinstance(page_break, TagNode)
         assert page_break.universal_name == "{http://www.tei-c.org/ns/1.0}pb"
 
     assert i == 22
 
-    for j, page_break in enumerate(document.xpath('//pb[@n="I"]')):
+    for j, page_break in enumerate(
+        document.xpath('//pb[@n="I"]', namespaces={None: TEI_NAMESPACE})
+    ):
         assert isinstance(page_break, TagNode)
         assert page_break.universal_name == "{http://www.tei-c.org/ns/1.0}pb"
         assert page_break.attributes["n"] == "I"

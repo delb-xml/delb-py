@@ -1,13 +1,19 @@
 import pytest
+from typing import Final
 
 from delb import Document
 from _delb.xpath import _css_to_xpath
 
 
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
+
+
 def test_css_select_or(files_path):
     document = Document(files_path / "tei_stevenson_treasure_island.xml")
 
-    result = document.css_select("titleStmt title, titleStmt author")
+    result = document.css_select(
+        "titleStmt title, titleStmt author", namespaces={None: TEI_NAMESPACE}
+    )
 
     assert len(result) == 2
     assert {x.local_name for x in result} == {"author", "title"}
@@ -21,7 +27,7 @@ def test_css_to_xpath(_in, out):
 def test_namespace():
     document = Document('<root xmlns="isbn:1000" xmlns:p="file:/"><a/><p:a/></root>')
 
-    results = document.css_select("a")
+    results = document.css_select("a", namespaces={None: "isbn:1000", "p": "file:/"})
     assert results.size == 1
     assert results.first.index == 0
 
@@ -34,6 +40,8 @@ def test_namespace():
     assert results.first.index == 1
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_quotes_in_css_selector():
     document = Document('<root><a href="https://super.test/123"/></root>')
     assert document.css_select('a[href^="https://super.test/"]').size == 1
@@ -42,6 +50,8 @@ def test_quotes_in_css_selector():
     assert document.css_select('a:not([href|="https"])').size == 1
 
 
+# TODO remove warning filter when empty declarations are used as fallback
+@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_xml_namespace(files_path):
     document = Document("<root><xml:node/><node/></root>")
     assert document.css_select("xml|node").size == 1
