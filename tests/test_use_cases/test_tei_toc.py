@@ -1,18 +1,31 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Final, Optional
 
 from delb import Document, NodeBase, TagNode
 from _delb.utils import _crunch_whitespace
 
 
+TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
+# TODO remove when empty declarations are used as fallback
+NS = {"namespaces": {None: TEI_NAMESPACE}}
+
+
 def is_pagebreak(node: NodeBase) -> bool:
-    return isinstance(node, TagNode) and node.local_name == "pb"
+    return (
+        isinstance(node, TagNode)
+        and node.local_name == "pb"
+        and node.namespace == TEI_NAMESPACE
+    )
 
 
 def is_section(node: NodeBase) -> bool:
-    return isinstance(node, TagNode) and node.local_name == "div"
+    return (
+        isinstance(node, TagNode)
+        and node.local_name == "div"
+        and node.namespace == TEI_NAMESPACE
+    )
 
 
 @dataclass
@@ -44,7 +57,7 @@ class TableOfContents:
     @property
     def back_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level back sections."""
-        if back_nodes := self.document.xpath("./text/back"):
+        if back_nodes := self.document.xpath("/TEI/text/back", **NS):
             assert back_nodes.size == 1
             return self._parse_sections(back_nodes.first, 0)
         else:
@@ -53,7 +66,7 @@ class TableOfContents:
     @property
     def body_sections(self) -> tuple[TOCSection, ...]:
         """A sequence of all top-level body sections."""
-        if body_nodes := self.document.xpath("./text/body"):
+        if body_nodes := self.document.xpath("/TEI/text/body", **NS):
             assert body_nodes.size == 1
             return self._parse_sections(body_nodes.first, 0)
         else:
@@ -78,7 +91,7 @@ class TableOfContents:
 
     def _parse_sections(self, node: TagNode, level: int) -> tuple[TOCSection, ...]:
         result = []
-        for index, section_node in enumerate(node.xpath("./div")):
+        for index, section_node in enumerate(node.xpath("div", **NS)):
             pages_range = (
                 section_node.fetch_preceding(is_pagebreak).attributes.get("n"),
                 section_node.last_descendant.fetch_preceding(
@@ -98,9 +111,9 @@ class TableOfContents:
         return tuple(result)
 
     @staticmethod
-    def _find_sections_title(element) -> Optional[str]:
-        for xpath in ("./head", "./table/head"):
-            if head_elements := element.xpath(xpath):
+    def _find_sections_title(node: TagNode) -> Optional[str]:
+        for xpath in ("head", "table/head"):
+            if head_elements := node.xpath(xpath, **NS):
                 return _crunch_whitespace(head_elements[0].full_text).strip()
 
 
