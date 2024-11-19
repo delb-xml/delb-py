@@ -15,13 +15,13 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, MutableSequence, Sequence
 from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, overload, Any, BinaryIO, Optional
-from warnings import catch_warnings, warn
 
 from lxml import etree
 
@@ -411,7 +411,9 @@ class Document(metaclass=DocumentMeta):
         return result
 
     def collapse_whitespace(self):
-        warn("This method was renamed to `reduce_whitespace`.", DeprecationWarning)
+        warnings.warn(
+            "This method was renamed to `reduce_whitespace`.", DeprecationWarning
+        )
         self.reduce_whitespace()
 
     def css_select(
@@ -425,7 +427,7 @@ class Document(metaclass=DocumentMeta):
 
     @property
     def head_nodes(self):
-        warn("This attribute was renamed to `prologue`.", DeprecationWarning)
+        warnings.warn("This attribute was renamed to `prologue`.", DeprecationWarning)
         return self.prologue
 
     def merge_text_nodes(self):
@@ -562,7 +564,7 @@ class Document(metaclass=DocumentMeta):
 
     @property
     def tail_nodes(self):
-        warn("This attribute was renamed to `epilogue`.", DeprecationWarning)
+        warnings.warn("This attribute was renamed to `epilogue`.", DeprecationWarning)
         return self.epilogue
 
     def write(
@@ -593,7 +595,7 @@ class Document(metaclass=DocumentMeta):
                         parameter with the same name.
         """
         if pretty is not None:
-            warn(
+            warnings.warn(
                 "The `pretty` argument is deprecated, for the legacy behaviour provide "
                 "`indentation` as two spaces instead."
             )
@@ -602,7 +604,8 @@ class Document(metaclass=DocumentMeta):
             )
 
         # TODO figure out what's causing the "unclosed file <_io.TextIOWrapper …>"
-        with catch_warnings(action="ignore", category=ResourceWarning):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=ResourceWarning)
             self.__serialize(
                 serializer=_get_serializer(
                     _TextBufferWriter(
