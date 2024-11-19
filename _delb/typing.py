@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import sys
 
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Union, TypeVar  # noqa: UNT001
+from typing import TYPE_CHECKING, Any, Callable, Mapping, TypeVar
 
 
 if TYPE_CHECKING:
@@ -41,18 +41,18 @@ if sys.version_info < (3, 11):  # DROPWITH Python 3.10
 else:
     from typing import Self
 
-AttributeAccessor: TypeAlias = Union[slice, str, tuple[str, str]]
+AttributeAccessor: TypeAlias = "slice | str | tuple[str, str]"
 
 GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
 SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"
 
 Filter: TypeAlias = "Callable[[NodeBase], bool]"
 NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
-NodeSource: TypeAlias = Union[str, "NodeBase", "_TagDefinition"]
+NodeSource: TypeAlias = "str | NodeBase | _TagDefinition"
 
-LoaderResult: TypeAlias = Union["etree._ElementTree", str]
+LoaderResult: TypeAlias = "etree._ElementTree | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
-LoaderConstraint: TypeAlias = Union[Loader, "Iterable[Loader]", None]
+LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 
