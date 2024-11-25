@@ -330,7 +330,6 @@ class Document(metaclass=DocumentMeta):
     def __init__(
         self,
         source: Any,
-        parser: Optional[etree.XMLParser] = None,
         parser_options: Optional[ParserOptions] = None,
         klass: Optional[type[Document]] = None,
         **config,
@@ -404,10 +403,7 @@ class Document(metaclass=DocumentMeta):
         :return: A new document instance.
         """
         result = Document(self.root, klass=self.__class__)
-        # lxml.etree.XMLParser instances aren't pickable / copyable
-        parser = self.config.parser_options._make_parser()
         result.config = deepcopy(self.config)
-        self.config.parser = result.config.parser = parser
         return result
 
     def collapse_whitespace(self):
