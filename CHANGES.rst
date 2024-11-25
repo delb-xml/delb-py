@@ -42,6 +42,9 @@ News
   excessive whitespace.
 - ⚠️ The Xpath evaluation expressions of absolute paths on the child axis in the
   first location step is fixed. Consider to double check your usages.
+- Comparing :class:`TagNode` instances is now de facto an identity check. The
+  previous behaviour can be achieved by comparing :attr:`TagNode.universal_name`
+  and :attr:`TagNode.attributes`.
 - ⚠️ :attr:`delb.Document.head_nodes` was renamed to
   :attr:`delb.Document.prologue`, :attr:`delb.Document.tail_nodes` to
   :attr:`delb.Document.epilogue`.

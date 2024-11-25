@@ -113,12 +113,12 @@ def test_tei_recommendation_examples():
 
     # ## "Normalize = Collapse + Trim"  # noqa: E800
 
-    reference_sample = parse_sample("<name>Jo Ann</name>")
-    assert parse_sample("<name>Jo    Ann</name>") == reference_sample
-    assert parse_sample("<name>Jo\n    Ann</name>") == reference_sample
-    assert parse_sample("<name> Jo Ann</name>") == reference_sample
-    assert parse_sample("<name>\n    Jo Ann</name>") == reference_sample
-    assert parse_sample("<name>\n    Jo   \n    Ann\n</name>") == reference_sample
+    reference_sample = "<name>Jo Ann</name>"
+    assert str(parse_sample("<name>Jo    Ann</name>")) == reference_sample
+    assert str(parse_sample("<name>Jo\n    Ann</name>")) == reference_sample
+    assert str(parse_sample("<name> Jo Ann</name>")) == reference_sample
+    assert str(parse_sample("<name>\n    Jo Ann</name>")) == reference_sample
+    assert str(parse_sample("<name>\n    Jo   \n    Ann\n</name>")) == reference_sample
 
     # ## "Default Whitespace Processing"
 

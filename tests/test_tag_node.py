@@ -252,19 +252,6 @@ def test_detach_root():
         document.root.detach()
 
 
-def test_equality():
-    a = new_tag_node("name", attributes={"x": "y"})
-    b = new_tag_node("name", attributes={"x": "y"})
-    c = new_tag_node("nome", attributes={"x": "y"})
-    d = new_tag_node("name", attributes={"y": "x"})
-
-    assert a == b
-    assert b == a
-    assert a != c
-    assert a != d
-    assert a != 0
-
-
 def test_first_and_last_child():
     document = Document("<root/>")
     assert document.root.first_child is None

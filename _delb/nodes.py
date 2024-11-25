@@ -1757,14 +1757,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
     >>> print(deepcopy(root))
     <root>Content</root>
 
-    Nodes can be tested for equality regarding their qualified name and attributes.
-
-    >>> root = Document('<root><foo x="0"/><foo x="0"/><bar x="0"/></root>').root
-    >>> root[0] == root[1]
-    True
-    >>> root[0] == root[2]
-    False
-
     Attribute values and child nodes can be obtained, set and deleted with the subscript
     notation.
 
@@ -1830,14 +1822,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 "Argument must be an integer or an attribute name. "
                 + ATTRIBUTE_ACCESSOR_MSG
             )
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, TagNode):
-            return False
-
-        return (self.universal_name == other.universal_name) and (
-            set(self.attributes.items()) == set(other.attributes.items())
-        )
 
     @overload
     def __getitem__(self, item: int) -> NodeBase: ...

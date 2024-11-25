@@ -41,8 +41,12 @@ def test_fetch_or_create_by_xpath_with_attributes():
         == '<name type="forename"/>'
     )
 
-    assert str(
-        root.fetch_or_create_by_xpath("author/name[@type='forename']/transcriptions")
+    assert (
+        str(
+            root.fetch_or_create_by_xpath(
+                "author/name[@type='forename']/transcriptions"
+            )
+        )
         == "<transcriptions/>"
     )
 
