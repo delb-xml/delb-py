@@ -8,25 +8,32 @@ from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
 pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
 
 
-def test_fetch_or_create_by_xpath():
+@pytest.mark.parametrize("absolute", ("", "/root/"))
+def test_fetch_or_create_by_xpath(absolute):
     root = Document("<root><intermediate/></root>").root
 
-    assert str(root.fetch_or_create_by_xpath("test")) == "<test/>"
+    assert str(root.fetch_or_create_by_xpath(f"{absolute}test")) == "<test/>"
     assert str(root) == "<root><intermediate/><test/></root>"
 
-    assert str(root.fetch_or_create_by_xpath("intermediate/target")) == "<target/>"
+    assert (
+        str(root.fetch_or_create_by_xpath(f"{absolute}intermediate/target"))
+        == "<target/>"
+    )
     assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
 
-    assert str(root.fetch_or_create_by_xpath("intermediate/target")) == "<target/>"
+    assert (
+        str(root.fetch_or_create_by_xpath(f"{absolute}intermediate/target"))
+        == "<target/>"
+    )
     assert str(root) == "<root><intermediate><target/></intermediate><test/></root>"
 
     root.append_children(tag("intermediate"))
 
     with pytest.raises(AmbiguousTreeError):
-        root.fetch_or_create_by_xpath("intermediate")
+        root.fetch_or_create_by_xpath(f"{absolute}intermediate")
 
     with pytest.raises(AmbiguousTreeError):
-        root.fetch_or_create_by_xpath("intermediate/test")
+        root.fetch_or_create_by_xpath(f"{absolute}intermediate/test")
 
 
 def test_fetch_or_create_by_xpath_with_attributes():
@@ -113,7 +120,7 @@ def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():
     assert root.css_select('entry > sense > cit[lang="en"]').size == 1
 
 
-def test_fetch_or_create_by_xpath_with_prefixes_attributes():
+def test_fetch_or_create_by_xpath_with_prefixed_attributes():
     root = Document('<root xmlns:foo="bar"/>').root
 
     assert (

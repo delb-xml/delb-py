@@ -61,7 +61,7 @@ from _delb.xpath import (
     _css_to_xpath,
 )
 from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
-from _delb.xpath.ast import NameMatchTest, XPathExpression
+from _delb.xpath.ast import _DocumentNode, NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from typing import TextIO
@@ -2185,12 +2185,21 @@ class TagNode(_ElementWrappingNode, NodeBase):
         ast: XPathExpression,
         namespaces: Namespaces,
     ) -> TagNode:
-        node = self
+        node: _DocumentNode | TagNode
+
+        if ast.location_paths[0].absolute:
+            node = self
+            while node.parent is not None:
+                node = node.parent
+            node = _DocumentNode(node)
+        else:
+            node = self
 
         for i, step in enumerate(ast.location_paths[0].location_steps):
             candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
 
             if len(candidates) == 0:
+                assert isinstance(node, TagNode)
                 node_test = step.node_test
                 assert isinstance(node_test, NameMatchTest)
                 prefix = node_test.prefix
@@ -2221,6 +2230,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 raise AmbiguousTreeError(
                     f"The tree has multiple possible branches at location step {i}."
                 )
+        assert isinstance(node, TagNode)
         return node
 
     @property
