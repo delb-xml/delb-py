@@ -47,9 +47,12 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     if isinstance(data, TagNode):
         tree = etree.ElementTree()
-        root = data.clone(deep=True)
-        tree._setroot(root._etree_obj)
-        utils._copy_root_siblings(data._etree_obj, root._etree_obj)
+        if data.document is None:
+            tree._setroot(data._etree_obj)
+        else:
+            root = data.clone(deep=True)
+            tree._setroot(root._etree_obj)
+            utils._copy_root_siblings(data._etree_obj, root._etree_obj)
         return tree
     return "The input value is not a TagNode instance."
 

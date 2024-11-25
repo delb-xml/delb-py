@@ -4,7 +4,7 @@ import pytest
 from lxml import etree
 from pytest_httpx import IteratorStream
 
-from delb import Document
+from delb import new_tag_node, Document
 
 from tests.utils import chdir
 
@@ -58,6 +58,19 @@ def test_path_loader():
     with chdir(TEST_FILE.parent):
         document = Document(Path(TEST_FILE.name))
     assert document.source_url == TEST_FILE_URI
+
+
+def test_tag_node_loader():
+    node = new_tag_node("root")
+    assert node.document is None
+
+    document = Document(node)
+    assert node.document is document
+
+    document_clone = Document(node)
+    assert node is not document_clone.root
+
+    assert str(document) == str(document_clone)
 
 
 def test_text_loader():
