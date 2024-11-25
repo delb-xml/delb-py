@@ -101,6 +101,7 @@ def test_attribute_object():
     attribute = node["ham"]
     assert attribute.namespace is None
     assert attribute.universal_name == "ham"
+    assert str(attribute) == attribute.value == "spam"
 
     attribute.namespace = "kitchen.sink"
     assert str(node) == '<root xmlns:ns0="kitchen.sink" ns0:ham="spam"/>'
@@ -115,8 +116,10 @@ def test_attribute_object():
     assert attribute.universal_name == "clam"
 
     assert attribute.value == "spam"
+    assert str(attribute) == attribute.value == "spam"
 
     attribute.value = "sham"
+    assert str(attribute) == attribute.value == "sham"
     assert str(node) == '<root clam="sham"/>'
 
     with pytest.raises(TypeError):
@@ -124,10 +127,10 @@ def test_attribute_object():
 
     attribute = attributes.pop("clam")
     assert attribute._attributes is None
-    assert attribute.value == "sham"
+    assert str(attribute) == attribute.value == "sham"
     attribute.value = "detached"
     assert attribute.universal_name == "clam"
-    assert attribute.value == "detached"
+    assert str(attribute) == attribute.value == "detached"
 
 
 # TODO remove warning filter when empty declarations are used as fallback
