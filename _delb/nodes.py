@@ -1852,9 +1852,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 return list(self.iterate_children())[item]
 
         raise TypeError(
-            "Argument must be an integer as index for a child node, a string for an "
-            "attribute name or a :term:`slice` to denote an attribute's namespace and "
-            "name."
+            "Argument must be an integer as index for a child node, a "
+            ":term:`slice` to grab an indexed range of nodes or an attribute "
+            "name. " + ATTRIBUTE_ACCESSOR_MSG
         )
 
     def __len__(self) -> int:
