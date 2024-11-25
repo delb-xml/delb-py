@@ -331,7 +331,7 @@ def new_processing_instruction_node(
 
 def new_tag_node(
     local_name: str,
-    attributes: Optional[dict[AttributeAccessor, str]] = None,
+    attributes: Optional[dict[AttributeAccessor, str] | TagAttributes] = None,
     namespace: Optional[str] = None,
     children: Sequence[NodeSource] = (),
 ) -> TagNode:
@@ -393,7 +393,9 @@ def tag(local_name: str):  # pragma: no cover
 
 
 @overload
-def tag(local_name: str, attributes: Mapping[str, str]):  # pragma: no cover
+def tag(
+    local_name: str, attributes: Mapping[AttributeAccessor, str]
+):  # pragma: no cover
     ...
 
 
@@ -409,14 +411,16 @@ def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
 
 @overload
 def tag(
-    local_name: str, attributes: Mapping[str, str], child: NodeSource
+    local_name: str, attributes: Mapping[AttributeAccessor, str], child: NodeSource
 ):  # pragma: no cover
     ...
 
 
 @overload
 def tag(
-    local_name: str, attributes: Mapping[str, str], children: Sequence[NodeSource]
+    local_name: str,
+    attributes: Mapping[AttributeAccessor, str],
+    children: Sequence[NodeSource],
 ):  # pragma: no cover
     ...
 
@@ -457,17 +461,29 @@ def tag(*args):  # noqa: C901
     '</items><addendum/></root>'
     """
 
-    def prepare_attributes(attributes: Mapping) -> dict[str, str]:
-        if isinstance(attributes, TagAttributes):
-            return attributes.as_dict_with_strings()
-        return dict(attributes)
+    def prepare_attributes(
+        attributes: Mapping[AttributeAccessor, str]
+    ) -> dict[str | tuple[str, str], str]:
+        result: dict[str | tuple[str, str], str] = {}
+
+        for key, value in attributes.items():
+            if isinstance(value, Attribute):
+                result[(value.namespace, value.local_name)] = value.value
+            elif isinstance(key, slice):
+                result[(key.start, key.stop)] = value
+            elif isinstance(key, (str, tuple)):
+                result[key] = value
+            else:
+                raise TypeError
+
+        return result
 
     if len(args) == 1:
         return _TagDefinition(local_name=args[0])
 
     if len(args) == 2:
         second_arg = args[1]
-        if isinstance(second_arg, (Mapping, etree._Attrib)):
+        if isinstance(second_arg, Mapping):
             return _TagDefinition(
                 local_name=args[0], attributes=prepare_attributes(second_arg)
             )

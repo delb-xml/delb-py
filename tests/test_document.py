@@ -74,12 +74,20 @@ def test_mro():
     class DocumentSubclass(Document):
         pass
 
-    assert DocumentSubclass.__mro__ == (
-        DocumentSubclass,
+    # in case this fails, first check the import order in conftest!
+    assert Document.__mro__ == (
         Document,
         PlaygroundDocumentExtension,
         DocumentMixinBase,
         object,
+    )
+
+    assert DocumentSubclass.__mro__ == (
+    DocumentSubclass,
+    Document,
+    PlaygroundDocumentExtension,
+    DocumentMixinBase,
+    object,
     )
 
 

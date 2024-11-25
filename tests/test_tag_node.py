@@ -549,6 +549,11 @@ def test_names(sample_document):
     assert text.universal_name == "{https://space.name}text"
 
 
+def test_new_tag_node_with_tag_attributes_input():
+    attributes = new_tag_node("node_1", {"a": "b"}).attributes
+    assert new_tag_node("node_2", attributes).attributes == {"a": "b"}
+
+
 def test_fetch_following(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
 
