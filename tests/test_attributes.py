@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from delb import Document
+from delb import Document, new_tag_node
 from delb.nodes import Attribute
 
 
@@ -207,6 +207,14 @@ def test_namespaced_attributes():
         assert attribute.local_name == "b"
         assert attribute.universal_name == "{" + key[0] + "}" + key[1]
         assert attribute.value == "c"
+
+
+def test_pop():
+    attributes = new_tag_node("node", {"facs": "0001"}).attributes
+    assert attributes.pop("facs") == "0001"
+    assert attributes.pop("facs", None) is None
+    with pytest.raises(KeyError):
+        attributes.pop("facs")
 
 
 def test_prefixed_source():

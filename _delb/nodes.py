@@ -669,6 +669,8 @@ class TagAttributes(MutableMapping):
     This will not be an issue with delb 0.7, according to the plan.
     """
 
+    __default = object()
+
     __slots__ = ("_attributes", "_etree_attrib", "namespaces", "__node")
 
     def __init__(self, node: TagNode):
@@ -678,22 +680,19 @@ class TagAttributes(MutableMapping):
         self.__node = node
 
     def __contains__(self, item: Any) -> bool:
-        try:
-            return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
-        except Exception:
-            return False
+        return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
 
     def __delitem__(self, item: AttributeAccessor):
-        qualified_name = self.__resolve_accessor(item)
-        attribute = self.get(qualified_name)
-        if attribute is None:
+        if item not in self:
             raise KeyError
 
-        value = attribute.value
+        qualified_name = self.__resolve_accessor(item)
+        attribute = self[qualified_name]
+        assert attribute is not None
+        attribute._detached_value = attribute.value
         del self._etree_attrib[self._etree_key(qualified_name)]
         del self._attributes[qualified_name]
         attribute._attributes = None
-        attribute._detached_value = value
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Mapping):
@@ -786,6 +785,17 @@ class TagAttributes(MutableMapping):
     def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
         return {a.universal_name: a.value for a in self.values()}
+
+    def pop(self, item: AttributeAccessor, default: Any = __default) -> Any:
+        if item in self:
+            result = self[item]
+            del self[item]
+        elif default is self.__default:
+            raise KeyError
+        else:
+            result = default
+
+        return result
 
 
 # nodes
