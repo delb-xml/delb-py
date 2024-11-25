@@ -59,8 +59,14 @@ def test_align_attributes(indentation, out):
     assert str(new_tag_node("foo", {"bar": "baz"})) == '<foo bar="baz"/>'
 
 
-def test_document_xml_declaration(sample_document):
-    assert str(sample_document).startswith('<?xml version="1.0" encoding="UTF-8"?>')
+@pytest.mark.parametrize("with_newline", (True, False))
+def test_document_xml_declaration(sample_document, with_newline):
+    DefaultStringOptions.format_options = (
+        FormatOptions(indentation="") if with_newline else None
+    )
+    assert str(sample_document).startswith(
+        '<?xml version="1.0" encoding="UTF-8"?>' + "\n" if with_newline else ""
+    )
 
 
 def test_empty_below_default_namespace():
