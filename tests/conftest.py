@@ -11,13 +11,23 @@ from delb import DefaultStringOptions, Document
 
 
 FILES_PATH = Path(__file__).parent / "files"
-RESULTS_FILE = FILES_PATH / ".result.xml"
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
-XML_FILES = tuple(FILES_PATH.glob("[!.]*.xml"))
+XML_FILES = tuple(FILES_PATH.glob("*.xml"))
 
 
 default_filters_default = tuple(default_filters)
 _referenced_objects_for_wrapper_cache_tests = {}
+phase_report_key = pytest.StashKey()
+
+
+# per https://docs.pytest.org/en/latest/example/simple.html
+#         #making-test-result-information-available-in-fixtures
+# for the result_file fixture
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    rep = yield
+    item.stash.setdefault(phase_report_key, {})[rep.when] = rep
+    return rep
 
 
 @pytest.fixture(autouse=True)
@@ -37,8 +47,16 @@ def long_term_references():
 
 
 @pytest.fixture
-def result_file():
-    return RESULTS_FILE
+def result_file(request, tmp_path):
+    assert request.scope == "function"
+    path = tmp_path / "result.xml"
+    yield path
+    assert path.exists()
+    report = request.node.stash[phase_report_key]
+    if ("call" not in report) or report["call"].failed:
+        test_name = request.node.name.replace("/", "_")[:128]
+        target = FILES_PATH / f"failed_result_of_{test_name}.xml"
+        target.write_bytes(path.read_bytes())
 
 
 @pytest.fixture

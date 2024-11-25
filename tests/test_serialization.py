@@ -252,18 +252,19 @@ def test_single_nodes(format_options, namespaces, node_constructor, args, out):
         ("serialization-example-input", "serialization-example-wrapped", False, 59),
     ),
 )
-def test_text_document_production(files_path, source, prefix, align_attributes, width):
+def test_text_document_production(
+    files_path, source, prefix, align_attributes, result_file, width
+):
     document = Document(files_path / f"{source}.xml")
-    result_path = files_path / f"{prefix}-result.xml"
     reference_path = files_path / f"{prefix}-reference.xml"
 
     document.save(
-        result_path,
+        result_file,
         format_options=FormatOptions(
             align_attributes=align_attributes, indentation="  ", width=width
         ),
     )
-    assert result_path.read_text() == reference_path.read_text()
+    assert result_file.read_text() == reference_path.read_text()
 
 
 @pytest.mark.parametrize(
