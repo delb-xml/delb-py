@@ -2010,25 +2010,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
             result._etree_obj.tail = None
             return result
 
-        etree_clone = copy(self._etree_obj)
-        etree_clone.text = etree_clone.tail = None
-        del etree_clone[:]  # remove all subelements
-        result = _wrapper_cache(etree_clone)
-        assert isinstance(result, TagNode)
-        assert not len(result)
-
-        if deep:
-            for child_node in (x.clone(deep=True) for x in self.iterate_children()):
-                assert isinstance(child_node, NodeBase)
-                assert child_node.parent is None
-                if isinstance(child_node, _ElementWrappingNode):
-                    assert child_node._etree_obj.tail is None
-                elif isinstance(child_node, TextNode):
-                    assert child_node._position is DETACHED
-
-                result.append_children(child_node)
-
-        return result
+        return new_tag_node(
+            local_name=self.local_name,
+            attributes=self.attributes,
+            namespace=self.namespace,
+            children=(
+                (n.clone(deep=True) for n in self.iterate_children()) if deep else ()
+            ),
+        )
 
     def css_select(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None

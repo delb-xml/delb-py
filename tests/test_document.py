@@ -2,17 +2,18 @@ import gc
 from typing import Final
 
 import pytest
-
 from delb import (
     Document,
     DocumentMixinBase,
     TagNode,
+    get_traverser,
+    is_tag_node,
     new_comment_node,
     new_processing_instruction_node,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
-
 from tests.plugins import PlaygroundDocumentExtension
+
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
@@ -27,6 +28,44 @@ def test_config_initialization():
 def test_clone():
     document = Document("<root/>", playground_property="foo")
     document.clone()
+
+
+def test_clone_integrity(files_path):
+    # this is a super specific regression test. the contents must have exactly the same
+    # structure as given. e.g. with the 'language' or 'teiHeader' tag removed, the test
+    # would pass.
+    # weirdly, the unit test here only fails on the second and subsequent invocations
+    # after any file edit (even here in the comment). and that not even in every
+    # execution environment.
+    # yet originally the false behaviour surfaced within the integration test suite,
+    # particularly the 'location-paths' test with documents from the ELTeC corpus that
+    # contains this slightly off structural pattern.
+    # i mean i understand, handling with lxml's and delb's semantics and always XML's
+    # at the same time is a gruesome hobby. come on encoders, put in some consistency!
+    # now as the solution is to move away from the lxml API it will be very a good
+    # question what to do with this test in the future.
+
+    document = Document("""\
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+	<teiHeader>
+    <profileDesc xmlns:e="http://distantreading.net/eltec/ns">
+      <langUsage>
+        <language ident="hr"/>
+      </langUsage>
+      <textDesc>
+        <authorGender xmlns="http://distantreading.net/eltec/ns" key="M"/>
+      </textDesc>
+    </profileDesc>
+	</teiHeader>
+    </TEI>""")
+    clone = document.clone()
+
+    for node in get_traverser(from_left=True, depth_first=True, from_top=True)(
+        document.root, is_tag_node
+    ):
+        cloned_node = clone.xpath(node.location_path, namespaces={}).first
+        assert node.universal_name == cloned_node.universal_name
+        assert node.attributes == cloned_node.attributes
 
 
 def test_contains():
