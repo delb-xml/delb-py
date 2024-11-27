@@ -2015,7 +2015,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             attributes=self.attributes,
             namespace=self.namespace,
             children=(
-                (n.clone(deep=True) for n in self.iterate_children()) if deep else ()
+                [n.clone(deep=True) for n in self.iterate_children()] if deep else ()
             ),
         )
 
