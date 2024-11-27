@@ -45,9 +45,10 @@ def test_clone_integrity(files_path):
     # now as the solution is to move away from the lxml API it will be very a good
     # question what to do with this test in the future.
 
-    document = Document("""\
+    document = Document(
+        """\
     <TEI xmlns="http://www.tei-c.org/ns/1.0">
-	<teiHeader>
+    <teiHeader>
     <profileDesc xmlns:e="http://distantreading.net/eltec/ns">
       <langUsage>
         <language ident="hr"/>
@@ -56,8 +57,9 @@ def test_clone_integrity(files_path):
         <authorGender xmlns="http://distantreading.net/eltec/ns" key="M"/>
       </textDesc>
     </profileDesc>
-	</teiHeader>
-    </TEI>""")
+    </teiHeader>
+    </TEI>"""
+    )
     clone = document.clone()
 
     for node in get_traverser(from_left=True, depth_first=True, from_top=True)(
@@ -122,11 +124,11 @@ def test_mro():
     )
 
     assert DocumentSubclass.__mro__ == (
-    DocumentSubclass,
-    Document,
-    PlaygroundDocumentExtension,
-    DocumentMixinBase,
-    object,
+        DocumentSubclass,
+        Document,
+        PlaygroundDocumentExtension,
+        DocumentMixinBase,
+        object,
     )
 
 

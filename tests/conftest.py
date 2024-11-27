@@ -9,7 +9,6 @@ from _delb.nodes import default_filters
 from delb import DefaultStringOptions, Document
 
 
-
 FILES_PATH = Path(__file__).parent / "files"
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
 XML_FILES = tuple(FILES_PATH.glob("*.xml"))
