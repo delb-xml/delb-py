@@ -12,7 +12,7 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.5-rc2 (unreleased)
+0.5-rc2 (2024-12-16)
 --------------------
 
 This iteration took quiet long to complete as it presumably solved the hardest
