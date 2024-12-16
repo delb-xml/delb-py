@@ -2,8 +2,8 @@
 title: delb
 abstract: A library that provides an ergonomic model for XML encoded text documents
   (e.g. with TEI-XML).
-version: 0.5-rc1
-date-released: '2024-11-03'
+version: 0.5-rc2
+date-released: '2024-12-16'
 cff-version: 1.2.0
 type: software
 authors:
@@ -14,6 +14,7 @@ keywords:
 - markup
 - tei
 - text processing
+- xhtml
 license: AGPL-3.0-or-later
 repository-code: https://github.com/delb-xml/delb-py
 url: https://delb.readthedocs.io/
