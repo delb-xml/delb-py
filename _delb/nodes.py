@@ -333,7 +333,7 @@ def new_tag_node(
     local_name: str,
     attributes: Optional[dict[AttributeAccessor, str] | TagAttributes] = None,
     namespace: Optional[str] = None,
-    children: Sequence[NodeSource] = (),
+    children: Iterable[NodeSource] = (),
 ) -> TagNode:
     """
     Creates a new :class:`TagNode` instance outside any context. It is preferable to
@@ -343,7 +343,7 @@ def new_tag_node(
     :param local_name: The tag name.
     :param attributes: Optional attributes that are assigned to the new node.
     :param namespace: An optional tag namespace.
-    :param children: An optional sequence of objects that will be appended as child
+    :param children: An optional iterable of objects that will be appended as child
                      nodes. This can be existing nodes, strings that will be inserted
                      as text nodes and in-place definitions of :class:`TagNode`
                      instances from :func:`tag`. The latter will be assigned to the
