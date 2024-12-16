@@ -63,9 +63,9 @@ custom functions.
 
 from __future__ import annotations
 
+import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING, Optional
-from warnings import warn
 
 # DROPWITH Python 3.8 and replace w/ imports from collections.abc
 from typing import Collection, Iterable, Iterator, Mapping, Sequence
@@ -171,16 +171,19 @@ def evaluate(
 ) -> QueryResults:
     # global namespaces are guaranteed by the Namespaces implementation
     if namespaces is None:
-        warn(
+        warnings.warn(
             "Default namespace declarations that are carried over won't be available "
-            "in future versions. The declarations need to be passed explicitly."
+            "in future versions. The declarations need to be passed explicitly.",
+            category=DeprecationWarning,
         )
         _namespaces = node.namespaces
     elif isinstance(namespaces, Namespaces):
         # b/c it would break fallback chains
         raise TypeError
     elif isinstance(namespaces, Mapping):
-        _namespaces = Namespaces(namespaces, fallback=node.namespaces)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=DeprecationWarning)
+            _namespaces = Namespaces(namespaces, fallback=node.namespaces)
     else:
         raise TypeError
 

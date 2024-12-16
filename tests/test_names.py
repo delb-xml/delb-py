@@ -15,7 +15,8 @@ def test_invalid_namespace_declarations(data):
 
 def test_namespaces():
     node = Document("<node xmlns:foo='bar'/>").root
-    namespaces = node.namespaces
+    with pytest.deprecated_call():
+        namespaces = node.namespaces
 
     assert namespaces == Namespaces({"foo": "bar"})
     assert namespaces["xml"] == XML_NAMESPACE

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import gc
+import warnings
 from abc import abstractmethod, ABC
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -36,7 +37,6 @@ from typing import (
     NamedTuple,
     Optional,
 )
-from warnings import warn
 
 from lxml import etree
 
@@ -676,7 +676,9 @@ class TagAttributes(MutableMapping):
     def __init__(self, node: TagNode):
         self._attributes: dict[tuple[str, str], Attribute] = {}
         self._etree_attrib: etree._Attrib = node._etree_obj.attrib
-        self.namespaces: Namespaces = node.namespaces
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=DeprecationWarning)
+            self.namespaces: Namespaces = node.namespaces
         self.__node = node
 
     def __contains__(self, item: Any) -> bool:
@@ -761,7 +763,7 @@ class TagAttributes(MutableMapping):
         if isinstance(item, str):
             namespace, name = deconstruct_clark_notation(item)
         elif isinstance(item, slice):
-            warn(
+            warnings.warn(
                 "Using slices to denote fully qualified attribute names is deprecated."
                 "Use two-value tuples (namespace, local name) instead.",
                 category=DeprecationWarning,
@@ -1527,7 +1529,7 @@ class _ElementWrappingNode(NodeBase):
         self, deep: bool = False, quick_and_unsafe: bool | None = None
     ) -> _ElementWrappingNode:
         if quick_and_unsafe is not None:
-            warn(
+            warnings.warn(
                 "The `quick_and_unsafe` argument will be removed.",
                 category=DeprecationWarning,
             )
@@ -1614,6 +1616,12 @@ class _ElementWrappingNode(NodeBase):
 
     @property
     def namespaces(self) -> Namespaces:
+        warnings.warn(
+            "The NodeBase.namespaces attribute is deprecated. "
+            "Future versions will not sustain namespace declarations from parsed "
+            "source streams.",
+            category=DeprecationWarning,
+        )
         return Namespaces(self._etree_obj.nsmap)
 
     @property
@@ -1999,7 +2007,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self, deep: bool = False, quick_and_unsafe: bool | None = None
     ) -> TagNode:
         if quick_and_unsafe is not None:
-            warn(
+            warnings.warn(
                 "The `quick_and_unsafe` argument will be removed.",
                 category=DeprecationWarning,
             )
@@ -2067,7 +2075,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         super().detach()
 
-        parent_has_default_namespace = parent is not None and None in parent.namespaces
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=DeprecationWarning)
+            parent_has_default_namespace = False
+            if parent is None:
+                parent_namespaces = None
+            else:
+                parent_namespaces = parent.namespaces
+                if None in parent_namespaces:
+                    parent_has_default_namespace = True
 
         if not (parent_has_default_namespace or retain_child_nodes):
             return self
@@ -2084,10 +2100,12 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 etree.QName(self._etree_obj),
                 attrib=dict(self._etree_obj.attrib),  # type: ignore
                 # TODO https://github.com/lxml/lxml-stubs/issues/62
-                nsmap=parent.namespaces,
+                nsmap=parent_namespaces,
             )
             self._attributes._etree_attrib = self._etree_obj.attrib
-            self._attributes.namespaces = self.namespaces
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=DeprecationWarning)
+                self._attributes.namespaces = self.namespaces
             _wrapper_cache.wrappers[self._etree_obj] = self
 
         if retain_child_nodes:
@@ -2245,7 +2263,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if attribute_value in ("default", "preserve"):
             return attribute_value
 
-        warn(
+        warnings.warn(
             "Encountered and ignoring an invalid `xml:space` attribute: "
             + attribute_value,
             category=UserWarning,
@@ -2478,7 +2496,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         :param parser_options: A :class:`delb.ParserOptions` class to configure the used
                                parser.
         """
-        warn(
+        warnings.warn(
             "This method will be replaced by another interface in a future version.",
             category=PendingDeprecationWarning,
         )
@@ -2889,7 +2907,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self, deep: bool = False, quick_and_unsafe: bool | None = None
     ) -> NodeBase:
         if quick_and_unsafe is not None:
-            warn(
+            warnings.warn(
                 "The `quick_and_unsafe` argument will be removed.",
                 category=DeprecationWarning,
             )
@@ -3329,7 +3347,9 @@ class Serializer:
 
                 # with the lxml backend, a node retains prefix declarations from the
                 # parsed source
-                self._namespaces._fallback = node.namespaces
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", DeprecationWarning)
+                    self._namespaces._fallback = node.namespaces
                 try:
                     prefix = self._namespaces.lookup_prefix(namespace)
                 except KeyError:
