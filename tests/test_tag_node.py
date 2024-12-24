@@ -284,7 +284,8 @@ def test_getitem():
         assert root[namespace:"ham"] == "spam"
     assert root[(namespace, "ham")] == "spam"
 
-    assert root["foo"] is None
+    with pytest.raises(KeyError):
+        root["foo"]
 
     assert root[-1].local_name == "d"
 

@@ -706,7 +706,9 @@ class TagAttributes(MutableMapping):
         if isinstance(other, TagAttributes):
             for key, attribute in self.items():
                 assert isinstance(attribute, Attribute)
-                other_value = other[(attribute.namespace or "", attribute.local_name)]
+                other_value = other.get(
+                    (attribute.namespace or "", attribute.local_name)
+                )
                 if (other_value is None) or (attribute != other_value):
                     return False
             return True
@@ -721,7 +723,7 @@ class TagAttributes(MutableMapping):
         else:
             return name
 
-    def __getitem__(self, item: AttributeAccessor) -> Optional[Attribute]:
+    def __getitem__(self, item: AttributeAccessor) -> Attribute:
         if item in self:
             qualified_name = self.__resolve_accessor(item)
             result = self._attributes.get(qualified_name)
@@ -730,7 +732,7 @@ class TagAttributes(MutableMapping):
                 self._attributes[qualified_name] = result
             return result
         else:
-            return None
+            raise KeyError(item)
 
     def __iter__(self) -> Iterator[tuple[str, str]]:
         results = []
@@ -787,17 +789,6 @@ class TagAttributes(MutableMapping):
     def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
         return {a.universal_name: a.value for a in self.values()}
-
-    def pop(self, item: AttributeAccessor, default: Any = __default) -> Any:
-        if item in self:
-            result = self[item]
-            del self[item]
-        elif default is self.__default:
-            raise KeyError
-        else:
-            result = default
-
-        return result
 
 
 # nodes
@@ -1996,9 +1987,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         <node xmlns:ns0="http://namespace" ns0:bar="X"/>
         >>> "ref-" + node.attributes[("http://namespace", "bar")].lower()
         'ref-x'
-
-        Unlike with typical Python mappings, requesting a non-existing attribute
-        doesn't evoke a :exc:`KeyError`, instead :obj:`None` is returned.
         """
         return self._attributes
 

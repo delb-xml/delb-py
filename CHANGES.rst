@@ -32,6 +32,8 @@ News
 - Methods that add nodes to a tree now return the added concrete nodes.
 - The new :func:`delb.compare_trees` is available to compare nested
   contents.
+- ⚠️ To align with Python standard behaviour, accessing a non-existing attribute
+  with subscript notation now raises a :exc:`KeyError`.
 - ⚠️ The use of namespace declarations (to prefixes) that were used in a parsed
   source stream is deprecated. Notably queries will not use them as fallback
   when invoked without the ``namespaces`` argument. Instead they *will* likely
