@@ -12,8 +12,8 @@ The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
 
-0.5-rc2 (2024-12-16)
---------------------
+0.5 (2025-01-01)
+----------------
 
 This iteration took quiet long to complete as it presumably solved the hardest
 problem on the way to shed off the essential dependency on ``lxml``, also
