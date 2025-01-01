@@ -13,7 +13,7 @@ ROLES_MAPPING = {
     "attr": "py:attribute",
     "class": "py:class",
     "doc": "std:doc",
-    # ?"exception"?: "py:exception",
+    "exc": "py:exception",
     "func": "py:function",
     "meth": "py:method",
     "mod": "py:module",
