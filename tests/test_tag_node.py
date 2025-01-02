@@ -72,21 +72,6 @@ def test_append_no_child():
     assert str(root) == "<root/>"
 
 
-def test_clone_quick_and_unsafe(sample_document):
-    with pytest.deprecated_call():
-        assert str(sample_document.root.clone(deep=True, quick_and_unsafe=True)) == str(
-            sample_document.root
-        )
-
-    root = Document("<root>node a</root>").root
-    root.append_children("|node b")
-
-    with pytest.deprecated_call():
-        assert (
-            str(root.clone(deep=True, quick_and_unsafe=True)) == "<root>node a</root>"
-        )
-
-
 def test_contains():
     document = Document('<root foo="bar"><node><descendant/></node></root>')
     root = document.root
@@ -280,8 +265,6 @@ def test_getitem():
     root = document.root
 
     assert root["ham"] == "spam"
-    with pytest.deprecated_call():
-        assert root[namespace:"ham"] == "spam"
     assert root[(namespace, "ham")] == "spam"
 
     with pytest.raises(KeyError):
@@ -452,7 +435,6 @@ def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
     node = document.new_tag_node("node")
     assert node.namespace == "https://name.space"
-    assert node.prefix == "pfx"
 
 
 def test_make_node_with_children():
@@ -564,14 +546,6 @@ def test_no_siblings_on_root():
         document.root.add_preceding_siblings("sibling")
 
 
-def test_prefix():
-    document = Document('<root xmlns:x="ham"><x:a/></root>')
-    assert document.root[0].prefix == "x"
-
-    document = Document("<root><a/></root>")
-    assert document.root[0].prefix is None
-
-
 def test_prepend_children():
     root = Document("<root><b/></root>").root
     result = root.prepend_children(tag("a"))
@@ -675,10 +649,8 @@ def test_set_item():
     root[0] = tag("b")
     root[0] = tag("a")
     root["A"] = "1"
-    with pytest.deprecated_call():
-        root[namespace:"B"] = "2"
-    root[(namespace, "C")] = "3"
-    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2" ns0:C="3"/>'
+    root[(namespace, "B")] = "2"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"/>'
     with pytest.raises(IndexError):
         root[-1] = "text"
     with pytest.raises(IndexError):

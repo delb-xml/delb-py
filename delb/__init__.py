@@ -406,12 +406,6 @@ class Document(metaclass=DocumentMeta):
         result.config = deepcopy(self.config)
         return result
 
-    def collapse_whitespace(self):
-        warnings.warn(
-            "This method was renamed to `reduce_whitespace`.", DeprecationWarning
-        )
-        self.reduce_whitespace()
-
     def css_select(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
@@ -421,24 +415,12 @@ class Document(metaclass=DocumentMeta):
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
-    @property
-    def head_nodes(self):
-        warnings.warn("This attribute was renamed to `prologue`.", DeprecationWarning)
-        return self.prologue
-
     def merge_text_nodes(self):
         """
         This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
         document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes()
-
-    @property
-    def namespaces(self) -> Namespaces:
-        """
-        The namespace mapping of the document's :attr:`root <Document.root>` node.
-        """
-        return self.root.namespaces
 
     def new_tag_node(
         self,
@@ -501,7 +483,6 @@ class Document(metaclass=DocumentMeta):
     def save(
         self,
         path: Path,
-        pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
         format_options: Optional[FormatOptions] = None,
@@ -513,8 +494,6 @@ class Document(metaclass=DocumentMeta):
         for details.
 
         :param path: The filesystem path to the target file.
-        :param pretty: *Deprecated.* Adds indentation for human consumers when
-                       :obj:`True`.
         :param encoding: The desired text encoding.
         :param format_options: An instance of :class:`FormatOptions` can be
                                provided to configure formatting.
@@ -528,7 +507,6 @@ class Document(metaclass=DocumentMeta):
         with path.open("bw") as file:
             self.write(
                 buffer=file,
-                pretty=pretty,
                 encoding=encoding,
                 format_options=format_options,
                 namespaces=namespaces,
@@ -558,15 +536,9 @@ class Document(metaclass=DocumentMeta):
                 serializer.writer(str(self.epilogue[-1]))
         serializer.writer.buffer.flush()
 
-    @property
-    def tail_nodes(self):
-        warnings.warn("This attribute was renamed to `epilogue`.", DeprecationWarning)
-        return self.epilogue
-
     def write(
         self,
         buffer: BinaryIO,
-        pretty: Optional[bool] = None,
         *,
         encoding: str = "utf-8",
         format_options: Optional[FormatOptions] = None,
@@ -578,8 +550,6 @@ class Document(metaclass=DocumentMeta):
         :doc:`/api/serialization` for details.
 
         :param buffer: A :term:`file-like object` that the document is written to.
-        :param pretty: *Deprecated.* Adds indentation for human consumers when
-                       :obj:`True`.
         :param encoding: The desired text encoding.
         :param format_options: An instance of :class:`FormatOptions` can be provided to
                                configure formatting.
@@ -590,15 +560,6 @@ class Document(metaclass=DocumentMeta):
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
         """
-        if pretty is not None:
-            warnings.warn(
-                "The `pretty` argument is deprecated, for the legacy behaviour provide "
-                "`indentation` as two spaces instead."
-            )
-            format_options = FormatOptions(
-                align_attributes=False, indentation="  " if pretty else "", width=0
-            )
-
         # TODO figure out what's causing the "unclosed file <_io.TextIOWrapper …>"
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=ResourceWarning)

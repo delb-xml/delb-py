@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-from lxml import etree
 from pytest_httpx import IteratorStream
 
 from delb import new_tag_node, Document
@@ -23,16 +22,6 @@ def test_buffer_loader():
     with chdir(TEST_FILE.parent), Path(TEST_FILE.name).open("r") as f:
         document = Document(f)
     assert document.source_url == TEST_FILE_URI
-
-
-def test_etree_loader():
-    tree = etree.parse(str(TEST_FILE))
-    root = tree.getroot()
-
-    with pytest.deprecated_call():
-        document = Document(root)
-    assert document.root._etree_obj is not root
-    assert document.source_url is None
 
 
 @pytest.mark.parametrize("s", ("", "s"))

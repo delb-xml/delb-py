@@ -22,11 +22,9 @@ data sources.
 from __future__ import annotations
 
 from contextlib import suppress
-from copy import deepcopy
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
-from typing import TYPE_CHECKING, cast, Any, IO
-from warnings import warn
+from typing import TYPE_CHECKING, cast, Any
 
 from lxml import etree
 
@@ -36,6 +34,7 @@ from _delb.plugins import plugin_manager
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
+    from typing import IO
 
     from _delb.typing import LoaderResult
 
@@ -58,31 +57,6 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
 
 
 @plugin_manager.register_loader()
-def etree_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
-    """
-    This loader processes :class:`lxml.etree._Element` and
-    :class:`lxml.etree._ElementTree` instances.
-    """
-    if isinstance(data, etree._ElementTree):
-        warn(
-            "lxml's etree models will not be usable inputs with the "
-            "contributed core loaders.",
-            category=DeprecationWarning,
-        )
-        return deepcopy(data)
-    if isinstance(data, etree._Element):
-        warn(
-            "lxml's etree models will not be usable inputs with the "
-            "contributed core loaders.",
-            category=DeprecationWarning,
-        )
-        return etree.ElementTree(
-            element=deepcopy(data), parser=config.parser_options._make_parser()
-        )
-    return "The input value is neither an etree.Element or …Tree instance."
-
-
-@plugin_manager.register_loader(after=etree_loader)
 def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader loads from a file that is pointed at with a :class:`pathlib.Path`
@@ -134,7 +108,6 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
 
 __all__ = (
     buffer_loader.__name__,
-    etree_loader.__name__,
     path_loader.__name__,
     tag_node_loader.__name__,
     text_loader.__name__,

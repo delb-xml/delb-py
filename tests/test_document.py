@@ -135,11 +135,7 @@ def test_mro():
 def test_root_siblings():
     document = Document("<root/>")
     prologue = document.prologue
-    with pytest.deprecated_call():
-        assert document.head_nodes is prologue
     epilogue = document.epilogue
-    with pytest.deprecated_call():
-        assert document.tail_nodes is epilogue
 
     prologue.append(new_comment_node(" I Roy "))
     prologue.insert(0, new_processing_instruction_node("Blood", "Fire"))

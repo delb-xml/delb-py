@@ -41,7 +41,7 @@ if sys.version_info < (3, 11):  # DROPWITH Python 3.10
 else:
     from typing import Self
 
-AttributeAccessor: TypeAlias = "slice | str | tuple[str, str]"
+AttributeAccessor: TypeAlias = "str | tuple[str, str]"
 
 GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
 SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"

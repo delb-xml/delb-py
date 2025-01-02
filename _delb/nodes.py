@@ -21,7 +21,7 @@ from abc import abstractmethod, ABC
 from collections import deque
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
-from copy import copy, deepcopy
+from copy import copy
 from io import StringIO, TextIOWrapper
 from itertools import chain
 from sys import getrefcount
@@ -764,13 +764,6 @@ class TagAttributes(MutableMapping):
     def __resolve_accessor(self, item: AttributeAccessor) -> tuple[str, str]:
         if isinstance(item, str):
             namespace, name = deconstruct_clark_notation(item)
-        elif isinstance(item, slice):
-            warnings.warn(
-                "Using slices to denote fully qualified attribute names is deprecated."
-                "Use two-value tuples (namespace, local name) instead.",
-                category=DeprecationWarning,
-            )
-            namespace, name = item.start, item.stop
         elif isinstance(item, tuple):
             namespace, name = item
         else:
@@ -867,14 +860,11 @@ class NodeBase(ABC):
         pass
 
     @abstractmethod
-    def clone(
-        self, deep: bool = False, quick_and_unsafe: bool | None = None
-    ) -> NodeBase:
+    def clone(self, deep: bool = False) -> NodeBase:
         """
         Creates a new node of the same type with duplicated contents.
 
         :param deep: Clones the whole subtree if :obj:`True`.
-        :param quick_and_unsafe: Deprecated.
         :return: A copy of the node.
         """
         pass
@@ -1516,15 +1506,7 @@ class _ElementWrappingNode(NodeBase):
         else:
             previous._add_following_sibling(node)
 
-    def clone(
-        self, deep: bool = False, quick_and_unsafe: bool | None = None
-    ) -> _ElementWrappingNode:
-        if quick_and_unsafe is not None:
-            warnings.warn(
-                "The `quick_and_unsafe` argument will be removed.",
-                category=DeprecationWarning,
-            )
-
+    def clone(self, deep: bool = False) -> _ElementWrappingNode:
         etree_clone = copy(self._etree_obj)
         etree_clone.tail = None
         return _wrapper_cache(etree_clone)
@@ -1991,21 +1973,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return self._attributes
 
     @altered_default_filters()
-    def clone(
-        self, deep: bool = False, quick_and_unsafe: bool | None = None
-    ) -> TagNode:
-        if quick_and_unsafe is not None:
-            warnings.warn(
-                "The `quick_and_unsafe` argument will be removed.",
-                category=DeprecationWarning,
-            )
-
-        if deep and quick_and_unsafe:
-            result = _wrapper_cache(deepcopy(self._etree_obj))
-            assert isinstance(result, TagNode)
-            result._etree_obj.tail = None
-            return result
-
+    def clone(self, deep: bool = False) -> TagNode:
         return new_tag_node(
             local_name=self.local_name,
             attributes=self.attributes,
@@ -2497,24 +2465,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
             result._reduce_whitespace()
         return result
 
-    @property
-    def prefix(self) -> Optional[str]:
-        """
-        The prefix that the node's namespace is currently mapped to.
-
-        :meta category: Node properties
-        """
-        target = QName(self._etree_obj).namespace
-
-        if target is None:
-            return None
-
-        for prefix, namespace in self._etree_obj.nsmap.items():
-            assert isinstance(prefix, str) or prefix is None
-            if namespace == target:
-                return prefix
-        raise InvalidCodePath
-
     def prepend_children(
         self, *node: NodeBase, clone: bool = False
     ) -> tuple[NodeBase, ...]:
@@ -2891,15 +2841,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self.__content = None
         assert isinstance(self.content, str)
 
-    def clone(
-        self, deep: bool = False, quick_and_unsafe: bool | None = None
-    ) -> NodeBase:
-        if quick_and_unsafe is not None:
-            warnings.warn(
-                "The `quick_and_unsafe` argument will be removed.",
-                category=DeprecationWarning,
-            )
-
+    def clone(self, deep: bool = False) -> NodeBase:
         assert self.content is not None
         return self.__class__(self.content)
 
