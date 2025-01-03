@@ -133,8 +133,6 @@ def test_attribute_object():
     assert str(attribute) == attribute.value == "detached"
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_comparison():
     document = Document(
         dedent(
@@ -183,7 +181,7 @@ def test_comparison():
 
 def test_delete_namespaced_attribute():
     root = Document('<root><node xmlns:p="ns" p:a="1" p:b="2"/></root>').root
-    node = root.css_select("node", namespaces={None: ""}).first
+    node = root.css_select("node").first
     assert len(node.attributes) == 2
     del node.attributes[("ns", "a")]
     assert len(node.attributes) == 1

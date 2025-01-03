@@ -4,15 +4,19 @@ from _delb.xpath.ast import Axis
 from delb import altered_default_filters, is_tag_node, Document, TagNode, TextNode
 
 
-# TODO remove when empty declarations are used as fallback
-pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
-
-
 def test_any_name_test():
-    document = Document("<root><node/><node xmlns='http://foo.bar'/></root>")
+    root = Document(
+        """\
+        <root>
+            <node/>
+            <node xmlns='http://foo.bar'/>
+            <node xmlns='http://baz.zap'/>
+            </root>"""
+    ).root
 
-    assert document.xpath("//*").size == 3
-    assert document.xpath("//p:*", namespaces={"p": "http://foo.bar"}).size == 1
+    assert root.xpath("*").size == 3
+    assert root.xpath("*", namespaces={"p": "http://foo.bar"}).size == 3
+    assert root.xpath("p:*", namespaces={"p": "http://foo.bar"}).size == 1
 
 
 @pytest.mark.parametrize(

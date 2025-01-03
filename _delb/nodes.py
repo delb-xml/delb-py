@@ -671,15 +671,12 @@ class TagAttributes(MutableMapping):
 
     __default = object()
 
-    __slots__ = ("_attributes", "_etree_attrib", "namespaces", "__node")
+    __slots__ = ("_attributes", "_etree_attrib", "_node")
 
     def __init__(self, node: TagNode):
         self._attributes: dict[tuple[str, str], Attribute] = {}
         self._etree_attrib: etree._Attrib = node._etree_obj.attrib
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=DeprecationWarning)
-            self.namespaces: Namespaces = node.namespaces
-        self.__node = node
+        self._node = node
 
     def __contains__(self, item: Any) -> bool:
         return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
@@ -718,7 +715,7 @@ class TagAttributes(MutableMapping):
     def _etree_key(self, item: tuple[str, str]) -> str:
         namespace, name = item
 
-        if namespace and self.namespaces.get(None) != namespace:
+        if namespace and self._node._etree_obj.nsmap.get(None) != namespace:
             return f"{{{namespace}}}{name}"
         else:
             return name
@@ -740,7 +737,7 @@ class TagAttributes(MutableMapping):
             assert isinstance(key, str)
             namespace, name = deconstruct_clark_notation(key)
             if namespace is None:
-                namespace = self.namespaces.get(None, "")
+                namespace = self._node._etree_obj.nsmap.get(None, "")
             assert isinstance(namespace, str)
             results.append((namespace, name))
         return iter(results)
@@ -773,7 +770,7 @@ class TagAttributes(MutableMapping):
             raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
 
         if namespace is None:
-            namespace = self.__node.namespace
+            namespace = self._node.namespace
             if namespace is None:
                 namespace = ""
 
@@ -1175,16 +1172,6 @@ class NodeBase(ABC):
         """
         pass
 
-    @property
-    @abstractmethod
-    def namespaces(self):
-        """
-        The prefix to namespace :term:`mapping` of the node.
-
-        :meta category: Node properties
-        """
-        pass
-
     @abstractmethod
     def new_tag_node(
         self,
@@ -1330,10 +1317,10 @@ class NodeBase(ABC):
 
         :param format_options: An instance of :class:`FormatOptions` can be provided to
                                configure formatting.
-        :param namespaces: A mapping of prefixes to namespaces. These are overriding
-                           possible declarations from a parsed serialisat that the
-                           document instance stems from. Prefixes for undeclared
-                           namespaces are enumerated with the prefix ``ns``.
+        :param namespaces: A mapping of prefixes to namespaces.  If not provided the
+                           node's namespace will serve as default namespace.  Prefixes
+                           for undeclared namespaces are enumerated with the prefix
+                           ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
         """
@@ -1369,8 +1356,8 @@ class NodeBase(ABC):
         :param expression: A supported XPath 1.0 expression that contains one or more
                            location paths.
         :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. The declarations that were used in a document's
-                           source serialisat serve as fallback.
+                           namespaces. If not provided the node's namespace will serve
+                           as default, mapped to an empty prefix.
         :return: All nodes that match the evaluation of the provided XPath expression.
         :meta category: Methods to query the tree
 
@@ -1586,16 +1573,6 @@ class _ElementWrappingNode(NodeBase):
     @property
     def full_text(self) -> str:
         return ""
-
-    @property
-    def namespaces(self) -> Namespaces:
-        warnings.warn(
-            "The NodeBase.namespaces attribute is deprecated. "
-            "Future versions will not sustain namespace declarations from parsed "
-            "source streams.",
-            category=DeprecationWarning,
-        )
-        return Namespaces(self._etree_obj.nsmap)
 
     @property
     def parent(self) -> Optional[TagNode]:
@@ -1992,7 +1969,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param expression: A CSS selector expression.
         :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. If omitted, the node's definition is used.
+                           namespaces.  If not provided the node's namespace will serve
+                           as default, mapped to an empty prefix.
         :return: All nodes that match the evaluation of the provided CSS selector
                  expression.
         :meta category: Methods to query the tree
@@ -2031,15 +2009,13 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         super().detach()
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=DeprecationWarning)
-            parent_has_default_namespace = False
-            if parent is None:
-                parent_namespaces = None
-            else:
-                parent_namespaces = parent.namespaces
-                if None in parent_namespaces:
-                    parent_has_default_namespace = True
+        parent_has_default_namespace = False
+        if parent is None:
+            parent_namespaces = None
+        else:
+            parent_namespaces = parent._etree_obj.nsmap
+            if None in parent_namespaces:
+                parent_has_default_namespace = True
 
         if not (parent_has_default_namespace or retain_child_nodes):
             return self
@@ -2056,12 +2032,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 etree.QName(self._etree_obj),
                 attrib=dict(self._etree_obj.attrib),  # type: ignore
                 # TODO https://github.com/lxml/lxml-stubs/issues/62
-                nsmap=parent_namespaces,
+                nsmap=parent_namespaces,  # type: ignore
             )
+            self._attributes._attributes.clear()
             self._attributes._etree_attrib = self._etree_obj.attrib
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=DeprecationWarning)
-                self._attributes.namespaces = self.namespaces
+            self._attributes._node = self
             _wrapper_cache.wrappers[self._etree_obj] = self
 
         if retain_child_nodes:
@@ -2093,9 +2068,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :param expression: An XPath expression that can unambiguously locate a
                            descending node in a tree that has any state.
-        :param namespaces: An optional mapping of prefixes to namespaces. The
-                           declarations that were used in a document's source serialisat
-                           serve as fallback.
+        :param namespaces: A mapping of prefixes that are used in the expression to
+                           namespaces.  If not provided the node's namespace will serve
+                           as default, mapped to an empty prefix.
         :return: The existing or freshly created node descibed with ``expression``.
         :meta category: Methods to query the tree
 
@@ -2140,7 +2115,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
             )
 
         return self._create_by_xpath(
-            ast, namespaces=Namespaces(namespaces or {}, fallback=self.namespaces)
+            ast=ast,
+            namespaces=Namespaces(namespaces or Namespaces({"": self.namespace or ""})),
         )
 
     def _create_by_xpath(
@@ -2162,26 +2138,20 @@ class TagNode(_ElementWrappingNode, NodeBase):
             candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
 
             if len(candidates) == 0:
-                assert isinstance(node, TagNode)
                 node_test = step.node_test
+                assert isinstance(node, TagNode)
                 assert isinstance(node_test, NameMatchTest)
-                prefix = node_test.prefix
-                if prefix is None:
-                    namespace = namespaces.get(None)
-                else:
-                    namespace = namespaces[prefix]
 
                 new_node = node.new_tag_node(
                     local_name=node_test.local_name,
                     attributes=None,
-                    namespace=namespace,
+                    namespace=namespaces.get(node_test.prefix),
                 )
 
                 for prefix, local_name, value in step._derived_attributes:
-                    if prefix is None and None not in namespaces:
-                        new_node.attributes[local_name] = value
-                    else:
-                        new_node.attributes[(namespaces[prefix], local_name)] = value
+                    new_node.attributes[(namespaces.get(prefix) or "", local_name)] = (
+                        value
+                    )
 
                 node.append_children(new_node)
                 node = new_node
@@ -3042,13 +3012,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         assert isinstance(self.content, str)
         assert isinstance(node.content, str)
 
-    @property
-    def namespaces(self):
-        if self.parent:
-            return self.parent.namespaces
-        else:
-            raise InvalidOperation("A lonely text node has no namespace context.")
-
     def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
         head = self._tail_sequence_head
         assert isinstance(head._bound_to, _Element)
@@ -3250,7 +3213,10 @@ class Serializer:
         self._prefixes: dict[str | None, str] = {}
         self.writer = writer
 
-    def _collect_prefixes(self, root: TagNode):  # noqa: C901  REMOVE eventually
+    def _collect_prefixes(self, root: TagNode):
+        if root.namespace not in self._namespaces.values():
+            self._prefixes[root.namespace] = ""
+
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNode)
             for namespace in {node.namespace} | {
@@ -3259,64 +3225,65 @@ class Serializer:
                 if namespace in self._prefixes:
                     continue
 
-                prefix: str | None
                 if namespace is None:
-                    for other_namespace, prefix in self._prefixes.items():
-                        if prefix == "":
-                            # hence there's a default namespace in use, it needs to use
-                            # a prefix though as an empty namespace can't be declared
-                            assert other_namespace
-                            self._new_namespace_declaration(other_namespace)
-                            break
-                    self._prefixes[None] = ""
+                    # an empty/null namespace can't be assigned to a prefix,
+                    # it must be the default namespace
+                    self.__redeclare_empty_prefix()
+                    self._prefixes[""] = ""
                     continue
+                assert namespace is not None
 
-                # TODO unlike lxml, delb will probably not keep the individual
-                #      namespace declarations per node in its representation.
-                #      that should render a lot of the following unnecessary
-
-                # with the lxml backend, a node retains prefix declarations from the
-                # parsed source
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", DeprecationWarning)
-                    self._namespaces._fallback = node.namespaces
-                try:
-                    prefix = self._namespaces.lookup_prefix(namespace)
-                except KeyError:
-                    assert isinstance(namespace, str)
+                if (prefix := self._namespaces.lookup_prefix(namespace)) is None:
+                    # the namespace isn't declared by the user
                     self._new_namespace_declaration(namespace)
                     continue
 
-                if prefix is not None:
+                if prefix == "" and "" in self._prefixes.values():
+                    # a default namespace was declared, but that one is required for the
+                    # empty/null namespace
+                    self._new_namespace_declaration(namespace)
+                    continue
+
+                if len(prefix):
                     # that found prefix still needs a colon for faster serialisat
                     # composition later
+                    assert f"{prefix}:" not in self._prefixes.values()
                     self._prefixes[namespace] = f"{prefix}:"
+                else:
+                    assert "" not in self._prefixes.values()
+                    self._prefixes[namespace] = ""
 
-                else:  # now we need to come up with a new prefix
-                    if "" not in self._prefixes.values():
-                        # be bold and claim to be the default
-                        self._prefixes[namespace] = ""
+        if "" in self._prefixes:
+            # for quick resolution the empty namespace is represented as `None` like
+            # `TagNode.namespace` and `Attribute.namespace`
+            self._prefixes[None] = self._prefixes.pop("")
 
-                    else:
-                        assert isinstance(namespace, str)
-                        self._new_namespace_declaration(namespace)
+    def __redeclare_empty_prefix(self):
+        # a possibly collected declaration of an empty namespace needs to be mapped to
+        # a prefix because an empty namespace needs to be serialized and such cannot be
+        # mapped to a prefix in a declaration
+        for other_namespace, prefix in self._prefixes.items():
+            if prefix == "":
+                # there is, it needs to use a prefix though as an empty namespace
+                # can't be declared
+                assert other_namespace is not None
+                self._new_namespace_declaration(other_namespace)
+                break
 
     def _generate_attributes_data(self, node: TagNode) -> dict[str, str]:
         data = {}
-
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
             data[self._prefixes[attribute.namespace] + attribute.local_name] = (
                 f'"{attribute.value.translate(CCE_TABLE_FOR_ATTRIBUTES)}"'
             )
-
         return data
 
     def _handle_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
         for child_node in child_nodes:
             self.serialize_node(child_node)
 
-    def _new_namespace_declaration(self, namespace: None | str):
+    def _new_namespace_declaration(self, namespace: str):
         for i in range(2**16):
             prefix = f"ns{i}:"
             if prefix not in self._prefixes.values():

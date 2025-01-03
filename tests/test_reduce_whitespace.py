@@ -3,7 +3,6 @@
 from textwrap import dedent
 from typing import Final
 
-import pytest
 from delb import new_tag_node, Document, TagNode
 
 from tests.utils import assert_equal_trees
@@ -67,8 +66,6 @@ def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: 
     assert "46, Liverpool Street" in imprints[1].full_text
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_space_preserve():
     document = Document(
         """

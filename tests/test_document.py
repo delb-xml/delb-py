@@ -65,7 +65,7 @@ def test_clone_integrity(files_path):
     for node in get_traverser(from_left=True, depth_first=True, from_top=True)(
         document.root, is_tag_node
     ):
-        cloned_node = clone.xpath(node.location_path, namespaces={}).first
+        cloned_node = clone.xpath(node.location_path).first
         assert node.universal_name == cloned_node.universal_name
         assert node.attributes == cloned_node.attributes
 
@@ -81,8 +81,6 @@ def test_contains():
     assert a not in document_b
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_css_select():
     document = Document("<root><a><b/><c/><b/></a></root>")
 
@@ -90,13 +88,15 @@ def test_css_select():
     assert len(results) == 2
     assert all(x.local_name == "b" for x in results)
 
-    document = Document('<root xmlns="x" xmlns:y="y"><a><b/><y:c/><b/></a></root>')
+    #
+
+    document = Document('<root xmlns:y="y"><a><b/><y:c/><b/></a></root>')
 
     results = document.css_select("a b")
     assert len(results) == 2
     assert all(x.local_name == "b" for x in results)
 
-    results = document.css_select("a y|c")
+    results = document.css_select("a y|c", {"y": "y"})
     assert len(results) == 1
     assert results[0].universal_name == "{y}c"
 

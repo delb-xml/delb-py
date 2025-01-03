@@ -21,11 +21,30 @@ from typing import TYPE_CHECKING, Iterator, Optional
 
 if TYPE_CHECKING:
     from typing import Final
-    from _delb.typing import NamespaceDeclarations
+    from _delb.typing import NamespaceDeclarations, _NamespaceDeclarations
 
 XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
 
+COMMON_NAMESPACES: Final = MappingProxyType(
+    {
+        "fo": "http://www.w3.org/1999/XSL/Format",
+        "mathml": "http://www.w3.org/1998/Math/MathML",
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "sh": "http://www.w3.org/ns/shacl#",
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "svg": "http://www.w3.org/2000/svg",
+        "vxml": "http://www.w3.org/2001/vxml",
+        "xforms": "http://www.w3.org/2002/xforms/cr",
+        "xhtml": "http://www.w3.org/1999/xhtml",
+        "xi": "http://www.w3.org/2001/XInclude",
+        "xlink": "http://www.w3.org/1999/xlink",
+        "xsd": "http://www.w3.org/2001/XMLSchema",
+        "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        "xsl": "http://www.w3.org/1999/XSL/Transform",
+    }
+)
 GLOBAL_NAMESPACES: Final = MappingProxyType(
     {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
 )
@@ -52,114 +71,123 @@ def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
         return None, name
 
 
-def is_valid_namespace(value: str) -> bool:
-    if value == "":
-        return True
-
-    if value in {XML_NAMESPACE, XMLNS_NAMESPACE}:
-        raise ValueError(f"The namespace `{value}` must not be overridden.")
-
-    # TODO? validate as RFC 3987 compliant
-    #       see https://github.com/delb-xml/delb-py/issues/69
-
-    return True
-
-
 class Namespaces(Mapping):
     """
     A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
     are available and unchanged.
     """
 
+    __init_cache: Final[
+        dict[int, tuple[_NamespaceDeclarations, _NamespaceDeclarations]]
+    ] = {}
+
     __slots__ = (
         "__data",
-        "_fallback",
-        "__prefixes_lookup_cache",
+        "__inverse_data",
     )
 
-    def __init__(
-        self,
-        namespaces: NamespaceDeclarations,
-        *,
-        fallback: Optional[Namespaces] = None,
-    ):
-        self.__data: NamespaceDeclarations
+    def __init__(self, namespaces: NamespaceDeclarations):
+        self.__data: _NamespaceDeclarations
+        self.__inverse_data: _NamespaceDeclarations
+
         if isinstance(namespaces, Namespaces):
             self.__data = namespaces.__data
-
+            self.__inverse_data = namespaces.__inverse_data
         elif isinstance(namespaces, Mapping):
-            self.__data = {}
-            for prefix, namespace in namespaces.items():
-                if prefix in {"xml", "xmlns"}:
-                    # https://www.w3.org/TR/xml-names/#xmlReserved
-                    raise ValueError(
-                        f"One must not override the global prefix `{prefix}`."
-                    )
-                if not is_valid_namespace(namespace):
-                    raise RuntimeError("Unexpected code path")
-                self.__data[prefix] = namespace
-
+            self.__data, self.__inverse_data = self.__init_data(namespaces)
         else:
             raise TypeError
 
-        self._fallback: MappingProxyType[str, str] | NamespaceDeclarations = (
-            {"xml": XML_NAMESPACE, "xmlns": XMLNS_NAMESPACE}
-            if fallback is None
-            else fallback
-        )
+    def __contains__(self, item: object):
+        return item in self.__data
 
-        self.__prefixes_lookup_cache: dict[str, str | None] = {
-            v: k for k, v in GLOBAL_NAMESPACES.items()
-        }
+    def __getitem__(self, item: str) -> str:
+        return self.__data.__getitem__(item)
 
-    def __getitem__(self, item) -> str:
-        return self.__data.get(item) or self._fallback[item]
-
-    def __iter__(self) -> Iterator[str | None]:
-        return iter(self.__data)
+    def __iter__(self) -> Iterator[str]:
+        yield from (k for k in self.__data if k is not None)
 
     def __len__(self) -> int:
         return len(self.__data)
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__qualname__}({self.__data}) [{hex(id(self))}]>"
+
     def __str__(self) -> str:
         return str(self.__data)
 
-    def lookup_prefix(self, namespace: str) -> str | None:
+    def lookup_prefix(self, namespace: str | None) -> Optional[str]:
         """
-        Resolves a namespace to a prefix while considering namespace declarations of
-        ascending nodes.
+        Resolves a namespace to a prefix.
         """
-        if namespace in self.__prefixes_lookup_cache:
-            return self.__prefixes_lookup_cache[namespace]
+        return self.__inverse_data.get(namespace or "")
 
-        encountered_prefixes: set[None | str] = set()
-        scope: Namespaces = self
-        result = None
+    @classmethod
+    def __init_data(
+        cls, declarations: NamespaceDeclarations
+    ) -> tuple[_NamespaceDeclarations, _NamespaceDeclarations]:
+        _hash = hash(frozenset(declarations.items()))
+        if (cached_result := cls.__init_cache.pop(_hash, None)) is not None:
+            cls.__init_cache[_hash] = cached_result  # put lru to the end
+            return cached_result
 
-        while result is None:
-            for prefix, _namespace in scope.__data.items():
-                if namespace == _namespace:
-                    if prefix is None and None not in encountered_prefixes:
-                        self.__prefixes_lookup_cache[namespace] = None
-                        return None
-                    elif result is None:
-                        result = prefix
+        data = cls.__normalize_declarations(declarations)
+        inverse_data = {v: k for k, v in data.items()}
+        cls.__init_cache[_hash] = (data, inverse_data)
+        if len(cls.__init_cache) > 16:  # TODO? configurable
+            cls.__init_cache.pop(next(iter(cls.__init_cache)))
 
-                encountered_prefixes.add(prefix)
+        return data, inverse_data
 
-            if not isinstance(scope._fallback, Namespaces):
-                break
-            scope = scope._fallback
+    @classmethod
+    def __normalize_declarations(
+        cls,
+        declarations: NamespaceDeclarations,
+    ) -> _NamespaceDeclarations:
+        if None in declarations and "" in declarations:
+            raise ValueError(
+                "A default namespace has been defined redundantly with '' and `None.`"
+            )
 
-        if result is None:
-            # this is necessary, b/c with the lxml semantics, a None value represents
-            # the default namespace's empty prefix; they're carried over to avoid
-            # conversions that'd affect too much operations.
-            # TODO when changing this, mind that there's a code depending on this:
-            raise KeyError(f"The namespace `{namespace}` hasn't been declared.")
+        prefix: str | None
+        namespace: str
 
-        self.__prefixes_lookup_cache[namespace] = result
+        declared_namespaces: set[str] = set()
+        result: dict[str, str] = GLOBAL_NAMESPACES.copy()
+
+        for prefix, namespace in declarations.items():
+            prefix = cls.__validate_declaration(prefix, namespace, declared_namespaces)
+
+            declared_namespaces.add(namespace)
+            result[prefix] = namespace
+
+        for prefix, namespace in COMMON_NAMESPACES.items():
+            if namespace not in declared_namespaces:
+                result.setdefault(prefix, namespace)
+
         return result
+
+    @staticmethod
+    def __validate_declaration(
+        prefix: str | None, namespace: str, declared_namespaces: set[str]
+    ) -> str:
+        if prefix in GLOBAL_PREFIXES:
+            # https://www.w3.org/TR/xml-names/#xmlReserved
+            raise ValueError(f"One must not override the global prefix `{prefix}`.")
+
+        if prefix is None:
+            prefix = ""
+
+        if namespace in {XML_NAMESPACE, XMLNS_NAMESPACE}:
+            raise ValueError(f"The namespace `{namespace}` must not be overridden.")
+
+        # TODO? validate as RFC 3987 compliant
+        #       see https://github.com/delb-xml/delb-py/issues/69
+
+        if namespace in declared_namespaces:
+            raise ValueError(f"Namespace `{namespace}` is declared redundantly.")
+
+        return prefix
 
 
 __all__ = (

@@ -79,7 +79,7 @@ def ensure_prefix(func):
 
         if prefix is not None and prefix not in namespaces:
             raise XPathEvaluationError(
-                f"The namespace prefix `{prefix}` is unknown in the the evaluation "
+                f"The namespace prefix `{prefix}` is unknown in the evaluation "
                 "context."
             )
         return func(self, node, **kwargs)
@@ -288,7 +288,7 @@ class LocationStep(Node):
         return right
 
     @cached_property
-    def _derived_attributes(self) -> list[tuple[str | None, str, str]]:
+    def _derived_attributes(self) -> list[tuple[str, str, str]]:
         predicates_count = len(self.predicates)
         if predicates_count == 0:
             return []
@@ -397,14 +397,15 @@ class AnyNameTest(NodeTestNode):
         self.prefix = prefix
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, namespaces) -> bool:
+    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         if not _is_node_of_type(node, "TagNode"):
             return False
+        node = cast("TagNode", node)
 
-        if self.prefix is None:
+        if self.prefix:
+            return (node.namespace or "") == namespaces[self.prefix]
+        else:
             return True
-
-        return cast("TagNode", node).namespace == namespaces.get(self.prefix)
 
 
 class NameMatchTest(NodeTestNode):
@@ -415,14 +416,43 @@ class NameMatchTest(NodeTestNode):
         self.local_name = local_name
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, namespaces) -> bool:
+    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         if not _is_node_of_type(node, "TagNode"):
             return False
         node = cast("TagNode", node)
-        if (self.prefix or None in namespaces) and node.namespace != namespaces.get(
-            self.prefix
-        ):
-            return False
+
+        # this intentionally deviates from the spec, which states that
+        # "if the QName does not have a prefix, then the namespace URI is null".
+        # instead it refers to the default namespace if such has been declared.
+        # cmp. https://www.w3.org/TR/1999/REC-xpath-19991116/#node-tests
+        #
+        # to make that clear the following is not compacted and optimization is
+        # delegated to the (JIT) compiler.
+
+        if self.prefix is None:
+            if "" in namespaces:  # a default namespace was declared  # noqa: SIM401
+                # delb's capability to address a default namespace
+                # an empty/null namespace is represented as ""
+                namespace = namespaces[""]
+            else:
+                # XPath spec behaviour
+                # an undefined namespace is represented as None
+                namespace = None
+        else:
+            namespace = namespaces[self.prefix]
+
+        if namespace is None:  # noqa: SIM114
+            # XPath spec behaviour
+            if node.namespace is not None:
+                return False
+        elif namespace == "":
+            # delb's specific behaviour
+            if node.namespace is not None:
+                return False
+        else:
+            if node.namespace != namespace:
+                return False
+
         return node.local_name == self.local_name
 
 
@@ -432,7 +462,7 @@ class NodeTypeTest(NodeTestNode):
     def __init__(self, type_name: str):
         self.type_name = type_name
 
-    def evaluate(self, node: NodeBase, namespaces) -> bool:
+    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         return _is_node_of_type(node, self.type_name) or isinstance(node, _DocumentNode)
 
 
@@ -443,7 +473,7 @@ class ProcessingInstructionTest(NodeTypeTest):
         super().__init__("ProcessingInstructionNode")
         self.target = target
 
-    def evaluate(self, node: NodeBase, namespaces) -> bool:
+    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         if not super().evaluate(node=node, namespaces=namespaces):
             return False
         assert _is_node_of_type(node, "ProcessingInstructionNode")
@@ -495,7 +525,7 @@ class BooleanOperator(EvaluationNode):
         self.right = right
 
     @property
-    def _derived_attributes(self) -> list[tuple[str | None, str, str]]:
+    def _derived_attributes(self) -> list[tuple[str, str, str]]:
         if self.operator is operator.and_:
             return self.left._derived_attributes + self.right._derived_attributes
 
@@ -504,13 +534,13 @@ class BooleanOperator(EvaluationNode):
             if isinstance(left, AttributeValue):
                 assert isinstance(right, AnyValue)
                 return [
-                    (left.prefix, left.local_name, right.value),
+                    (left.prefix or "", left.local_name, right.value),
                 ]
             else:
                 assert isinstance(left, AnyValue)
                 assert isinstance(right, AttributeValue)
                 return [
-                    (right.prefix, right.local_name, left.value),
+                    (right.prefix or "", right.local_name, left.value),
                 ]
 
         raise InvalidCodePath

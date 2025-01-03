@@ -49,13 +49,6 @@ optional document where that tree originates from::
    from typing import Final, NamedTuple, TypedDict
 
 
-   class NamespacesKWArgs(TypedDict):
-       namespaces: dict[str | None, str]
-
-
-   TEI: Final[NamespacesKWArgs] = {"namespaces": {None: TEI_NAMESPACE}}
-
-
    class ResolveChoiceOptions(NamedTuple):
        corr: bool = True
        reg: bool = True
@@ -80,11 +73,11 @@ optional document where that tree originates from::
            )
 
        def transform(self):
-           for choice_node in self.root.css_select("choice", **TEI):
-               node_to_drop = choice_node.css_select(self.drop_selector, **TEI).first
+           for choice_node in self.root.css_select("choice"):
+               node_to_drop = choice_node.css_select(self.drop_selector).first
                node_to_drop.detach()
 
-               node_to_keep = choice_node.css_select(self.keep_selector, **TEI).first
+               node_to_keep = choice_node.css_select(self.keep_selector).first
                node_to_keep.detach(retain_child_nodes=True)
 
                choice_node.detach(retain_child_nodes=True)

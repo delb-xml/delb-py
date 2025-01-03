@@ -6,10 +6,6 @@ from delb import Document, ParserOptions, tag
 from delb.transform import Transformation, TransformationSequence
 
 
-# TODO remove when empty declarations are used as fallback
-pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
-
-
 class DoNothing(Transformation):
     def transform(self):
         pass

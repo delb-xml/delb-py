@@ -151,8 +151,6 @@ def test_detach_and_document_property():
     assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_detach_node_with_tail_1():
     root = Document("<root><a>c<c/></a>b<d/></root>").root
 
@@ -206,8 +204,6 @@ def test_detach_node_retain_child_nodes():
         root.detach(retain_child_nodes=True)
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 def test_detach_node_retains_namespace_prefixes():
     # libxml2 loses the notion if a default prefix for nodes that have been
     # removed from a parent node
@@ -417,8 +413,6 @@ def test_last_descendant():
     assert c.last_descendant is None
 
 
-# TODO remove warning filter when empty declarations are used as fallback
-@pytest.mark.filterwarnings("ignore:.* namespace declarations")
 @skip_long_running_test
 @pytest.mark.parametrize("file", XML_FILES)
 def test_location_path_and_xpath_concordance(file):

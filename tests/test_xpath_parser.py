@@ -70,6 +70,7 @@ def test_css_selectors(selector):
         ("*[@lang", r" 1 \(`\[@lang`\): `\[` is never closed\."),
         ("foo*", r"3 \(`\*`\): Unrecognized expression\."),
         ("/p:foo*", r"6 \(`\*`\): Unrecognized expression\."),
+        (":*", r" 0 \(`:\*`\): Unrecognized node test\."),
         ("*.", r" 1 \(`\.`\): Unrecognized expression\."),
         ("*[~lang]", r" 2 \(`~lang\]`\): Unrecognized token\."),
     ),

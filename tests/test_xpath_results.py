@@ -1,16 +1,11 @@
 from typing import Final
 
 
-import pytest
 from delb import Document
 
 from tests.utils import assert_nodes_are_in_document_order
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
-
-
-# TODO remove when empty declarations are used as fallback
-pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
 
 
 def test_as_sequences(queries_sample):

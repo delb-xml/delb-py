@@ -48,6 +48,7 @@ SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated
 
 Filter: TypeAlias = "Callable[[NodeBase], bool]"
 NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
+_NamespaceDeclarations: TypeAlias = "Mapping[str, str]"
 NodeSource: TypeAlias = "str | NodeBase | _TagDefinition"
 
 LoaderResult: TypeAlias = "etree._ElementTree | str"

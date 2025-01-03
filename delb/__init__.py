@@ -497,10 +497,10 @@ class Document(metaclass=DocumentMeta):
         :param encoding: The desired text encoding.
         :param format_options: An instance of :class:`FormatOptions` can be
                                provided to configure formatting.
-        :param namespaces: A mapping of prefixes to namespaces. These are overriding
-                           possible declarations from a parsed serialisat that the
-                           document instance stems from. Prefixes for undeclared
-                           namespaces are enumerated with the prefix ``ns``.
+        :param namespaces: A mapping of prefixes to namespaces.  If not provided the
+                           root node's namespace will serve as default namespace.
+                           Prefixes for undeclared namespaces are enumerated with the
+                           prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
         """
@@ -553,10 +553,10 @@ class Document(metaclass=DocumentMeta):
         :param encoding: The desired text encoding.
         :param format_options: An instance of :class:`FormatOptions` can be provided to
                                configure formatting.
-        :param namespaces: A mapping of prefixes to namespaces. These are overriding
-                           possible declarations from a parsed serialisat that the
-                           document instance stems from. Prefixes for undeclared
-                           namespaces are enumerated with the prefix ``ns``.
+        :param namespaces: A mapping of prefixes to namespaces.  If not provided the
+                           root node's namespace will serve as default namespace.
+                           Prefixes for undeclared namespaces are enumerated with the
+                           prefix ``ns``.
         :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
                         parameter with the same name.
         """

@@ -63,9 +63,10 @@ custom functions.
 
 from __future__ import annotations
 
-import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING, Optional
+
+from typing import cast
 
 # DROPWITH Python 3.8 and replace w/ imports from collections.abc
 from typing import Collection, Iterable, Iterator, Mapping, Sequence
@@ -73,14 +74,14 @@ from typing import Collection, Iterable, Iterator, Mapping, Sequence
 from cssselect import GenericTranslator
 
 from _delb.names import Namespaces
-from _delb.utils import _sort_nodes_in_document_order
+from _delb.utils import _is_node_of_type, _sort_nodes_in_document_order
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase
+    from _delb.nodes import NodeBase, TagNode
     from _delb.typing import Filter, NamespaceDeclarations
 
 _css_translator = GenericTranslator()
@@ -171,19 +172,15 @@ def evaluate(
 ) -> QueryResults:
     # global namespaces are guaranteed by the Namespaces implementation
     if namespaces is None:
-        warnings.warn(
-            "Default namespace declarations that are carried over won't be available "
-            "in future versions. The declarations need to be passed explicitly.",
-            category=DeprecationWarning,
-        )
-        _namespaces = node.namespaces
+        if _is_node_of_type(node, "TagNode"):
+            _namespaces = Namespaces({"": cast("TagNode", node).namespace or ""})
+        else:
+            _namespaces = Namespaces({})
     elif isinstance(namespaces, Namespaces):
         # b/c it would break fallback chains
         raise TypeError
     elif isinstance(namespaces, Mapping):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=DeprecationWarning)
-            _namespaces = Namespaces(namespaces, fallback=node.namespaces)
+        _namespaces = Namespaces(namespaces)
     else:
         raise TypeError
 

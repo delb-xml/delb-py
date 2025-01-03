@@ -4,10 +4,6 @@ from delb import tag, Document
 from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
 
 
-# TODO remove when empty declarations are used as fallback
-pytestmark = pytest.mark.filterwarnings("ignore:.* namespace declarations")
-
-
 @pytest.mark.parametrize("absolute", ("", "/root/"))
 def test_fetch_or_create_by_xpath(absolute):
     root = Document("<root><intermediate/></root>").root
@@ -76,14 +72,18 @@ def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
 
 
 def test_fetch_or_create_by_xpath_with_prefix():
-    root = Document("<root xmlns:prfx='http://test.io'><intermediate/></root>").root
+    root = Document("<root><intermediate/></root>").root
     assert (
-        str(root.fetch_or_create_by_xpath("intermediate/prfx:test"))
-        == '<prfx:test xmlns:prfx="http://test.io"/>'
+        str(
+            root.fetch_or_create_by_xpath(
+                "intermediate/prfx:test", namespaces={"prfx": "http://test.io"}
+            )
+        )
+        == '<test xmlns="http://test.io"/>'
     )
     assert (
-        str(root) == '<root xmlns:prfx="http://test.io">'
-        "<intermediate><prfx:test/></intermediate>"
+        str(root) == '<root xmlns:ns0="http://test.io">'
+        "<intermediate><ns0:test/></intermediate>"
         "</root>"
     )
 
@@ -124,7 +124,11 @@ def test_fetch_or_create_by_xpath_with_prefixed_attributes():
     root = Document('<root xmlns:foo="bar"/>').root
 
     assert (
-        str(root.fetch_or_create_by_xpath("node[@foo:attr='value']"))
-        == '<node xmlns:foo="bar" foo:attr="value"/>'
+        str(
+            root.fetch_or_create_by_xpath(
+                "node[@foo:attr='value']", namespaces={"foo": "bar"}
+            )
+        )
+        == '<node xmlns:ns0="bar" ns0:attr="value"/>'
     )
-    assert str(root) == '<root xmlns:foo="bar"><node foo:attr="value"/></root>'
+    assert str(root) == '<root xmlns:ns0="bar"><node ns0:attr="value"/></root>'

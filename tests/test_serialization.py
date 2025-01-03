@@ -127,30 +127,41 @@ def test_indentation(indentation, _in, out):
 
 
 @pytest.mark.parametrize(
-    ("_in", "prefixes"),
+    ("_in", "namespaces", "prefixes"),
     (
         (
             '<r xmlns="d1"><b xmlns="d2"/></r>',
+            None,
             {"d1": "", "d2": "ns0:"},
         ),
-        ('<r><b xmlns="d"/></r>', {None: "", "d": "ns0:"}),
+        ('<r><b xmlns="d"/></r>', None, {None: "", "d": "ns0:"}),
         (
-            """\
-            <r>
-              <b>
-                <ignored:c xmlns:ignored="d"/>
-              </b>
-              <wanted:d xmlns:wanted="d"/>
-            </r>""",
+            '<r><ignored:d xmlns:ignored="d"/></r>',
+            {"wanted": "d"},
             {None: "", "d": "wanted:"},
         ),
-        ('<root xmlns:x="d" x:y=""/>', {None: "", "d": "x:"}),
+        ('<root xmlns:x="d" x:y=""/>', {"x": "d"}, {None: "", "d": "x:"}),
+        (
+            '<root xmlns="https://foo.org"><node/></root>',
+            {"foo": "https://foo.org"},
+            {"https://foo.org": "foo:"},
+        ),
+        (
+            '<node xmlns:x="http://namespace" x:bar="X"/>',
+            {None: "http://namespace"},
+            {None: "", "http://namespace": "ns0:"},
+        ),
+        (
+            '<node xmlns:x="http://namespace" x:bar="X"/>',
+            {"": "http://namespace"},
+            {None: "", "http://namespace": "ns0:"},
+        ),
     ),
 )
-def test_prefix_collection_and_generation(_in, prefixes):
+def test_prefix_collection_and_generation(_in, namespaces, prefixes):
     # all namespace declarations are included in the root node.
     # definitions from higher levels are preferred.
-    serializer = Serializer(None)
+    serializer = Serializer(None, namespaces=namespaces)
     serializer._collect_prefixes(Document(_in).root)
     assert serializer._prefixes == prefixes
 
@@ -219,6 +230,12 @@ def test_significant_whitespace_is_saved(result_file, format_options, out):
             '<n xmlns="ftp://foo.bar"/>',
         ),
         (
+            {"": "ftp://foo.bar"},
+            new_tag_node,
+            ("n", {}, "ftp://foo.bar"),
+            '<n xmlns="ftp://foo.bar"/>',
+        ),
+        (
             {"p": "ftp://foo.bar"},
             new_tag_node,
             ("n", {}, "ftp://foo.bar"),
@@ -230,6 +247,12 @@ def test_significant_whitespace_is_saved(result_file, format_options, out):
         ({}, new_tag_node, ("n", {"x": "<"}), """<n x="&lt;"/>"""),
         ({}, new_tag_node, ("n", {"x": '"'}), """<n x="&quot;"/>"""),
         ({}, new_tag_node, ("n", {"x": '"&"'}), r"""<n x="&quot;&amp;&quot;"/>"""),
+        (
+            {None: "http://namespace"},
+            new_tag_node,
+            ("node", {("http://namespace", "bar"): "x"}),
+            """<node xmlns:ns0="http://namespace" ns0:bar="x"/>""",
+        ),
     ),
 )
 # TODO create node objects in parametrization when the etree element wrapper cache has
@@ -243,17 +266,35 @@ def test_single_nodes(format_options, namespaces, node_constructor, args, out):
 
 
 @pytest.mark.parametrize(
-    ("source", "prefix", "align_attributes", "width"),
+    ("source", "prefix", "align_attributes", "width", "namespaces"),
     (
         # this contains many interesting phenomena for wrapped content
-        ("tei_gsa_390707", "gsa_390707", False, 77),
+        (
+            "tei_gsa_390707",
+            "gsa_390707",
+            False,
+            77,
+            {"http://www.faustedition.net/ns": ""},
+        ),
         # these test the examples in the docs
-        ("serialization-example-input", "serialization-example-indented", True, 0),
-        ("serialization-example-input", "serialization-example-wrapped", False, 59),
+        (
+            "serialization-example-input",
+            "serialization-example-indented",
+            True,
+            0,
+            {"pi": "https://pirates.code/"},
+        ),
+        (
+            "serialization-example-input",
+            "serialization-example-wrapped",
+            False,
+            59,
+            {"pi": "https://pirates.code/"},
+        ),
     ),
 )
 def test_text_document_production(
-    files_path, source, prefix, align_attributes, result_file, width
+    files_path, source, prefix, align_attributes, result_file, width, namespaces
 ):
     document = Document(files_path / f"{source}.xml")
     reference_path = files_path / f"{prefix}-reference.xml"
@@ -263,6 +304,7 @@ def test_text_document_production(
         format_options=FormatOptions(
             align_attributes=align_attributes, indentation="  ", width=width
         ),
+        namespaces=namespaces,
     )
     assert result_file.read_text() == reference_path.read_text()
 
