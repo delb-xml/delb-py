@@ -278,13 +278,9 @@ class LocationStep(Node):
 
     @cached_property
     def _anders_predicates(self) -> BooleanOperator:
-        predicates = list(self.predicates)
-
-        right = predicates.pop()
-        while predicates:
-            left = predicates.pop()
-            right = BooleanOperator(operator=operator.and_, left=left, right=right)
-
+        right = self.predicates[-1]
+        for predicate in self.predicates[-2::-1]:
+            right = BooleanOperator(operator=operator.and_, left=predicate, right=right)
         assert isinstance(right, BooleanOperator)
         return right
 
