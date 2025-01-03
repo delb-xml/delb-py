@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from typing import Final
     from _delb.names import Namespaces
     from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
+    from _delb.typing import NodeTypeNameLiteral
 
 
 xpath_functions: Final = _plugin_manager.xpath_functions
@@ -459,7 +460,7 @@ class NameMatchTest(NodeTestNode):
 class NodeTypeTest(NodeTestNode):
     __slots__ = ("type_name",)
 
-    def __init__(self, type_name: str):
+    def __init__(self, type_name: NodeTypeNameLiteral):
         self.type_name = type_name
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:

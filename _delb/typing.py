@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
-    from typing_extensions import Self
+    from typing_extensions import Literal, Self
 else:
-    from typing import Self
+    from typing import Literal, Self
 
 AttributeAccessor: TypeAlias = "str | tuple[str, str]"
 
@@ -54,6 +54,10 @@ NodeSource: TypeAlias = "str | NodeBase | _TagDefinition"
 LoaderResult: TypeAlias = "etree._ElementTree | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
+
+NodeTypeNameLiteral: TypeAlias = Literal[
+    "CommentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
+]
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 

@@ -34,7 +34,8 @@ dependencies = [
     "lxml",
     # DROPWITH Python3.9
     "importlib-metadata; python_version < '3.10'",
-    "typing-extensions; python_version < '3.10'"
+    # DROPWITH Python3.10
+    "typing-extensions; python_version < '3.11'"
 ]
 
 [project.entry-points.delb]

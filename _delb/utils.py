@@ -24,11 +24,12 @@ from functools import partial
 from string import ascii_lowercase
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
+
 if TYPE_CHECKING:
     from lxml import etree
 
     from _delb.nodes import NodeBase, TagNode
-    from _delb.typing import Filter
+    from _delb.typing import Filter, NodeTypeNameLiteral
 
 
 _crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
@@ -321,14 +322,10 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
     return result
 
 
-def _is_node_of_type(node: NodeBase, type_name: str) -> bool:
-    if type_name not in {
-        "CommentNode",
-        "ProcessingInstructionNode",
-        "TagNode",
-        "TextNode",
-    }:
-        raise ValueError
+def _is_node_of_type(
+    node: NodeBase,
+    type_name: NodeTypeNameLiteral,
+) -> bool:
     return (
         node.__class__.__module__ == f"{__package__}.nodes"
         and node.__class__.__qualname__ == type_name

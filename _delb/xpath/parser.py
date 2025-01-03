@@ -44,7 +44,7 @@ from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize
 
 if TYPE_CHECKING:
     from typing import Final
-    from _delb.typing import TypeAlias
+    from _delb.typing import NodeTypeNameLiteral, TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[Union[TokenType, None]]  # noqa: SIM907
@@ -52,7 +52,7 @@ TokenPattern: TypeAlias = Sequence[Union[TokenType, None]]  # noqa: SIM907
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]  # noqa: TC008
 
 
-NODE_TYPE_TEST_MAPPING: Final = {
+NODE_TYPE_TEST_MAPPING: Final[dict[str, NodeTypeNameLiteral]] = {
     "comment": "CommentNode",
     "node": "TagNode",
     "processing-instruction": "ProcessingInstructionNode",
