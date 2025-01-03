@@ -9,9 +9,12 @@ from _delb.nodes import default_filters
 from delb import DefaultStringOptions, Document
 
 
+FAILED_RESULT = "failed_result_of_"
 FILES_PATH = Path(__file__).parent / "files"
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
-XML_FILES = tuple(FILES_PATH.glob("*.xml"))
+XML_FILES = tuple(
+    p for p in FILES_PATH.glob("*.xml") if not p.name.startswith(FAILED_RESULT)
+)
 
 
 default_filters_default = tuple(default_filters)
@@ -54,7 +57,7 @@ def result_file(request, tmp_path):
     report = request.node.stash[phase_report_key]
     if ("call" not in report) or report["call"].failed:
         test_name = request.node.name.replace("/", "_")[:128]
-        target = FILES_PATH / f"failed_result_of_{test_name}.xml"
+        target = FILES_PATH / f"{FAILED_RESULT}{test_name}.xml"
         target.write_bytes(path.read_bytes())
 
 
