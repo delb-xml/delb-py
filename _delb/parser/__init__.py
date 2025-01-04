@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-
 from lxml import etree
 
 

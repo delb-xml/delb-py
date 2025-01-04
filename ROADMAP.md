@@ -2,7 +2,6 @@
 
 ## 0.6
 
-- move `_delb.parser.ParserOptions` to the `delb.parser` package
 - remove `_delb.TagNode.parse`
 - provide a `delb.parser.parse` function as replacement, re-expose it in the `delb`
   module
