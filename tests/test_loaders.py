@@ -25,7 +25,7 @@ def test_buffer_loader():
 
 
 @pytest.mark.parametrize("s", ("", "s"))
-def test_http_s_loader(httpx_mock, s):
+def test_web_loader(httpx_mock, s):
     httpx_mock.add_response(
         stream=IteratorStream(
             (

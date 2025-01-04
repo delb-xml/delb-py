@@ -12,7 +12,7 @@ To install *delb* manually, not as dependency,  use pip_::
 At the moment there's only one optional dependency to enable document loading
 via `http` and `https`, to include it use::
 
-    $ pip install delb[https-loader]
+    $ pip install delb[web-loader]
 
 
 From source
@@ -33,7 +33,7 @@ To install it regularly::
 
 Again, to include the loading over *http(s)*::
 
-    …/delb-py $ pip install .[https-loader]
+    …/delb-py $ pip install .[web-loader]
 
 For developing purposes of ``delb`` itself, the library should be installed in
 editable_ mode::
