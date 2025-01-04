@@ -52,11 +52,9 @@ from _delb.utils import (
     _StringMixin,
     _crunch_whitespace,
     last,
-    _random_unused_prefix,
     traverse_bf_ltr_ttb,
 )
 from _delb.xpath import (
-    LegacyXPathExpression,
     QueryResults,
     _css_to_xpath,
 )
@@ -2570,75 +2568,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
             raise TypeError(
                 "Not all node types can be added as siblings to a root node."
             )
-
-    # REMOVE eventually
-    @altered_default_filters()
-    def xpath(
-        self,
-        expression: str,
-        namespaces: Optional[NamespaceDeclarations] = None,
-    ) -> QueryResults:
-        result = super().xpath(expression=expression, namespaces=namespaces)
-        if __debug__ and all(isinstance(n, TagNode) for n in result):
-            try:
-                etree_result = self._etree_xpath(expression, namespaces=namespaces)
-            except NotImplementedError:
-                # might stem from flaws in LegacyXPathExpression
-                pass
-            else:
-                assert result == etree_result, (
-                    "Please report that the native XPath evaluator seems faulty with "
-                    f"the expression `{expression}` at "
-                    "https://github.com/delb-xml/delb-py/issues"
-                )
-        return result
-
-    # REMOVE eventually
-    def _etree_xpath(
-        self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
-    ) -> QueryResults:
-        etree_obj = self._etree_obj
-        if namespaces is None:
-            namespaces = etree_obj.nsmap
-        compat_namespaces: etree._DictAnyStr
-        xpath_expression = LegacyXPathExpression(expression)
-
-        if None in namespaces:
-            has_default_namespace = True
-            prefix = _random_unused_prefix(namespaces)
-            compat_namespaces = cast(
-                "etree._DictAnyStr",
-                {
-                    **{k: v for k, v in namespaces.items() if k is not None},
-                    prefix: namespaces[None],
-                },
-            )
-
-        else:
-            has_default_namespace = False
-            prefix = ""
-            compat_namespaces = cast("etree._DictAnyStr", namespaces)
-
-        for location_path in xpath_expression.location_paths:
-            if has_default_namespace:
-                for location_step in location_path.location_steps:
-                    node_test = location_step.node_test
-                    if node_test.type != "name_test":
-                        continue
-                    if ":" not in node_test.data:
-                        node_test.data = prefix + ":" + node_test.data
-
-        if str(xpath_expression) != expression:
-            raise NotImplementedError
-
-        _results = etree_obj.xpath(
-            str(xpath_expression),
-            namespaces=compat_namespaces,  # type: ignore
-        )
-        assert isinstance(_results, Iterable)
-        return QueryResults(
-            (_wrapper_cache(cast("_Element", element)) for element in _results)
-        )
 
 
 class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore

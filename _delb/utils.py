@@ -21,7 +21,6 @@ from collections import defaultdict
 from collections.abc import Iterable, Iterator, Sequence
 from copy import copy
 from functools import partial
-from string import ascii_lowercase
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
 
@@ -346,17 +345,6 @@ def last(iterable: Iterable) -> Optional[Any]:
         return iterable[-1] if len(iterable) else None
     else:
         raise TypeError
-
-
-# REMOVE eventually
-def _random_unused_prefix(namespaces: etree._NSMap) -> str:
-    for prefix in ascii_lowercase:
-        if prefix not in namespaces:
-            return prefix
-    raise RuntimeError(
-        "You really are using all latin letters as prefix in a document. "
-        "Fair enough, please open a bug report."
-    )
 
 
 def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
