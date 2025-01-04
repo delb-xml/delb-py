@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import httpx
 
 from _delb.plugins import plugin_manager
-from _delb.plugins.core_loaders import buffer_loader, text_loader
+from _delb.plugins.core_loaders import buffer_loader
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -67,8 +67,8 @@ class HttpsStreamWrapper(IOBase):
             return b""
 
 
-@plugin_manager.register_loader(before=text_loader)
-def https_loader(
+@plugin_manager.register_loader()
+def web_loader(
     data: Any, config: SimpleNamespace, client: httpx.Client = DEFAULT_CLIENT
 ) -> LoaderResult:
     """
@@ -84,18 +84,19 @@ def https_loader(
 
         import httpx
         from _delb.plugins import plugin_manager
-        from _delb.plugins.https_loader import https_loader
+        from _delb.plugins.web_loader import web_loader
 
 
         client = httpx.Client(follow_redirects=False, trust_env=False)
 
-        @plugin_manager.register_loader(before=https_loader)
-        def custom_https_loader(data, config):
-            return https_loader(data, config, client=client)
+        @plugin_manager.register_loader(before=web_loader)
+        def custom_web_loader(data, config):
+            return web_loader(data, config, client=client)
 
     .. _environment variables: https://www.python-httpx.org/environment_variables/
     .. _httpx: https://www.python-httpx.org/
     """
+
     if isinstance(data, str) and data.lower().startswith(("http://", "https://")):
         with client.stream("get", url=data) as response:
             response.raise_for_status()
@@ -104,4 +105,4 @@ def https_loader(
     return "The input value is not an URL with the http or https scheme."
 
 
-__all__ = (https_loader.__name__,)
+__all__ = (web_loader.__name__,)

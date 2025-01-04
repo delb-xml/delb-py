@@ -32,7 +32,7 @@ Core
 Extra
 ~~~~~
 
-.. automodule:: _delb.plugins.https_loader
+.. automodule:: _delb.plugins.web_loader
 
 
 Parser options

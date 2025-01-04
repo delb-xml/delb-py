@@ -37,9 +37,12 @@ dependencies = [
     "typing-extensions; python_version < '3.11'"
 ]
 
+[project.entry-points.delb]
+web-loader = "_delb.plugins.web_loader"
+
 [project.optional-dependencies]
-https-loader = ["httpx[http2]"]
 lxml-parser = ["lxml"]
+web-loader = ["httpx[http2]"]
 
 [project.urls]
 Changelog = "https://delb.readthedocs.io/latest/changes.html"
@@ -123,7 +126,7 @@ only-include = [
 packages = ["_delb", "delb"]
 
 [tool.hatch.envs.default]
-features = ["https-loader", "lxml-parser"]
+features = ["lxml-parser", "web-loader"]
 
 [tool.hatch.envs.benchmarks]
 dependencies = [

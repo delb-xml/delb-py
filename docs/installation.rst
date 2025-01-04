@@ -47,7 +47,7 @@ To install it regularly::
 
 Again, to include the loading over *http(s)*::
 
-    …/delb-py $ pip install .[https-loader]
+    …/delb-py $ pip install .[web-loader]
 
 For developing purposes of ``delb`` itself, the library should be installed in
 editable_ mode::

@@ -140,7 +140,7 @@ class PluginManager:
         imports contributed extensions whose dependencies are available.
         """
         if find_spec("httpx"):
-            import _delb.plugins.https_loader
+            import _delb.plugins.web_loader
         if find_spec("lxml.etree"):
             import _delb.plugins.lxml_parser
         if find_spec("xml.sax"):
@@ -165,7 +165,7 @@ class PluginManager:
             from typing import Any
 
             from _delb.plugins import plugin_manager
-            from _delb.plugins.https_loader import https_loader
+            from _delb.plugins.web_loader import web_loader
             from _delb.typing import LoaderResult
 
 
@@ -179,7 +179,7 @@ class PluginManager:
                     config.source_url = source
                     config.ipfs_gateway_source_url = IPFS_GATEWAY + source[7:]
 
-                    return https_loader(config.ipfs_gateway_source_url, config)
+                    return web_loader(config.ipfs_gateway_source_url, config)
 
                 # return an indication why this loader didn't attempt to load in order
                 # to support debugging
@@ -206,10 +206,10 @@ class PluginManager:
         .. testcode::
 
             from _delb.plugins import plugin_manager
-            from _delb.plugins.https_loader import https_loader
+            from _delb.plugins.web_loader import web_loader
 
 
-            @plugin_manager.register_loader(before=https_loader)
+            @plugin_manager.register_loader(before=web_loader)
             def mets_loader(source, config) -> LoaderResult:
                 # loading logic here
                 pass
