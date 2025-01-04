@@ -80,7 +80,7 @@ def test_empty_below_default_namespace():
 
 
 @pytest.mark.parametrize(
-    ("indentation", "_in", "out"),
+    ("indentation", "in_", "out"),
     (
         (
             "  ",
@@ -113,11 +113,11 @@ def test_empty_below_default_namespace():
         ),
     ),
 )
-def test_indentation(indentation, _in, out):
+def test_indentation(indentation, in_, out):
     DefaultStringOptions.format_options = FormatOptions(
         align_attributes=False, indentation=indentation, width=0
     )
-    document = Document(_in, parser_options=ParserOptions(reduce_whitespace=True))
+    document = Document(in_, parser_options=ParserOptions(reduce_whitespace=True))
     serialisat = str(document)
     assert_equal_trees(
         document.root,
@@ -127,7 +127,7 @@ def test_indentation(indentation, _in, out):
 
 
 @pytest.mark.parametrize(
-    ("_in", "namespaces", "prefixes"),
+    ("in_", "namespaces", "prefixes"),
     (
         (
             '<r xmlns="d1"><b xmlns="d2"/></r>',
@@ -158,11 +158,11 @@ def test_indentation(indentation, _in, out):
         ),
     ),
 )
-def test_prefix_collection_and_generation(_in, namespaces, prefixes):
+def test_prefix_collection_and_generation(in_, namespaces, prefixes):
     # all namespace declarations are included in the root node.
     # definitions from higher levels are preferred.
     serializer = Serializer(None, namespaces=namespaces)
-    serializer._collect_prefixes(Document(_in).root)
+    serializer._collect_prefixes(Document(in_).root)
     assert serializer._prefixes == prefixes
 
 
@@ -444,7 +444,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
 
 
 @pytest.mark.parametrize(
-    ("format_options", "_in", "out"),
+    ("format_options", "in_", "out"),
     (
         (
             FormatOptions(align_attributes=False, indentation="", width=60),
@@ -541,10 +541,10 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
         ),
     ),
 )
-def test_text_wrapping(format_options, _in, out):
+def test_text_wrapping(format_options, in_, out):
     DefaultStringOptions.format_options = format_options
     document = Document(
-        dedent(_in), parser_options=ParserOptions(reduce_whitespace=True)
+        dedent(in_), parser_options=ParserOptions(reduce_whitespace=True)
     )
 
     serialisat = str(document.root)
@@ -554,7 +554,7 @@ def test_text_wrapping(format_options, _in, out):
 
 
 @pytest.mark.parametrize(
-    "_in",
+    "in_",
     (
         """\
         <root>
@@ -578,11 +578,11 @@ def test_text_wrapping(format_options, _in, out):
         {"indentation": "  ", "width": 77},
     ),
 )
-def test_that_no_extra_whitespace_is_produced(_in, format_options):
+def test_that_no_extra_whitespace_is_produced(in_, format_options):
     parser_options = ParserOptions(reduce_whitespace=True)
     DefaultStringOptions.format_options = FormatOptions(**format_options)
 
-    origin = Document(_in, parser_options=parser_options)
+    origin = Document(in_, parser_options=parser_options)
     _copy = Document(str(origin.root), parser_options=parser_options)
     assert_equal_trees(origin.root, _copy.root)
 

@@ -19,9 +19,9 @@ def test_css_select_or(files_path):
     assert {x.local_name for x in result} == {"author", "title"}
 
 
-@pytest.mark.parametrize(("_in", "out"), (("metadata", "descendant::metadata"),))
-def test_css_to_xpath(_in, out):
-    assert _css_to_xpath(_in) == out
+@pytest.mark.parametrize(("in_", "out"), (("metadata", "descendant::metadata"),))
+def test_css_to_xpath(in_, out):
+    assert _css_to_xpath(in_) == out
 
 
 def test_namespace():

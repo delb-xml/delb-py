@@ -81,7 +81,7 @@ def test_invalid_expressions(expression, string):
 
 
 @pytest.mark.parametrize(
-    ("_in", "out"),
+    ("in_", "out"),
     (
         (
             "node()",
@@ -223,12 +223,12 @@ def test_invalid_expressions(expression, string):
         ),
     ),
 )
-def test_parse(_in, out):
-    assert parse(_in) == out, parse(_in)
+def test_parse(in_, out):
+    assert parse(in_) == out, parse(in_)
 
 
 @pytest.mark.parametrize(
-    ("_in", "out"),
+    ("in_", "out"),
     (
         (
             "[@lang='zw']",
@@ -375,8 +375,8 @@ def test_parse(_in, out):
         ),
     ),
 )
-def test_parse_predicates(_in, out):
-    assert parse(f"*{_in}").location_paths[0].location_steps[0].predicates == tuple(out)
+def test_parse_predicates(in_, out):
+    assert parse(f"*{in_}").location_paths[0].location_steps[0].predicates == tuple(out)
 
 
 def test_unsupported_feature():

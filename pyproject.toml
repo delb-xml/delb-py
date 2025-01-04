@@ -86,10 +86,9 @@ fail_under = 96
 #
 
 [tool.flake8]
-# E203: https://github.com/PyCQA/pycodestyle/issues/373
+# E203: https://github.com/PyCQA/pycodestyle/issues/373#issuecomment-398695123
 # PEA001: DROPWITH Python3.8
-# PT019: https://github.com/m-burst/flake8-pytest-style/issues/202
-extend-ignore = ["E203", "PEA001", "PT019"]
+extend-ignore = ["E203", "PEA001"]
 extend-select = ["TC", "TC1"]
 
 ban-relative-imports = "true"
