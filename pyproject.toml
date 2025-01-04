@@ -13,14 +13,13 @@ authors = [
 ]
 license = "AGPL-3.0-or-later"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -86,9 +85,9 @@ fail_under = 96
 #
 
 [tool.flake8]
-# E203: https://github.com/PyCQA/pycodestyle/issues/373#issuecomment-398695123
-# PEA001: DROPWITH Python3.8
-extend-ignore = ["E203", "PEA001"]
+extend-ignore = [
+    "E203", # https://github.com/PyCQA/pycodestyle/issues/373#issuecomment-398695123
+]
 extend-select = ["TC", "TC1"]
 
 ban-relative-imports = "true"

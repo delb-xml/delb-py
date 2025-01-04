@@ -63,13 +63,9 @@ custom functions.
 
 from __future__ import annotations
 
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from functools import lru_cache
-from typing import TYPE_CHECKING, Optional
-
-from typing import cast
-
-# DROPWITH Python 3.8 and replace w/ imports from collections.abc
-from typing import Collection, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, cast, Optional
 
 from cssselect import GenericTranslator
 

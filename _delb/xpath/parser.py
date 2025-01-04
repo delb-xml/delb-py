@@ -16,11 +16,10 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Iterator, Sequence
 from functools import lru_cache
 from typing import TYPE_CHECKING, Union, cast  # noqa: UNT001
 
-# DROPWITH Python 3.8 and replace w/ imports from collections.abc
-from typing import Iterator, Sequence
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
 from _delb.xpath.ast import (
