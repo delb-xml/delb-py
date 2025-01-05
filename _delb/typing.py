@@ -20,6 +20,7 @@ import sys
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, TypeVar
 
 
 if TYPE_CHECKING:
@@ -61,6 +62,8 @@ LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 NodeTypeNameLiteral: TypeAlias = Literal[
     "CommentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
 ]
+
+ParseInput: TypeAlias = AnyStr | BinaryIO
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 

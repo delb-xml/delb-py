@@ -1,18 +1,25 @@
 import pytest
 
 from _delb.xpath.ast import Axis
-from delb import altered_default_filters, is_tag_node, Document, TagNode, TextNode
+from delb import (
+    altered_default_filters,
+    is_tag_node,
+    parse_tree,
+    Document,
+    TagNode,
+    TextNode,
+)
 
 
 def test_any_name_test():
-    root = Document(
+    root = parse_tree(
         """\
         <root>
             <node/>
             <node xmlns='http://foo.bar'/>
             <node xmlns='http://baz.zap'/>
             </root>"""
-    ).root
+    )
 
     assert root.xpath("*").size == 3
     assert root.xpath("*", namespaces={"p": "http://foo.bar"}).size == 3
@@ -39,7 +46,7 @@ def test_any_name_test():
     ),
 )
 def test_axes_order(name, start_name, expected_order):
-    root = Document(
+    root = parse_tree(
         """\
         <a>
             <b>
@@ -54,7 +61,7 @@ def test_axes_order(name, start_name, expected_order):
             </f>
         </a>
     """
-    ).root
+    )
 
     with altered_default_filters(is_tag_node):
         axis = Axis(name)
@@ -73,6 +80,12 @@ def test_axes_order(name, start_name, expected_order):
         assert result == expected_order
 
 
+@pytest.mark.parametrize("namespaces", (None, {"": "http://"}, {None: "http://"}))
+def test_attribute_value_test(namespaces):
+    root = parse_tree("<root xmlns='http://'><a b='c'/></root>")
+    assert root.xpath("//a[@b='c']", namespaces=namespaces).size == 1
+
+
 def test_contributed_function_text():
     document = Document("<root><a>foo</a><b>bar</b><c>f<x/>oo</c></root>")
     result = document.xpath("//*[text()='foo']")
@@ -89,7 +102,7 @@ def test_custom_functions():
 
 
 def test_evaluation_from_text_node():
-    root = Document("<text><p>Elle dit: <hi>Ooh lala.</hi></p></text>").root
+    root = parse_tree("<text><p>Elle dit: <hi>Ooh lala.</hi></p></text>")
     p = root[0]
     node = p[1][0]
     assert isinstance(node, TextNode)

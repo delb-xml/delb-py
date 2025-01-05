@@ -1,6 +1,6 @@
 import pytest
 
-from delb import get_traverser, is_tag_node, Document
+from delb import get_traverser, is_tag_node, parse_tree
 
 
 @pytest.mark.parametrize(
@@ -27,7 +27,7 @@ from delb import get_traverser, is_tag_node, Document
     ),
 )
 def test_traverser(from_left, depth_first, from_top, result):
-    root = Document(
+    root = parse_tree(
         """\
             <root>
                 <a>
@@ -47,7 +47,7 @@ def test_traverser(from_left, depth_first, from_top, result):
                 </c>
             </root>
         """
-    ).root
+    )
     assert [
         x.local_name
         for x in get_traverser(

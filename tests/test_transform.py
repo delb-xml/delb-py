@@ -2,7 +2,8 @@ from typing import NamedTuple
 
 import pytest
 
-from delb import Document, ParserOptions, tag
+from delb import Document, parse_tree, tag
+from _delb.parser import ParserOptions  # TODO import from delb
 from delb.transform import Transformation, TransformationSequence
 
 
@@ -76,7 +77,7 @@ class ResolveItems(Transformation):
 
 
 def test_simple_transformation():
-    root = Document('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>').root
+    root = parse_tree('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>')
     document = Document(
         """<radix>
              <a>
@@ -137,7 +138,7 @@ def test_transformation_sequence_sequence():
         </cast>""",
         parser_options=ParserOptions(reduce_whitespace=True),
     )
-    root = Document("<doc><body><ul/></body></doc>").root
+    root = parse_tree("<doc><body><ul/></body></doc>")
     transformation = TransformationSequence(
         DoNothing,
         TransformationSequence(ResolveItems, DoNothing()),

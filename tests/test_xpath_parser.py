@@ -190,6 +190,32 @@ def test_invalid_expressions(expression, string):
             ),
         ),
         (
+            "//foo[@a='b']",
+            XPathExpression(
+                [
+                    LocationPath(
+                        [
+                            LocationStep(
+                                Axis("descendant-or-self"), NodeTypeTest("TagNode")
+                            ),
+                            LocationStep(
+                                Axis("child"),
+                                NameMatchTest(None, "foo"),
+                                [
+                                    BooleanOperator(
+                                        operator.eq,
+                                        AttributeValue(None, "a"),
+                                        AnyValue("b"),
+                                    )
+                                ],
+                            ),
+                        ],
+                        absolute=True,
+                    )
+                ]
+            ),
+        ),
+        (
             "foo[@p:bar]",
             XPathExpression(
                 [

@@ -11,6 +11,7 @@ from delb import (
     TextNode,
     is_tag_node,
     new_tag_node,
+    parse_tree,
     tag,
 )
 from delb.exceptions import InvalidOperation
@@ -26,20 +27,20 @@ def is_pagebreak(node):
 
 
 def test_add_following_sibling_tag_before_tail():
-    root = Document("<root><a/>b</root>").root
+    root = parse_tree("<root><a/>b</root>")
     root[0].add_following_siblings(tag("c"))
     assert str(root) == "<root><a/><c/>b</root>"
 
 
 def test_add_following_sibling_text_node_before_text_sibling():
-    root = Document("<root><a/>c</root>").root
+    root = parse_tree("<root><a/>c</root>")
     a = root[0]
     a.add_following_siblings("b")
     assert str(root) == "<root><a/>bc</root>"
 
 
 def test_add_preceding_node():
-    root = Document("<root><a/></root>").root
+    root = parse_tree("<root><a/></root>")
 
     a = root[0]
     a.add_preceding_siblings(tag("z"))
@@ -57,7 +58,7 @@ def test_add_preceding_node():
 
 
 def test_append_children():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
     result = root.append_children(tag("a"), "b")
     assert isinstance(result, tuple)
     assert len(result) == 2
@@ -67,14 +68,13 @@ def test_append_children():
 
 
 def test_append_no_child():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
     root.append_children()
     assert str(root) == "<root/>"
 
 
 def test_contains():
-    document = Document('<root foo="bar"><node><descendant/></node></root>')
-    root = document.root
+    root = parse_tree('<root foo="bar"><node><descendant/></node></root>')
     node = root[0]
     descendant = node[0]
 
@@ -91,7 +91,7 @@ def test_contains():
 
 
 def test_copy():
-    node = Document("<x/>").root
+    node = parse_tree("<x/>")
     clone = copy(node)
 
     assert clone is not node
@@ -101,7 +101,7 @@ def test_copy():
 
 
 def test_deepcopy():
-    node = Document("<x><y/></x>").root
+    node = parse_tree("<x><y/></x>")
     clone = deepcopy(node)
 
     assert clone is not node
@@ -113,7 +113,7 @@ def test_deepcopy():
 
 def test_delitem():
     namespace = "https://foo"
-    root = Document(f"<root xmlns='{namespace}' A='' B='' C=''><a/></root>").root
+    root = parse_tree(f"<root xmlns='{namespace}' A='' B='' C=''><a/></root>")
     del root["A"]
     del root[namespace:"B"]
     del root[(namespace, "C")]
@@ -126,9 +126,8 @@ def test_delitem():
 
 
 def test_depth():
-    document = Document("<root><a><b/></a></root>")
+    root = parse_tree("<root><a><b/></a></root>")
 
-    root = document.root
     assert root.depth == 0
 
     a = root[0]
@@ -152,7 +151,7 @@ def test_detach_and_document_property():
 
 
 def test_detach_node_with_tail_1():
-    root = Document("<root><a>c<c/></a>b<d/></root>").root
+    root = parse_tree("<root><a>c<c/></a>b<d/></root>")
 
     root[1].add_following_siblings("c")
     assert str(root) == "<root><a>c<c/></a>bc<d/></root>"
@@ -175,7 +174,7 @@ def test_detach_node_with_tail_1():
 
 
 def test_detach_node_with_tail_2():
-    root = Document("<root><node><child/>childish</node></root>").root
+    root = parse_tree("<root><node><child/>childish</node></root>")
 
     node = root.first_child
     child = node.first_child
@@ -186,7 +185,7 @@ def test_detach_node_with_tail_2():
 
 
 def test_detach_node_retain_child_nodes():
-    root = Document("<root><node><child/>childish<!-- [~.ö] --></node></root>").root
+    root = parse_tree("<root><node><child/>childish<!-- [~.ö] --></node></root>")
     node = root.first_child
 
     node.detach(retain_child_nodes=True)
@@ -207,14 +206,14 @@ def test_detach_node_retain_child_nodes():
 def test_detach_node_retains_namespace_prefixes():
     # libxml2 loses the notion if a default prefix for nodes that have been
     # removed from a parent node
-    document = Document(
+    root = parse_tree(
         """\
         <root xmlns="schema://default/">
             <child><grandchild/></child>
         </root>
         """
     )
-    child = document.css_select("child").first.detach()
+    child = root.css_select("child").first.detach()
     assert child.css_select("grandchild").size == 1
 
 
@@ -234,31 +233,30 @@ def test_detach_root():
 
 
 def test_first_and_last_child():
-    document = Document("<root/>")
-    assert document.root.first_child is None
-    assert document.root.last_child is None
+    root = parse_tree("<root/>")
+    assert root.first_child is None
+    assert root.last_child is None
 
-    document = Document("<root><e1/><e2/></root>")
-    assert document.root.first_child.local_name == "e1"
-    assert document.root.last_child.local_name == "e2"
+    root = parse_tree("<root><e1/><e2/></root>")
+    assert root.first_child.local_name == "e1"
+    assert root.last_child.local_name == "e2"
 
-    document = Document("<root>first<e1/><e2/>last</root>")
-    assert document.root.first_child.content == "first"
-    assert document.root.last_child.content == "last"
+    root = parse_tree("<root>first<e1/><e2/>last</root>")
+    assert root.first_child.content == "first"
+    assert root.last_child.content == "last"
 
 
 def test_full_text():
-    document = Document(
+    root = parse_tree(
         "<root>The <em>quick <colored>red</colored> fox</em> "
         "<super>jumps over</super> the fence.</root>"
     )
-    assert document.root.full_text == "The quick red fox jumps over the fence."
+    assert root.full_text == "The quick red fox jumps over the fence."
 
 
 def test_getitem():
     namespace = "http://foo"
-    document = Document(f'<root xmlns="{namespace}" ham="spam"><a/><b/><c/><d/></root>')
-    root = document.root
+    root = parse_tree(f'<root xmlns="{namespace}" ham="spam"><a/><b/><c/><d/></root>')
 
     assert root["ham"] == "spam"
     assert root[(namespace, "ham")] == "spam"
@@ -303,7 +301,7 @@ def test_id_property(files_path):
 
 
 def test_insert_children():
-    root = Document("<root><a>c</a></root>").root
+    root = parse_tree("<root><a>c</a></root>")
     a = root[0]
 
     result = a.insert_children(0, tag("b"))
@@ -327,13 +325,13 @@ def test_insert_children():
 
 
 def test_insert_first_child():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
     root.insert_children(0, "a")
     assert str(root) == "<root>a</root>"
 
 
 def test_insert_at_invalid_index():
-    root = Document("<root><a/><b/></root>").root
+    root = parse_tree("<root><a/><b/></root>")
 
     with pytest.raises(ValueError, match="positive"):
         root.insert_children(-1, "x")
@@ -343,11 +341,10 @@ def test_insert_at_invalid_index():
 
 
 def test_iterate_following_siblings():
-    document = Document("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
-
+    root = parse_tree("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
     expected = "bcdef"
 
-    for i, node in enumerate(document.root[0].iterate_following_siblings()):
+    for i, node in enumerate(root[0].iterate_following_siblings()):
         if isinstance(node, TagNode):
             assert node.local_name == expected[i]
         else:
@@ -355,11 +352,10 @@ def test_iterate_following_siblings():
 
 
 def test_iterate_preceding_siblings():
-    document = Document("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
-
+    root = parse_tree("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
     expected = "abcde"[::-1]
 
-    for i, node in enumerate(document.root[5].iterate_preceding_siblings()):
+    for i, node in enumerate(root[5].iterate_preceding_siblings()):
         if isinstance(node, TagNode):
             assert node.local_name == expected[i]
         else:
@@ -367,35 +363,30 @@ def test_iterate_preceding_siblings():
 
 
 def test_iterate_preceding():
-    document = Document(
-        "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
-    )
-    k = document.root[1][1][0][1]
+    root = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
+    k = root[1][1][0][1]
     assert k.local_name == "k"
-    chars = "abcdefghij"[::-1]
+    expected = "abcdefghij"[::-1]
     for i, node in enumerate(k.iterate_preceding()):
-        assert node.local_name == chars[i]
+        assert node.local_name == expected[i]
 
 
 def test_iterate_following():
-    document = Document(
-        "<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>"
-    )
-    a = document.root
-    chars = "bcdefghijk"
+    a = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
+    expected = "bcdefghijk"
     for i, node in enumerate(a.iterate_following()):
-        assert node.local_name == chars[i]
+        assert node.local_name == expected[i]
 
 
 def test_last_descendant():
-    document = Document(
+    root = parse_tree(
         "<root>"
         "<a><aa><aaa/><aab/></aa><ab><aba/><abb/></ab></a>"
         "<b><ba>baa</ba></b>"
         "<c/>"
         "</root>"
     )
-    a, b, c = tuple(document.root.iterate_children())
+    a, b, c = tuple(root.iterate_children())
 
     a_ld = a.last_descendant
     assert a.last_child.last_descendant is a_ld
@@ -458,7 +449,7 @@ def test_make_node_with_children():
 
 
 def test_make_node_outside_context():
-    root = Document('<root xmlns="ham" />').root
+    root = parse_tree('<root xmlns="ham" />')
     root.append_children(new_tag_node("a", namespace="https://spam"))
     DefaultStringOptions.namespaces = {"spam": "https://spam"}
     assert str(root) == '<root xmlns="ham" xmlns:spam="https://spam"><spam:a/></root>'
@@ -529,17 +520,17 @@ def test_fetch_following(files_path):
 
 
 def test_no_siblings_on_root():
-    document = Document("<root/>")
+    root = parse_tree("<root/>")
 
     with pytest.raises(TypeError):
-        document.root.add_following_siblings("sibling")
+        root.add_following_siblings("sibling")
 
     with pytest.raises(TypeError):
-        document.root.add_preceding_siblings("sibling")
+        root.add_preceding_siblings("sibling")
 
 
 def test_prepend_children():
-    root = Document("<root><b/></root>").root
+    root = parse_tree("<root><b/></root>")
     result = root.prepend_children(tag("a"))
     assert isinstance(result, tuple)
     assert len(result) == 1
@@ -548,10 +539,10 @@ def test_prepend_children():
 
 
 def test_fetch_preceding(files_path):
-    document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
+    root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
 
     result = []
-    for node in document.root.iterate_descendants(is_pagebreak):
+    for node in root.iterate_descendants(is_pagebreak):
         if isinstance(node, TagNode) and node.local_name == "pb":
             pass
 
@@ -564,13 +555,12 @@ def test_fetch_preceding(files_path):
 
 
 def test_fetch_preceding_sibling():
-    document = Document("<root><a/></root>")
-    assert document.root.fetch_preceding_sibling() is None
+    root = parse_tree("<root><a/></root>")
+    assert root.fetch_preceding_sibling() is None
 
     #
 
-    document = Document("<root>a<c/></root>")
-    root = document.root
+    root = parse_tree("<root>a<c/></root>")
     c = root[1]
 
     assert c.local_name == "c"
@@ -583,9 +573,9 @@ def test_fetch_preceding_sibling():
 
     #
 
-    document = Document("<root><a/><!-- bla --><b/></root>")
+    root = parse_tree("<root><a/><!-- bla --><b/></root>")
 
-    b = document.root[1]
+    b = root[1]
     a = b.fetch_preceding_sibling()
     assert a is not None
     assert a.local_name == "a"
@@ -612,14 +602,14 @@ def test_sample_document_structure(sample_document):
 
 
 def test_serialization():
-    root = Document("<root>a</root>").root
+    root = parse_tree("<root>a</root>")
     root.append_children("b")
 
     assert str(root) == "<root>ab</root>"
 
 
 def test_set_tag_components():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
 
     root.local_name = "top"
     assert str(root) == "<top/>"
@@ -637,7 +627,7 @@ def test_set_tag_components():
 
 def test_set_item():
     namespace = "http://foo"
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
     root[0] = tag("b")
     root[0] = tag("a")
     root["A"] = "1"
@@ -650,16 +640,16 @@ def test_set_item():
 
 
 def test_tag_definition_copies_attributes():
-    root = Document('<root foo="bar"/>').root
+    root = parse_tree('<root foo="bar"/>')
     definition = tag("test", root.attributes)
     root.attributes["bar"] = "foo"
     root.append_children(definition)
-    assert root.attributes == {"bar": "foo", "foo": "bar"}
-    assert root.first_child.attributes == {"foo": "bar"}
+    assert root.attributes == {("", "bar"): "foo", ("", "foo"): "bar"}
+    assert root.first_child.attributes == {("", "foo"): "bar"}
 
 
 def test_tag_definition_considers_namespace():
-    root = Document('<root xmlns="http://"/>').root
+    root = parse_tree('<root xmlns="http://"/>')
     definition = tag("test", {"a": "b"})
     root.append_children(definition)
     test = root.first_child

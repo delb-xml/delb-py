@@ -1,6 +1,6 @@
 import pytest
 
-from delb import altered_default_filters, compare_trees, first, is_tag_node, Document
+from delb import altered_default_filters, compare_trees, first, is_tag_node, parse_tree
 
 
 @pytest.mark.parametrize(
@@ -18,7 +18,7 @@ from delb import altered_default_filters, compare_trees, first, is_tag_node, Doc
 )
 def test_compare_unequal_trees(a, b):
     with altered_default_filters():
-        assert not compare_trees(Document(a).root, Document(b).root)
+        assert not compare_trees(parse_tree(a), parse_tree(b))
 
 
 def test_first():
@@ -26,7 +26,7 @@ def test_first():
     assert first([1]) == 1
     assert first((1, 2)) == 1
 
-    root = Document("<root><a/><a/><b/></root>").root
+    root = parse_tree("<root><a/><a/><b/></root>")
     assert (
         first(root.iterate_children(is_tag_node, lambda x: x.local_name == "c")) is None
     )
@@ -44,7 +44,7 @@ def test_first():
 
 
 def test_string_methods_on_classes_with_text_capabilities():
-    root = Document("<root n='[III]'>[III]</root>").root
+    root = parse_tree("<root n='[III]'>[III]</root>")
     for obj in (root["n"], root.first_child):
         assert obj == "[III]"
         assert obj.startswith("[")

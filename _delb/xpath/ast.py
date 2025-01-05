@@ -501,11 +501,15 @@ class AttributeValue(EvaluationNode):
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> Optional[str]:
         if not _is_node_of_type(node, "TagNode"):
             return None
-        node = cast("TagNode", node)
-        result = node.attributes.get(
-            (context.namespaces.get(self.prefix, ""), self.local_name)
-        )
-        return "" if result is None else result.value
+
+        if (
+            attribute := cast("TagNode", node).attributes.get(
+                (context.namespaces.get(self.prefix or "", ""), self.local_name)
+            )
+        ) is None:
+            return ""
+        else:
+            return attribute.value
 
 
 class BooleanOperator(EvaluationNode):

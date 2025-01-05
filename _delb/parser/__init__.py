@@ -15,9 +15,20 @@
 
 from __future__ import annotations
 
-from lxml import etree
+from dataclasses import dataclass
+from io import BytesIO
+from typing import TYPE_CHECKING, Optional
+
+from _delb.parser.base import Event, EventType, XMLEventParserInterface
+from _delb.parser.lxml import LxmlParser
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from _delb.typing import ParseInput
 
 
+@dataclass
 class ParserOptions:
     """
     The configuration options that define an XML parser's behaviour.
@@ -31,29 +42,32 @@ class ParserOptions:
     :param unplugged: Don't load referenced resources over network.
     """
 
-    def __init__(
-        self,
-        reduce_whitespace: bool = False,
-        remove_comments: bool = False,
-        remove_processing_instructions: bool = False,
-        resolve_entities: bool = True,
-        unplugged: bool = False,
-    ):
-        self.reduce_whitespace = reduce_whitespace
-        self.remove_comments = remove_comments
-        self.remove_processing_instructions = remove_processing_instructions
-        self.resolve_entities = resolve_entities
-        self.unplugged = unplugged
+    # TODO base_url?
+    reduce_whitespace: bool = False
+    remove_comments: bool = False
+    remove_processing_instructions: bool = False
+    resolve_entities: bool = True
+    unplugged: bool = False
+    parser: Optional[type[XMLEventParserInterface]] = None
 
-    def _make_parser(self) -> etree.XMLParser:
-        return etree.XMLParser(
-            no_network=self.unplugged,
-            remove_blank_text=False,
-            remove_comments=self.remove_comments,
-            remove_pis=self.remove_processing_instructions,
-            resolve_entities=self.resolve_entities,
-            strip_cdata=False,
-        )
+    def _make_parser(self) -> XMLEventParserInterface:
+        parser = self.parser or LxmlParser
+        return parser(self)
 
 
-__all__ = (ParserOptions.__name__,)
+def parse_events(input_: ParseInput, options: ParserOptions) -> Iterator[Event]:
+    if isinstance(input_, str):
+        input_ = BytesIO(input_.encode())
+
+    elif isinstance(input_, bytes):
+        input_ = BytesIO(input_)
+
+    yield from options._make_parser().parse(input_)
+
+
+__all__ = (
+    "Event",
+    "EventType",
+    XMLEventParserInterface.__name__,
+    ParserOptions.__name__,
+)

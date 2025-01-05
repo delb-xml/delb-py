@@ -3,7 +3,7 @@
 from textwrap import dedent
 from typing import Final
 
-from delb import new_tag_node, Document, TagNode
+from delb import new_tag_node, parse_tree, Document, TagNode
 
 from tests.utils import assert_equal_trees
 
@@ -12,9 +12,9 @@ TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
 def test_contained_milestone_tags_each_followed_by_whitespace():
-    document = Document("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
-    document.reduce_whitespace()
-    assert document.root.full_text == "Hello    world!"
+    root = parse_tree("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
+    root._reduce_whitespace()
+    assert root.full_text == "Hello    world!"
 
 
 def test_empty_text_node():
@@ -25,36 +25,36 @@ def test_empty_text_node():
 
 
 def test_empty_before_stripable_node():
-    document = Document("<root> 1<b/></root>")
-    document.root.insert_children(0, "")
-    document.reduce_whitespace()
-    assert len(document.root) == 2
-    assert document.root.full_text == "1"
+    root = parse_tree("<root> 1<b/></root>")
+    root.insert_children(0, "")
+    root._reduce_whitespace()
+    assert len(root) == 2
+    assert root.full_text == "1"
 
 
 def test_milestone_tag_with_altering_whitespace_neighbour():
-    document = Document("<p><hi>then</hi> give<lb/> the</p>")
-    document.reduce_whitespace()
-    assert " give " in document.root.full_text
+    root = parse_tree("<p><hi>then</hi> give<lb/> the</p>")
+    root._reduce_whitespace()
+    assert " give " in root.full_text
 
-    document = Document("<p><hi>then</hi> give <lb/>the</p>")
-    document.reduce_whitespace()
-    assert " give " in document.root.full_text
+    root = parse_tree("<p><hi>then</hi> give <lb/>the</p>")
+    root._reduce_whitespace()
+    assert " give " in root.full_text
 
 
 def test_nodes_in_between():
     # this is about the "; E…, s. xi" part in a specific context
-    document = Document("<head>G… I, <t>H… in E…</t>; E…, s. xi<hi>x</hi></head>")
-    document.reduce_whitespace()
-    assert document.root.full_text == "G… I, H… in E…; E…, s. xix"
+    root = parse_tree("<head>G… I, <t>H… in E…</t>; E…, s. xi<hi>x</hi></head>")
+    root._reduce_whitespace()
+    assert root.full_text == "G… I, H… in E…; E…, s. xix"
 
-    document = Document("<head>G… I, <t>H… in E…</t>\n; E…, s. xi<hi>x</hi></head>")
-    document.reduce_whitespace()
-    assert document.root.full_text == "G… I, H… in E… ; E…, s. xix"
+    root = parse_tree("<head>G… I, <t>H… in E…</t>\n; E…, s. xi<hi>x</hi></head>")
+    root._reduce_whitespace()
+    assert root.full_text == "G… I, H… in E… ; E…, s. xix"
 
-    document = Document("<head>G… I, <t>H… in E…</t>; E…, s. xi  <hi>x</hi></head>")
-    document.reduce_whitespace()
-    assert document.root.full_text == "G… I, H… in E…; E…, s. xi x"
+    root = parse_tree("<head>G… I, <t>H… in E…</t>; E…, s. xi  <hi>x</hi></head>")
+    root._reduce_whitespace()
+    assert root.full_text == "G… I, H… in E…; E…, s. xi x"
 
 
 def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: N802
@@ -67,7 +67,7 @@ def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: 
 
 
 def test_space_preserve():
-    document = Document(
+    root = parse_tree(
         """
     <root>
         <title>
@@ -80,8 +80,7 @@ def test_space_preserve():
     """
     )
 
-    document.reduce_whitespace()
-    root = document.root
+    root._reduce_whitespace()
 
     assert root.first_child.full_text == "I Roy - Touting I Self"
     assert root.css_select("matrix")[0].full_text == "HB 243 A  Re"
@@ -94,9 +93,10 @@ def test_tei_recommendation_examples():
     # the contained errors are fixed w/o annotations
 
     def parse_sample(s: str) -> TagNode:
-        d = Document(s)
-        d.reduce_whitespace()
-        return d.root
+        d = parse_tree(s)
+        assert isinstance(d, TagNode)
+        d._reduce_whitespace()
+        return d
 
     # ## "Where XML Considers Whitespace to be Significant"
 

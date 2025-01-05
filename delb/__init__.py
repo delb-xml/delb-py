@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, overload, Any, BinaryIO, Optional
 
 from lxml import etree
 
+from _delb.builder import parse_tree
 from _delb.exceptions import FailedDocumentLoading, InvalidCodePath, InvalidOperation
 from _delb.plugins import (
     core_loaders,
@@ -597,5 +598,6 @@ __all__ = (
     new_comment_node.__name__,
     new_tag_node.__name__,
     new_processing_instruction_node.__name__,
+    parse_tree.__name__,
     tag.__name__,
 )

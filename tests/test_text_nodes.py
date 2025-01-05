@@ -1,31 +1,38 @@
 import pytest
 
-from delb import Document, ParserOptions, TagNode, TextNode, is_text_node, tag
+from delb import (
+    Document,
+    ParserOptions,
+    TagNode,
+    TextNode,
+    is_text_node,
+    parse_tree,
+    tag,
+)
 from _delb.nodes import TAIL, APPENDED
 
 
 def test_add_tag_before_tail():
-    root = Document("<root><a/>b</root>").root
+    root = parse_tree("<root><a/>b</root>")
     root[1].add_preceding_siblings(tag("c"))
     assert str(root) == "<root><a/><c/>b</root>"
 
 
 def test_add_tag_after_tail_appended_text():
-    root = Document("<root><a/>b</root>").root
+    root = parse_tree("<root><a/>b</root>")
     root.append_children("c", tag("d"))
     assert str(root) == "<root><a/>bc<d/></root>"
 
 
 def test_add_tag_after_tail():
-    root = Document("<root><node/>tail</root>").root
+    root = parse_tree("<root><node/>tail</root>")
     tail = root[1]
     tail.add_following_siblings(tag("end"))
     assert str(root) == "<root><node/>tail<end/></root>"
 
 
 def test_add_text_after_tag():
-    document = Document("<root><tag/></root>")
-    tag = document.root[0]
+    tag = parse_tree("<root><tag/></root>")[0]
 
     tag.add_following_siblings(TextNode("foo"))
 
@@ -64,8 +71,7 @@ def test_add_text_after_tail():
 
 
 def test_add_text_after_appended():
-    document = Document("<root><tag/>foo</root>")
-    root = document.root
+    root = parse_tree("<root><tag/>foo</root>")
     foo = root[1]
 
     bar = TextNode("bar")
@@ -87,14 +93,14 @@ def test_add_text_after_appended():
     assert peng._position == APPENDED
     assert peng._bound_to is bar
 
-    document.merge_text_nodes()
+    root.merge_text_nodes()
 
     assert len(root) == 2
     assert root[0]._etree_obj.tail == "foobarpeng"
 
 
 def test_add_tag_between_text_nodes_at_tail_position():
-    root = Document("<root><a/>tail</root>").root
+    root = parse_tree("<root><a/>tail</root>")
 
     root[1].add_following_siblings("the")
     root[2].add_following_siblings(" end")
@@ -104,14 +110,14 @@ def test_add_tag_between_text_nodes_at_tail_position():
 
 
 def test_add_text_before_data():
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
     root[0].add_preceding_siblings("head ")
     assert len(root) == 2
     assert str(root) == "<root>head data</root>"
 
 
 def test_add_text_between_text_at_data_position():
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
     node = root[0]
     node.add_following_siblings(" tailing")
     node.add_following_siblings(" more more more")
@@ -120,19 +126,19 @@ def test_add_text_between_text_at_data_position():
 
 
 def test_add_tag_between_two_appended():
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
     root.append_children("appended")
     root[0].add_following_siblings(tag("node"))
     assert str(root) == "<root>data<node/>appended</root>"
 
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
     root.append_children("appended")
     root[1].add_preceding_siblings(tag("node"))
     assert str(root) == "<root>data<node/>appended</root>"
 
 
 def test_add_text_between_two_appended():
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
 
     root[0].add_following_siblings(" appended_1")
     root[1].add_following_siblings(" appended_2")
@@ -144,10 +150,9 @@ def test_add_text_between_two_appended():
 
 
 def test_appended_text_nodes():
-    document = Document("<root/>")
+    root = parse_tree("<root/>")
     tokens = ("How ", "much ", "is ", "the ", "fish", "?")
 
-    root = document.root
     root.append_children(*tokens)
 
     assert len(root) == 6, len(root)
@@ -156,7 +161,7 @@ def test_appended_text_nodes():
         assert isinstance(child, TextNode)
         assert child.content == str(child) == tokens[i]
 
-    document.merge_text_nodes()
+    root.merge_text_nodes()
     assert len(root) == 1
     assert root[0].content == "How much is the fish?"
 
@@ -170,10 +175,10 @@ def test_bindings(sample_document):
 
 
 def test_construction():
-    root = Document(
+    root = parse_tree(
         "<root><node>one</node> two </root>",
-        parser_options=ParserOptions(reduce_whitespace=True),
-    ).root
+        options=ParserOptions(reduce_whitespace=True),
+    )
     node, two = tuple(x for x in root.iterate_children())
     one = node[0]
 
@@ -226,9 +231,8 @@ def test_content_is_coerced():
 
 
 def test_depth():
-    document = Document("<root>1<a><b/>2</a></root>")
+    root = parse_tree("<root>1<a><b/>2</a></root>")
 
-    root = document.root
     one = root[0]
     assert one.depth == 1
 
@@ -237,14 +241,14 @@ def test_depth():
 
 
 def test_detach_data_node():
-    root = Document("<root><a>b</a></root>").root
+    root = parse_tree("<root><a>b</a></root>")
     b = root[0][0].detach()
     assert b.parent is None
     assert b.depth == 0
     assert b.content == "b"
     assert str(root) == "<root><a/></root>"
 
-    root = Document("<root><a>b<c/></a></root>").root
+    root = parse_tree("<root><a>b<c/></a></root>")
     b = root[0][0].detach()
     assert b.parent is None
     assert b.depth == 0
@@ -253,7 +257,7 @@ def test_detach_data_node():
 
 
 def test_detach_tag_sandwiched_node():
-    root = Document("<root><a/>tail<b/></root>").root
+    root = parse_tree("<root><a/>tail<b/></root>")
     tail = root[1].detach()
 
     assert tail.parent is None
@@ -265,7 +269,7 @@ def test_detach_tag_sandwiched_node():
 
 
 def test_detach_text_sandwiched_node():
-    root = Document("<root>data</root>").root
+    root = parse_tree("<root>data</root>")
     data = root[0]
 
     data.add_following_siblings(" tailing")
@@ -297,8 +301,8 @@ def test_document():
 
 
 def test_entities():
-    document = Document("<root>&lt; spock &gt;</root>")
-    assert document.root[0].content == "< spock >"
+    root = parse_tree("<root>&lt; spock &gt;</root>")
+    assert root[0].content == "< spock >"
 
 
 def test_equality():
@@ -306,16 +310,16 @@ def test_equality():
 
 
 def test_index():
-    assert Document("<root>test</root>").root.first_child.index == 0
+    assert parse_tree("<root>test</root>").first_child.index == 0
 
 
 def test_none_content_wrapping():
-    document = Document("<root><e1/></root>")
+    root = parse_tree("<root><e1/></root>")
 
     with pytest.raises(IndexError):
-        document.root[1]
+        root[1]
 
-    e1 = document.root[0]
+    e1 = root[0]
     assert e1.fetch_following_sibling() is None
 
     e1.add_following_siblings(tag("e2"))
@@ -323,8 +327,7 @@ def test_none_content_wrapping():
 
 
 def test_fetch_preceding_sibling():
-    document = Document("<root><a/>b</root>")
-    root = document.root
+    root = parse_tree("<root><a/>b</root>")
     root.append_children("c")
 
     b = root[2].fetch_preceding_sibling()

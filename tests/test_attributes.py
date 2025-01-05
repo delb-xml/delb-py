@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from delb import Document, new_tag_node
+from delb import Document, new_tag_node, parse_tree
 from delb.nodes import Attribute
 
 
@@ -11,7 +11,7 @@ from delb.nodes import Attribute
     ("ham", "{kitchen.sink}ham", ("kitchen.sink", "ham")),
 )
 def test_access_with_default_namespace(accessor):
-    root = Document('<root xmlns="kitchen.sink" ham="spam"/>').root
+    root = parse_tree('<root xmlns="kitchen.sink" ham="spam"/>')
     assert root[accessor] == "spam"
     assert root.attributes[accessor] == "spam"
 
@@ -44,7 +44,7 @@ def test_access_with_default_namespace(accessor):
     ("{kitchen.sink}ham", ("kitchen.sink", "ham")),
 )
 def test_access_with_other_namespace(accessor):
-    root = Document('<root xmlns:ns="kitchen.sink" ns:ham="spam"/>').root
+    root = parse_tree('<root xmlns:ns="kitchen.sink" ns:ham="spam"/>')
     assert root[accessor] == "spam"
     assert root.attributes[accessor] == "spam"
 
@@ -73,7 +73,7 @@ def test_access_with_other_namespace(accessor):
 
 
 def test_access_without_namespace():
-    root = Document('<root ham="spam"/>').root
+    root = parse_tree('<root ham="spam"/>')
     assert root["ham"] == "spam"
     assert root.attributes["ham"] == "spam"
 
@@ -91,8 +91,7 @@ def test_access_without_namespace():
 
 
 def test_attribute_object():
-    document = Document("<root/>")
-    node = document.root
+    node = parse_tree("<root/>")
     attributes = node.attributes
 
     attributes["ham"] = "spam"
@@ -180,7 +179,7 @@ def test_comparison():
 
 
 def test_delete_namespaced_attribute():
-    root = Document('<root><node xmlns:p="ns" p:a="1" p:b="2"/></root>').root
+    root = parse_tree('<root><node xmlns:p="ns" p:a="1" p:b="2"/></root>')
     node = root.css_select("node").first
     assert len(node.attributes) == 2
     del node.attributes[("ns", "a")]
@@ -188,9 +187,9 @@ def test_delete_namespaced_attribute():
 
 
 def test_detach_sustains_attributes():
-    node = Document(
+    node = parse_tree(
         "<root xmlns='https://default.ns'><node foo='bar'/></root>"
-    ).root.first_child
+    ).first_child
     attributes = node.attributes
     attributes_copy = attributes.as_dict_with_strings()
 
@@ -201,7 +200,7 @@ def test_detach_sustains_attributes():
 
 
 def test_namespaced_attributes():
-    root = Document('<root xmlns="http://foo.org" b="c"/>').root
+    root = parse_tree('<root xmlns="http://foo.org" b="c"/>')
     for key, attribute in root.attributes.items():
         assert key == ("http://foo.org", "b")
         assert attribute.namespace == "http://foo.org"
@@ -219,13 +218,13 @@ def test_pop():
 
 
 def test_prefixed_source():
-    root = Document('<root xmlns:prfx="kitchen.sink" prfx:ham="spam"/>').root
+    root = parse_tree('<root xmlns:prfx="kitchen.sink" prfx:ham="spam"/>')
     assert "ham" not in root
     assert root["{kitchen.sink}ham"] == "spam"
     assert root[("kitchen.sink", "ham")] == "spam"
 
 
 def test_update():
-    root = Document("<root><node foo='0'/><node bar='1'/></root>").root
+    root = parse_tree("<root><node foo='0'/><node bar='1'/></root>")
     root.first_child.attributes.update(root.last_child.attributes)
-    assert root.first_child.attributes == {"foo": "0", "bar": "1"}
+    assert root.first_child.attributes == {("", "foo"): "0", ("", "bar"): "1"}

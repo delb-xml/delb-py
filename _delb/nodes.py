@@ -30,7 +30,6 @@ from typing import (
     cast,
     overload,
     Any,
-    AnyStr,
     ClassVar as ClassWar,
     Final,
     Literal,
@@ -47,7 +46,6 @@ from _delb.names import (
     deconstruct_clark_notation,
     Namespaces,
 )
-from _delb.parser import ParserOptions
 from _delb.utils import (
     _StringMixin,
     _crunch_whitespace,
@@ -371,6 +369,7 @@ def new_tag_node(
     return result
 
 
+# TODO? move to build
 # abstract tag definitions
 
 
@@ -463,15 +462,13 @@ def tag(*args):  # noqa: C901
 
     def prepare_attributes(
         attributes: Mapping[AttributeAccessor, str]
-    ) -> _AttributesData:
-        result: _AttributesData = {}
+    ) -> dict[AttributeAccessor, str]:
+        result: dict[AttributeAccessor, str] = {}
 
         for key, value in attributes.items():
             if isinstance(value, Attribute):
                 result[value._qualified_name] = value.value
-            elif isinstance(key, str):
-                result["", key] = value
-            elif isinstance(key, tuple):
+            elif isinstance(key, (str, tuple)):
                 result[key] = value
             else:
                 raise TypeError
@@ -1208,16 +1205,18 @@ class NodeBase(ABC):
             ),
         )
         assert isinstance(result, TagNode)
+
         if attributes is not None:
             for name, value in attributes.items():
                 if isinstance(name, str):
                     namespace, local_name = deconstruct_clark_notation(name)
                     if namespace is None:
-                        namespace = tag.namespace
-                    name = (namespace, local_name)
-                assert isinstance(name, tuple)
-                result.attributes[name] = value
-        assert isinstance(result, TagNode)
+                        result.attributes[(context_namespace, local_name)] = value
+                    else:
+                        result[(namespace, local_name)] = value
+                else:
+                    assert isinstance(name, tuple)
+                    result.attributes[name] = value
 
         if children:
             result.append_children(*children)
@@ -2367,29 +2366,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
         )
 
     @staticmethod
-    def parse(
-        text: AnyStr,
-        parser_options: Optional[ParserOptions] = None,
-    ) -> TagNode:
-        """
-        Parses the given string or bytes sequence into a new tree.
-
-        :param text: A serialized XML tree.
-        :param parser_options: A :class:`delb.ParserOptions` class to configure the used
-                               parser.
-        """
-        warnings.warn(
-            "This method will be replaced by another interface in a future version.",
-            category=DeprecationWarning,
+    def parse(text, parser_options):
+        """This method has been replaced by :func:`delb.parse_tree`."""
+        raise InvalidOperation(
+            "This method has been replaced by `delb.parse_tree`.",
         )
-        parser_options = parser_options or ParserOptions()
-        parser = parser_options._make_parser()
-        assert isinstance(parser, etree.XMLParser)
-        result = _wrapper_cache(etree.fromstring(text, parser=parser))
-        assert isinstance(result, TagNode)
-        if parser_options.reduce_whitespace:
-            result._reduce_whitespace()
-        return result
 
     @property
     def prefix(self) -> Optional[str]:  # pragma: nocover

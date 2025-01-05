@@ -2,10 +2,10 @@ import pytest
 
 from _delb.nodes import _wrapper_cache
 from delb import (
-    altered_default_filters,
     is_tag_node,
     is_text_node,
     new_tag_node,
+    parse_tree,
     tag,
     Document,
     TagNode,
@@ -15,7 +15,7 @@ from delb.exceptions import InvalidOperation
 
 
 def test_add_preceding_siblings():
-    root = Document("<root><e1/></root>").root
+    root = parse_tree("<root><e1/></root>")
     result = root[0].add_preceding_siblings(tag("e2"), tag("e3"))
     assert str(root) == "<root><e3/><e2/><e1/></root>"
     assert isinstance(result, tuple)
@@ -26,7 +26,7 @@ def test_add_preceding_siblings():
 
 
 def test_add_following_siblings():
-    root = Document("<root><e1/></root>").root
+    root = parse_tree("<root><e1/></root>")
     result = root[0].add_following_siblings(tag("e2"), tag("e3"))
     assert str(root) == "<root><e1/><e2/><e3/></root>"
     assert isinstance(result, tuple)
@@ -37,11 +37,11 @@ def test_add_following_siblings():
 
 
 def test_iterate_ancestors():
-    document = Document(
+    root = parse_tree(
         "<root><left/>abc<middle><node>0</node></middle><right>xyz<xyz"
         "/></right></root>"
     )
-    zero = document.root[2][0][0]
+    zero = root[2][0][0]
     assert isinstance(zero, TextNode)
     assert zero == "0"
     assert tuple(x.local_name for x in zero.iterate_ancestors()) == (
@@ -57,7 +57,7 @@ def test_ancestors_of_detached_node():
 
 
 def test_comment_is_ignored():
-    root = Document("<root><a/><!-- bla --><b/></root>").root
+    root = parse_tree("<root><a/><!-- bla --><b/></root>")
 
     a = root[0]
     b = a.fetch_following_sibling()
@@ -67,14 +67,14 @@ def test_comment_is_ignored():
 
 
 def test_index():
-    root = Document("<root><zero/>is<my/>country</root>").root
+    root = parse_tree("<root><zero/>is<my/>country</root>")
     assert root.index is None
     for index in range(4):
         assert root[index].index == index
 
     #
 
-    root = Document("<root><a/><!-- bla --><b/></root>").root
+    root = parse_tree("<root><a/><!-- bla --><b/></root>")
 
     a = root[0]
     assert isinstance(a, TagNode)
@@ -96,6 +96,7 @@ def test_insert_issue_in_a_more_complex_situation():
     )
 
 
+# TODO remove with native data modeö
 def test_wrapper_consistency():
     # this test is the result of an investigation that asked why
     # `test_insert_issue_in_a_more_complex_situation` failed.
@@ -156,20 +157,20 @@ def test_wrapper_consistency():
 
 
 def test_invalid_operations():
-    document_1 = Document("<root/>")
-    document_2 = Document("<root><replacement/>parts</root>")
+    root_1 = parse_tree("<root/>")
+    root_2 = parse_tree("<root><replacement/>parts</root>")
 
     with pytest.raises(InvalidOperation):
-        document_1.root.append_children(document_2.root[0])
+        root_1.append_children(root_2[0])
 
     new_node = new_tag_node("newNode")
-    document_1.root.append_children(new_node)
+    root_1.append_children(new_node)
 
     with pytest.raises(InvalidOperation):
-        new_node.add_following_siblings(document_2.root[0])
+        new_node.add_following_siblings(root_2[0])
 
     with pytest.raises(InvalidOperation):
-        new_node.add_preceding_siblings(document_2.root[0])
+        new_node.add_preceding_siblings(root_2[0])
 
 
 def test_iter_following_nodes_over_long_stream(files_path):
@@ -196,34 +197,17 @@ def test_iter_following_nodes_over_long_stream(files_path):
 
 
 def test_no_following_node():
-    document = Document("<root><a/></root>")
-    assert document.root[0].fetch_following() is None
+    root = parse_tree("<root><a/></root>")
+    assert root[0].fetch_following() is None
 
 
 def test_no_preceding_node():
-    document = Document("<root><a/></root>")
-    assert document.root.fetch_preceding() is None
-
-
-@pytest.mark.parametrize("yes_or_no", (True, False))
-def test_parse(yes_or_no):
-    data = "<node>foo<child><!--bar--></child></node>"
-    if yes_or_no:
-        data = data.encode()
-    with pytest.deprecated_call():
-        node = TagNode.parse(data)
-    child = node.last_child
-
-    assert node.document is None
-    assert node.local_name == "node"
-    assert node.first_child.content == "foo"
-    assert child.local_name == "child"
-    with altered_default_filters():
-        assert child.first_child.content == "bar"
+    root = parse_tree("<root><a/></root>")
+    assert root.fetch_preceding() is None
 
 
 def test_replace_with():
-    root = Document("<root><a>b</a>c<d>e</d></root>").root
+    root = parse_tree("<root><a>b</a>c<d>e</d></root>")
 
     b_text = root[0][0]
     b_text.replace_with(tag("b"))
@@ -250,14 +234,14 @@ def test_replace_with():
 
 
 def test_replace_with_tag_definition():
-    root = Document('<root xmlns="https://name.space"><node/></root>').root
+    root = parse_tree('<root xmlns="https://name.space"><node/></root>')
     root.first_child.replace_with(tag("vertex", {"type": "xml"}))
     assert root.first_child.namespace == "https://name.space"
     assert str(root) == '<root xmlns="https://name.space"><vertex type="xml"/></root>'
 
 
 def test_root_takes_no_siblings():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
 
     with pytest.raises(TypeError):
         root.add_following_siblings(tag("x"))
@@ -273,8 +257,7 @@ def test_root_takes_no_siblings():
 
 
 def test_siblings_filter():
-    document = Document("<root><e1/>ham<e2/>spam<e3/></root>")
-    root = document.root
+    root = parse_tree("<root><e1/>ham<e2/>spam<e3/></root>")
 
     e2 = root[2]
 

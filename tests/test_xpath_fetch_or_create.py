@@ -1,12 +1,12 @@
 import pytest
 
-from delb import tag, Document
+from delb import tag, parse_tree
 from delb.exceptions import AmbiguousTreeError, XPathEvaluationError
 
 
 @pytest.mark.parametrize("absolute", ("", "/root/"))
 def test_fetch_or_create_by_xpath(absolute):
-    root = Document("<root><intermediate/></root>").root
+    root = parse_tree("<root><intermediate/></root>")
 
     assert str(root.fetch_or_create_by_xpath(f"{absolute}test")) == "<test/>"
     assert str(root) == "<root><intermediate/><test/></root>"
@@ -33,7 +33,7 @@ def test_fetch_or_create_by_xpath(absolute):
 
 
 def test_fetch_or_create_by_xpath_with_attributes():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
 
     assert (
         str(root.fetch_or_create_by_xpath('author/name[@type="surname"]'))
@@ -66,13 +66,13 @@ def test_fetch_or_create_by_xpath_with_attributes():
     ),
 )
 def test_fetch_or_create_by_xpath_with_invalid_paths(expression):
-    node = Document("<node/>").root
+    node = parse_tree("<node/>")
     with pytest.raises(ValueError, match="distinct branch"):
         node.fetch_or_create_by_xpath(expression)
 
 
 def test_fetch_or_create_by_xpath_with_prefix():
-    root = Document("<root><intermediate/></root>").root
+    root = parse_tree("<root><intermediate/></root>")
     assert (
         str(
             root.fetch_or_create_by_xpath(
@@ -99,14 +99,14 @@ def test_fetch_or_create_by_xpath_with_prefix():
     ),
 )
 def test_fetch_or_create_by_xpath_with_multiple_attributes(expression):
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
     cit = root.fetch_or_create_by_xpath(expression)
     assert str(cit) == '<cit lang="en" type="translation"/>'
     assert root.fetch_or_create_by_xpath(expression) is cit
 
 
 def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
 
     cit = root.fetch_or_create_by_xpath(
         'entry/sense/cit[((@type="translation") and (@lang="en"))]'
@@ -121,7 +121,7 @@ def test_fetch_or_create_by_xpath_with_predicates_in_parentheses():
 
 
 def test_fetch_or_create_by_xpath_with_prefixed_attributes():
-    root = Document('<root xmlns:foo="bar"/>').root
+    root = parse_tree('<root xmlns:foo="bar"/>')
 
     assert (
         str(

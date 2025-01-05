@@ -3,16 +3,17 @@ import pytest
 from delb import (
     CommentNode,
     Document,
-    is_comment_node,
     altered_default_filters,
+    is_comment_node,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
+    parse_tree,
 )
 
 
 def test_appended_text_node():
-    root = Document("<root><!-- c -->tail</root>").root
+    root = parse_tree("<root><!-- c -->tail</root>")
     root.last_child.add_following_siblings("|appended")
     with altered_default_filters():
         assert str(root) == "<root><!-- c -->tail|appended</root>"
@@ -95,7 +96,7 @@ def test_invalid_pi_target(target):
 
 
 def test_processing_instruction_node():
-    root = Document("<root/>").root
+    root = parse_tree("<root/>")
 
     root.append_children(new_processing_instruction_node("foo", "bar"))
 

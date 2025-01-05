@@ -7,13 +7,14 @@ from delb import (
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
+    parse_tree,
     tag,
     DefaultStringOptions,
     Document,
     FormatOptions,
-    ParserOptions,
     TextNode,
 )
+from _delb.parser import ParserOptions
 from _delb.nodes import DETACHED, Serializer
 from tests.conftest import TEI_FILES
 
@@ -72,7 +73,7 @@ def test_document_xml_declaration(sample_document, with_newline):
 def test_empty_below_default_namespace():
     # as there's a default namespace and a namespace can't be empty, a prefix must be
     # supplied for all other namespaces, including one declared as default
-    root = Document("<root xmlns='http://fo.org/'/>").root
+    root = parse_tree("<root xmlns='http://fo.org/'/>")
     root.append_children(new_tag_node(local_name="node", namespace=None))
     # just to be explicit here:
     DefaultStringOptions.namespace = {"": "http://fo.org/"}
@@ -162,7 +163,7 @@ def test_prefix_collection_and_generation(in_, namespaces, prefixes):
     # all namespace declarations are included in the root node.
     # definitions from higher levels are preferred.
     serializer = Serializer(None, namespaces=namespaces)
-    serializer._collect_prefixes(Document(in_).root)
+    serializer._collect_prefixes(parse_tree(in_))
     assert serializer._prefixes == prefixes
 
 
@@ -541,14 +542,12 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
 )
 def test_text_wrapping(format_options, in_, out):
     DefaultStringOptions.format_options = format_options
-    document = Document(
-        dedent(in_), parser_options=ParserOptions(reduce_whitespace=True)
-    )
+    in_tree = parse_tree(dedent(in_), options=ParserOptions(reduce_whitespace=True))
 
-    serialisat = str(document.root)
+    serialisat = str(in_tree)
     assert serialisat == dedent(out)
-    result = Document(serialisat, parser_options=ParserOptions(reduce_whitespace=True))
-    assert_equal_trees(document.root, result.root)
+    result = parse_tree(serialisat, options=ParserOptions(reduce_whitespace=True))
+    assert_equal_trees(in_tree, result)
 
 
 @pytest.mark.parametrize(
@@ -580,9 +579,8 @@ def test_that_no_extra_whitespace_is_produced(in_, format_options):
     parser_options = ParserOptions(reduce_whitespace=True)
     DefaultStringOptions.format_options = FormatOptions(**format_options)
 
-    origin = Document(in_, parser_options=parser_options)
-    _copy = Document(str(origin.root), parser_options=parser_options)
-    assert_equal_trees(origin.root, _copy.root)
+    origin = parse_tree(in_, options=parser_options)
+    assert_equal_trees(origin, parse_tree(str(origin), options=parser_options))
 
 
 def test_that_root_siblings_are_preserved(files_path, result_file):
@@ -664,18 +662,18 @@ def test_xml_space(width, out):
     DefaultStringOptions.format_options = FormatOptions(indentation="  ", width=width)
 
     # preserve in a subtree
-    root = Document(
+    root = parse_tree(
         '<root><a/>A <b xml:space="preserve"><x/><y/><z/></b> Z<c/></root>'
-    ).root
+    )
     assert str(root) == dedent(out)
 
     # ensure that it's considered at the root too
-    root = Document('<root xml:space="preserve"><t/></root>').root
+    root = parse_tree('<root xml:space="preserve"><t/></root>')
     assert str(root) == '<root xml:space="preserve"><t/></root>'
 
     # illegal values are ignored
     if width == 0:
-        root = Document('<root xml:space="illegal"><t/></root>').root
+        root = parse_tree('<root xml:space="illegal"><t/></root>')
         with pytest.warns(UserWarning, match=".*illegal.*"):
             assert str(root) == dedent(
                 """\
@@ -686,5 +684,5 @@ def test_xml_space(width, out):
 
     # and the application's default behaviour is determined by formatting options
     DefaultStringOptions.format_options = None
-    root = Document('<root xml:space="default"><t/></root>').root
+    root = parse_tree('<root xml:space="default"><t/></root>')
     assert str(root) == '<root xml:space="default"><t/></root>'
