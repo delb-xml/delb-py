@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         Filter,
         NamespaceDeclarations,
         NodeSource,
+        QualifiedName,
     )
 
 
@@ -581,7 +582,7 @@ class Attribute(_StringMixin):
 
     __slots__ = ("_attributes", "_detached_value", "_qualified_name")
 
-    def __init__(self, attributes: TagAttributes, qualified_name: tuple[str, str]):
+    def __init__(self, attributes: TagAttributes, qualified_name: QualifiedName):
         self._attributes: TagAttributes | None = attributes
         self._detached_value: str | None = None
         self._qualified_name = qualified_name
@@ -672,7 +673,7 @@ class TagAttributes(MutableMapping):
     __slots__ = ("_attributes", "_etree_attrib", "_node")
 
     def __init__(self, node: TagNode):
-        self._attributes: dict[tuple[str, str], Attribute] = {}
+        self._attributes: dict[QualifiedName, Attribute] = {}
         self._etree_attrib: etree._Attrib = node._etree_obj.attrib
         self._node = node
 
@@ -710,7 +711,7 @@ class TagAttributes(MutableMapping):
 
         return self.as_dict_with_strings() == other
 
-    def _etree_key(self, item: tuple[str, str]) -> str:
+    def _etree_key(self, item: QualifiedName) -> str:
         namespace, name = item
 
         if namespace and self._node._etree_obj.nsmap.get(None) != namespace:
@@ -729,7 +730,7 @@ class TagAttributes(MutableMapping):
         else:
             raise KeyError(item)
 
-    def __iter__(self) -> Iterator[tuple[str, str]]:
+    def __iter__(self) -> Iterator[QualifiedName]:
         results = []
         for key in self._etree_attrib:
             assert isinstance(key, str)
@@ -756,7 +757,7 @@ class TagAttributes(MutableMapping):
 
     __repr__ = __str__
 
-    def __resolve_accessor(self, item: AttributeAccessor) -> tuple[str, str]:
+    def __resolve_accessor(self, item: AttributeAccessor) -> QualifiedName:
         if isinstance(item, str):
             namespace, name = deconstruct_clark_notation(item)
         elif isinstance(item, tuple):
