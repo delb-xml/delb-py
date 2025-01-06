@@ -704,6 +704,7 @@ class TagAttributes(MutableMapping):
             return False
 
         if isinstance(other, TagAttributes):
+            # TODO optimize with native data model
             for key, attribute in self.items():
                 assert isinstance(attribute, Attribute)
                 other_value = other.get(
@@ -711,9 +712,14 @@ class TagAttributes(MutableMapping):
                 )
                 if (other_value is None) or (attribute != other_value):
                     return False
-            return True
+        else:
+            for key, value in other.items():
+                if key not in self:
+                    return False
+                if self[key] != value:
+                    return False
 
-        return self.as_dict_with_strings() == other
+        return True
 
     def _etree_key(self, item: QualifiedName) -> str:
         namespace, name = item

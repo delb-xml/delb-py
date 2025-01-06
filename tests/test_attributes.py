@@ -173,10 +173,10 @@ def test_comparison():
 
     assert d.attributes == d.attributes
     assert d.attributes != e.attributes
-    assert d.attributes == {"od": "y", "id": "x"}
+    assert d.attributes == {"od": "y", ("", "id"): "x"}
 
     assert e.attributes == e.attributes
-    assert e.attributes == {"{https://u.rl}od": "y", "{https://u.rl}id": "x"}
+    assert e.attributes == {"{https://u.rl}od": "y", ("https://u.rl", "id"): "x"}
 
 
 def test_delete_namespaced_attribute():
