@@ -1234,6 +1234,12 @@ class NodeBase(ABC):
         assert isinstance(result, TagNode)
         if attributes is not None:
             for name, value in attributes.items():
+                if isinstance(name, str):
+                    namespace, local_name = deconstruct_clark_notation(name)
+                    if namespace is None:
+                        namespace = tag.namespace
+                    name = (namespace, local_name)
+                assert isinstance(name, tuple)
                 result.attributes[name] = value
         assert isinstance(result, TagNode)
 

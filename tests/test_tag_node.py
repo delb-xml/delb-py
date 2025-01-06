@@ -511,8 +511,15 @@ def test_names(sample_document):
 
 
 def test_new_tag_node_with_tag_attributes_input():
-    attributes = new_tag_node("node_1", {"a": "b"}).attributes
-    assert new_tag_node("node_2", attributes).attributes == {"a": "b"}
+    attributes = new_tag_node("node_1", {"a": "b", "{http://}c": "d"}).attributes
+    assert new_tag_node("node_2", attributes).attributes == {
+        "a": "b",
+        ("http://", "c"): "d",
+    }
+
+    node = new_tag_node("node", namespace="http://")
+    new_node = node.new_tag_node("node_2", {"w": "x", "{gopher://}y": "z"})
+    assert new_node.attributes == {"{http://}w": "x", ("gopher://", "y"): "z"}
 
 
 def test_fetch_following(files_path):
