@@ -13,7 +13,11 @@ sys.path.insert(0, str(Path(__file__).parent.resolve() / "sphinx-extensions"))
 
 
 from importlib import metadata
+from os import environ
 import re
+
+
+CI = "CI" in environ
 
 
 # -- Project information -----------------------------------------------------
@@ -120,6 +124,14 @@ html_css_files = ["styles.css"]
 # html_sidebars = {}
 
 html_domain_indices = False
+
+
+# -- Options for linkcheck ---------------------------------------------------
+
+if CI:
+    linkcheck_ignore = [
+        re.escape("https://www.gnome.org/"),
+    ]
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
