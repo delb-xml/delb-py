@@ -43,7 +43,7 @@ else:
     from typing import Literal, Self
 
 QualifiedName: TypeAlias = tuple[str, str]
-AttributeAccessor: TypeAlias = "QualifiedName | str"
+AttributeAccessor: TypeAlias = QualifiedName | str
 _AttributesData: TypeAlias = dict[QualifiedName, str]
 
 GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
