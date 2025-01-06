@@ -1751,7 +1751,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self.__document__: Document | None = None
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
-        if isinstance(item, (slice, str, tuple)):
+        if isinstance(item, (str, tuple)):
             return item in self.attributes
         elif isinstance(item, NodeBase):
             return any(n is item for n in self.iterate_children())
@@ -1799,13 +1799,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
             raise IndexError("Node index out of range.")
 
-        elif isinstance(item, slice):
-            if all(isinstance(x, str) for x in (item.start, item.stop)):
-                return self.attributes[item]
-            elif all(
-                (isinstance(x, int) or x is None) for x in (item.start, item.stop)
-            ):
-                return list(self.iterate_children())[item]
+        elif isinstance(item, slice) and all(
+            (isinstance(x, int) or x is None) for x in (item.start, item.stop)
+        ):
+            return list(self.iterate_children())[item]
 
         raise TypeError(
             "Argument must be an integer as index for a child node, a "
@@ -1832,7 +1829,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __setitem__(self, item: AttributeAccessor, value: str | Attribute): ...
 
     def __setitem__(self, item, value):
-        if isinstance(item, (slice, str, tuple)):
+        if isinstance(item, (str, tuple)):
             self.attributes[item] = value
         elif isinstance(item, int):
             children_size = len(self)
