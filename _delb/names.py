@@ -21,7 +21,13 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from typing import Final
-    from _delb.typing import NamespaceDeclarations, _NamespaceDeclarations
+
+    from _delb.typing import (  # noqa: F401
+        Literal,
+        NamespaceDeclarations,
+        _NamespaceDeclarations,
+        TypeAlias,
+    )
 
 XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
@@ -51,7 +57,11 @@ GLOBAL_NAMESPACES: Final = MappingProxyType(
 GLOBAL_PREFIXES: Final = tuple(GLOBAL_NAMESPACES)
 
 
-def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
+# a generic won't work here because of the required default
+Null: TypeAlias = "None | Literal['']"
+
+
+def deconstruct_clark_notation(name: str, null: Null = None) -> tuple[str | Null, str]:
     """
     Deconstructs a name in Clark notation, that may or may not include a namespace.
 
@@ -68,7 +78,7 @@ def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
         a, b = name.split("}", maxsplit=1)
         return a[1:], b
     else:
-        return None, name
+        return null, name
 
 
 class Namespaces(Mapping):
