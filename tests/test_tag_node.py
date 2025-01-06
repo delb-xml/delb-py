@@ -658,3 +658,12 @@ def test_tag_definition_copies_attributes():
     root.append_children(definition)
     assert root.attributes == {"bar": "foo", "foo": "bar"}
     assert root.first_child.attributes == {"foo": "bar"}
+
+
+def test_tag_definition_considers_namespace():
+    root = Document('<root xmlns="http://"/>').root
+    definition = tag("test", {"a": "b"})
+    root.append_children(definition)
+    test = root.first_child
+    assert test.namespace == "http://"
+    assert test.attributes == {("http://", "a"): "b"}

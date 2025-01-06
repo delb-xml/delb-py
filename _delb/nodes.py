@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from delb import Document
     from _delb.typing import (
         AttributeAccessor,
+        _AttributesData,
         Filter,
         NamespaceDeclarations,
         NodeSource,
@@ -330,7 +331,9 @@ def new_processing_instruction_node(
 
 def new_tag_node(
     local_name: str,
-    attributes: Optional[dict[AttributeAccessor, str] | TagAttributes] = None,
+    attributes: Optional[
+        _AttributesData | dict[AttributeAccessor, str] | TagAttributes
+    ] = None,
     namespace: Optional[str] = None,
     children: Iterable[NodeSource] = (),
 ) -> TagNode:
@@ -442,7 +445,8 @@ def tag(*args):  # noqa: C901
     (for derived :class:`TagNode` instances).
 
     The actual nodes that are constructed always inherit the namespace of the context
-    node they are created in.
+    node they are created in. That also applies to attribute names that are given as
+    single string.
 
     >>> root = new_tag_node('root', children=[
     ...     tag("head", {"lvl": "1"}, "Hello!"),
@@ -462,15 +466,15 @@ def tag(*args):  # noqa: C901
 
     def prepare_attributes(
         attributes: Mapping[AttributeAccessor, str]
-    ) -> dict[str | tuple[str, str], str]:
-        result: dict[str | tuple[str, str], str] = {}
+    ) -> _AttributesData:
+        result: _AttributesData = {}
 
         for key, value in attributes.items():
             if isinstance(value, Attribute):
                 result[(value.namespace, value.local_name)] = value.value
-            elif isinstance(key, slice):
-                result[(key.start, key.stop)] = value
-            elif isinstance(key, (str, tuple)):
+            elif isinstance(key, str):
+                result["", key] = value
+            elif isinstance(key, tuple):
                 result[key] = value
             else:
                 raise TypeError
