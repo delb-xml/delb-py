@@ -450,6 +450,10 @@ class Document(metaclass=DocumentMeta):
         This method proxies to the :meth:`TagNode.new_tag_node` method of the
         document's root node.
         """
+        warnings.warn(
+            "The this method will be removed. Use :func:`new_tag_node` instead.",
+            category=DeprecationWarning,
+        )
         return self.root.new_tag_node(
             local_name=local_name, attributes=attributes, namespace=namespace
         )

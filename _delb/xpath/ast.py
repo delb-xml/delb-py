@@ -1,4 +1,4 @@
-# Copyright (C) 2018-'24  Frank Sachsenheim
+# Copyright (C) 2018-'25  Frank Sachsenheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -79,7 +79,7 @@ def ensure_prefix(func):
 
         if prefix is not None and prefix not in namespaces:
             raise XPathEvaluationError(
-                f"The namespace prefix `{prefix}` is unknown in the the evaluation "
+                f"The namespace prefix `{prefix}` is unknown in the evaluation "
                 "context."
             )
         return func(self, node, **kwargs)
@@ -404,7 +404,7 @@ class AnyNameTest(NodeTestNode):
         if self.prefix is None:
             return True
 
-        return cast("TagNode", node).namespace == namespaces.get(self.prefix)
+        return cast("TagNode", node)._namespace == namespaces.get(self.prefix)
 
 
 class NameMatchTest(NodeTestNode):
@@ -419,7 +419,7 @@ class NameMatchTest(NodeTestNode):
         if not _is_node_of_type(node, "TagNode"):
             return False
         node = cast("TagNode", node)
-        if (self.prefix or None in namespaces) and node.namespace != namespaces.get(
+        if (self.prefix or None in namespaces) and node._namespace != namespaces.get(
             self.prefix
         ):
             return False

@@ -133,7 +133,7 @@ def test_indentation(indentation, _in, out):
             '<r xmlns="d1"><b xmlns="d2"/></r>',
             {"d1": "", "d2": "ns0:"},
         ),
-        ('<r><b xmlns="d"/></r>', {None: "", "d": "ns0:"}),
+        ('<r><b xmlns="d"/></r>', {"": "", "d": "ns0:"}),
         (
             """\
             <r>
@@ -142,9 +142,9 @@ def test_indentation(indentation, _in, out):
               </b>
               <wanted:d xmlns:wanted="d"/>
             </r>""",
-            {None: "", "d": "wanted:"},
+            {"": "", "d": "wanted:"},
         ),
-        ('<root xmlns:x="d" x:y=""/>', {None: "", "d": "x:"}),
+        ('<root xmlns:x="d" x:y=""/>', {"": "", "d": "x:"}),
     ),
 )
 def test_prefix_collection_and_generation(_in, prefixes):

@@ -1,12 +1,13 @@
 import pytest
 
 from delb import (
+    CommentNode,
     Document,
     is_comment_node,
-    CommentNode,
     altered_default_filters,
     new_comment_node,
     new_processing_instruction_node,
+    new_tag_node,
 )
 
 
@@ -115,4 +116,4 @@ def test_processing_instruction_node():
     with altered_default_filters():
         assert str(root) == "<root><?space bar?></root>"
 
-    assert pi.new_tag_node("ham").local_name == "ham"
+    assert new_tag_node("ham").local_name == "ham"

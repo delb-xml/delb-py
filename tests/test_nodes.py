@@ -215,7 +215,8 @@ def test_parse(yes_or_no):
     data = "<node>foo<child><!--bar--></child></node>"
     if yes_or_no:
         data = data.encode()
-    node = TagNode.parse(data)
+    with pytest.deprecated_call():
+        node = TagNode.parse(data)
     child = node.last_child
 
     assert node.document is None
