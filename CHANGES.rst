@@ -11,19 +11,20 @@ Changes
 The listed updates resemble rather a Best Of than a full record of changes.
 Intentionally.
 
+.. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
+
 0.5.1 (2025-01-08)
 ------------------
 
 News
 ~~~~
 
-- Further deprecations that emit messages with hints to alternatives if
-  available:
-    - :meth:`NodeBase.new_tag_node`
-    - Empty / null namespaces will generally be represented as empty strings in
-      the future.
-    - :attr:`TagNode.parse`
+Further deprecations that emit messages with hints to alternatives if available:
 
+- :meth:`NodeBase.new_tag_node`
+- Empty / null namespaces will generally be represented as empty strings in
+  the future.
+- :attr:`TagNode.parse`
 
 
 0.5 (2025-01-01)
