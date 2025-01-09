@@ -427,7 +427,8 @@ def test_location_path_and_xpath_concordance(file):
 
 def test_make_node_namespace_inheritance():
     document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
-    node = document.new_tag_node("node")
+    with pytest.deprecated_call():
+        node = document.new_tag_node("node")
     assert node.namespace == "https://name.space"
 
 
@@ -475,7 +476,8 @@ def test_make_node_outside_context():
 def test_make_node_in_context_with_namespace():
     document = Document("<root/>")
 
-    node = document.new_tag_node("foo", namespace="https://name.space")
+    with pytest.deprecated_call():
+        node = document.new_tag_node("foo", namespace="https://name.space")
     assert node.namespace == "https://name.space"
     assert node._etree_obj.tag == "{https://name.space}foo"
 

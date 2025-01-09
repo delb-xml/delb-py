@@ -134,13 +134,13 @@ def test_indentation(indentation, in_, out):
             None,
             {"d1": "", "d2": "ns0:"},
         ),
-        ('<r><b xmlns="d"/></r>', None, {None: "", "d": "ns0:"}),
+        ('<r><b xmlns="d"/></r>', None, {"": "", "d": "ns0:"}),
         (
             '<r><ignored:d xmlns:ignored="d"/></r>',
             {"wanted": "d"},
             {None: "", "d": "wanted:"},
         ),
-        ('<root xmlns:x="d" x:y=""/>', {"x": "d"}, {None: "", "d": "x:"}),
+        ('<root xmlns:x="d" x:y=""/>', {"x": "d"}, {"": "", "d": "x:"}),
         (
             '<root xmlns="https://foo.org"><node/></root>',
             {"foo": "https://foo.org"},
@@ -149,12 +149,12 @@ def test_indentation(indentation, in_, out):
         (
             '<node xmlns:x="http://namespace" x:bar="X"/>',
             {None: "http://namespace"},
-            {None: "", "http://namespace": "ns0:"},
+            {"": "", "http://namespace": "ns0:"},
         ),
         (
             '<node xmlns:x="http://namespace" x:bar="X"/>',
             {"": "http://namespace"},
-            {None: "", "http://namespace": "ns0:"},
+            {"": "", "http://namespace": "ns0:"},
         ),
     ),
 )

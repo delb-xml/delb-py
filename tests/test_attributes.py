@@ -99,7 +99,7 @@ def test_attribute_object():
     assert str(node) == '<root ham="spam"/>'
 
     attribute = node["ham"]
-    assert attribute.namespace is None
+    assert attribute._namespace == ""
     assert attribute.universal_name == "ham"
     assert str(attribute) == attribute.value == "spam"
 
@@ -111,7 +111,7 @@ def test_attribute_object():
     assert str(node) == '<root xmlns:ns0="kitchen.sink" ns0:clam="spam"/>'
     assert attribute.universal_name == "{kitchen.sink}clam"
 
-    attribute.namespace = None
+    attribute.namespace = ""
     assert str(node) == '<root clam="spam"/>'
     assert attribute.universal_name == "clam"
 

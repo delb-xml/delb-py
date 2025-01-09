@@ -354,7 +354,7 @@ def new_tag_node(
     """
 
     result = _wrapper_cache(
-        etree.Element(QName(namespace, local_name).text),
+        etree.Element(QName(namespace or None, local_name).text),
     )
     assert isinstance(result, TagNode)
     if attributes is not None:
@@ -433,8 +433,7 @@ def tag(*args):  # noqa: C901
     want to) of :class:`TagNode` instances as:
 
     - ``node`` argument to methods that add nodes to a tree
-    - items in the ``children`` argument of :func:`new_tag_node` and
-      :meth:`NodeBase.new_tag_node`
+    - items in the ``children`` argument of :func:`new_tag_node`
 
     The first argument to the function is always the local name of the tag node.
     Optionally, the second argument can be a :term:`mapping` that specifies attributes
@@ -471,7 +470,7 @@ def tag(*args):  # noqa: C901
 
         for key, value in attributes.items():
             if isinstance(value, Attribute):
-                result[(value.namespace, value.local_name)] = value.value
+                result[value._qualified_name] = value.value
             elif isinstance(key, str):
                 result["", key] = value
             elif isinstance(key, tuple):
@@ -602,7 +601,7 @@ class Attribute(_StringMixin):
             return
 
         attributes = self._attributes
-        current = self.namespace or "", self.local_name
+        current = self._namespace, self.local_name
         assert attributes is not None
         attributes[(namespace, name)] = self.value
         self._qualified_name = (namespace, name)
@@ -616,16 +615,34 @@ class Attribute(_StringMixin):
 
     @local_name.setter
     def local_name(self, name: str):
-        self._set_new_key(self.namespace or "", name)
+        self._set_new_key(self._namespace, name)
 
     @property
     def namespace(self) -> Optional[str]:
         """The attribute's namespace"""
-        return self._qualified_name[0] or None
+        if result := self._qualified_name[0] or None:
+            return result
+        else:  # pragma: nocover
+            warnings.warn(
+                "With delb 0.6 this will return an empty string to represent an "
+                "empty/null namespace. You can use the the intermediate "
+                "`Attribute._namespace` with that future behaviour.",
+                category=DeprecationWarning,
+            )
+            return None
 
     @namespace.setter
     def namespace(self, namespace: Optional[str]):
+        if namespace is None:
+            warnings.warn(
+                "With delb 0.6 empty/null namespaces will have to be expressed as "
+                "empty strings"
+            )
         self._set_new_key(namespace or "", self.local_name)
+
+    @property
+    def _namespace(self) -> str:
+        return self._qualified_name[0]
 
     @property
     def universal_name(self) -> str:
@@ -634,8 +651,10 @@ class Attribute(_StringMixin):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
-        namespace = self.namespace
-        return f"{{{namespace}}}{self.local_name}" if namespace else self.local_name
+        if namespace := self._namespace:
+            return f"{{{namespace}}}{self.local_name}"
+        else:
+            return self.local_name
 
     @property
     def value(self) -> str:
@@ -707,9 +726,7 @@ class TagAttributes(MutableMapping):
             # TODO optimize with native data model
             for key, attribute in self.items():
                 assert isinstance(attribute, Attribute)
-                other_value = other.get(
-                    (attribute.namespace or "", attribute.local_name)
-                )
+                other_value = other.get((attribute._namespace, attribute.local_name))
                 if (other_value is None) or (attribute != other_value):
                     return False
         else:
@@ -779,9 +796,7 @@ class TagAttributes(MutableMapping):
             raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
 
         if namespace is None:
-            namespace = self._node.namespace
-            if namespace is None:
-                namespace = ""
+            namespace = self.__node._namespace
 
         return namespace, name
 
@@ -1218,7 +1233,7 @@ class NodeBase(ABC):
         context_namespace = QName(context).namespace
 
         if namespace:
-            tag = QName(namespace, local_name)
+            tag = QName(namespace or None, local_name)
         elif context_namespace:
             tag = QName(context_namespace, local_name)
         else:
@@ -1427,6 +1442,11 @@ class _ChildLessNode(NodeBase):
         namespace: Optional[str] = None,
         children: Sequence[str | NodeBase | _TagDefinition] = (),
     ) -> TagNode:
+        warnings.warn(
+            "The node methods `new_tag_node` will be removed. Use :func:`new_tag_node`"
+            "instead.",
+            category=DeprecationWarning,
+        )
         parent = self.parent
         if parent is None:
             return new_tag_node(
@@ -1707,9 +1727,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
 
-    To instantiate new nodes use :class:`Document.new_tag_node`,
-    :class:`TagNode.new_tag_node`, :class:`TextNode.new_tag_node` or
-    :func:`new_tag_node`.
+    To instantiate new nodes use :func:`new_tag_node`.
 
     Some syntactic sugar is baked in:
 
@@ -1966,7 +1984,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return new_tag_node(
             local_name=self.local_name,
             attributes=self.attributes,
-            namespace=self.namespace,
+            namespace=self._namespace,
             children=(
                 [n.clone(deep=True) for n in self.iterate_children()] if deep else ()
             ),
@@ -2154,7 +2172,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 assert isinstance(node, TagNode)
                 assert isinstance(node_test, NameMatchTest)
 
-                new_node = node.new_tag_node(
+                new_node = new_tag_node(
                     local_name=node_test.local_name,
                     attributes=None,
                     namespace=namespaces.get(node_test.prefix),
@@ -2350,7 +2368,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @local_name.setter
     def local_name(self, value: str):
-        self._etree_obj.tag = QName(self.namespace, value).text
+        self._etree_obj.tag = QName(self._namespace or None, value).text
 
     @property
     def location_path(self) -> str:
@@ -2395,12 +2413,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: Node properties
         """
-        # weirdly QName fails in some cases when called with an etree._Element
-        return QName(self._etree_obj.tag).namespace  # type: ignore
+        if result := QName(self._etree_obj.tag).namespace:
+            return result
+        else:  # pragma: nocover
+            warnings.warn(
+                "With the delb 0.6 this will return an empty string to represent an "
+                "empty/null namespace. You can use the the intermediate "
+                "`TagNode._namespace` with that future behaviour.",
+                category=DeprecationWarning,
+            )
+            return result
 
     @namespace.setter
     def namespace(self, value: Optional[str]):
-        self._etree_obj.tag = QName(value, self.local_name).text
+        self._etree_obj.tag = QName(value or None, self.local_name).text
+
+    @property
+    def _namespace(self) -> str:
+        return QName(self._etree_obj.tag).namespace or ""
 
     def new_tag_node(
         self,
@@ -2409,6 +2439,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
         namespace: Optional[str] = None,
         children: Sequence[str | NodeBase | _TagDefinition] = (),
     ) -> TagNode:
+        warnings.warn(
+            "The node methods `new_tag_node` will be removed. Use :func:`new_tag_node`"
+            "instead.",
+            category=DeprecationWarning,
+        )
         return self._new_tag_node_from(
             self._etree_obj, local_name, attributes, namespace, children
         )
@@ -2418,7 +2453,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             context=self._etree_obj,
             local_name=definition.local_name,
             attributes=definition.attributes,
-            namespace=self.namespace,
+            namespace=self._namespace,
             children=definition.children,
         )
 
@@ -2436,7 +2471,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         """
         warnings.warn(
             "This method will be replaced by another interface in a future version.",
-            category=PendingDeprecationWarning,
+            category=DeprecationWarning,
         )
         parser_options = parser_options or ParserOptions()
         parser = parser_options._make_parser()
@@ -2446,6 +2481,26 @@ class TagNode(_ElementWrappingNode, NodeBase):
         if parser_options.reduce_whitespace:
             result._reduce_whitespace()
         return result
+
+    @property
+    def prefix(self) -> Optional[str]:  # pragma: nocover
+        """
+        The prefix that the node's namespace is currently mapped to.
+
+        :meta category: Node properties
+        """
+        warnings.warn("This attribute will be removed.", category=DeprecationWarning)
+
+        target = QName(self._etree_obj).namespace
+
+        if target is None:
+            return None
+
+        for prefix, namespace in self._etree_obj.nsmap.items():
+            assert isinstance(prefix, str) or prefix is None
+            if namespace == target:
+                return prefix
+        raise InvalidCodePath
 
     def prepend_children(
         self, *node: NodeBase, clone: bool = False
@@ -3153,7 +3208,7 @@ class Serializer:
         self._namespaces = (
             Namespaces({}) if namespaces is None else Namespaces(namespaces)
         )
-        self._prefixes: dict[str | None, str] = {}
+        self._prefixes: dict[str, str] = {}
         self.writer = writer
 
     def _collect_prefixes(self, root: TagNode):
@@ -3162,13 +3217,13 @@ class Serializer:
 
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNode)
-            for namespace in {node.namespace} | {
-                a.namespace for a in node.attributes.values()
+            for namespace in {node._namespace} | {
+                a._namespace for a in node.attributes.values()
             }:
                 if namespace in self._prefixes:
                     continue
 
-                if namespace is None:
+                if not namespace:
                     # an empty/null namespace can't be assigned to a prefix,
                     # it must be the default namespace
                     self.__redeclare_empty_prefix()
@@ -3217,7 +3272,7 @@ class Serializer:
         data = {}
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             assert isinstance(attribute, Attribute)
-            data[self._prefixes[attribute.namespace] + attribute.local_name] = (
+            data[self._prefixes[attribute._namespace] + attribute.local_name] = (
                 f'"{attribute.value.translate(CCE_TABLE_FOR_ATTRIBUTES)}"'
             )
         return data
@@ -3275,7 +3330,7 @@ class Serializer:
         attributes_data: dict[str, str],
     ):
         child_nodes = tuple(node.iterate_children())
-        prefixed_name = self._prefixes[node.namespace] + node.local_name
+        prefixed_name = self._prefixes[node._namespace] + node.local_name
 
         self.writer(f"<{prefixed_name}")
         if attributes_data:
@@ -3548,7 +3603,7 @@ class TextWrappingSerializer(PrettySerializer):
 
         assert isinstance(node, TagNode)
 
-        name_length = len(node.local_name) + len(self._prefixes[node.namespace])
+        name_length = len(node.local_name) + len(self._prefixes[node._namespace])
         if len(node) == 0:
             used_space = 3 + name_length  # <N/>
         else:
@@ -3591,7 +3646,7 @@ class TextWrappingSerializer(PrettySerializer):
             result += (
                 4  # preceding space and »="…"«
                 + len(attribute.local_name)
-                + len(self._prefixes[attribute.namespace])
+                + len(self._prefixes[attribute._namespace])
                 + len(attribute.value.translate(CCE_TABLE_FOR_ATTRIBUTES))
             )
             if result > up_to:
