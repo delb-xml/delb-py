@@ -796,7 +796,7 @@ class TagAttributes(MutableMapping):
             raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
 
         if namespace is None:
-            namespace = self.__node._namespace
+            namespace = self._node._namespace
 
         return namespace, name
 
@@ -2146,7 +2146,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         return self._create_by_xpath(
             ast=ast,
-            namespaces=Namespaces(namespaces or Namespaces({"": self.namespace or ""})),
+            namespaces=Namespaces(namespaces or Namespaces({"": self._namespace})),
         )
 
     def _create_by_xpath(
@@ -3212,8 +3212,8 @@ class Serializer:
         self.writer = writer
 
     def _collect_prefixes(self, root: TagNode):
-        if root.namespace not in self._namespaces.values():
-            self._prefixes[root.namespace] = ""
+        if root._namespace not in self._namespaces.values():
+            self._prefixes[root._namespace] = ""
 
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNode)
@@ -3250,11 +3250,6 @@ class Serializer:
                 else:
                     assert "" not in self._prefixes.values()
                     self._prefixes[namespace] = ""
-
-        if "" in self._prefixes:
-            # for quick resolution the empty namespace is represented as `None` like
-            # `TagNode.namespace` and `Attribute.namespace`
-            self._prefixes[None] = self._prefixes.pop("")
 
     def __redeclare_empty_prefix(self):
         # a possibly collected declaration of an empty namespace needs to be mapped to

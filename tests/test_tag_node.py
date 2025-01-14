@@ -425,13 +425,6 @@ def test_location_path_and_xpath_concordance(file):
         assert queried_nodes.first is node
 
 
-def test_make_node_namespace_inheritance():
-    document = Document('<pfx:root xmlns:pfx="https://name.space"/>')
-    with pytest.deprecated_call():
-        node = document.new_tag_node("node")
-    assert node.namespace == "https://name.space"
-
-
 def test_make_node_with_children():
     result = new_tag_node("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
@@ -473,11 +466,8 @@ def test_make_node_outside_context():
     assert str(root) == '<root xmlns="ham" xmlns:spam="https://spam"><spam:a/></root>'
 
 
-def test_make_node_in_context_with_namespace():
-    document = Document("<root/>")
-
-    with pytest.deprecated_call():
-        node = document.new_tag_node("foo", namespace="https://name.space")
+def test_make_node_with_namespace():
+    node = new_tag_node("foo", namespace="https://name.space")
     assert node.namespace == "https://name.space"
     assert node._etree_obj.tag == "{https://name.space}foo"
 
@@ -519,9 +509,10 @@ def test_new_tag_node_with_tag_attributes_input():
         ("http://", "c"): "d",
     }
 
-    node = new_tag_node("node", namespace="http://")
-    new_node = node.new_tag_node("node_2", {"w": "x", "{gopher://}y": "z"})
-    assert new_node.attributes == {"{http://}w": "x", ("gopher://", "y"): "z"}
+    attributes = new_tag_node("node_1", {"a": "b"}, namespace="http://").attributes
+    assert new_tag_node("node_2", attributes).attributes == {
+        ("http://", "a"): "b",
+    }
 
 
 def test_fetch_following(files_path):

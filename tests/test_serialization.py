@@ -138,7 +138,7 @@ def test_indentation(indentation, in_, out):
         (
             '<r><ignored:d xmlns:ignored="d"/></r>',
             {"wanted": "d"},
-            {None: "", "d": "wanted:"},
+            {"": "", "d": "wanted:"},
         ),
         ('<root xmlns:x="d" x:y=""/>', {"x": "d"}, {"": "", "d": "x:"}),
         (

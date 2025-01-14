@@ -72,7 +72,7 @@ from delb.utils import compare_trees
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import AttributeAccessor, Loader, NamespaceDeclarations
+    from _delb.typing import Loader, NamespaceDeclarations
 
 # plugin loading
 
@@ -421,24 +421,6 @@ class Document(metaclass=DocumentMeta):
         document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes()
-
-    def new_tag_node(
-        self,
-        local_name: str,
-        attributes: Optional[dict[AttributeAccessor, str]] = None,
-        namespace: Optional[str] = None,
-    ) -> TagNode:
-        """
-        This method proxies to the :meth:`TagNode.new_tag_node` method of the
-        document's root node.
-        """
-        warnings.warn(
-            "The this method will be removed. Use :func:`new_tag_node` instead.",
-            category=DeprecationWarning,
-        )
-        return self.root.new_tag_node(
-            local_name=local_name, attributes=attributes, namespace=namespace
-        )
 
     def reduce_whitespace(self):
         """

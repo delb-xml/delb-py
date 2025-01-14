@@ -400,7 +400,7 @@ class AnyNameTest(NodeTestNode):
         node = cast("TagNode", node)
 
         if self.prefix:
-            return (node.namespace or "") == namespaces[self.prefix]
+            return node._namespace == namespaces[self.prefix]
         else:
             return True
 
@@ -440,14 +440,14 @@ class NameMatchTest(NodeTestNode):
 
         if namespace is None:  # noqa: SIM114
             # XPath spec behaviour
-            if node.namespace is not None:
+            if node._namespace:
                 return False
         elif namespace == "":
             # delb's specific behaviour
-            if node.namespace is not None:
+            if node._namespace:
                 return False
         else:
-            if node.namespace != namespace:
+            if node._namespace != namespace:
                 return False
 
         return node.local_name == self.local_name

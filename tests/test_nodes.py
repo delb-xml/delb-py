@@ -205,7 +205,6 @@ def test_no_preceding_node():
     assert document.root.fetch_preceding() is None
 
 
-@pytest.mark.filterwarnings("ignore::PendingDeprecationWarning")
 @pytest.mark.parametrize("yes_or_no", (True, False))
 def test_parse(yes_or_no):
     data = "<node>foo<child><!--bar--></child></node>"
