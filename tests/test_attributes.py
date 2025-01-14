@@ -99,7 +99,7 @@ def test_attribute_object():
     assert str(node) == '<root ham="spam"/>'
 
     attribute = node["ham"]
-    assert attribute._namespace == ""
+    assert attribute.namespace == ""
     assert attribute.universal_name == "ham"
     assert str(attribute) == attribute.value == "spam"
 

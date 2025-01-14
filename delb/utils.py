@@ -138,7 +138,7 @@ def compare_trees(lhr: NodeBase, rhr: NodeBase) -> TreesComparisonResult:
 
     if isinstance(lhr, TagNode):
         assert isinstance(rhr, TagNode)
-        if lhr._namespace != rhr._namespace:
+        if lhr.namespace != rhr.namespace:
             return TreesComparisonResult(TreeDifferenceKind.TagNamespace, lhr, rhr)
         if lhr.local_name != rhr.local_name:
             return TreesComparisonResult(TreeDifferenceKind.TagLocalName, lhr, rhr)

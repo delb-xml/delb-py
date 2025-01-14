@@ -169,7 +169,7 @@ def evaluate(
     # global namespaces are guaranteed by the Namespaces implementation
     if namespaces is None:
         if _is_node_of_type(node, "TagNode"):
-            _namespaces = Namespaces({"": cast("TagNode", node)._namespace})
+            _namespaces = Namespaces({"": cast("TagNode", node).namespace})
         else:
             _namespaces = Namespaces({})
     elif isinstance(namespaces, Namespaces):
