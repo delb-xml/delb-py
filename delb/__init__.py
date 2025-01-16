@@ -22,7 +22,7 @@ from io import TextIOWrapper
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 
-from _delb.builder import parse_tree
+from _delb.builder import parse_tree, tag
 from _delb.exceptions import FailedDocumentLoading, InvalidOperation
 from _delb.plugins import (
     core_loaders,
@@ -44,7 +44,6 @@ from _delb.nodes import (
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
-    tag,
     CommentNode,
     DefaultStringOptions,
     FormatOptions,

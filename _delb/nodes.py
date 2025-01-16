@@ -369,7 +369,6 @@ def new_tag_node(
     return result
 
 
-# TODO? move to build
 # abstract tag definitions
 
 
@@ -384,141 +383,6 @@ class _TagDefinition(NamedTuple):
     local_name: str
     attributes: Optional[dict[AttributeAccessor, str]] = None
     children: tuple[NodeSource, ...] = ()
-
-
-@overload
-def tag(local_name: str):  # pragma: no cover
-    ...
-
-
-@overload
-def tag(
-    local_name: str, attributes: Mapping[AttributeAccessor, str]
-):  # pragma: no cover
-    ...
-
-
-@overload
-def tag(local_name: str, child: NodeSource):  # pragma: no cover
-    ...
-
-
-@overload
-def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
-    ...
-
-
-@overload
-def tag(
-    local_name: str, attributes: Mapping[AttributeAccessor, str], child: NodeSource
-):  # pragma: no cover
-    ...
-
-
-@overload
-def tag(
-    local_name: str,
-    attributes: Mapping[AttributeAccessor, str],
-    children: Sequence[NodeSource],
-):  # pragma: no cover
-    ...
-
-
-def tag(*args):  # noqa: C901
-    """
-    This function can be used for in-place creation (or call it templating if you
-    want to) of :class:`TagNode` instances as:
-
-    - ``node`` argument to methods that add nodes to a tree
-    - items in the ``children`` argument of :func:`new_tag_node`
-
-    The first argument to the function is always the local name of the tag node.
-    Optionally, the second argument can be a :term:`mapping` that specifies attributes
-    for that node.
-    The optional last argument is either a single object that will be appended as child
-    node or a sequence of such, these objects can be node instances of any type, strings
-    (for derived :class:`TextNode` instances) or other definitions from this function
-    (for derived :class:`TagNode` instances).
-
-    The actual nodes that are constructed always inherit the namespace of the context
-    node they are created in. That also applies to attribute names that are given as
-    single string.
-
-    >>> root = new_tag_node('root', children=[
-    ...     tag("head", {"lvl": "1"}, "Hello!"),
-    ...     tag("items", (
-    ...         tag("item1"),
-    ...         tag("item2"),
-    ...         )
-    ...     )
-    ... ])
-    >>> str(root)
-    '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
-    >>> root.append_children(tag("addendum"))  # doctest: +ELLIPSIS
-    (<TagNode("addendum", {}, /*/*[3]) [0x...]>,)
-    >>> str(root)[-26:]
-    '</items><addendum/></root>'
-    """
-
-    def prepare_attributes(
-        attributes: Mapping[AttributeAccessor, str]
-    ) -> dict[AttributeAccessor, str]:
-        result: dict[AttributeAccessor, str] = {}
-
-        for key, value in attributes.items():
-            if isinstance(value, Attribute):
-                result[value._qualified_name] = value.value
-            elif isinstance(key, (str, tuple)):
-                result[key] = value
-            else:
-                raise TypeError
-
-        return result
-
-    if len(args) == 1:
-        return _TagDefinition(local_name=args[0])
-
-    if len(args) == 2:
-        second_arg = args[1]
-        if isinstance(second_arg, Mapping):
-            return _TagDefinition(
-                local_name=args[0], attributes=prepare_attributes(second_arg)
-            )
-        if isinstance(second_arg, (str, NodeBase, _TagDefinition)):
-            return _TagDefinition(local_name=args[0], children=(second_arg,))
-        if isinstance(second_arg, Sequence):
-            if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in second_arg
-            ):
-                raise TypeError(
-                    "Either node instances, strings or objects from :func:`delb.tag` "
-                    "must be provided as children argument."
-                )
-            return _TagDefinition(local_name=args[0], children=tuple(second_arg))
-
-    if len(args) == 3:
-        third_arg = args[2]
-        if isinstance(third_arg, (str, NodeBase, _TagDefinition)):
-            return _TagDefinition(
-                local_name=args[0],
-                attributes=prepare_attributes(args[1]),
-                children=(third_arg,),
-            )
-        if isinstance(third_arg, Sequence):
-            if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in third_arg
-            ):
-                raise TypeError(
-                    "Either node instances, strings or objects from :func:`delb.tag` "
-                    "must be provided as children argument."
-                )
-            return _TagDefinition(
-                local_name=args[0],
-                attributes=prepare_attributes(args[1]),
-                children=tuple(third_arg),
-            )
-
-    raise ValueError
 
 
 # default filters
@@ -4011,5 +3875,4 @@ __all__ = (
     new_comment_node.__name__,
     new_processing_instruction_node.__name__,
     new_tag_node.__name__,
-    tag.__name__,
 )
