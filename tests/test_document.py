@@ -158,9 +158,6 @@ def test_root_siblings():
     with pytest.raises(InvalidOperation):
         epilogue.append("nah")
 
-    with pytest.raises(InvalidOperation):
-        epilogue.pop(0)
-
 
 def test_set_root():
     document = Document("<root><node/></root>")
@@ -168,7 +165,7 @@ def test_set_root():
     assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
 
     document_2 = Document("<root><replacement/>parts</root>")
-    with pytest.raises(ValueError, match="detached node"):
+    with pytest.raises(InvalidOperation, match="detached node"):
         document.root = document_2.root[0]
 
 

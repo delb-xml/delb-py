@@ -24,17 +24,14 @@ from __future__ import annotations
 from contextlib import suppress
 from io import IOBase, UnsupportedOperation
 from pathlib import Path
-from typing import TYPE_CHECKING, cast, Any
+from typing import TYPE_CHECKING, Any
 
-from lxml import etree
-
-from _delb import utils
+from _delb.builder import parse_nodes
 from _delb.nodes import TagNode
 from _delb.plugins import plugin_manager
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
-    from typing import IO
 
     from _delb.typing import LoaderResult
 
@@ -45,14 +42,11 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     descendant nodes.
     """
     if isinstance(data, TagNode):
-        tree = etree.ElementTree()
-        if data.document is None:
-            tree._setroot(data._etree_obj)
-        else:
-            root = data.clone(deep=True)
-            tree._setroot(root._etree_obj)
-            utils._copy_root_siblings(data._etree_obj, root._etree_obj)
-        return tree
+        if data.parent is not None:
+            return "Node has a parent node."
+        if data.document is not None:
+            data = data.clone(deep=True)
+        return (data,)
     return "The input value is not a TagNode instance."
 
 
@@ -87,9 +81,7 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
             config.source_url = path.as_uri()
         with suppress(UnsupportedOperation):
             data.seek(0)
-        return etree.parse(
-            cast("IO", data), parser=config.parser_options._make_parser()
-        )
+        return tuple(parse_nodes(data, config.parser_options))
     return "The input value is no buffer object."
 
 
@@ -98,12 +90,9 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     Parses a string containing a full document.
     """
-    if isinstance(data, str):
-        data = data.encode()
-    if isinstance(data, bytes):
-        root = etree.fromstring(data, config.parser_options._make_parser())
-        return etree.ElementTree(element=root)
-    return "The input value is not a byte sequence."
+    if isinstance(data, (bytes, str)):
+        return tuple(parse_nodes(data, config.parser_options))
+    return "The input value is not a byte sequence or a string."
 
 
 __all__ = (

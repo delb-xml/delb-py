@@ -18,8 +18,7 @@ from __future__ import annotations
 
 import sys
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeVar
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, TypeVar
 
 
@@ -31,8 +30,6 @@ if TYPE_CHECKING:
         from typing_extensions import TypeAlias
     else:
         from typing import TypeAlias
-
-    from lxml import etree
 
     from _delb.nodes import NodeBase, _TagDefinition
     from _delb.xpath.ast import EvaluationContext
@@ -55,7 +52,7 @@ NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
 _NamespaceDeclarations: TypeAlias = "Mapping[str, str]"
 NodeSource: TypeAlias = "str | NodeBase | _TagDefinition"
 
-LoaderResult: TypeAlias = "etree._ElementTree | str"
+LoaderResult: TypeAlias = "Sequence[NodeBase] | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 

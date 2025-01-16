@@ -787,6 +787,86 @@ class TagAttributes(MutableMapping):
         return {a.universal_name: a.value for a in self.values()}
 
 
+# containers
+
+
+class Siblings:
+    """
+    Container for the sisterhood of nodes.
+    Everyone's taken care of.
+    """
+
+    __slots__ = ("__data",)
+
+    def __init__(self, nodes: Optional[Iterable[NodeBase]] = None):
+        self.__data: list[NodeBase] = []
+        if nodes is not None:
+            for node in nodes:
+                self.__data.append(self._handle_new_sibling(node))
+
+    def __add__(self, other: Any):
+        if isinstance(other, Iterable):
+            for item in other:
+                self.append(self._handle_new_sibling(item))
+            return self
+
+        raise TypeError
+
+    def __delitem__(self, index: int):
+        del self.__data[index]
+
+    @overload
+    def __getitem__(self, index: int) -> NodeBase:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> tuple[NodeBase, ...]:
+        pass
+
+    def __getitem__(self, index: int | slice) -> NodeBase | tuple[NodeBase, ...]:
+        if isinstance(index, int):
+            return self.__data[index]
+        elif isinstance(index, slice):
+            return tuple(self.__data[index])
+        else:
+            raise TypeError
+
+    def __iter__(self) -> Iterator[NodeBase]:
+        return iter(self.__data)
+
+    def __len__(self) -> int:
+        return len(self.__data)
+
+    def __setitem__(self, index: int, node: NodeSource):
+        self.__data[index] = self._handle_new_sibling(node)
+
+    def append(self, node: NodeBase):
+        self.__data.append(self._handle_new_sibling(node))
+
+    def insert(self, index: int, node: NodeSource):
+        self.__data.insert(index, self._handle_new_sibling(node))
+
+    def prepend(self, node: NodeSource):
+        self.insert(0, node)
+
+    @classmethod
+    def _handle_new_sibling(cls, node: NodeSource) -> NodeBase:
+        if isinstance(node, str):  # noqa: SIM114
+            raise NotImplementedError
+        elif isinstance(node, _TagDefinition):
+            raise NotImplementedError
+        elif isinstance(node, NodeBase):
+            if node.parent is not None:
+                raise InvalidOperation(
+                    "Only a detached node can be added to the tree. Use "
+                    ":meth:`TagNode.clone` or :meth:`TagNode.detach` to get one."
+                )
+        else:
+            raise InvalidOperation("Item must be a `delb.NodeBase` instance.")
+
+        return node
+
+
 # nodes
 
 
@@ -3916,6 +3996,7 @@ __all__ = (
     NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
+    Siblings.__name__,
     TagAttributes.__name__,
     TagNode.__name__,
     TextNode.__name__,

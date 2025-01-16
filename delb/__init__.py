@@ -16,17 +16,14 @@
 from __future__ import annotations
 
 import warnings
-from abc import ABC, abstractmethod
-from collections.abc import Iterator, MutableSequence, Sequence
+from collections.abc import Sequence
 from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, overload, Any, BinaryIO, Optional
-
-from lxml import etree
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 
 from _delb.builder import parse_tree
-from _delb.exceptions import FailedDocumentLoading, InvalidCodePath, InvalidOperation
+from _delb.exceptions import FailedDocumentLoading, InvalidOperation
 from _delb.plugins import (
     core_loaders,
     plugin_manager as _plugin_manager,
@@ -35,7 +32,6 @@ from _delb.plugins import (
 from _delb.names import Namespaces
 from _delb.nodes import (
     _get_serializer,
-    _is_tag_or_text_node,
     _wrapper_cache,
     altered_default_filters,
     any_of,
@@ -56,24 +52,20 @@ from _delb.nodes import (
     PrettySerializer,
     ProcessingInstructionNode,
     Serializer,
+    Siblings,
     TagNode,
     _TextBufferWriter,
     TextNode,
 )
 from _delb.parser import ParserOptions
-from _delb.utils import (
-    _copy_root_siblings,
-    first,
-    get_traverser,
-    last,
-)
+from _delb.utils import first, get_traverser, last
 from _delb.xpath import QueryResults
 from delb.utils import compare_trees
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import Loader, NamespaceDeclarations
+    from _delb.typing import Loader, NamespaceDeclarations, NodeSource
 
 # plugin loading
 
@@ -84,152 +76,12 @@ _plugin_manager.load_plugins()
 # api
 
 
-class _RootSiblingsContainer(ABC, MutableSequence):
-    __slots__ = ("_document",)
-
-    def __init__(self, document: Document):
-        self._document = document
-
-    def __delitem__(self, index):
-        # https://stackoverflow.com/q/54562097/
-        raise InvalidOperation(
-            "The thing is, lxml doesn't provide an interface to remove siblings of the "
-            "root node."
-        )
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, Sequence)
-            and len(self) == len(other)
-            and all(a == b for a, b in zip(iter(self), iter(other)))
-        )
-
-    @overload
-    def __getitem__(self, index: int) -> CommentNode | ProcessingInstructionNode:
-        pass
-
-    @overload
-    def __getitem__(
-        self, index: slice
-    ) -> list[CommentNode | ProcessingInstructionNode]:
-        pass
-
-    @altered_default_filters()
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            return self.__getitem_item(index)
-        elif isinstance(index, slice):
-            return self.__getitem_slice(index)
-        else:
-            raise TypeError
-
-    def __getitem_item(self, index: int) -> CommentNode | ProcessingInstructionNode:
-        if index < 0:
-            index = len(self) + index
-
-        if len(self) <= index:
-            raise IndexError("Node index out of range.")
-
-        first_item = self._get_first()
-        if first_item is None:
-            raise IndexError
-
-        assert isinstance(first_item, (CommentNode, ProcessingInstructionNode))
-
-        if index == 0:
-            return first_item
-
-        for i, result_item in enumerate(
-            first_item.iterate_following_siblings(), start=1
-        ):
-            if i == index:
-                assert isinstance(result_item, (CommentNode, ProcessingInstructionNode))
-                return result_item
-
-        raise InvalidCodePath
-
-    def __getitem_slice(
-        self, index: slice
-    ) -> list[CommentNode | ProcessingInstructionNode]:
-        if index.step is not None and index.step < 1:
-            raise ValueError("Negative steps aren't supported yet.")
-
-        i = index.start or 0
-        result_list = []
-        step = index.step or 1
-        if index.stop is None:
-            stop = len(self)
-        elif index.stop < 0:
-            stop = len(self) + index.stop
-        else:
-            stop = index.stop
-
-        while i < stop:
-            result_list.append(self[i])
-            i += step
-        return result_list
-
-    def __setitem__(self, index, node):
-        # https://stackoverflow.com/q/54562097/
-        raise InvalidOperation(
-            "The thing is, lxml doesn't provide an interface to remove siblings of the "
-            "root node."
-        )
-
-    def __len__(self):
-        index = -1
-        for index, _ in enumerate(self._iter_all()):
-            pass
-        return index + 1
-
-    def insert(self, index, node):
-        length = len(self)
-
-        if index == 0 and not length:
-            self._add_first(node)
-        elif index == length:
-            self[-1].add_following_siblings(node)
-        else:
-            self[index].add_preceding_siblings(node)
-
-    def prepend(self, node):
-        self.insert(0, node)
-
-    @abstractmethod
-    def _add_first(self, node: NodeBase):
-        pass
-
-    @abstractmethod
-    def _get_first(self) -> Optional[NodeBase]:
-        pass
-
-    @abstractmethod
-    def _iter_all(self) -> Iterator[NodeBase]:
-        pass
-
-
-class _Epilogue(_RootSiblingsContainer):
-    def _add_first(self, node):
-        self._document.root.add_following_siblings(node)
-
-    def _get_first(self):
-        return first(self._iter_all())
-
-    def _iter_all(self):
-        with altered_default_filters():
-            yield from self._document.root.iterate_following_siblings()
-
-
-class _Prologue(_RootSiblingsContainer):
-    def _add_first(self, node):
-        self._document.root.add_preceding_siblings(node)
-
-    def _get_first(self):
-        return last(self._iter_all())
-
-    def _iter_all(self):
-        with altered_default_filters():
-            yield from self._document.root.iterate_preceding_siblings()
+class _Logue(Siblings):
+    @classmethod
+    def _handle_new_sibling(cls, node: NodeSource) -> NodeBase:
+        if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
+            raise InvalidOperation
+        return super()._handle_new_sibling(node)
 
 
 class DocumentMeta(type):
@@ -310,7 +162,7 @@ class Document(metaclass=DocumentMeta):
             cls._init_config(config, config_options)
 
         config.parser_options = parser_options or ParserOptions()
-        root = cls.__load_source(source, config)
+        prologue, root, epilogue = cls.__load_source(source, config)
 
         if klass is None:
             for subclass in _plugin_manager.document_subclasses:
@@ -326,6 +178,8 @@ class Document(metaclass=DocumentMeta):
         instance = super().__new__(klass)
         instance.config = config
         instance.root = root
+        instance.prologue = prologue
+        instance.epilogue = epilogue
         return instance
 
     def __init__(
@@ -345,12 +199,12 @@ class Document(metaclass=DocumentMeta):
         The source URL where a loader obtained the document's contents or
         :obj:`None`.
         """
-        self.prologue = _Prologue(self)
+        self.prologue: Siblings
         """
         A list-like accessor to the nodes that precede the document's root node.
         Note that nodes can't be removed or replaced.
         """
-        self.epilogue = _Epilogue(self)
+        self.epilogue: Siblings
         """
         A list-like accessor to the nodes that follow the document's root node.
         Note that nodes can't be removed or replaced.
@@ -361,7 +215,9 @@ class Document(metaclass=DocumentMeta):
         _plugin_manager.document_subclasses.insert(0, cls)
 
     @classmethod
-    def __load_source(cls, source: Any, config: SimpleNamespace) -> TagNode:
+    def __load_source(
+        cls, source: Any, config: SimpleNamespace
+    ) -> tuple[_Logue, TagNode, _Logue]:
         loader_excuses: dict[Loader, str | Exception] = {}
 
         for loader in cls._loaders:
@@ -370,24 +226,26 @@ class Document(metaclass=DocumentMeta):
             except Exception as e:
                 loader_excuses[loader] = e
             else:
-                if isinstance(loader_result, etree._ElementTree):
-                    loaded_tree = loader_result
-                    break
-                else:
-                    assert isinstance(loader_result, str)
+                if isinstance(loader_result, str):
                     loader_excuses[loader] = loader_result
+                else:
+                    break
         else:
             raise FailedDocumentLoading(source, loader_excuses)
 
-        assert isinstance(loaded_tree, etree._ElementTree)
+        assert isinstance(loader_result, Sequence)
+        assert not isinstance(loader_result, str)
 
-        root = _wrapper_cache(loaded_tree.getroot())
-        assert isinstance(root, TagNode)
-
-        if config.parser_options.reduce_whitespace:
-            root._reduce_whitespace()
-
-        return root
+        prologue = _Logue()
+        for i, node in enumerate(loader_result):
+            if isinstance(node, TagNode):
+                root = loader_result[i]
+                assert isinstance(root, TagNode)
+                return prologue, root, _Logue(loader_result[i + 1 :])
+            else:
+                prologue.append(node)
+        else:
+            raise RuntimeError("TODO")
 
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self
@@ -441,31 +299,24 @@ class Document(metaclass=DocumentMeta):
 
     @root.setter
     def root(self, node: TagNode):
-        if not isinstance(node, TagNode):
-            raise TypeError("The document root node must be of 'TagNode' type.")
+        _node = Siblings._handle_new_sibling(node)
 
-        with altered_default_filters(_is_tag_or_text_node):
-            if not all(
-                x is None
-                for x in (
-                    node.parent,
-                    node.fetch_preceding_sibling(),
-                    node.fetch_following_sibling(),
-                )
-            ):
-                raise ValueError(
-                    "Only a detached node can be set as root. Use "
-                    ":meth:`TagNode.clone` or :meth:`TagNode.detach` on the "
-                    "designated root node."
-                )
+        if not isinstance(_node, TagNode):
+            raise TypeError(
+                "The document root node must be a :class:`TagNode` instance."
+            )
 
-        current_root = getattr(self, "__root_node__", None)
-        if current_root is not None:
-            _copy_root_siblings(current_root._etree_obj, node._etree_obj)
+        if node.document is not None:
+            raise InvalidOperation(
+                "Only a detached node can be set as root. Use :meth:`TagNode.clone` "
+                "or :meth:`TagNode.detach` on the designated root node."
+            )
+
+        if (current_root := getattr(self, "__root_node__", None)) is not None:
             current_root.__document__ = None
 
-        self.__root_node__ = node
-        node.__document__ = self
+        self.__root_node__ = _node
+        _node.__document__ = self
 
     def save(
         self,

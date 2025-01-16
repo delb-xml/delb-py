@@ -2,8 +2,7 @@ from typing import NamedTuple
 
 import pytest
 
-from delb import Document, parse_tree, tag
-from _delb.parser import ParserOptions  # TODO import from delb
+from delb import Document, ParserOptions, parse_tree, tag
 from delb.transform import Transformation, TransformationSequence
 
 

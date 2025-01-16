@@ -96,7 +96,7 @@ def test_insert_issue_in_a_more_complex_situation():
     )
 
 
-# TODO remove with native data modeö
+# TODO remove with native data model
 def test_wrapper_consistency():
     # this test is the result of an investigation that asked why
     # `test_insert_issue_in_a_more_complex_situation` failed.

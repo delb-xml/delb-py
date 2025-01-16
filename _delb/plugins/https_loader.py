@@ -26,7 +26,7 @@ from io import IOBase
 from typing import TYPE_CHECKING, Any, Optional
 
 from _delb.plugins import plugin_manager
-from _delb.plugins.core_loaders import buffer_loader
+from _delb.plugins.core_loaders import buffer_loader, text_loader
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -67,7 +67,7 @@ else:
             except StopIteration:
                 return b""
 
-    @plugin_manager.register_loader()
+    @plugin_manager.register_loader(before=text_loader)
     def https_loader(
         data: Any, config: SimpleNamespace, client: httpx.Client = DEFAULT_CLIENT
     ) -> LoaderResult:

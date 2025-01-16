@@ -19,14 +19,11 @@ import re
 import sys
 from collections import defaultdict
 from collections.abc import Iterable, Iterator, Sequence
-from copy import copy
 from functools import partial
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
 
 if TYPE_CHECKING:
-    from lxml import etree
-
     from _delb.nodes import NodeBase, TagNode
     from _delb.typing import Filter, NodeTypeNameLiteral
 
@@ -257,24 +254,6 @@ class _StringMixin:  # pragma: no cover
 
     def zfill(self, width):
         return self._data.zfill(width)
-
-
-def _copy_root_siblings(source: etree._Element, target: etree._Element):
-    stack = []
-    current_element = source.getprevious()
-    while current_element is not None:
-        stack.append(current_element)
-        current_element = current_element.getprevious()
-    while stack:
-        target.addprevious(copy(stack.pop()))
-
-    stack = []
-    current_element = source.getnext()
-    while current_element is not None:
-        stack.append(current_element)
-        current_element = current_element.getnext()
-    while stack:
-        target.addnext(copy(stack.pop()))
 
 
 def first(iterable: Iterable) -> Optional[Any]:
