@@ -67,6 +67,7 @@ def test_comment_node():
     with altered_default_filters():
         for node in tuple(root.iterate_children()):
             node.detach()
+
     root.add_preceding_siblings(new_comment_node("before"))
     root.add_following_siblings(new_comment_node("after"))
 

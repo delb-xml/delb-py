@@ -1828,6 +1828,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
         elif isinstance(node, TextNode):
             node._bind_to_data(self)
 
+    def _add_following_sibling(self, node: NodeBase):
+        if self.parent is None:
+            # assert False
+            if (document := self.document) is None:
+                raise InvalidOperation
+            document.epilogue.prepend(node)
+        else:
+            super()._add_following_sibling(node)
+
+    def _add_preceding_sibling(self, node: NodeBase):
+        if self.parent is None:
+            # assert False
+            if (document := self.document) is None:
+                raise InvalidOperation
+            document.prologue.append(node)
+        else:
+            super()._add_preceding_sibling(node)
+
     def append_children(
         self, *node: NodeSource, clone: bool = False
     ) -> tuple[NodeBase, ...]:
