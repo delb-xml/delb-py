@@ -31,6 +31,7 @@ from _delb.nodes import (
     new_processing_instruction_node,
     new_tag_node,
     _reduce_whitespace_between_siblings,
+    _wrapper_cache,
     Attribute,
     NodeBase,
     _TagDefinition,
@@ -300,7 +301,8 @@ def parse_nodes(
 ) -> Iterator[NodeBase]:
     if options is None:
         options = ParserOptions()
-    with altered_default_filters():  # TODO remove with optimized TreeBuilder
+    # TODO remove contexts with optimized TreeBuilder
+    with altered_default_filters(), _wrapper_cache:
         yield from TreeBuilder(data, options)
 
 
