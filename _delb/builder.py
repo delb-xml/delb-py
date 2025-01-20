@@ -23,6 +23,7 @@ from collections import deque
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
+from _delb.exceptions import ParsingEmptyStream, ParsingStreamSurplus
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     DETACHED,
@@ -312,13 +313,11 @@ def parse_tree(data: InputStream, options: Optional[ParserOptions] = None) -> No
     result = None
     for node in parse_nodes(data, options):
         if result is not None:
-            # TODO
-            raise RuntimeError(f"Encountered extra content: {node}")
+            raise ParsingStreamSurplus(node)
         result = node
 
     if result is None:
-        # TODO
-        raise RuntimeError("No content :-(")
+        raise ParsingEmptyStream()
 
     return node
 
