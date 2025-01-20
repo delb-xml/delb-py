@@ -47,6 +47,14 @@ Node constructors
 .. autofunction:: delb.new_tag_node
 
 
+Parsing
+-------
+
+.. autofunction:: delb.parse_tree
+
+.. autofunction:: delb.parse_nodes
+
+
 .. _contributed-filters:
 
 Filters
