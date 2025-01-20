@@ -1,6 +1,7 @@
 import pytest
 
 from delb import (
+    ParserOptions,
     new_comment_node,
     new_tag_node,
     parse_tree,
@@ -11,6 +12,21 @@ from tests.utils import assert_equal_trees
 
 c = new_comment_node
 t = new_tag_node
+
+
+@pytest.mark.parametrize("extra", ("<!-- B -->", "<?B B?>"))
+def test_ignoring_comments_and_pis(extra):
+    # and that whitespace is trimmed correctly in these cases
+    result = parse_tree(
+        f"<node> A{extra}C </node>",
+        options=ParserOptions(
+            reduce_whitespace=True,
+            remove_comments=True,
+            remove_processing_instructions=True,
+        ),
+    )
+    assert len(result) == 1
+    assert result.first_child.content == "AC"
 
 
 @pytest.mark.parametrize("as_bytes", (True, False))
