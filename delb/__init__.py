@@ -285,7 +285,10 @@ class Document(metaclass=DocumentMeta):
         Collapses and trims whitespace as described in this `TEI recommendation`_.
         Text in (sub-)trees with structured data should be trimmed further in
         subsequent processing.
-        Implicitly merges all neighbouring text nodes.
+        This routine implicitly merges all neighbouring text nodes.
+        Note that the recommendation doesn't sufficiently cover situations with
+        neighbouring comments and processing instructions. For determinable results one
+        should remove such nodes before applying the whitespace reduction.
 
         .. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace
         """
