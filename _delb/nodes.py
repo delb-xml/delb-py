@@ -19,7 +19,14 @@ import gc
 import warnings
 from abc import abstractmethod, ABC
 from collections import deque
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    Sequence,
+)
 from contextlib import contextmanager
 from copy import copy
 from io import StringIO, TextIOWrapper
@@ -365,6 +372,64 @@ def new_tag_node(
                 "Either node instances, strings or objects from :func:`delb.tag` must "
                 "be provided as children argument."
             )
+
+    return result
+
+
+def _reduce_whitespace_between_siblings(
+    nodes: MutableSequence[NodeBase], in_place: bool
+):
+    if not (text_nodes := tuple(n for n in nodes if isinstance(n, TextNode))):
+        return
+
+    first_node = nodes[0]
+    last_node = nodes[-1]
+
+    for node in text_nodes:
+        if reduced_content := _reduce_whitespace_content(
+            node.content,
+            node is first_node,
+            node is last_node,
+        ):
+            node.content = reduced_content
+        else:
+            if in_place:
+                node.detach()
+            else:
+                nodes.remove(node)
+
+
+def _reduce_whitespace_content(content: str, is_first: bool, is_last: bool) -> str:
+    collapsed = _crunch_whitespace(content)
+    collapsed_and_stripped = collapsed.strip()
+    has_non_whitespace_content = bool(collapsed_and_stripped)
+    has_trailing_whitespace = collapsed.endswith(" ")
+
+    # 1 Retain one leading space
+    #   if the node isn't first, has non-space content, and has leading space.
+    if not is_first and has_non_whitespace_content and collapsed.startswith(" "):
+        result = f" {collapsed_and_stripped}"
+    else:
+        result = collapsed_and_stripped
+
+    # Retain one trailing space
+    if (
+        # 2 … if the node isn't last, isn't first, and has trailing space.
+        (not (is_last or is_first) and has_trailing_whitespace)
+        or
+        # 3 … if the node isn't last, is first, has trailing space, and has
+        #   non-space content.
+        (
+            not is_last
+            and is_first
+            and has_trailing_whitespace
+            and has_non_whitespace_content
+        )
+        or
+        # 4 … if the node is an only child and only has space content.
+        (is_first and is_last and not has_non_whitespace_content)
+    ):
+        result += " "
 
     return result
 
@@ -2087,17 +2152,15 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def _get_normalize_space_directive(
         self, default: Literal["default", "preserve"] = "default"
     ) -> Literal["default", "preserve"]:
-        attribute_value = self.attributes.get((XML_NAMESPACE, "space"))
-
-        if attribute_value is None:
+        if (attribute := self.attributes.get((XML_NAMESPACE, "space"))) is None:
             return default
 
-        if attribute_value in ("default", "preserve"):
-            return attribute_value
+        if attribute in ("default", "preserve"):
+            return attribute
 
         warnings.warn(
             "Encountered and ignoring an invalid `xml:space` attribute: "
-            + attribute_value,
+            + attribute.value,
             category=UserWarning,
         )
         return default
@@ -2365,72 +2428,18 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def _reduce_whitespace_of_descendants(
         self, normalize_space: Literal["default", "preserve"]
     ):
-        child_nodes = list(self.iterate_children())
-        if not child_nodes:
+        if not (child_nodes := list(self.iterate_children())):
             return
 
-        child_node: NodeBase
+        self.merge_text_nodes()
 
-        for child_node in [
-            n for n in child_nodes if isinstance(n, TextNode) and n.content == ""
-        ]:
-            child_nodes.remove(child_node)
-            child_node.detach()
-        if not child_nodes:
-            return
+        if (
+            normalize_space := self._get_normalize_space_directive(normalize_space)
+        ) == "default":
+            _reduce_whitespace_between_siblings(child_nodes, True)
 
-        normalize_space = self._get_normalize_space_directive(normalize_space)
         for child_node in (n for n in child_nodes if isinstance(n, TagNode)):
             child_node._reduce_whitespace_of_descendants(normalize_space)
-
-        if normalize_space == "preserve":
-            return
-
-        for child_node in (n for n in child_nodes if isinstance(n, TextNode)):
-            if reduced_content := self._reduce_whitespace_content(
-                child_node.content,
-                child_node is child_nodes[0],
-                child_node is child_nodes[-1],
-            ):
-                child_node.content = reduced_content
-            else:
-                child_node.detach()
-
-    def _reduce_whitespace_content(
-        self, content: str, is_first: bool, is_last: bool
-    ) -> str:
-        collapsed = _crunch_whitespace(content)
-        collapsed_and_stripped = collapsed.strip()
-        has_non_whitespace_content = bool(collapsed_and_stripped)
-        has_trailing_whitespace = collapsed.endswith(" ")
-
-        # 1 Retain one leading space
-        #   if the node isn't first, has non-space content, and has leading space.
-        if not is_first and has_non_whitespace_content and collapsed.startswith(" "):
-            result = f" {collapsed_and_stripped}"
-        else:
-            result = collapsed_and_stripped
-
-        # Retain one trailing space
-        if (
-            # 2 … if the node isn't last, isn't first, and has trailing space.
-            (not (is_last or is_first) and has_trailing_whitespace)
-            or
-            # 3 … if the node isn't last, is first, has trailing space, and has
-            #   non-space content.
-            (
-                not is_last
-                and is_first
-                and has_trailing_whitespace
-                and has_non_whitespace_content
-            )
-            or
-            # 4 … if the node is an only child and only has space content.
-            (is_first and is_last and not has_non_whitespace_content)
-        ):
-            result += " "
-
-        return result
 
     @altered_default_filters()
     def serialize(

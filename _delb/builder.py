@@ -18,16 +18,19 @@
 
 from __future__ import annotations
 
+import warnings
 from collections import deque
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
+from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     DETACHED,
     altered_default_filters,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
+    _reduce_whitespace_between_siblings,
     Attribute,
     NodeBase,
     _TagDefinition,
@@ -185,12 +188,14 @@ def tag(*args):  # noqa: C901
 
 
 class TreeBuilder:
-    __slots__ = ("event_feed", "open_tags", "options")
+    __slots__ = ("children", "event_feed", "options", "preserve_space", "started_tags")
 
     def __init__(self, data: ParseInput, parse_options: ParserOptions):
+        self.children: deque[list[NodeBase]] = deque()
         self.event_feed = parse_events(data, parse_options)
-        self.open_tags: deque[TagNode] = deque()
         self.options = parse_options
+        self.preserve_space: deque[bool] = deque()
+        self.started_tags: deque[TagNode] = deque()
 
     def __iter__(self):
         return self
@@ -213,41 +218,81 @@ class TreeBuilder:
             result = new_processing_instruction_node(*data)
         elif type_ is EventType.TagStart:
             assert isinstance(data, TagEventData)
-            assert isinstance(data.namespace, str)
-            self.open_tags.append(
-                new_tag_node(
-                    local_name=data.local_name,
-                    attributes=data.attributes,
-                    namespace=data.namespace,
-                )
-            )
+            self.handle_tag_start(data)
             result = None
         elif type_ is EventType.TagEnd:
             assert isinstance(data, TagEventData)
-            if __debug__:
-                leaf = self.open_tags[-1]
-                assert leaf.namespace == data.namespace
-                assert leaf.local_name == data.local_name
-                assert leaf.attributes == data.attributes
-            result = self.open_tags.pop()
-            if self.options.reduce_whitespace:
-                # TODO consider xml:space
-                # TODO use a specialized variant of _reduce_whitespace_of-descendants
-                result._reduce_whitespace()
+            result = self.handle_tag_end(data)
         elif type_ is EventType.Text:
             assert isinstance(data, str)
             result = TextNode(data, DETACHED)
 
         if result is not None:
-            if self.open_tags:
-                # TODO optimize with the native data model
-                self.open_tags[-1].append_children(result, clone=False)
+            if self.started_tags:
+                self.children[-1].append(result)
             else:
-                assert not self.open_tags
+                assert not self.children
+                assert not self.started_tags
+                assert not self.preserve_space
                 assert isinstance(result, NodeBase)
                 return result
 
         return None
+
+    def handle_tag_end(self, data: TagEventData) -> TagNode:
+        result = self.started_tags.pop()
+        assert result.namespace == data.namespace
+        assert result.local_name == data.local_name
+        assert result.attributes == data.attributes
+
+        children = self.children.pop()
+        if (not self.preserve_space.pop()) and children:
+            _reduce_whitespace_between_siblings(children, False)
+
+        # TODO optimize with the native data model
+        for node in children:
+            result.append_children(node)
+
+        return result
+
+    def handle_tag_start(self, data):
+        assert isinstance(data.namespace, str)
+
+        self.children.append([])
+
+        self.started_tags.append(
+            new_tag_node(
+                local_name=data.local_name,
+                attributes=data.attributes,
+                namespace=data.namespace,
+            )
+        )
+
+        if not self.options.reduce_whitespace:
+            self.preserve_space.append(True)
+            return
+
+        xml_space = data.attributes.get((XML_NAMESPACE, "space"))
+
+        if xml_space not in (None, "default", "preserve"):
+            warnings.warn(
+                "Encountered and ignoring an invalid `xml:space` attribute: "
+                + xml_space,
+                category=UserWarning,
+            )
+
+        if not self.preserve_space:
+            self.preserve_space.append(xml_space == "preserve")
+            return
+
+        if xml_space is None:  # most common
+            self.preserve_space.append(self.preserve_space[-1])
+        elif xml_space == "default":
+            self.preserve_space.append(False)
+        elif xml_space == "preserve":
+            self.preserve_space.append(True)
+        else:  # invalid values
+            self.preserve_space.append(self.preserve_space[-1])
 
 
 def parse_nodes(
