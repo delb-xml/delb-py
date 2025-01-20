@@ -224,13 +224,16 @@ autodoc_default_options = {
 }
 
 autodoc_type_aliases = {
+    "AttributeAccessor": "delb.typing.AttributeAccessor",
     "Filter": "delb.typing.Filter",
+    "InputStream": "delb.typing.InputStream",
     "Loader": "delb.typing.Loader",
     "LoaderConstraint": "delb.typing.LoaderConstraint",
     "LoaderResult": "delb.typing.LoaderResult",
     "NamespaceDeclarations": "delb.typing.NamespaceDeclarations",
     "NodeBase": "delb.NodeBase",
     "NodeSource": "delb.typing.NodeSource",
+    "QualifiedName": "delb.typing.QualifiedName",
 }
 
 # -- Options for autodocsumm extension ---------------------------------------
