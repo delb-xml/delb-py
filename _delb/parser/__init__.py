@@ -25,7 +25,7 @@ from _delb.parser.lxml import LxmlParser
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.typing import ParseInput
+    from _delb.typing import InputStream
 
 
 @dataclass
@@ -55,7 +55,7 @@ class ParserOptions:
         return parser(self)
 
 
-def parse_events(input_: ParseInput, options: ParserOptions) -> Iterator[Event]:
+def parse_events(input_: InputStream, options: ParserOptions) -> Iterator[Event]:
     if isinstance(input_, str):
         input_ = BytesIO(input_.encode())
 

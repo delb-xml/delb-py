@@ -10,6 +10,10 @@ Filter functions are defined as:
 
 .. autoclass:: delb.typing.Filter
 
+Parseable input streams are:
+
+.. autoclass:: delb.typing.InputStream
+
 Loaders are defined as:
 
 .. autoclass:: delb.typing.Loader

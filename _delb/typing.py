@@ -52,6 +52,7 @@ NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
 _NamespaceDeclarations: TypeAlias = "Mapping[str, str]"
 NodeSource: TypeAlias = "str | NodeBase | _TagDefinition"
 
+InputStream: TypeAlias = AnyStr | BinaryIO
 LoaderResult: TypeAlias = "Sequence[NodeBase] | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
@@ -60,7 +61,6 @@ NodeTypeNameLiteral: TypeAlias = Literal[
     "CommentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
 ]
 
-ParseInput: TypeAlias = AnyStr | BinaryIO
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 

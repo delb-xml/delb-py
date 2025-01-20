@@ -44,7 +44,7 @@ from _delb.parser.base import TagEventData
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.typing import AttributeAccessor, NodeSource, ParseInput
+    from _delb.typing import AttributeAccessor, NodeSource, InputStream
 
 
 # defining tag node templates
@@ -191,7 +191,7 @@ def tag(*args):  # noqa: C901
 class TreeBuilder:
     __slots__ = ("children", "event_feed", "options", "preserve_space", "started_tags")
 
-    def __init__(self, data: ParseInput, parse_options: ParserOptions):
+    def __init__(self, data: InputStream, parse_options: ParserOptions):
         self.children: deque[list[NodeBase]] = deque()
         self.event_feed = parse_events(data, parse_options)
         self.options = parse_options
@@ -297,7 +297,7 @@ class TreeBuilder:
 
 
 def parse_nodes(
-    data: ParseInput, options: Optional[ParserOptions] = None
+    data: InputStream, options: Optional[ParserOptions] = None
 ) -> Iterator[NodeBase]:
     if options is None:
         options = ParserOptions()
@@ -307,6 +307,7 @@ def parse_nodes(
 
 
 def parse_tree(data: ParseInput, options: Optional[ParserOptions] = None) -> NodeBase:
+def parse_tree(data: InputStream, options: Optional[ParserOptions] = None) -> NodeBase:
     result = None
     for node in parse_nodes(data, options):
         if result is not None:
