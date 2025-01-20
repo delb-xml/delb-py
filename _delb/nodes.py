@@ -165,7 +165,7 @@ class _WrapperCache:
                         - 1  # `self.wrappers`
                         - 1  # the iterated tuple
                         - 1  # `node`
-                        - isinstance(node, TagNode)  # node.attributes.__node
+                        - isinstance(node, TagNode)  # node.attributes._node
                     )
 
                     # if referenced as a document's root node that itself isn't
@@ -250,7 +250,7 @@ class _WrapperCache:
                 + isinstance(node, TagNode)
                 + (
                     getattr(node, "__document__", None) is not None
-                    and getrefcount(node.__document__) == 4
+                    and getrefcount(node.__document__) == 2
                 )
             ):
                 continue
