@@ -217,7 +217,8 @@ class TreeBuilder:
             assert isinstance(data, str)
             result = new_comment_node(data)
         elif type_ is EventType.ProcessingInstruction:
-            result = new_processing_instruction_node(*data)
+            assert isinstance(data, tuple)
+            result = new_processing_instruction_node(data[0], data[1])
         elif type_ is EventType.TagStart:
             assert isinstance(data, TagEventData)
             self.handle_tag_start(data)
@@ -241,11 +242,13 @@ class TreeBuilder:
 
         return None
 
-    def handle_tag_end(self, data: TagEventData) -> TagNode:
+    def handle_tag_end(self, data: TagEventData | None) -> TagNode:
         result = self.started_tags.pop()
-        assert result.namespace == data.namespace
-        assert result.local_name == data.local_name
-        assert result.attributes == data.attributes
+        if __debug__ and data:
+            assert result.namespace == data.namespace
+            assert result.local_name == data.local_name
+            if data.attributes is not None:
+                assert result.attributes == data.attributes
 
         children = self.children.pop()
         if (not self.preserve_space.pop()) and children:

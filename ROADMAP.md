@@ -5,15 +5,12 @@
 - the tree building will be based on (SaX-like) event parsers for which a common
   abstract interface needs to be defined, considering concrete implementations of
   adapters for:
-    - `xml.sax`
     - possibly a Python wrapper for https://crates.io/crates/xmlparser in a separate
       package
     - maybe even a `re` based one for platforms where none of the above is available
 - what should be defined as common behaviour configuration options?
     - except `resolve_entities` the current ones of `ParserOptions` are fine as such imo
 - CDATA will be parsed to text nodes
-- move parsing from loaders to the `Document` class, thus breaking their interface
-    - they're then supposed to return a file-like object
 
 ## 0.7
 

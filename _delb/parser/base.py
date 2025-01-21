@@ -39,7 +39,7 @@ class EventType(IntEnum):
 class TagEventData(NamedTuple):
     namespace: str
     local_name: str
-    attributes: _AttributesData
+    attributes: _AttributesData | None
 
 
 Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
@@ -55,4 +55,9 @@ class XMLEventParserInterface(Protocol):
         raise NotImplementedError
 
 
-__all__ = ("Event", XMLEventParserInterface.__name__)
+__all__ = (
+    "Event",
+    EventType.__name__,
+    TagEventData.__name__,
+    XMLEventParserInterface.__name__,
+)
