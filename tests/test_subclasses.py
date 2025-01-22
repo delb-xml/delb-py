@@ -26,18 +26,14 @@ class TEIDocument(Document):
 
     @property
     def title(self) -> str:
-        return self.css_select(
-            'titleStmt title[type="main"]', namespaces={None: TEI_NAMESPACE}
-        ).first.full_text
+        return self.css_select('titleStmt title[type="main"]').first.full_text
 
 
 class DTABfDocument(TEIDocument):
     @staticmethod
     def __class_test__(root, config) -> bool:
         if TEIDocument.__class_test__(root, config):
-            for node in root.css_select(
-                "publicationStmt publisher[xml|id]", namespaces={None: TEI_NAMESPACE}
-            ):
+            for node in root.css_select("publicationStmt publisher[xml|id]"):
                 if node.id == "DTACorpusPublisher":
                     return True
         return False

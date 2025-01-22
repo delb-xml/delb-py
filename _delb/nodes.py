@@ -1883,7 +1883,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
 
-        >>> DefaultStringOptions.namespaces = {None: "http://namespace"}
+        >>> DefaultStringOptions.namespaces = {"": "http://namespace"}
         >>> node = new_tag_node(
         ...     "node",
         ...     namespace="http://namespace",

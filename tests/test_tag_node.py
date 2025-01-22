@@ -280,9 +280,7 @@ def test_getitem():
 
 def test_id_property(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    publisher = document.css_select(
-        "publicationStmt publisher", namespaces={None: TEI_NAMESPACE}
-    ).first
+    publisher = document.css_select("publicationStmt publisher").first
 
     assert publisher.id == "DTACorpusPublisher"
 

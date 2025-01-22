@@ -11,9 +11,7 @@ TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 def test_css_select_or(files_path):
     document = Document(files_path / "tei_stevenson_treasure_island.xml")
 
-    result = document.css_select(
-        "titleStmt title, titleStmt author", namespaces={None: TEI_NAMESPACE}
-    )
+    result = document.css_select("titleStmt title, titleStmt author")
 
     assert len(result) == 2
     assert {x.local_name for x in result} == {"author", "title"}

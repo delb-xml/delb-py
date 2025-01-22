@@ -60,7 +60,7 @@ def test_nodes_in_between():
 def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: N802
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
     document.reduce_whitespace()
-    imprints = document.xpath("//docImprint", namespaces={None: TEI_NAMESPACE})
+    imprints = document.xpath("//docImprint")
 
     assert imprints[0].full_text == "Veröffentlicht im Februar 1848."
     assert "46, Liverpool Street" in imprints[1].full_text

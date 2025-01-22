@@ -75,7 +75,7 @@ def test_empty_below_default_namespace():
     root = Document("<root xmlns='http://fo.org/'/>").root
     root.append_children(new_tag_node(local_name="node", namespace=None))
     # just to be explicit here:
-    DefaultStringOptions.namespace = {None: "http://fo.org/"}
+    DefaultStringOptions.namespace = {"": "http://fo.org/"}
     assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
 
 
@@ -248,7 +248,7 @@ def test_significant_whitespace_is_saved(result_file, format_options, out):
         ({}, new_tag_node, ("n", {"x": '"'}), """<n x="&quot;"/>"""),
         ({}, new_tag_node, ("n", {"x": '"&"'}), r"""<n x="&quot;&amp;&quot;"/>"""),
         (
-            {None: "http://namespace"},
+            {"": "http://namespace"},
             new_tag_node,
             ("node", {("http://namespace", "bar"): "x"}),
             """<node xmlns:ns0="http://namespace" ns0:bar="x"/>""",
@@ -396,7 +396,7 @@ def test_text_document_production(
 )
 def test_text_width(files_path, indentation, text_width, out):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
-    paragraph = document.xpath("//p", namespaces={None: TEI_NAMESPACE})[14]
+    paragraph = document.xpath("//p")[14]
     format_options = FormatOptions(indentation=indentation, width=text_width)
     DefaultStringOptions.format_options = format_options
     assert paragraph.serialize(format_options=format_options) == str(paragraph) == out
@@ -432,9 +432,7 @@ def test_text_with_milestone_tag(files_path, text_width, expected):
         files_path / "tei_stevenson_treasure_island.xml",
         parser_options=ParserOptions(reduce_whitespace=True),
     )
-    paragraph = document.css_select(
-        "fileDesc sourceDesc p", namespaces={None: TEI_NAMESPACE}
-    ).first
+    paragraph = document.css_select("fileDesc sourceDesc p").first
     assert "\t" not in paragraph.full_text
 
     DefaultStringOptions.format_options = FormatOptions(

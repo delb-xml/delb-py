@@ -25,7 +25,7 @@ Let's look at it with examples::
    class ResolveCopyOf(Transformation):
        def transform(self):
            for node in self.root.css_select(
-               "*[copyOf]", namespaces={None: "http://www.tei-c.org/ns/1.0"}
+               "*[copyOf]", namespaces={"": "http://www.tei-c.org/ns/1.0"}
            ):
                source_id = node["copyOf"]
                source_node = self.origin_document.xpath(
