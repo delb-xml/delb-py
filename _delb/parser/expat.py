@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from collections import deque
 from typing import TYPE_CHECKING, BinaryIO, Final
+from urllib.parse import urljoin, urlparse
 from xml import sax
 
-from _delb.exceptions import InvalidCodePath
+from _delb.exceptions import InvalidCodePath, ParsingError
 from _delb.parser.base import Event, EventType, TagEventData, XMLEventParserInterface
 
 if TYPE_CHECKING:
@@ -77,6 +78,33 @@ class ContentHandler(sax.handler.ContentHandler):
         )
 
 
+class EntityResolver(sax.handler.EntityResolver):
+    __slots__ = ("base_url", "options", "scheme")
+
+    def __init__(self, options: ParserOptions, base_url: str | None):
+        self.base_url = base_url
+        self.options = options
+        if base_url is None:
+            self.scheme = None
+        else:
+            self.scheme, *_ = urlparse(base_url)
+
+    def resolveEntity(  # noqa: N802
+        self, publicId: str | None, systemId: str | None  # noqa: N803
+    ):
+        _id = systemId or publicId
+        assert _id is not None
+
+        if self.base_url is None or (
+            self.options.unplugged
+            and self.scheme is not None
+            and self.scheme.startswith("http")
+        ):
+            raise ParsingError(f"Cannot load external resource '{_id}'.")
+
+        return urljoin(self.base_url, _id, allow_fragments=False)
+
+
 class LexcialHandler(sax.handler.LexicalHandler):
     __slots__ = ("events", "options")
 
@@ -107,20 +135,22 @@ class LexcialHandler(sax.handler.LexicalHandler):
 class ExpatParser(XMLEventParserInterface):
     __slots__ = ("events", "options", "parser")
 
-    def __init__(self, options: ParserOptions):
+    def __init__(self, options: ParserOptions, base_url: str | None):
         self.events: deque[Event] = deque()
         self.options = options
-        self.parser = self.make_parser()
+        self.parser = self.make_parser(base_url=base_url)
 
-    def make_parser(self) -> sax.xmlreader.IncrementalParser:
+    def make_parser(self, base_url: str | None) -> sax.xmlreader.IncrementalParser:
         parser = sax.make_parser()
         assert isinstance(parser, sax.xmlreader.IncrementalParser)
         parser.setContentHandler(ContentHandler(self.events, self.options))
+        parser.setEntityResolver(EntityResolver(self.options, base_url))
+        parser.setFeature(sax.handler.feature_external_ges, True)
         parser.setProperty(
             sax.handler.property_lexical_handler,
             LexcialHandler(self.events, self.options),
         )
-        # TODO DTDHandler?, EntityResolver, ErrorHandler
+        # TODO ErrorHandler?
         parser.setFeature(sax.handler.feature_namespaces, True)
         return parser
 

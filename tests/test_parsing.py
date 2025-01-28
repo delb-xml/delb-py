@@ -1,16 +1,15 @@
 import pytest
 
 from delb import (
+    Document,
     ParserOptions,
     new_comment_node,
     new_tag_node,
-    parse_nodes,
     parse_tree,
     tag,
 )
 from _delb.parser.expat import ExpatParser
 from _delb.parser.lxml import LxmlParser
-
 
 from tests.conftest import XML_FILES
 from tests.utils import assert_equal_trees
@@ -21,6 +20,13 @@ pytestmark = pytest.mark.parametrize("parser", (ExpatParser, LxmlParser))
 
 c = new_comment_node
 t = new_tag_node
+
+
+def test_external_entity_declaration(files_path, parser):
+    document = Document(
+        files_path / "external_dtd.xml", parser_options=ParserOptions(parser=parser)
+    )
+    assert document.root.full_text == "schüppsen"
 
 
 @pytest.mark.parametrize("extra", ("<!-- B -->", "<?B B?>"))
@@ -37,6 +43,12 @@ def test_ignoring_comments_and_pis(extra, parser):
     )
     assert len(result) == 1
     assert result.first_child.content == "AC"
+
+
+def test_internal_entity_declaration(files_path, parser):
+    document = Document(files_path / "serialization-example-input.xml")
+    title = document.css_select("title").first
+    assert title.full_text.startswith("Ü")
 
 
 @pytest.mark.parametrize("as_bytes", (True, False))
@@ -90,17 +102,12 @@ def test_parse_tree(in_, out, as_bytes, parser):
 @pytest.mark.parametrize("reduced_content", (True, False))
 @pytest.mark.parametrize("file", XML_FILES)
 def test_parse_xml_documents(file, parser, reduced_content):
-    with file.open("rb") as f:
-        nodes = list(
-            parse_nodes(
-                f,
-                options=ParserOptions(
-                    parser=parser,
-                    reduce_whitespace=reduced_content,
-                    remove_comments=reduced_content,
-                    remove_processing_instructions=reduced_content,
-                ),
-            )
-        )
-
-    assert nodes
+    Document(
+        file,
+        parser_options=ParserOptions(
+            parser=parser,
+            reduce_whitespace=reduced_content,
+            remove_comments=reduced_content,
+            remove_processing_instructions=reduced_content,
+        ),
+    )

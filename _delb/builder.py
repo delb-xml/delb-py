@@ -192,9 +192,11 @@ def tag(*args):  # noqa: C901
 class TreeBuilder:
     __slots__ = ("children", "event_feed", "options", "preserve_space", "started_tags")
 
-    def __init__(self, data: InputStream, parse_options: ParserOptions):
+    def __init__(
+        self, data: InputStream, parse_options: ParserOptions, base_url: str | None
+    ):
         self.children: deque[list[NodeBase]] = deque()
-        self.event_feed = parse_events(data, parse_options)
+        self.event_feed = parse_events(data, parse_options, base_url)
         self.options = parse_options
         self.preserve_space: deque[bool] = deque()
         self.started_tags: deque[TagNode] = deque()
@@ -301,20 +303,28 @@ class TreeBuilder:
 
 
 def parse_nodes(
-    data: InputStream, options: Optional[ParserOptions] = None
+    data: InputStream,
+    options: Optional[ParserOptions] = None,
+    *,
+    base_url: str | None = None,
 ) -> Iterator[NodeBase]:
     """Parses the provided input data to a sequence of nodes."""
     if options is None:
         options = ParserOptions()
     # TODO remove contexts with optimized TreeBuilder
     with altered_default_filters(), _wrapper_cache:
-        yield from TreeBuilder(data, options)
+        yield from TreeBuilder(data, options, base_url)
 
 
-def parse_tree(data: InputStream, options: Optional[ParserOptions] = None) -> NodeBase:
+def parse_tree(
+    data: InputStream,
+    options: Optional[ParserOptions] = None,
+    *,
+    base_url: str | None = None,
+) -> NodeBase:
     """Parses the provided input to a single node."""
     result = None
-    for node in parse_nodes(data, options):
+    for node in parse_nodes(data, options, base_url=base_url):
         if result is not None:
             raise ParsingStreamSurplus(node)
         result = node

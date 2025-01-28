@@ -99,9 +99,8 @@ else:
         if isinstance(data, str) and data.lower().startswith(("http://", "https://")):
             with client.stream("get", url=data) as response:
                 response.raise_for_status()
-                result = buffer_loader(HttpsStreamWrapper(response), config)
                 config.source_url = data
-                return result
+                return buffer_loader(HttpsStreamWrapper(response), config)
         return "The input value is not an URL with the http or https scheme."
 
     __all__ = (https_loader.__name__,)

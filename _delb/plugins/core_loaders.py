@@ -81,7 +81,9 @@ def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
             config.source_url = path.as_uri()
         with suppress(UnsupportedOperation):
             data.seek(0)
-        return tuple(parse_nodes(data, config.parser_options))
+        return tuple(
+            parse_nodes(data, config.parser_options, base_url=config.source_url)
+        )
     return "The input value is no buffer object."
 
 
@@ -91,7 +93,7 @@ def text_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     Parses a string containing a full document.
     """
     if isinstance(data, (bytes, str)):
-        return tuple(parse_nodes(data, config.parser_options))
+        return tuple(parse_nodes(data, config.parser_options, base_url=None))
     return "The input value is not a byte sequence or a string."
 
 

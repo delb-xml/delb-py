@@ -37,10 +37,12 @@ if TYPE_CHECKING:
 class LxmlParser(XMLEventParserInterface):
     __slots__ = ("parser",)
 
-    def __init__(self, options: ParserOptions):
+    def __init__(self, options: ParserOptions, base_url: str | None):
         self.parser = etree.XMLPullParser(
+            base_url=base_url,
+            dtd_validation=False,
             events=("comment", "end", "pi", "start"),
-            # TODO base_url?
+            load_dtd=True,
             no_network=options.unplugged,
             remove_blank_text=False,
             remove_comments=options.remove_comments,
@@ -49,7 +51,7 @@ class LxmlParser(XMLEventParserInterface):
             strip_cdata=False,
         )
 
-    def handle_element_preceding_text(self, element):
+    def handle_element_preceding_text(self, element: etree._Element):
         if ((parent := element.getparent()) is not None) and (
             parent.index(element) == 0
         ):

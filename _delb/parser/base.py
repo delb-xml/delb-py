@@ -47,7 +47,7 @@ Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
 
 class XMLEventParserInterface(Protocol):
     @abstractmethod
-    def __init__(self, options: ParserOptions):
+    def __init__(self, options: ParserOptions, base_url: str | None):
         raise NotImplementedError
 
     @abstractmethod

@@ -230,6 +230,7 @@ class Document(metaclass=DocumentMeta):
                 else:
                     break
         else:
+            vars(config).pop("source_url", None)
             raise FailedDocumentLoading(source, loader_excuses)
 
         assert isinstance(loader_result, Sequence)
