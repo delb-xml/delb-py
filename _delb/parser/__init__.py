@@ -36,14 +36,12 @@ class ParserOptions(NamedTuple):
     :param remove_comments: Ignore comments.
     :param remove_processing_instructions: Don't include processing instructions in the
                                            parsed tree.
-    :param resolve_entities: Resolve entities.
     :param unplugged: Don't load referenced resources over network.
     """
 
     reduce_whitespace: bool = False
     remove_comments: bool = False
     remove_processing_instructions: bool = False
-    resolve_entities: bool = True
     unplugged: bool = False
     parser: Optional[type[XMLEventParserInterface]] = None
 

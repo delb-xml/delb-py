@@ -47,7 +47,7 @@ class LxmlParser(XMLEventParserInterface):
             remove_blank_text=False,
             remove_comments=options.remove_comments,
             remove_pis=options.remove_processing_instructions,
-            resolve_entities=options.resolve_entities,
+            resolve_entities=True,
             strip_cdata=False,
         )
 
