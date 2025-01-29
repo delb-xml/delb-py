@@ -93,12 +93,11 @@ class LxmlParser(XMLEventParserInterface):
     def parse(self, data: BinaryIO) -> Iterator[Event]:
         eof = False
         while not eof:
-            chunk = data.read()
-            if not chunk:
+            if chunk := data.read():
+                self.parser.feed(chunk)
+            else:
                 eof = True
                 self.parser.close()
-            else:
-                self.parser.feed(chunk)
 
             for event in self.parser.read_events():
                 yield from self.handle_event(event)
@@ -109,12 +108,9 @@ class LxmlParser(XMLEventParserInterface):
         result = {}
         for name, value in attributes.items():
             assert isinstance(name, str)
-            namespace, local_name = deconstruct_clark_notation(name)
-            if namespace is None:
-                namespace = node_namespace
-            assert isinstance(namespace, str), namespace
             assert isinstance(value, str)
-            result[namespace, local_name] = value
+            namespace, local_name = deconstruct_clark_notation(name)
+            result[namespace or node_namespace, local_name] = value
         return result
 
     def tag_event_data_from_element(self, element: etree._Element) -> TagEventData:

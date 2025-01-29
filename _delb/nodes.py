@@ -59,10 +59,7 @@ from _delb.utils import (
     last,
     traverse_bf_ltr_ttb,
 )
-from _delb.xpath import (
-    QueryResults,
-    _css_to_xpath,
-)
+from _delb.xpath import QueryResults, _css_to_xpath
 from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import _DocumentNode, NameMatchTest, XPathExpression
 

@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 
 import pytest
@@ -9,8 +8,6 @@ from delb import (
     compare_trees,
     NodeBase,
 )
-
-find_processing_instructions = re.compile(r"(<\?\w\S*?(\s.*?)?\?>)").findall
 
 
 if sys.version_info < (3, 10):  # DROPWITH Python 3.9
