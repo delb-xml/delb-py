@@ -126,7 +126,7 @@ def tag(*args):  # noqa: C901
     """
 
     def prepare_attributes(
-        attributes: Mapping[AttributeAccessor, str]
+        attributes: Mapping[AttributeAccessor, str],
     ) -> dict[AttributeAccessor, str]:
         result: dict[AttributeAccessor, str] = {}
 

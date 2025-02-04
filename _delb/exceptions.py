@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" These are the specific delb exceptions. """
+"""These are the specific delb exceptions."""
 
 from __future__ import annotations
 
