@@ -59,7 +59,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     if isinstance(data, Path):
         config.source_url = (Path.cwd() / data).as_uri()
-        with data.open("r") as file:
+        with data.open("rb") as file:
             return buffer_loader(file, config)
     return "The input value is not a pathlib.Path instance."
 
@@ -67,7 +67,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
 @plugin_manager.register_loader(after=path_loader)
 def buffer_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    This loader loads a document from a :term:`file-like object`.
+    This loader loads a document from a :term:`file-like object` that reads binary data.
     """
     if isinstance(data, IOBase):
         if (

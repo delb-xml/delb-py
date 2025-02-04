@@ -15,11 +15,11 @@ TEST_FILE_URI = f"file://{TEST_FILE}"
 
 
 def test_buffer_loader():
-    with TEST_FILE.open("r") as f:
+    with TEST_FILE.open("rb") as f:
         document = Document(f)
     assert document.source_url == TEST_FILE_URI
 
-    with chdir(TEST_FILE.parent), Path(TEST_FILE.name).open("r") as f:
+    with chdir(TEST_FILE.parent), Path(TEST_FILE.name).open("rb") as f:
         document = Document(f)
     assert document.source_url == TEST_FILE_URI
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 import sys
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, Protocol, TypeVar
 
 
 if TYPE_CHECKING:
@@ -39,6 +39,15 @@ if sys.version_info < (3, 11):  # DROPWITH Python 3.10
     from typing_extensions import Literal, Self
 else:
     from typing import Literal, Self
+
+
+class BinaryReader(Protocol):
+    def close(self):
+        pass
+
+    def read(self, n: int = -1) -> bytes:
+        pass
+
 
 QualifiedName: TypeAlias = tuple[str, str]
 AttributeAccessor: TypeAlias = QualifiedName | str
@@ -69,6 +78,7 @@ __all__ = (
     "AttributeAccessor",
     "Filter",
     "GenericDecorated",
+    "InputStream",
     "Loader",
     "LoaderConstraint",
     "LoaderResult",

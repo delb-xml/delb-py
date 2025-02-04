@@ -212,5 +212,6 @@ check = "python -m pytest tests"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error"
+    "error",
+    "ignore:No encoding known for parsing an XML stream:UserWarning",
 ]

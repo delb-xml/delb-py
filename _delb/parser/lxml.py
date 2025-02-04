@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING
 
 from lxml import etree
 
@@ -31,16 +31,20 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from _delb.parser import ParserOptions
-    from _delb.typing import _AttributesData
+    from _delb.typing import _AttributesData, BinaryReader
 
 
 class LxmlParser(XMLEventParserInterface):
     __slots__ = ("parser",)
 
-    def __init__(self, options: ParserOptions, base_url: str | None):
+    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+        if encoding.endswith(("-be", "-le")):
+            encoding = encoding[:-3]
+
         self.parser = etree.XMLPullParser(
             base_url=base_url,
             dtd_validation=False,
+            encoding=encoding,
             events=("comment", "end", "pi", "start"),
             load_dtd=True,
             no_network=options.unplugged,
@@ -90,7 +94,7 @@ class LxmlParser(XMLEventParserInterface):
         elif action == "start":
             yield EventType.TagStart, self.tag_event_data_from_element(element)
 
-    def parse(self, data: BinaryIO) -> Iterator[Event]:
+    def parse(self, data: BinaryReader) -> Iterator[Event]:
         eof = False
         while not eof:
             if chunk := data.read():

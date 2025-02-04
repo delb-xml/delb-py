@@ -18,14 +18,14 @@ from __future__ import annotations
 from abc import abstractmethod
 
 from enum import auto, IntEnum
-from typing import TYPE_CHECKING, BinaryIO, NamedTuple, Protocol, TypeAlias
+from typing import TYPE_CHECKING, NamedTuple, Protocol, TypeAlias
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from _delb.parser import ParserOptions
-    from _delb.typing import _AttributesData
+    from _delb.typing import _AttributesData, BinaryReader
 
 
 class EventType(IntEnum):
@@ -47,11 +47,11 @@ Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
 
 class XMLEventParserInterface(Protocol):
     @abstractmethod
-    def __init__(self, options: ParserOptions, base_url: str | None):
+    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self, data: BinaryIO) -> Iterator[Event]:
+    def parse(self, data: BinaryReader) -> Iterator[Event]:
         raise NotImplementedError
 
 

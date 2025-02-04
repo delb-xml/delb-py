@@ -15,8 +15,9 @@
 
 from __future__ import annotations
 
+import codecs
 from collections import deque
-from typing import TYPE_CHECKING, BinaryIO, Final
+from typing import TYPE_CHECKING, Final
 from urllib.parse import urljoin, urlparse
 from xml import sax
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from _delb.parser import ParserOptions
+    from _delb.typing import BinaryReader
 
 
 NAMESPACE_SEPARATOR: Final = " "
@@ -133,9 +135,10 @@ class LexcialHandler(sax.handler.LexicalHandler):
 
 
 class ExpatParser(XMLEventParserInterface):
-    __slots__ = ("events", "options", "parser")
+    __slots__ = ("encoding", "events", "options", "parser")
 
-    def __init__(self, options: ParserOptions, base_url: str | None):
+    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+        self.encoding = encoding
         self.events: deque[Event] = deque()
         self.options = options
         self.parser = self.make_parser(base_url=base_url)
@@ -154,13 +157,15 @@ class ExpatParser(XMLEventParserInterface):
         parser.setFeature(sax.handler.feature_namespaces, True)
         return parser
 
-    def parse(self, data: BinaryIO) -> Iterator[Event]:
+    def parse(self, data: BinaryReader) -> Iterator[Event]:
+        decoder = codecs.getincrementaldecoder(self.encoding)()
         eof = False
         prior_text = ""
         while not eof:
             if chunk := data.read():
-                self.parser.feed(chunk)
+                self.parser.feed(decoder.decode(chunk))
             else:
+                self.parser.feed(decoder.decode(b"", final=True))
                 self.parser.close()
                 eof = True
 
