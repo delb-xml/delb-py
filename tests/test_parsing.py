@@ -1,4 +1,5 @@
 import pytest
+from lxml import etree
 
 from delb import (
     Document,
@@ -8,6 +9,7 @@ from delb import (
     parse_tree,
     tag,
 )
+from delb.exceptions import ParsingError
 from _delb.parser.expat import ExpatParser
 from _delb.parser.lxml import LxmlParser
 
@@ -111,3 +113,12 @@ def test_parse_xml_documents(file, parser, reduced_content):
             remove_processing_instructions=reduced_content,
         ),
     )
+
+
+def test_redundant_xml_ids(parser):
+    exception = {"expat": ParsingError, "lxml": etree.XMLSyntaxError}[parser]
+    with pytest.raises(exception):
+        parse_tree(
+            "<root xml:id='a'><node xml:id='a'/></root>",
+            options=ParserOptions(parser=parser),
+        )

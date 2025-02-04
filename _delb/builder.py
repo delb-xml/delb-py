@@ -23,7 +23,7 @@ from collections import deque
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
-from _delb.exceptions import ParsingEmptyStream, ParsingStreamSurplus
+from _delb.exceptions import ParsingEmptyStream, ParsingError, ParsingStreamSurplus
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     DETACHED,
@@ -190,7 +190,14 @@ def tag(*args):  # noqa: C901
 
 
 class TreeBuilder:
-    __slots__ = ("children", "event_feed", "options", "preserve_space", "started_tags")
+    __slots__ = (
+        "children",
+        "event_feed",
+        "options",
+        "preserve_space",
+        "started_tags",
+        "xml_ids",
+    )
 
     def __init__(
         self, data: InputStream, parse_options: ParserOptions, base_url: str | None
@@ -200,6 +207,7 @@ class TreeBuilder:
         self.options = parse_options
         self.preserve_space: deque[bool] = deque()
         self.started_tags: deque[TagNode] = deque()
+        self.xml_ids: set[str] = set()
 
     def __iter__(self):
         return self
@@ -240,6 +248,7 @@ class TreeBuilder:
                 assert not self.started_tags
                 assert not self.preserve_space
                 assert isinstance(result, NodeBase)
+                self.xml_ids.clear()
                 return result
 
         return None
@@ -264,6 +273,12 @@ class TreeBuilder:
 
     def handle_tag_start(self, data):
         assert isinstance(data.namespace, str)
+
+        if (id_ := data.attributes.get((XML_NAMESPACE, "id"))) is not None:
+            if id_ in self.xml_ids:
+                raise ParsingError(f"Redundantly used xml:id: {id_}")
+            else:
+                self.xml_ids.add(id_)
 
         self.children.append([])
 
