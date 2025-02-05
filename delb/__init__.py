@@ -23,7 +23,11 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 
 from _delb.builder import parse_nodes, parse_tree, tag
-from _delb.exceptions import FailedDocumentLoading, InvalidOperation
+from _delb.exceptions import (
+    FailedDocumentLoading,
+    InvalidOperation,
+    ParsingEmptyStream,
+)
 from _delb.plugins import (
     core_loaders,
     plugin_manager as _plugin_manager,
@@ -236,6 +240,9 @@ class Document(metaclass=DocumentMeta):
         assert isinstance(loader_result, Sequence)
         assert not isinstance(loader_result, str)
 
+        if len(loader_result) == 0:
+            raise ParsingEmptyStream()
+
         prologue = _Logue()
         for i, node in enumerate(loader_result):
             if isinstance(node, TagNode):
@@ -245,7 +252,7 @@ class Document(metaclass=DocumentMeta):
             else:
                 prologue.append(node)
         else:
-            raise RuntimeError("TODO")
+            raise ParsingEmptyStream()
 
     def __contains__(self, node: NodeBase) -> bool:
         return node.document is self

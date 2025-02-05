@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Final
 from urllib.parse import urljoin, urlparse
 from xml import sax
 
-from _delb.exceptions import InvalidCodePath, ParsingError
+from _delb.exceptions import InvalidCodePath, ParsingProcessingError
 from _delb.parser.base import Event, EventType, TagEventData, XMLEventParserInterface
 
 if TYPE_CHECKING:
@@ -95,7 +95,7 @@ class EntityResolver(sax.handler.EntityResolver):
         self, publicId: str | None, systemId: str | None  # noqa: N803
     ):
         if not self.options.load_referenced_resources:
-            raise ParsingError(
+            raise ParsingProcessingError(
                 "The document includes character entities that are declared in "
                 "external resources."
             )
@@ -108,7 +108,7 @@ class EntityResolver(sax.handler.EntityResolver):
             and self.scheme is not None
             and self.scheme.startswith("http")
         ):
-            raise ParsingError(f"Cannot load external resource '{_id}'.")
+            raise ParsingProcessingError(f"Cannot load external resource '{_id}'.")
 
         return urljoin(self.base_url, _id, allow_fragments=False)
 

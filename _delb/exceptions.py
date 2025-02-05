@@ -65,14 +65,17 @@ class ParsingError(DelbBaseException):
     pass
 
 
-class ParsingEmptyStream(ParsingError):
+class ParsingProcessingError(ParsingError):
+    pass
+
+
+class ParsingValidityError(ParsingError):
+    pass
+
+
+class ParsingEmptyStream(ParsingProcessingError):
     def __init__(self):
         super().__init__("The input stream is empty.")
-
-
-class ParsingStreamSurplus(ParsingError):
-    def __init__(self, node):
-        super().__init__("Encountered extra content.", node)
 
 
 class XPathEvaluationError(DelbBaseException):
@@ -136,7 +139,8 @@ __all__ = (
     InvalidOperation.__name__,
     ParsingEmptyStream.__name__,
     ParsingError.__name__,
-    ParsingStreamSurplus.__name__,
+    ParsingProcessingError.__name__,
+    ParsingValidityError.__name__,
     XPathEvaluationError.__name__,
     XPathParsingError.__name__,
     XPathUnsupportedStandardFeature.__name__,

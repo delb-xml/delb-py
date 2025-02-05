@@ -23,7 +23,7 @@ from collections import deque
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
-from _delb.exceptions import ParsingEmptyStream, ParsingError, ParsingStreamSurplus
+from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     DETACHED,
@@ -276,7 +276,7 @@ class TreeBuilder:
 
         if (id_ := data.attributes.get((XML_NAMESPACE, "id"))) is not None:
             if id_ in self.xml_ids:
-                raise ParsingError(f"Redundantly used xml:id: {id_}")
+                raise ParsingValidityError(f"Redundantly used xml:id: {id_}")
             else:
                 self.xml_ids.add(id_)
 
@@ -341,7 +341,7 @@ def parse_tree(
     result = None
     for node in parse_nodes(data, options, base_url=base_url):
         if result is not None:
-            raise ParsingStreamSurplus(node)
+            raise ParsingValidityError("The stream contained extra contents.", node)
         result = node
 
     if result is None:
