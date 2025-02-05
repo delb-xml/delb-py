@@ -122,3 +122,51 @@ def test_redundant_xml_ids(parser):
             "<root xml:id='a'><node xml:id='a'/></root>",
             options=ParserOptions(parser=parser),
         )
+
+
+def test_safety(parser):
+    # these are taken from Christian Heimes' test suite for the defused-xml project.
+    # there's no expectation with regards to the resulting contents, it must be solely
+    # ensured that nothing blows up.
+
+    cascade = Document(
+        """\
+    <!DOCTYPE cascade [
+    <!ENTITY a "1234567890" >
+    <!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;">
+    <!ENTITY c "&b;&b;&b;&b;&b;&b;&b;&b;">
+    <!ENTITY d "&c;&c;&c;&c;&c;&c;&c;&c;">
+    ]>
+    <cascade>&d;</cascade>""",
+        parser_options=ParserOptions(parser=parser),
+    )
+    assert len(cascade.root.full_text) == 5_120
+
+    try:
+        Document(
+            """\
+        <!DOCTYPE cyclic [
+        <!ENTITY a "123 &b;" >
+        <!ENTITY b "&a;">
+        ]>
+        <cyclic>&a;</cyclic>""",
+            parser_options=ParserOptions(parser=parser),
+        )
+    except Exception:
+        pass
+    else:
+        raise AssertionError
+
+    try:
+        Document(
+            '<!DOCTYPE quadratic [ <!ENTITY a "'
+            + "B" * 10_000
+            + '" > ]>\n<quadratic>'
+            + "&a;" * 1_000
+            + "</quadratic>",
+            parser_options=ParserOptions(parser=parser),
+        )
+    except Exception:
+        pass
+    else:
+        raise AssertionError
