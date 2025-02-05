@@ -24,11 +24,24 @@ c = new_comment_node
 t = new_tag_node
 
 
-def test_external_entity_declaration(files_path, parser):
-    document = Document(
-        files_path / "external_dtd.xml", parser_options=ParserOptions(parser=parser)
-    )
-    assert document.root.full_text == "schüppsen"
+@pytest.mark.parametrize("load_referenced_resources", (True, False))
+def test_external_entity_declaration(
+    files_path,
+    load_referenced_resources,
+    parser,
+):
+    try:
+        document = Document(
+            files_path / "external_dtd.xml",
+            parser_options=ParserOptions(
+                load_referenced_resources=load_referenced_resources, parser=parser
+            ),
+        )
+    except Exception:
+        assert not load_referenced_resources
+    else:
+        assert load_referenced_resources
+        assert document.root.full_text == "schüppsen"
 
 
 @pytest.mark.parametrize("extra", ("<!-- B -->", "<?B B?>"))
@@ -107,6 +120,7 @@ def test_parse_xml_documents(file, parser, reduced_content):
     Document(
         file,
         parser_options=ParserOptions(
+            load_referenced_resources="external" in file.name,
             parser=parser,
             reduce_whitespace=reduced_content,
             remove_comments=reduced_content,

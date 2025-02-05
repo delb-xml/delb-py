@@ -7,6 +7,7 @@ from _delb.names import XML_NAMESPACE
 from _delb.nodes import DefaultStringOptions, altered_default_filters
 from delb import (
     Document,
+    ParserOptions,
     TagNode,
     TextNode,
     is_tag_node,
@@ -405,7 +406,10 @@ def test_last_descendant():
 @skip_long_running_test
 @pytest.mark.parametrize("file", XML_FILES)
 def test_location_path_and_xpath_concordance(file):
-    document = Document(file)
+    document = Document(
+        file,
+        parser_options=ParserOptions(load_referenced_resources="external" in file.name),
+    )
     assert document.xpath(document.root.location_path).first is document.root
 
     for node in document.root.iterate_descendants(is_tag_node):

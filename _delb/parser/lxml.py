@@ -46,7 +46,7 @@ class LxmlParser(XMLEventParserInterface):
             dtd_validation=False,
             encoding=encoding,
             events=("comment", "end", "pi", "start"),
-            load_dtd=True,
+            load_dtd=options.load_referenced_resources,
             no_network=options.unplugged,
             remove_blank_text=False,
             remove_comments=options.remove_comments,

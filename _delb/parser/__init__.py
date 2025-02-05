@@ -37,6 +37,7 @@ class ParserOptions(NamedTuple):
                      streams where the encoding is not noted in an XML document
                      declaration or indicated by a BOM for Unicode encodings.
                      It doesn't affect parsing of data that is passed as :class:`str`.
+    :param load_referenced_resources: Allows the loading of referenced external DTDs.
     :param reduce_whitespace: :meth:`Reduce the content's whitespace
                                 <delb.Document.reduce_whitespace>`.
     :param remove_comments: Ignore comments.
@@ -46,6 +47,7 @@ class ParserOptions(NamedTuple):
     """
 
     encoding: Optional[str] = None
+    load_referenced_resources: bool = False
     reduce_whitespace: bool = False
     remove_comments: bool = False
     remove_processing_instructions: bool = False

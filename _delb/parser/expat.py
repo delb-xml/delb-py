@@ -94,6 +94,12 @@ class EntityResolver(sax.handler.EntityResolver):
     def resolveEntity(  # noqa: N802
         self, publicId: str | None, systemId: str | None  # noqa: N803
     ):
+        if not self.options.load_referenced_resources:
+            raise ParsingError(
+                "The document includes character entities that are declared in "
+                "external resources."
+            )
+
         _id = systemId or publicId
         assert _id is not None
 

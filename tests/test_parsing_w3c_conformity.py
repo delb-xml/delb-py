@@ -121,7 +121,10 @@ class W3CTestProcess(Process):
     def run(self):
         try:
             Document(
-                self.case.path, parser_options=ParserOptions(parser=self.case.parser)
+                self.case.path,
+                parser_options=ParserOptions(
+                    load_referenced_resources=True, parser=self.case.parser
+                ),
             )
         # non-validating parsers shall accept tests with the types
         # "valid" and "invalid"
