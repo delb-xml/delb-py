@@ -25,6 +25,8 @@ from __future__ import annotations
 from io import IOBase
 from typing import TYPE_CHECKING, Any, Optional
 
+import httpx
+
 from _delb.plugins import plugin_manager
 from _delb.plugins.core_loaders import buffer_loader, text_loader
 
@@ -44,63 +46,62 @@ else:
     http2 = True
     del h2
 
-try:
-    import httpx  # noqa: F401
-except ImportError:
-    __all__: tuple[str, ...] = ()
-else:
-    DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=http2)
 
-    class HttpsStreamWrapper(IOBase):
-        __slots__ = ("_generator", "_response")
-
-        def __init__(self, response: httpx.Response):
-            self._generator: Optional[Iterator[bytes]] = None
-            self._response = response
-
-        def read(self, size: int = 4096) -> bytes:
-            if self._generator is None:
-                self._generator = self._response.iter_bytes(chunk_size=size)
-
-            try:
-                return next(self._generator)
-            except StopIteration:
-                return b""
-
-    @plugin_manager.register_loader(before=text_loader)
-    def https_loader(
-        data: Any, config: SimpleNamespace, client: httpx.Client = DEFAULT_CLIENT
-    ) -> LoaderResult:
-        """
-        This loader loads a document from a URL with the ``http`` and ``https`` scheme.
-        The default httpx_-client follows redirects and can partially be configured with
-        `environment variables`_. The URL will be bound to the name ``source_url`` on
-        the document's :attr:`Document.config` attribute.
-
-        Loaders with specifically configured httpx-clients can build on this loader
-        like so:
-
-        .. testcode::
-
-            import httpx
-            from _delb.plugins import plugin_manager
-            from _delb.plugins.https_loader import https_loader
+DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=http2)
 
 
-            client = httpx.Client(follow_redirects=False, trust_env=False)
+class HttpsStreamWrapper(IOBase):
+    __slots__ = ("_generator", "_response")
 
-            @plugin_manager.register_loader(before=https_loader)
-            def custom_https_loader(data, config):
-                return https_loader(data, config, client=client)
+    def __init__(self, response: httpx.Response):
+        self._generator: Optional[Iterator[bytes]] = None
+        self._response = response
 
-        .. _environment variables: https://www.python-httpx.org/environment_variables/
-        .. _httpx: https://www.python-httpx.org/
-        """
-        if isinstance(data, str) and data.lower().startswith(("http://", "https://")):
-            with client.stream("get", url=data) as response:
-                response.raise_for_status()
-                config.source_url = data
-                return buffer_loader(HttpsStreamWrapper(response), config)
-        return "The input value is not an URL with the http or https scheme."
+    def read(self, size: int = 4096) -> bytes:
+        if self._generator is None:
+            self._generator = self._response.iter_bytes(chunk_size=size)
 
-    __all__ = (https_loader.__name__,)
+        try:
+            return next(self._generator)
+        except StopIteration:
+            return b""
+
+
+@plugin_manager.register_loader(before=text_loader)
+def https_loader(
+    data: Any, config: SimpleNamespace, client: httpx.Client = DEFAULT_CLIENT
+) -> LoaderResult:
+    """
+    This loader loads a document from a URL with the ``http`` and ``https`` scheme.
+    The default httpx_-client follows redirects and can partially be configured with
+    `environment variables`_. The URL will be bound to the name ``source_url`` on
+    the document's :attr:`Document.config` attribute.
+
+    Loaders with specifically configured httpx-clients can build on this loader
+    like so:
+
+    .. testcode::
+
+        import httpx
+        from _delb.plugins import plugin_manager
+        from _delb.plugins.https_loader import https_loader
+
+
+        client = httpx.Client(follow_redirects=False, trust_env=False)
+
+        @plugin_manager.register_loader(before=https_loader)
+        def custom_https_loader(data, config):
+            return https_loader(data, config, client=client)
+
+    .. _environment variables: https://www.python-httpx.org/environment_variables/
+    .. _httpx: https://www.python-httpx.org/
+    """
+    if isinstance(data, str) and data.lower().startswith(("http://", "https://")):
+        with client.stream("get", url=data) as response:
+            response.raise_for_status()
+            config.source_url = data
+            return buffer_loader(HttpsStreamWrapper(response), config)
+    return "The input value is not an URL with the http or https scheme."
+
+
+__all__ = (https_loader.__name__,)

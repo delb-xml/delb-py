@@ -37,9 +37,6 @@ dependencies = [
     "typing-extensions; python_version < '3.11'"
 ]
 
-[project.entry-points.delb]
-https-loader = "_delb.plugins.https_loader"
-
 [project.optional-dependencies]
 https-loader = ["httpx[http2]"]
 lxml-parser = ["lxml"]

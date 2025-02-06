@@ -139,6 +139,8 @@ class PluginManager:
         Loads all modules that are registered as entrypoint in the ``delb`` group and
         imports contributed extensions whose dependencies are available.
         """
+        if find_spec("httpx"):
+            import _delb.plugins.https_loader
         if find_spec("lxml.etree"):
             import _delb.plugins.lxml_parser
         if find_spec("xml.sax"):
