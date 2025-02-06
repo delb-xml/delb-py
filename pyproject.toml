@@ -42,6 +42,7 @@ https-loader = "_delb.plugins.https_loader"
 
 [project.optional-dependencies]
 https-loader = ["httpx[http2]"]
+lxml-parser = ["lxml"]
 
 [project.urls]
 Changelog = "https://delb.readthedocs.io/latest/changes.html"
@@ -125,7 +126,7 @@ only-include = [
 packages = ["_delb", "delb"]
 
 [tool.hatch.envs.default]
-features = ["https-loader"]
+features = ["https-loader", "lxml-parser"]
 
 [tool.hatch.envs.benchmarks]
 dependencies = [

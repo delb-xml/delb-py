@@ -10,14 +10,15 @@ from delb import (
     tag,
 )
 from delb.exceptions import ParsingValidityError
-from _delb.parser.expat import ExpatParser
-from _delb.parser.lxml import LxmlParser
+from _delb.plugins import plugin_manager
 
 from tests.conftest import XML_FILES
 from tests.utils import assert_equal_trees
 
 
-pytestmark = pytest.mark.parametrize("parser", (ExpatParser, LxmlParser))
+assert len(AVAILABLE_PARSERS := tuple(plugin_manager.parsers)) == 2
+
+pytestmark = pytest.mark.parametrize("parser", AVAILABLE_PARSERS)
 
 
 c = new_comment_node
@@ -34,7 +35,8 @@ def test_external_entity_declaration(
         document = Document(
             files_path / "external_dtd.xml",
             parser_options=ParserOptions(
-                load_referenced_resources=load_referenced_resources, parser=parser
+                load_referenced_resources=load_referenced_resources,
+                preferred_parsers=parser,
             ),
         )
     except Exception:
@@ -53,7 +55,7 @@ def test_ignoring_comments_and_pis(extra, parser):
             reduce_whitespace=True,
             remove_comments=True,
             remove_processing_instructions=True,
-            parser=parser,
+            preferred_parsers=parser,
         ),
     )
     assert len(result) == 1
@@ -111,7 +113,9 @@ def test_internal_entity_declaration(files_path, parser):
 def test_parse_tree(in_, out, as_bytes, parser):
     if as_bytes:
         in_ = in_.encode()
-    assert_equal_trees(parse_tree(in_, options=ParserOptions(parser=parser)), out)
+    assert_equal_trees(
+        parse_tree(in_, options=ParserOptions(preferred_parsers=parser)), out
+    )
 
 
 @pytest.mark.parametrize("reduced_content", (True, False))
@@ -121,7 +125,7 @@ def test_parse_xml_documents(file, parser, reduced_content):
         file,
         parser_options=ParserOptions(
             load_referenced_resources="external" in file.name,
-            parser=parser,
+            preferred_parsers=parser,
             reduce_whitespace=reduced_content,
             remove_comments=reduced_content,
             remove_processing_instructions=reduced_content,
@@ -134,7 +138,7 @@ def test_redundant_xml_ids(parser):
     with pytest.raises(exception):
         parse_tree(
             "<root xml:id='a'><node xml:id='a'/></root>",
-            options=ParserOptions(parser=parser),
+            options=ParserOptions(preferred_parsers=parser),
         )
 
 
@@ -152,7 +156,7 @@ def test_safety(parser):
     <!ENTITY d "&c;&c;&c;&c;&c;&c;&c;&c;">
     ]>
     <cascade>&d;</cascade>""",
-        parser_options=ParserOptions(parser=parser),
+        parser_options=ParserOptions(preferred_parsers=parser),
     )
     assert len(cascade.root.full_text) == 5_120
 
@@ -164,7 +168,7 @@ def test_safety(parser):
         <!ENTITY b "&a;">
         ]>
         <cyclic>&a;</cyclic>""",
-            parser_options=ParserOptions(parser=parser),
+            parser_options=ParserOptions(preferred_parsers=parser),
         )
     except Exception:
         pass
@@ -178,7 +182,7 @@ def test_safety(parser):
             + '" > ]>\n<quadratic>'
             + "&a;" * 1_000
             + "</quadratic>",
-            parser_options=ParserOptions(parser=parser),
+            parser_options=ParserOptions(preferred_parsers=parser),
         )
     except Exception:
         pass

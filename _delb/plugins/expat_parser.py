@@ -22,12 +22,14 @@ from urllib.parse import urljoin, urlparse
 from xml import sax
 
 from _delb.exceptions import InvalidCodePath, ParsingProcessingError
-from _delb.parser.base import Event, EventType, TagEventData, XMLEventParserInterface
+from _delb.parser import EventType, TagEventData
+from _delb.plugins import XMLEventParserInterface
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.parser import ParserOptions
+    from _delb.parser import Event, ParserOptions
     from _delb.typing import BinaryReader
 
 
@@ -143,6 +145,8 @@ class LexcialHandler(sax.handler.LexicalHandler):
 class ExpatParser(XMLEventParserInterface):
     __slots__ = ("encoding", "events", "options", "parser")
 
+    name = "expat"
+
     def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
         self.encoding = encoding
         self.events: deque[Event] = deque()
@@ -159,7 +163,6 @@ class ExpatParser(XMLEventParserInterface):
             sax.handler.property_lexical_handler,
             LexcialHandler(self.events, self.options),
         )
-        # TODO ErrorHandler?
         parser.setFeature(sax.handler.feature_namespaces, True)
         return parser
 

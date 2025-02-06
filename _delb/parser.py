@@ -15,18 +15,65 @@
 
 from __future__ import annotations
 
+import codecs
+import re
 import warnings
+from enum import IntEnum, auto
 from io import BytesIO
-from typing import TYPE_CHECKING, NamedTuple, Optional, cast
+from typing import Final, TYPE_CHECKING, NamedTuple, Optional, TypeAlias, cast
 
-from _delb.parser.base import Event, EventType, XMLEventParserInterface
-from _delb.parser.lxml import LxmlParser
-from _delb.parser.utils import _EncodingDetectingReader, detect_encoding
+from _delb.plugins import plugin_manager
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
-    from _delb.typing import BinaryReader, InputStream
+    from _delb.plugins import XMLEventParserInterface
+    from _delb.typing import BinaryReader, InputStream, _AttributesData
+
+
+BOM_TO_ENCODING_NAME: Final = (
+    (4, codecs.BOM_UTF32_LE, "utf-32-le"),
+    (4, codecs.BOM_UTF32_BE, "utf-32-be"),
+    (3, codecs.BOM_UTF8, "utf-8"),
+    (2, codecs.BOM_UTF16_LE, "utf-16-le"),
+    (2, codecs.BOM_UTF16_BE, "utf-16-be"),
+)
+
+
+_match_encoding: Final = re.compile(
+    rb"""<\?xml\sversion=["']1\.0["']\sencoding=["']([A-Za-z0-9_-]+)["']\?>"""
+).match
+
+
+class _EncodingDetectingReader:
+    __slots__ = ("buffer", "first_bytes", "reading")
+
+    def __init__(self, buffer: BinaryReader):
+        self.buffer = buffer
+        self.first_bytes = b""
+        self.reading = False
+
+    def get_encoding(self) -> str | None:
+        if self.reading:
+            raise RuntimeError("Get the encoding before reading from the buffer!")
+
+        self.first_bytes = self.buffer.read(64)
+        return detect_encoding(self.first_bytes)
+
+    def read(self, n: int = -1) -> bytes:
+        if self.reading:
+            return self.buffer.read(n)
+        else:
+            self.reading = True
+            return self.first_bytes + self.buffer.read(n)
+
+
+class EventType(IntEnum):
+    Comment = auto()
+    ProcessingInstruction = auto()
+    TagStart = auto()
+    TagEnd = auto()
+    Text = auto()
 
 
 class ParserOptions(NamedTuple):
@@ -38,6 +85,8 @@ class ParserOptions(NamedTuple):
                      declaration or indicated by a BOM for Unicode encodings.
                      It doesn't affect parsing of data that is passed as :class:`str`.
     :param load_referenced_resources: Allows the loading of referenced external DTDs.
+    :param preferred_parsers: A name or a sequence of names that are preferably to be
+                              used.
     :param reduce_whitespace: :meth:`Reduce the content's whitespace
                                 <delb.Document.reduce_whitespace>`.
     :param remove_comments: Ignore comments.
@@ -48,17 +97,39 @@ class ParserOptions(NamedTuple):
 
     encoding: Optional[str] = None
     load_referenced_resources: bool = False
+    preferred_parsers: str | Sequence[str] = ("lxml", "expat")
     reduce_whitespace: bool = False
     remove_comments: bool = False
     remove_processing_instructions: bool = False
     unplugged: bool = False
-    parser: Optional[type[XMLEventParserInterface]] = None
+
+
+class TagEventData(NamedTuple):
+    namespace: str
+    local_name: str
+    attributes: _AttributesData | None
+
+
+Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
+
+
+def detect_encoding(stream: bytes) -> str | None:
+    if (match := _match_encoding(stream)) is not None:
+        return match.group(1).decode("ascii")
+    else:
+        for bom_size, bom, name in BOM_TO_ENCODING_NAME:
+            if stream[:bom_size] == bom:
+                return name
+        else:
+            return None
 
 
 def _make_parser(
     options: ParserOptions, *, base_url: str | None, encoding: str
 ) -> XMLEventParserInterface:
-    return (options.parser or LxmlParser)(options, base_url=base_url, encoding=encoding)
+    return plugin_manager.get_parser(options.preferred_parsers)(
+        options, base_url=base_url, encoding=encoding
+    )
 
 
 def parse_events(
@@ -98,6 +169,5 @@ def parse_events(
 __all__ = (
     "Event",
     "EventType",
-    XMLEventParserInterface.__name__,
     ParserOptions.__name__,
 )

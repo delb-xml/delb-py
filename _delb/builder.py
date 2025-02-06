@@ -39,8 +39,8 @@ from _delb.nodes import (
     TagNode,
     TextNode,
 )
-from _delb.parser import parse_events, Event, EventType, ParserOptions
-from _delb.parser.base import TagEventData
+from _delb.parser import Event, EventType, ParserOptions, TagEventData, parse_events
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

@@ -16,8 +16,11 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, overload, Any
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
+from importlib.util import find_spec
+from typing import TYPE_CHECKING, Any, overload
+
 
 if sys.version_info < (3, 10):  # DROPWITH Python3.9
     from importlib_metadata import entry_points
@@ -28,7 +31,9 @@ else:
 if TYPE_CHECKING:
     from types import SimpleNamespace
     from delb import Document
+    from _delb.parser import Event, ParserOptions
     from _delb.typing import (
+        BinaryReader,
         GenericDecorated,
         Loader,
         LoaderConstraint,
@@ -98,17 +103,47 @@ class DocumentMixinBase:
 
 
 class PluginManager:
+    __slots__ = (
+        "document_mixins",
+        "document_subclasses",
+        "loaders",
+        "parsers",
+        "xpath_functions",
+    )
+
     def __init__(self):
         self.document_mixins: list[type[DocumentMixinBase]] = []
         self.document_subclasses: list[type[Document]] = []
         self.loaders: list[Loader] = []
+        self.parsers: dict[str, type[XMLEventParserInterface]] = {}
         self.xpath_functions: dict[str, XPathFunction] = {}
+
+    def get_parser(
+        self, preferences: str | Sequence[str]
+    ) -> type[XMLEventParserInterface]:
+        if isinstance(preferences, str):
+            preferences = (preferences,)
+
+        for name in preferences:
+            if (parser := self.parsers.get(name)) is not None:
+                return parser
+
+        for parser in self.parsers.values():
+            return parser
+
+        raise RuntimeError("No available parsers.")
 
     @staticmethod
     def load_plugins():
         """
-        Loads all modules that are registered as entrypoint in the ``delb`` group.
+        Loads all modules that are registered as entrypoint in the ``delb`` group and
+        imports contributed extensions whose dependencies are available.
         """
+        if find_spec("lxml.etree"):
+            import _delb.plugins.lxml_parser
+        if find_spec("xml.sax"):
+            import _delb.plugins.expat_parser  # noqa: F401
+
         for entrypoint in entry_points().select(group="delb"):
             entrypoint.load()
 
@@ -254,6 +289,22 @@ class PluginManager:
         if callable(arg):
             self.xpath_functions[arg.__name__] = arg
             return arg
+
+
+class XMLEventParserInterface(ABC):
+
+    name: str
+
+    def __init_subclass__(cls):
+        plugin_manager.parsers[cls.name] = cls
+
+    @abstractmethod
+    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+        pass
+
+    @abstractmethod
+    def parse(self, data: BinaryReader) -> Iterator[Event]:
+        pass
 
 
 plugin_manager = PluginManager()

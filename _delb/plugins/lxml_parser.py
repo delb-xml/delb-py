@@ -20,22 +20,21 @@ from typing import TYPE_CHECKING
 from lxml import etree
 
 from _delb.names import deconstruct_clark_notation
-from _delb.parser.base import (
-    Event,
-    EventType,
-    TagEventData,
-    XMLEventParserInterface,
-)
+from _delb.parser import EventType, TagEventData
+from _delb.plugins import XMLEventParserInterface
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.parser import ParserOptions
+    from _delb.parser import Event, ParserOptions
     from _delb.typing import _AttributesData, BinaryReader
 
 
 class LxmlParser(XMLEventParserInterface):
     __slots__ = ("parser",)
+
+    name = "lxml"
 
     def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
         if encoding.endswith(("-be", "-le")):

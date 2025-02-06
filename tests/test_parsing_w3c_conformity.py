@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fnmatch import fnmatch
 from multiprocessing import Process
 from pathlib import Path
@@ -7,10 +9,10 @@ import pytest
 from lxml import etree
 
 from delb import Document, FailedDocumentLoading
-from _delb.parser import ParserOptions, XMLEventParserInterface
-from _delb.parser.expat import ExpatParser
-from _delb.parser.lxml import LxmlParser
+from _delb.parser import ParserOptions
+from _delb.plugins import plugin_manager
 from _delb.plugins.core_loaders import path_loader
+
 from tests.utils import skip_long_running_test
 
 
@@ -18,7 +20,7 @@ pytestmark = skip_long_running_test
 
 
 class W3CConformanceTest(NamedTuple):
-    parser: type[XMLEventParserInterface]
+    parser: str
     path: Path
     entities: str
     id: str
@@ -65,7 +67,7 @@ IGNORED_TESTS = {
         # expat
         "o-p0[45]pass1",
     },
-    ExpatParser: {
+    "expat": {
         # dealing with elaborated DTDs isn't a project goal. these cases use invalid
         # ones, yet the document itself is parseable.
         "ibm-invalid-P68-ibm68i0?.xml",
@@ -74,7 +76,7 @@ IGNORED_TESTS = {
         # the entity resolver is never called
         "uri01",
     },
-    LxmlParser: {
+    "lxml": {
         # dealing with elaborated DTDs isn't a project goal. these cases use invalid
         # ones, yet the document itself is parseable.
         "ibm-invalid-P69-ibm69i0?.xml",
@@ -123,7 +125,8 @@ class W3CTestProcess(Process):
             Document(
                 self.case.path,
                 parser_options=ParserOptions(
-                    load_referenced_resources=True, parser=self.case.parser
+                    load_referenced_resources=True,
+                    preferred_parsers=self.case.parser,
                 ),
             )
         # non-validating parsers shall accept tests with the types
@@ -174,8 +177,7 @@ def collect_w3c_conformance_tests():
             if any(fnmatch(id_, p) for p in IGNORED_TESTS[None]):
                 continue
 
-            # TODO from plugin manager
-            for parser in (ExpatParser, LxmlParser):
+            for parser in plugin_manager.parsers:
                 if any(fnmatch(id_, p) for p in IGNORED_TESTS[parser]):
                     continue
 
