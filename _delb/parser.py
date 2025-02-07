@@ -137,9 +137,7 @@ def parse_events(
 ) -> Iterator[Event]:
     encoding = options.encoding
     if isinstance(input_, str):
-        # TODO this isn't ideal at all
         encoding = "utf-8"
-        input_ = BytesIO(input_.encode("utf-8"))
 
     elif isinstance(input_, bytes):
         if encoding is None:

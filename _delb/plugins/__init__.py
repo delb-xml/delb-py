@@ -305,7 +305,7 @@ class XMLEventParserInterface(ABC):
         pass
 
     @abstractmethod
-    def parse(self, data: BinaryReader) -> Iterator[Event]:
+    def parse(self, data: BinaryReader | str) -> Iterator[Event]:
         pass
 
 

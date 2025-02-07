@@ -54,6 +54,10 @@ class LxmlParser(XMLEventParserInterface):
             strip_cdata=False,
         )
 
+    def emit_events(self) -> Iterator[Event]:
+        for event in self.parser.read_events():
+            yield from self.handle_event(event)
+
     def handle_element_preceding_text(self, element: etree._Element):
         if ((parent := element.getparent()) is not None) and (
             parent.index(element) == 0
@@ -93,17 +97,16 @@ class LxmlParser(XMLEventParserInterface):
         elif action == "start":
             yield EventType.TagStart, self.tag_event_data_from_element(element)
 
-    def parse(self, data: BinaryReader) -> Iterator[Event]:
-        eof = False
-        while not eof:
-            if chunk := data.read():
+    def parse(self, data: BinaryReader | str) -> Iterator[Event]:
+        if isinstance(data, str):
+            self.parser.feed(data)
+        else:
+            while chunk := data.read():
                 self.parser.feed(chunk)
-            else:
-                eof = True
-                self.parser.close()
+                yield from self.emit_events()
 
-            for event in self.parser.read_events():
-                yield from self.handle_event(event)
+        self.parser.close()
+        yield from self.emit_events()
 
     def process_attributes(
         self, attributes: etree._Attrib, node_namespace: str

@@ -143,7 +143,7 @@ class LexcialHandler(sax.handler.LexicalHandler):
 
 
 class ExpatParser(XMLEventParserInterface):
-    __slots__ = ("encoding", "events", "options", "parser")
+    __slots__ = ("encoding", "events", "options", "parser", "unprocessed_text")
 
     name = "expat"
 
@@ -152,6 +152,19 @@ class ExpatParser(XMLEventParserInterface):
         self.events: deque[Event] = deque()
         self.options = options
         self.parser = self.make_parser(base_url=base_url)
+        self.unprocessed_text = ""
+
+    def emit_events(self) -> Iterator[Event]:
+        while self.events:
+            event_type, event_data = self.events.popleft()
+            if event_type is EventType.Text:
+                assert isinstance(event_data, str)
+                self.unprocessed_text += event_data
+            else:
+                if self.unprocessed_text:
+                    yield EventType.Text, self.unprocessed_text
+                    self.unprocessed_text = ""
+                yield event_type, event_data
 
     def make_parser(self, base_url: str | None) -> sax.xmlreader.IncrementalParser:
         parser = sax.make_parser()
@@ -166,31 +179,20 @@ class ExpatParser(XMLEventParserInterface):
         parser.setFeature(sax.handler.feature_namespaces, True)
         return parser
 
-    def parse(self, data: BinaryReader) -> Iterator[Event]:
-        decoder = codecs.getincrementaldecoder(self.encoding)()
-        eof = False
-        prior_text = ""
-        while not eof:
-            if chunk := data.read():
+    def parse(self, data: BinaryReader | str) -> Iterator[Event]:
+        if isinstance(data, str):
+            self.parser.feed(data)
+        else:
+            decoder = codecs.getincrementaldecoder(self.encoding)()
+            while chunk := data.read():
                 self.parser.feed(decoder.decode(chunk))
-            else:
-                self.parser.feed(decoder.decode(b"", final=True))
-                self.parser.close()
-                eof = True
+            yield from self.emit_events()
+            self.parser.feed(decoder.decode(b"", final=True))
 
-            while self.events:
-                event_type, event_data = self.events.popleft()
-                if event_type is EventType.Text:
-                    assert isinstance(event_data, str)
-                    prior_text += event_data
-                else:
-                    if prior_text:
-                        yield EventType.Text, prior_text
-                        prior_text = ""
-                    yield event_type, event_data
-
-        if prior_text:
-            yield EventType.Text, prior_text
+        self.parser.close()
+        yield from self.emit_events()
+        if self.unprocessed_text:
+            yield EventType.Text, self.unprocessed_text
 
 
 __all__ = (ExpatParser.__name__,)
