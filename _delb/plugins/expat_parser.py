@@ -54,12 +54,6 @@ class ContentHandler(sax.handler.ContentHandler):
     def ignorableWhitespace(self, whitespace: str):  # noqa: N802
         raise InvalidCodePath
 
-    def processingInstruction(self, target: str, data: str):  # noqa: N802
-        assert isinstance(target, str)
-        assert isinstance(data, str)
-        if not self.options.remove_processing_instructions:
-            self.events.append((EventType.ProcessingInstruction, (target, data)))
-
     def skippedEntity(self, name: str):  # noqa: N802
         raise NotImplementedError
 
@@ -80,6 +74,13 @@ class ContentHandler(sax.handler.ContentHandler):
                 ),
             )
         )
+
+
+class ContentHandlerWithPIs(ContentHandler):
+    def processingInstruction(self, target: str, data: str):  # noqa: N802
+        assert isinstance(target, str)
+        assert isinstance(data, str)
+        self.events.append((EventType.ProcessingInstruction, (target, data)))
 
 
 class EntityResolver(sax.handler.EntityResolver):
@@ -122,11 +123,6 @@ class LexcialHandler(sax.handler.LexicalHandler):
         self.events = events
         self.options = options
 
-    def comment(self, content: str):
-        assert isinstance(content, str)
-        if not self.options.remove_comments:
-            self.events.append((EventType.Comment, content))
-
     def endCDATA(self):  # noqa: N802
         pass
 
@@ -140,6 +136,12 @@ class LexcialHandler(sax.handler.LexicalHandler):
         self, name: str, public_id: None | str, system_id: None | str
     ):
         pass
+
+
+class LexicalHandlerWithComments(LexcialHandler):
+    def comment(self, content: str):
+        assert isinstance(content, str)
+        self.events.append((EventType.Comment, content))
 
 
 class ExpatParser(XMLEventParserInterface):
@@ -168,15 +170,29 @@ class ExpatParser(XMLEventParserInterface):
 
     def make_parser(self, base_url: str | None) -> sax.xmlreader.IncrementalParser:
         parser = sax.make_parser()
+        parser.setFeature(sax.handler.feature_namespaces, True)
         assert isinstance(parser, sax.xmlreader.IncrementalParser)
-        parser.setContentHandler(ContentHandler(self.events, self.options))
+
+        content_handler = (
+            ContentHandler
+            if self.options.remove_processing_instructions
+            else ContentHandlerWithPIs
+        )
+        parser.setContentHandler(content_handler(self.events, self.options))
+
         parser.setEntityResolver(EntityResolver(self.options, base_url))
         parser.setFeature(sax.handler.feature_external_ges, True)
+
+        lexical_handler = (
+            LexcialHandler
+            if self.options.remove_comments
+            else LexicalHandlerWithComments
+        )
         parser.setProperty(
             sax.handler.property_lexical_handler,
-            LexcialHandler(self.events, self.options),
+            lexical_handler(self.events, self.options),
         )
-        parser.setFeature(sax.handler.feature_namespaces, True)
+
         return parser
 
     def parse(self, data: BinaryReader | str) -> Iterator[Event]:
