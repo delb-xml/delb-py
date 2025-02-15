@@ -132,7 +132,7 @@ dependencies = [
 [tool.hatch.envs.benchmarks.scripts]
 run = """
     python -m pytest \
-        --benchmark-autosave --benchmark-group-by=name \
+        --benchmark-autosave --benchmark-group-by=func,param:file \
         --benchmark-timer=time.process_time benchmarks
 """
 

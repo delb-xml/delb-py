@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import pytest
 
-from benchmarks.conftest import DOCUMENTS
+from benchmarks.conftest import TEI_FILES
 from delb import is_text_node, Document, TagNode
 from delb.transform import Transformation
 
@@ -72,7 +72,7 @@ class NormalizeDocument(Transformation):
             choice_node.detach(retain_child_nodes=True)
 
     def resolve_copyOf(self):  # noqa: N802
-        document = self.document
+        document = self.origin_document
         for node in self.root.css_select("*[copyOf]"):
             source_id = node.attributes.pop("copyOf", "")
             assert source_id
@@ -84,9 +84,9 @@ class NormalizeDocument(Transformation):
 
 
 def normalize_documents(transformation, document):
-    transformation(document.root, document=document)
+    transformation(document.root, origin_document=document)
 
 
-@pytest.mark.parametrize("document", DOCUMENTS)
-def test_normalize_documents(benchmark, document):
-    benchmark(normalize_documents, NormalizeDocument(), Document(document))
+@pytest.mark.parametrize("file", TEI_FILES)
+def test_normalize_documents(benchmark, file):
+    benchmark(normalize_documents, NormalizeDocument(), Document(file))

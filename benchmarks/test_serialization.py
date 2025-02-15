@@ -1,10 +1,12 @@
-from delb import Document
+import pytest
+
+from benchmarks.conftest import XML_FILES
 
 
-def serialize_documents(docs):
-    for doc in docs:
-        str(doc)
+def serialize(document):
+    str(document)
 
 
-def test_serialization(benchmark, docs):
-    benchmark(serialize_documents, [Document(x) for x in docs])
+@pytest.mark.parametrize("file", XML_FILES)
+def test_serialization(benchmark, file):
+    benchmark(serialize, file)

@@ -4,15 +4,15 @@ from pathlib import Path
 import pytest
 
 
-DOCUMENTS = tuple(x for x in (Path(__file__).parent.resolve() / "docs").iterdir())
+FAILED_RESULT = "failed_result_of_"
+FILES_PATH = Path(__file__).parent.parent / "tests/files"
+TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
+XML_FILES = tuple(
+    p for p in FILES_PATH.glob("*.xml") if not p.name.startswith(FAILED_RESULT)
+)
 
 
 @pytest.fixture(autouse=True)
 def _collect_garbage():
     gc.collect()
     gc.collect()
-
-
-@pytest.fixture
-def docs():
-    return DOCUMENTS
