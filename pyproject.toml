@@ -139,10 +139,12 @@ run = """
 [tool.hatch.envs.docs]
 dependencies = [
     "autodocsumm",
+    "enum_tools",
     "furo",
     "sphinx-autobuild",
     "sphinx-copybutton",
-    "sphinx-design"
+    "sphinx-design",
+    "sphinx-toolbox"  # required by enum_tools
 ]
 [tool.hatch.envs.docs.scripts]
 build-html = "make -C docs html"

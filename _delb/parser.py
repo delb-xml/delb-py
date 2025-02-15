@@ -80,37 +80,102 @@ class ParserOptions(NamedTuple):
     """
     The configuration options that define an XML parser's behaviour.
 
-    :param encoding: An optional encoding that is expected.  This should be used for
-                     streams where the encoding is not noted in an XML document
-                     declaration or indicated by a BOM for Unicode encodings.
-                     It doesn't affect parsing of data that is passed as :class:`str`.
-    :param load_referenced_resources: Allows the loading of referenced external DTDs.
-    :param preferred_parsers: A name or a sequence of names that are preferably to be
-                              used.
-    :param reduce_whitespace: :meth:`Reduce the content's whitespace
-                                <delb.Document.reduce_whitespace>`.
-    :param remove_comments: Ignore comments.
-    :param remove_processing_instructions: Don't include processing instructions in the
-                                           parsed tree.
-    :param unplugged: Don't load referenced resources over network.
-    """
+    The used parser backend is determined by their availability and the
+    ``preferred_parsers`` setting.  *delb* comes with two contributed implementations
+    and further can be added to the plugin manager based on
+    :class:`_delb.plugins.XMLEventParserInterface`.
+
+    Both contributed implementations should not be tasked with documents that refer
+    invalid *Document Type Declarations* (DTDs), such may pass when their included
+    character entity declarations aren't used in the character data of the document or
+    lead to errors of different degrees of severity.  Character entity declarations are
+    the only considered DTD feature to provide backward compatibility.
+
+    Both will not allow some non-word characters as part of XML names that should be
+    allowed with the 5th edition of the XML 1.0 specification, e.g. ``:`` or single
+    combining characters.
+
+    Beside the :exc:`_delb.exceptions.ParsingError` exception and its derivations the
+    employed parsers may evoke their specific exceptions when confronted with invalid
+    syntax and not-so-well-formed documents.
+
+    The ``expat`` parser adapter depends on the :mod:`xml.sax.expatreader` module from
+    the standard library that is available with many Python distributions.
+
+    The ``lxml`` based parser requires the *lxml* package to be present in the
+    interpreter environment.  This parser is prone to crashing when processing invalid
+    DTDs, it also fails with uncommon, but still valid by spec, DTD contents.  It
+    should not be used with other encodings than Unicode to avoid crashes.
+    """  # noqa: RST304
 
     encoding: Optional[str] = None
+    """
+    This should be used for streams where the encoding is not noted in an XML document
+    declaration or indicated by a BOM for Unicode encodings.  It doesn't affect parsing
+    of data that is passed as :class:`str`.  Default: :obj:`None`.
+    """
     load_referenced_resources: bool = False
+    """Allows the loading of referenced external DTDs.  Default: :obj:`False`."""
     preferred_parsers: str | Sequence[str] = ("lxml", "expat")
+    """
+    A parser adapter name or a sequence of such that are preferably to be used.
+    Default: ``("lxml", "expat")``.
+    """
     reduce_whitespace: bool = False
+    """
+    :meth:`Reduce the content's whitespace <delb.Document.reduce_whitespace>`.
+    Default: :obj:`False`.
+    """
     remove_comments: bool = False
+    """Ignore comments.  Default: :obj:`False`."""
     remove_processing_instructions: bool = False
+    """
+    Don't include processing instructions in the parsed tree.  Default: :obj:`False`.
+    """
     unplugged: bool = False
+    """Don't load referenced resources over network.  Default: :obj:`False`."""
 
 
 class TagEventData(NamedTuple):
     namespace: str
     local_name: str
     attributes: _AttributesData | None
+    """
+    The attributes data must not contain XML namespace declarations.
+    It is optional in case of a :py:enum:`EventType.TagEnd`.
+    """
 
 
 Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
+"""
+An XML stream event tuple consists of two values.  The first is a member of
+:class:`EventType` that signals the type of event, the second carries the relevant data.
+All data must be stripped of XML markup characters and character data must be completely
+parsed and normalized.  All XML names and character entities must be resolved.
+
+.. list-table:: XML event tuples' structure
+    :widths: auto
+
+    * - Event member
+      - Data type
+      - Notes
+    * - :py:enum:member:`EventType.Comment`
+      - :class:`str`
+      -
+    * - :py:enum:member:`EventType.ProcessingInstruction`
+      - :class:`tuple` [:class:`str`, :class:`str`]
+      - ``(target, content)``
+    * - :py:enum:member:`EventType.TagStart`
+      - :class:`TagEventData`
+      -
+    * - :py:enum:member:`EventType.TagEnd`
+      - :class:`TagEventData` | :class:`None`
+      - If data is provided, the tree builder can detect inconsistent tagging in debug
+        mode.
+    * - :py:enum:member:`EventType.Text`
+      - :class:`str`
+      -
+"""
 
 
 def detect_encoding(stream: bytes) -> str | None:
@@ -168,4 +233,6 @@ __all__ = (
     "Event",
     "EventType",
     ParserOptions.__name__,
+    TagEventData.__name__,
+    detect_encoding.__name__,
 )

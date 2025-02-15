@@ -24,6 +24,14 @@ These extension types are currently available:
        Loaders are functions that try to make sense of any given input value,
        and if they can they return a parsed document.
 
+    .. grid-item-card:: Parser adapters
+       :link: parser-adapters
+       :link-type: ref
+
+       Parser adapters can plug to XML parser implementations.
+
+.. grid:: 1
+
     .. grid-item-card:: XPath functions
        :link: xpath-functions
        :link-type: ref
@@ -81,6 +89,24 @@ Document loaders
 Loaders are registered with this decorator:
 
 .. autofunction:: _delb.plugins.plugin_manager.register_loader
+
+
+.. _parser-adapters:
+
+Parser adapters
+---------------
+
+.. autoclass:: _delb.plugins.XMLEventParserInterface
+
+The parsed contents are passed with such constructs:
+
+.. autoclass:: _delb.parser.Event
+
+.. autoenum:: _delb.parser.EventType
+   :no-inherited-members:
+
+.. autoclass:: _delb.parser.TagEventData
+   :no-inherited-members:
 
 
 .. _document-mixins:

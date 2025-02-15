@@ -9,10 +9,24 @@ To install *delb* manually, not as dependency,  use pip_::
     $ pip install delb
 
 
-At the moment there's only one optional dependency to enable document loading
-via `http` and `https`, to include it use::
+There are two extra features that can be selected to install their respective
+dependencies.
 
-    $ pip install delb[https-loader]
+To include `httpx` that is used to provide a document loader that fetches web
+resources::
+
+    $ pip install delb[web-loader]
+
+
+`lxml` can be installed as optional parsing backend::
+
+    $ pip install delb[lxml-parser]
+
+
+Note that multiple extra features are specified by concatenating them with
+commas::
+
+    $ pip install delb[lxml-parser,web-loader]
 
 
 From source

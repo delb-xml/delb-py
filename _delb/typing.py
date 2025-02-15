@@ -76,6 +76,8 @@ XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 
 __all__ = (
     "AttributeAccessor",
+    "_AttributesData",
+    "BinaryReader",
     "Filter",
     "GenericDecorated",
     "InputStream",
@@ -84,6 +86,7 @@ __all__ = (
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "QualifiedName",
     "SecondOrderDecorator",
     "Self",
     "XPathFunction",

@@ -294,8 +294,25 @@ class PluginManager:
 
 
 class XMLEventParserInterface(ABC):
+    """
+    This is the base class for parser adapters.  After initialization their
+    :meth:`parse` method will be called for iterate over parser events.  Instances
+    don't have to care about their state beyond the parsing of one input stream as
+    they're only employed once.
+
+    :param options: The parsing options the user passed with the input stream.
+    :param base_url: The base URL for resolving references.
+    :param encoding: This is the encoding that was either provided by the user,
+                     noted in an XML document declaration or indicated by a Byte Order
+                     Mark.  But it could also be the fallback value ``utf-8`` if none of
+                     the prior was available.
+    """
 
     name: str
+    """
+    The parser can be selected by this class attribute's value as (member of) a
+    :attr:`ParserOptions.preferred_parsers` setting.
+    """
 
     def __init_subclass__(cls):
         plugin_manager.parsers[cls.name] = cls
@@ -306,6 +323,10 @@ class XMLEventParserInterface(ABC):
 
     @abstractmethod
     def parse(self, data: BinaryReader | str) -> Iterator[Event]:
+        """
+        This method must be implemented and yield the parsed contents in document order
+        as :obj:`Event` tuples.
+        """
         pass
 
 

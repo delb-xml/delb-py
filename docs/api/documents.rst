@@ -39,3 +39,4 @@ Parser options
 --------------
 
 .. autoclass:: delb.ParserOptions
+   :no-inherited-members:

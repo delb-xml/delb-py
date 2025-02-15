@@ -47,6 +47,7 @@ extensions = [
     "namedtuples",
     # from the cheeseshop
     "autodocsumm",
+    "enum_tools.autoenum",
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx.ext.autodoc",
