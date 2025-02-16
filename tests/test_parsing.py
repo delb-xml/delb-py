@@ -25,6 +25,15 @@ c = new_comment_node
 t = new_tag_node
 
 
+def test_attributes(parser):
+    root = parse_tree(
+        """<root xmlns="http://fo.org" a="b"/>""",
+        ParserOptions(preferred_parsers=parser),
+    )
+    assert "{http://fo.org}a" in root.attributes._etree_attrib
+    assert ("http://fo.org", "a") in root.attributes
+
+
 @pytest.mark.parametrize("load_referenced_resources", (True, False))
 def test_external_entity_declaration(
     files_path,

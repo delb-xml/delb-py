@@ -63,14 +63,15 @@ class ContentHandler(sax.handler.ContentHandler):
         qname: str,
         attrs: sax.xmlreader.AttributesNSImpl,
     ):
+        namespace = name[0] or ""
         assert hasattr(attrs, "_attrs")
         self.events.append(
             (
                 EventType.TagStart,
                 TagEventData(
-                    name[0] or "",
+                    namespace,
                     name[1],
-                    {(ns or "", ln): v for (ns, ln), v in attrs._attrs.items()},
+                    {(ns or namespace, ln): v for (ns, ln), v in attrs._attrs.items()},
                 ),
             )
         )
