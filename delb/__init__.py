@@ -125,6 +125,8 @@ class Document(metaclass=DocumentMeta):
     :param klass: Explicitly define the initialized class. This can be useful for
                   applications that have :ref:`default document subclasses
                   <document-subclasses>` in use.
+    :param source_url: An optional source URL for situations where a reader can't
+                       determine one.
     :param config: Additional keyword arguments for the configuration of extension
                    classes.
 
@@ -157,10 +159,14 @@ class Document(metaclass=DocumentMeta):
         cls,
         source,
         parser_options=None,
+        /,
         klass=None,
+        source_url=None,
         **config_options,
     ):
         config = SimpleNamespace()
+        if source_url is not None:
+            config.source_url = source_url
         if DocumentMixinBase in cls.__mro__:
             cls._init_config(config, config_options)
 
@@ -189,7 +195,9 @@ class Document(metaclass=DocumentMeta):
         self,
         source: Any,
         parser_options: Optional[ParserOptions] = None,
+        /,
         klass: Optional[type[Document]] = None,
+        source_url: Optional[str] = None,
         **config,
     ):
         self.config: SimpleNamespace
