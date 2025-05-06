@@ -58,7 +58,8 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     :attr:`Document.config` attribute.
     """
     if isinstance(data, Path):
-        config.source_url = (Path.cwd() / data).as_uri()
+        if not hasattr(config, "source_url"):
+            config.source_url = (Path.cwd() / data).as_uri()
         with data.open("rb") as file:
             return buffer_loader(file, config)
     return "The input value is not a pathlib.Path instance."
