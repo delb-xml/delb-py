@@ -63,6 +63,8 @@ def test_dtd_from_web(parser, unplugged, exception):
         raise AssertionError("No exception raised.")
 
 
+# TODO figure out why the expat parser uses an SSL socket (and leaves it unclosed)
+@pytest.mark.filterwarnings("ignore:unclosed:ResourceWarning")
 @pytest.mark.parametrize("load_referenced_resources", (True, False))
 def test_external_entity_declaration(
     files_path,
