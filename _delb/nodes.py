@@ -482,8 +482,6 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
     As the default filters shadow comments and processing instructions by default,
     use no argument to unset this in order to access all type of nodes.
     """
-    global default_filters
-
     if extend:
         default_filters.append(default_filters[-1] + filter)
     else:

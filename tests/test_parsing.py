@@ -58,7 +58,7 @@ def test_dtd_from_web(parser, unplugged, exception):
             ),
         )
     except FailedDocumentLoading as e:
-        assert isinstance(e.excuses[path_loader], exception[parser])
+        assert isinstance(e.excuses[path_loader], exception[parser])  # noqa: PT017
     else:
         raise AssertionError("No exception raised.")
 
