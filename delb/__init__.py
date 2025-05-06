@@ -158,8 +158,8 @@ class Document(metaclass=DocumentMeta):
     def __new__(
         cls,
         source,
-        parser_options=None,
         /,
+        parser_options=None,
         klass=None,
         source_url=None,
         **config_options,
@@ -194,8 +194,8 @@ class Document(metaclass=DocumentMeta):
     def __init__(
         self,
         source: Any,
-        parser_options: Optional[ParserOptions] = None,
         /,
+        parser_options: Optional[ParserOptions] = None,
         klass: Optional[type[Document]] = None,
         source_url: Optional[str] = None,
         **config,
