@@ -630,7 +630,12 @@ def test_transparency(file, format_options, result_file):
     scale. Thus anything caught there should be added to the `tei_*.xml` files here to
     for further investigations.
     """
-    parser_options = ParserOptions(reduce_whitespace=format_options is not None)
+    parser_options = ParserOptions(
+        load_referenced_resources=True,
+        preferred_parsers="expat",
+        reduce_whitespace=format_options is not None,
+        unplugged=True,
+    )
     origin = Document(file, parser_options=parser_options)
     origin.save(result_file, format_options=format_options)
     _copy = Document(result_file, parser_options=parser_options)
