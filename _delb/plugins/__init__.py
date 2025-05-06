@@ -98,7 +98,7 @@ class DocumentMixinBase:
             raise RuntimeError(
                 "Not all configuration arguments have been processed. You either "
                 "passed invalid arguments or an extension doesn't handle them "
-                f"properly: {config}"
+                f"properly: {kwargs}"
             )
 
 
