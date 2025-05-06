@@ -1,5 +1,6 @@
 import pytest
 from lxml import etree
+from urllib.error import HTTPError
 
 from delb import (
     Document,
@@ -9,10 +10,15 @@ from delb import (
     parse_tree,
     tag,
 )
-from delb.exceptions import ParsingValidityError
+from delb.exceptions import (
+    FailedDocumentLoading,
+    ParsingValidityError,
+    ParsingProcessingError,
+)
 from _delb.plugins import plugin_manager
+from _delb.plugins.core_loaders import path_loader
 
-from tests.conftest import XML_FILES
+from tests.conftest import FILES_PATH, XML_FILES
 from tests.utils import assert_equal_trees
 
 
@@ -32,6 +38,29 @@ def test_attributes(parser):
     )
     assert "{http://fo.org}a" in root.attributes._etree_attrib
     assert ("http://fo.org", "a") in root.attributes
+
+
+@pytest.mark.parametrize(
+    ("unplugged", "exception"),
+    (
+        (True, {"expat": ParsingProcessingError, "lxml": etree.XMLSyntaxError}),
+        (False, {"expat": HTTPError, "lxml": etree.XMLSyntaxError}),
+    ),
+)
+def test_dtd_from_web(parser, unplugged, exception):
+    try:
+        Document(
+            FILES_PATH / "web_dtd.ignored_xml",
+            parser_options=ParserOptions(
+                load_referenced_resources=True,
+                preferred_parsers=parser,
+                unplugged=unplugged,
+            ),
+        )
+    except FailedDocumentLoading as e:
+        assert isinstance(e.excuses[path_loader], exception[parser])
+    else:
+        raise AssertionError("No exception raised.")
 
 
 @pytest.mark.parametrize("load_referenced_resources", (True, False))

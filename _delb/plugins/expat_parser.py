@@ -85,15 +85,11 @@ class ContentHandlerWithPIs(ContentHandler):
 
 
 class EntityResolver(sax.handler.EntityResolver):
-    __slots__ = ("base_url", "options", "scheme")
+    __slots__ = ("base_url", "options")
 
     def __init__(self, options: ParserOptions, base_url: str | None):
         self.base_url = base_url
         self.options = options
-        if base_url is None:
-            self.scheme = None
-        else:
-            self.scheme, *_ = urlparse(base_url)
 
     def resolveEntity(  # noqa: N802
         self, publicId: str | None, systemId: str | None  # noqa: N803
@@ -106,15 +102,12 @@ class EntityResolver(sax.handler.EntityResolver):
 
         _id = systemId or publicId
         assert _id is not None
+        url = urljoin(self.base_url or "", _id, allow_fragments=False)
 
-        if self.base_url is None or (
-            self.options.unplugged
-            and self.scheme is not None
-            and self.scheme.startswith("http")
-        ):
+        if self.options.unplugged and urlparse(url).scheme != "file":
             raise ParsingProcessingError(f"Cannot load external resource '{_id}'.")
 
-        return urljoin(self.base_url, _id, allow_fragments=False)
+        return url
 
 
 class LexcialHandler(sax.handler.LexicalHandler):
