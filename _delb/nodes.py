@@ -1964,11 +1964,12 @@ class TagNode(NodeBase):
 
         :meta category: Node properties
         """
-        raise NotImplementedError
+        return self.__namespace
 
     @namespace.setter
     def namespace(self, value: str):
-        raise NotImplementedError
+        # TODO validate
+        self.__namespace = value
 
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
         return TagNode(
