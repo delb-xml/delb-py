@@ -286,13 +286,13 @@ class LocationStep(Node):
 
     @cached_property
     def _derived_attributes(self) -> list[tuple[str, str, str]]:
-        predicates_count = len(self.predicates)
-        if predicates_count == 0:
-            return []
-        elif predicates_count == 1:
-            return self.predicates[0]._derived_attributes
-        else:
-            return self._anders_predicates._derived_attributes
+        match len(self.predicates):
+            case 0:
+                return []
+            case 1:
+                return self.predicates[0]._derived_attributes
+            case _:
+                return self._anders_predicates._derived_attributes
 
     def evaluate(
         self, node_set: Iterable[_DocumentNode | NodeBase], namespaces: Namespaces
@@ -348,13 +348,13 @@ class LocationStep(Node):
         ):
             return False
 
-        predicates_count = len(self.predicates)
-        if predicates_count == 0:
-            return True
-        elif predicates_count == 1:
-            return self.predicates[0]._is_unambiguously_locatable()
-        else:
-            return self._anders_predicates._is_unambiguously_locatable()
+        match len(self.predicates):
+            case 0:
+                return True
+            case 1:
+                return self.predicates[0]._is_unambiguously_locatable()
+            case _:
+                return self._anders_predicates._is_unambiguously_locatable()
 
 
 class XPathExpression(Node):
@@ -438,17 +438,18 @@ class NameMatchTest(NodeTestNode):
         else:
             namespace = namespaces[self.prefix]
 
-        if namespace is None:  # noqa: SIM114
-            # XPath spec behaviour
-            if node.namespace:
-                return False
-        elif namespace == "":
-            # delb's specific behaviour
-            if node.namespace:
-                return False
-        else:
-            if node.namespace != namespace:
-                return False
+        match namespace:
+            case None:
+                # XPath spec behaviour
+                if node.namespace:
+                    return False
+            case "":
+                # delb's specific behaviour
+                if node.namespace:
+                    return False
+            case _:
+                if node.namespace != namespace:
+                    return False
 
         return node.local_name == self.local_name
 

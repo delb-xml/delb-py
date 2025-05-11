@@ -72,30 +72,32 @@ class LxmlParser(XMLEventParserInterface):
     def handle_event(self, event: etree._ParseEvent) -> Iterator[Event]:
         action, element = event
         assert isinstance(element, etree._Element)
+
         if action in ("comment", "pi", "start"):
             yield from self.handle_element_preceding_text(element)
 
-        if action == "comment":
-            assert isinstance(element, etree._Comment)
-            text = element.text or ""
-            yield EventType.Comment, text
-        elif action == "end":
-            if len(element):
-                if element[-1].tail:
-                    yield EventType.Text, element[-1].tail
-                    element[-1].tail = None
-            else:
-                if element.text:
-                    yield EventType.Text, element.text
+        match action:
+            case "comment":
+                assert isinstance(element, etree._Comment)
+                text = element.text or ""
+                yield EventType.Comment, text
+            case "end":
+                if len(element):
+                    if element[-1].tail:
+                        yield EventType.Text, element[-1].tail
+                        element[-1].tail = None
+                else:
+                    if element.text:
+                        yield EventType.Text, element.text
 
-            yield EventType.TagEnd, self.tag_event_data_from_element(element)
-        elif action == "pi":
-            assert isinstance(element, etree._ProcessingInstruction)
-            assert isinstance(element.target, str)
-            assert isinstance(element.text, str)
-            yield EventType.ProcessingInstruction, (element.target, element.text)
-        elif action == "start":
-            yield EventType.TagStart, self.tag_event_data_from_element(element)
+                yield EventType.TagEnd, self.tag_event_data_from_element(element)
+            case "pi":
+                assert isinstance(element, etree._ProcessingInstruction)
+                assert isinstance(element.target, str)
+                assert isinstance(element.text, str)
+                yield EventType.ProcessingInstruction, (element.target, element.text)
+            case "start":
+                yield EventType.TagStart, self.tag_event_data_from_element(element)
 
     def parse(self, data: BinaryReader | str) -> Iterator[Event]:
         if isinstance(data, str):

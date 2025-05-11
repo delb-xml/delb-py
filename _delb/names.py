@@ -100,13 +100,14 @@ class Namespaces(Mapping):
         self.__data: _NamespaceDeclarations
         self.__inverse_data: _NamespaceDeclarations
 
-        if isinstance(namespaces, Namespaces):
-            self.__data = namespaces.__data
-            self.__inverse_data = namespaces.__inverse_data
-        elif isinstance(namespaces, Mapping):
-            self.__data, self.__inverse_data = self.__init_data(namespaces)
-        else:
-            raise TypeError
+        match namespaces:
+            case Namespaces():
+                self.__data = namespaces.__data
+                self.__inverse_data = namespaces.__inverse_data
+            case Mapping():
+                self.__data, self.__inverse_data = self.__init_data(namespaces)
+            case _:
+                raise TypeError
 
     def __contains__(self, item: object):
         return item in self.__data

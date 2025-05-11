@@ -686,12 +686,13 @@ class TagAttributes(MutableMapping):
     __repr__ = __str__
 
     def __resolve_accessor(self, item: AttributeAccessor) -> QualifiedName:
-        if isinstance(item, str):
-            namespace, name = deconstruct_clark_notation(item)
-        elif isinstance(item, tuple):
-            namespace, name = item
-        else:
-            namespace = name = None
+        match item:
+            case str():
+                namespace, name = deconstruct_clark_notation(item)
+            case tuple():
+                namespace, name = item
+            case _:
+                namespace = name = None
 
         if name is None:
             raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
@@ -743,12 +744,13 @@ class Siblings:
         pass
 
     def __getitem__(self, index: int | slice) -> NodeBase | tuple[NodeBase, ...]:
-        if isinstance(index, int):
-            return self.__data[index]
-        elif isinstance(index, slice):
-            return tuple(self.__data[index])
-        else:
-            raise TypeError
+        match index:
+            case int():
+                return self.__data[index]
+            case slice():
+                return tuple(self.__data[index])
+            case _:
+                raise TypeError
 
     def __iter__(self) -> Iterator[NodeBase]:
         return iter(self.__data)
@@ -1240,18 +1242,19 @@ class NodeBase(ABC):
         self, nodes: tuple[NodeSource, ...], clone: bool
     ) -> tuple[NodeBase, list[NodeSource]]:
         this, *queue = nodes
-        if isinstance(this, str):
-            this = TextNode(this)
-        elif isinstance(this, NodeBase):
-            if clone:
-                this = this.clone(deep=True)
-        elif isinstance(this, _TagDefinition):
-            this = self._new_tag_node_from_definition(this)
-        else:
-            raise TypeError(
-                "Either node instances, strings or objects from :func:`delb.tag` must "
-                "be provided as children argument."
-            )
+        match this:
+            case str():
+                this = TextNode(this)
+            case NodeBase():
+                if clone:
+                    this = this.clone(deep=True)
+            case _TagDefinition():
+                this = self._new_tag_node_from_definition(this)
+            case _:
+                raise TypeError(
+                    "Either node instances, strings or objects from :func:`delb.tag` "
+                    "must be provided as children argument."
+                )
 
         if not all(
             x is None
@@ -1717,33 +1720,35 @@ class TagNode(_ElementWrappingNode, NodeBase):
         self.__document__: Document | None = None
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
-        if isinstance(item, (str, tuple)):
-            return item in self.attributes
-        elif isinstance(item, NodeBase):
-            return any(n is item for n in self.iterate_children())
-        else:
-            raise TypeError(
-                "Argument must be a node instance or an attribute name. "
-                + ATTRIBUTE_ACCESSOR_MSG
-            )
+        match item:
+            case str() | tuple():
+                return item in self.attributes
+            case NodeBase():
+                return any(n is item for n in self.iterate_children())
+            case _:
+                raise TypeError(
+                    "Argument must be a node instance or an attribute name. "
+                    + ATTRIBUTE_ACCESSOR_MSG
+                )
 
     def __delitem__(self, item: AttributeAccessor | int):
-        if isinstance(item, (str, tuple)):
-            del self.attributes[item]
-        elif isinstance(item, int):
-            self[item].detach(retain_child_nodes=False)
-        elif isinstance(item, slice):
-            if isinstance(item.start, int) or isinstance(item.stop, int):
-                raise NotImplementedError(
-                    "This will be implemented in a later version."
+        match item:
+            case str() | tuple():
+                del self.attributes[item]
+            case int():
+                self[item].detach(retain_child_nodes=False)
+            case slice():
+                if isinstance(item.start, int) or isinstance(item.stop, int):
+                    raise NotImplementedError(
+                        "This will be implemented in a later version."
+                    )
+                else:
+                    del self.attributes[(item.start, item.stop)]
+            case _:
+                raise TypeError(
+                    "Argument must be an integer or an attribute name. "
+                    + ATTRIBUTE_ACCESSOR_MSG
                 )
-            else:
-                del self.attributes[(item.start, item.stop)]
-        else:
-            raise TypeError(
-                "Argument must be an integer or an attribute name. "
-                + ATTRIBUTE_ACCESSOR_MSG
-            )
 
     @overload
     def __getitem__(self, item: int) -> NodeBase: ...
@@ -1752,23 +1757,24 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __getitem__(self, item: AttributeAccessor) -> Attribute | None: ...
 
     def __getitem__(self, item):
-        if isinstance(item, (str, tuple)):
-            return self.attributes[item]
+        match item:
+            case str() | tuple():
+                return self.attributes[item]
 
-        elif isinstance(item, int):
-            if item < 0:
-                item = len(self) + item
+            case int():
+                if item < 0:
+                    item = len(self) + item
 
-            for index, child_node in enumerate(self.iterate_children()):
-                if index == item:
-                    return child_node
+                for index, child_node in enumerate(self.iterate_children()):
+                    if index == item:
+                        return child_node
 
-            raise IndexError("Node index out of range.")
+                raise IndexError("Node index out of range.")
 
-        elif isinstance(item, slice) and all(
-            (isinstance(x, int) or x is None) for x in (item.start, item.stop)
-        ):
-            return list(self.iterate_children())[item]
+            case slice() if all(
+                (isinstance(x, int) or x is None) for x in (item.start, item.stop)
+            ):
+                return list(self.iterate_children())[item]
 
         raise TypeError(
             "Argument must be an integer as index for a child node, a "
@@ -1795,21 +1801,22 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def __setitem__(self, item: AttributeAccessor, value: str | Attribute): ...
 
     def __setitem__(self, item, value):
-        if isinstance(item, (str, tuple)):
-            self.attributes[item] = value
-        elif isinstance(item, int):
-            children_size = len(self)
-            if not children_size and item == 0:
-                self.__add_first_child(value)
-            else:
-                if not 0 <= item < children_size:
-                    raise IndexError
-                self[item].replace_with(value)
-        else:
-            raise TypeError(
-                "Argument must be an integer or an attribute name. "
-                + ATTRIBUTE_ACCESSOR_MSG
-            )
+        match item:
+            case str() | tuple():
+                self.attributes[item] = value
+            case int():
+                children_size = len(self)
+                if not children_size and item == 0:
+                    self.__add_first_child(value)
+                else:
+                    if not 0 <= item < children_size:
+                        raise IndexError
+                    self[item].replace_with(value)
+            case _:
+                raise TypeError(
+                    "Argument must be an integer or an attribute name. "
+                    + ATTRIBUTE_ACCESSOR_MSG
+                )
 
     def __add_first_child(self, node: NodeBase):
         assert not len(self)
@@ -2116,32 +2123,33 @@ class TagNode(_ElementWrappingNode, NodeBase):
         for i, step in enumerate(ast.location_paths[0].location_steps):
             candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
 
-            if len(candidates) == 0:
-                node_test = step.node_test
-                assert isinstance(node, TagNode)
-                assert isinstance(node_test, NameMatchTest)
+            match len(candidates):
+                case 0:
+                    node_test = step.node_test
+                    assert isinstance(node, TagNode)
+                    assert isinstance(node_test, NameMatchTest)
 
-                new_node = new_tag_node(
-                    local_name=node_test.local_name,
-                    attributes=None,
-                    namespace=namespaces.get(node_test.prefix),
-                )
-
-                for prefix, local_name, value in step._derived_attributes:
-                    new_node.attributes[(namespaces.get(prefix) or "", local_name)] = (
-                        value
+                    new_node = new_tag_node(
+                        local_name=node_test.local_name,
+                        attributes=None,
+                        namespace=namespaces.get(node_test.prefix),
                     )
 
-                node.append_children(new_node)
-                node = new_node
+                    for prefix, local_name, value in step._derived_attributes:
+                        new_node.attributes[
+                            (namespaces.get(prefix) or "", local_name)
+                        ] = value
 
-            elif len(candidates) == 1:
-                node = cast("TagNode", candidates[0])
+                    node.append_children(new_node)
+                    node = new_node
 
-            else:
-                raise AmbiguousTreeError(
-                    f"The tree has multiple possible branches at location step {i}."
-                )
+                case 1:
+                    node = cast("TagNode", candidates[0])
+
+                case _:
+                    raise AmbiguousTreeError(
+                        f"The tree has multiple possible branches at location step {i}."
+                    )
         assert isinstance(node, TagNode)
         return node
 
@@ -2185,18 +2193,19 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
     @id.setter
     def id(self, value: Optional[str]):
-        if value is None:
-            del self.attributes[(XML_NAMESPACE, "id")]
-        elif isinstance(value, str):
-            root = cast("TagNode", last(self.iterate_ancestors())) or self
-            if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
-                raise ValueError(
-                    "An xml:id-attribute with that value is already assigned in the "
-                    "tree."
-                )
-            self.attributes[(XML_NAMESPACE, "id")] = value
-        else:
-            raise TypeError("Value must be None or a string.")
+        match value:
+            case None:
+                del self.attributes[(XML_NAMESPACE, "id")]
+            case str():
+                root = cast("TagNode", last(self.iterate_ancestors())) or self
+                if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
+                    raise ValueError(
+                        "An xml:id-attribute with that value is already assigned in "
+                        "the tree."
+                    )
+                self.attributes[(XML_NAMESPACE, "id")] = value
+            case _:
+                raise TypeError("Value must be None or a string.")
 
     @property
     def index(self) -> Optional[int]:
@@ -3116,18 +3125,18 @@ class Serializer:
             self.writer(f" {key}={value}")
 
     def serialize_node(self, node: NodeBase):
-
-        if isinstance(node, (CommentNode, ProcessingInstructionNode)):
-            self.writer(str(node))
-        elif isinstance(node, TagNode):
-            self._serialize_tag(
-                node,
-                attributes_data=self._generate_attributes_data(node),
-            )
-        elif isinstance(node, TextNode) and node.content:
-            self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
-        else:
-            raise InvalidCodePath
+        match node:
+            case CommentNode() | ProcessingInstructionNode():
+                self.writer(str(node))
+            case TagNode():
+                self._serialize_tag(
+                    node,
+                    attributes_data=self._generate_attributes_data(node),
+                )
+            case TextNode() if node.content:
+                self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
+            case _:
+                raise InvalidCodePath
 
     def serialize_root(self, root: TagNode):
         self._collect_prefixes(root)
@@ -3509,16 +3518,17 @@ class TextWrappingSerializer(PrettySerializer):
         if self.writer.offset == 0 and self.indentation:
             self.writer(self._level * self.indentation)
 
-        if isinstance(node, TagNode):
-            if node._get_normalize_space_directive() == "preserve":
-                serializer = self._space_preserving_serializer
-                self.writer.preserve_space = True
-            else:
-                serializer = self._line_fitting_serializer
-            serializer.serialize_node(node)
-            self.writer.preserve_space = False
-        elif isinstance(node, (CommentNode, ProcessingInstructionNode)):
-            self.writer(str(node))
+        match node:
+            case TagNode():
+                if node._get_normalize_space_directive() == "preserve":
+                    serializer = self._space_preserving_serializer
+                    self.writer.preserve_space = True
+                else:
+                    serializer = self._line_fitting_serializer
+                serializer.serialize_node(node)
+                self.writer.preserve_space = False
+            case CommentNode() | ProcessingInstructionNode():
+                self.writer(str(node))
 
     def serialize_node(self, node: NodeBase):
         if self._unwritten_text_nodes:

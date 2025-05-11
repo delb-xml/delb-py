@@ -261,15 +261,16 @@ def first(iterable: Iterable) -> Optional[Any]:
     Returns the first item of the given :term:`iterable` or :obj:`None` if it's empty.
     Note that the first item is consumed when the iterable is an :term:`iterator`.
     """
-    if isinstance(iterable, Iterator):
-        try:
-            return next(iterable)
-        except StopIteration:
-            return None
-    elif isinstance(iterable, Sequence):
-        return iterable[0] if len(iterable) else None
-    else:
-        raise TypeError
+    match iterable:
+        case Iterator():
+            try:
+                return next(iterable)
+            except StopIteration:
+                return None
+        case Sequence():
+            return iterable[0] if len(iterable) else None
+        case _:
+            raise TypeError
 
 
 def get_traverser(*, from_left=True, depth_first=True, from_top=True):
@@ -315,15 +316,16 @@ def last(iterable: Iterable) -> Optional[Any]:
     Returns the last item of the given :term:`iterable` or :obj:`None` if it's empty.
     Note that the whole :term:`iterator` is consumed when such is given.
     """
-    if isinstance(iterable, Iterator):
-        result = None
-        for result in iterable:
-            pass
-        return result
-    elif isinstance(iterable, Sequence):
-        return iterable[-1] if len(iterable) else None
-    else:
-        raise TypeError
+    match iterable:
+        case Iterator():
+            result = None
+            for result in iterable:
+                pass
+            return result
+        case Sequence():
+            return iterable[-1] if len(iterable) else None
+        case _:
+            raise TypeError
 
 
 def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:

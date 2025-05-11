@@ -167,18 +167,19 @@ def evaluate(
     namespaces: Optional[NamespaceDeclarations] = None,
 ) -> QueryResults:
     # global namespaces are guaranteed by the Namespaces implementation
-    if namespaces is None:
-        if _is_node_of_type(node, "TagNode"):
-            _namespaces = Namespaces({"": cast("TagNode", node).namespace})
-        else:
-            _namespaces = Namespaces({})
-    elif isinstance(namespaces, Namespaces):
-        # b/c it would break fallback chains
-        raise TypeError
-    elif isinstance(namespaces, Mapping):
-        _namespaces = Namespaces(namespaces)
-    else:
-        raise TypeError
+    match namespaces:
+        case None:
+            if _is_node_of_type(node, "TagNode"):
+                _namespaces = Namespaces({"": cast("TagNode", node).namespace})
+            else:
+                _namespaces = Namespaces({})
+        case Namespaces():
+            # b/c it would break fallback chains
+            raise TypeError
+        case Mapping():
+            _namespaces = Namespaces(namespaces)
+        case _:
+            raise TypeError
 
     return QueryResults(parse(expression).evaluate(node=node, namespaces=_namespaces))
 

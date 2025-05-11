@@ -131,12 +131,13 @@ def tag(*args):  # noqa: C901
         result: dict[AttributeAccessor, str] = {}
 
         for key, value in attributes.items():
-            if isinstance(value, Attribute):
-                result[value._qualified_name] = value.value
-            elif isinstance(key, (str, tuple)):
-                result[key] = value
-            else:
-                raise TypeError
+            match value:
+                case Attribute():
+                    result[value._qualified_name] = value.value
+                case str() | tuple():
+                    result[key] = value
+                case _:
+                    raise TypeError
 
         return result
 
@@ -223,22 +224,24 @@ class TreeBuilder:
         # TODO instantiate objects directly with the native data model
         result: NodeBase | None
         type_, data = event
-        if type_ is EventType.Comment:
-            assert isinstance(data, str)
-            result = new_comment_node(data)
-        elif type_ is EventType.ProcessingInstruction:
-            assert isinstance(data, tuple)
-            result = new_processing_instruction_node(data[0], data[1])
-        elif type_ is EventType.TagStart:
-            assert isinstance(data, TagEventData)
-            self.handle_tag_start(data)
-            result = None
-        elif type_ is EventType.TagEnd:
-            assert isinstance(data, TagEventData)
-            result = self.handle_tag_end(data)
-        elif type_ is EventType.Text:
-            assert isinstance(data, str)
-            result = TextNode(data, DETACHED)
+
+        match type_:
+            case EventType.Comment:
+                assert isinstance(data, str)
+                result = new_comment_node(data)
+            case EventType.ProcessingInstruction:
+                assert isinstance(data, tuple)
+                result = new_processing_instruction_node(data[0], data[1])
+            case EventType.TagStart:
+                assert isinstance(data, TagEventData)
+                self.handle_tag_start(data)
+                result = None
+            case EventType.TagEnd:
+                assert isinstance(data, TagEventData)
+                result = self.handle_tag_end(data)
+            case EventType.Text:
+                assert isinstance(data, str)
+                result = TextNode(data, DETACHED)
 
         if result is not None:
             if self.started_tags:
@@ -307,14 +310,15 @@ class TreeBuilder:
             self.preserve_space.append(xml_space == "preserve")
             return
 
-        if xml_space is None:  # most common
-            self.preserve_space.append(self.preserve_space[-1])
-        elif xml_space == "default":
-            self.preserve_space.append(False)
-        elif xml_space == "preserve":
-            self.preserve_space.append(True)
-        else:  # invalid values
-            self.preserve_space.append(self.preserve_space[-1])
+        match xml_space:
+            case None:  # most common
+                self.preserve_space.append(self.preserve_space[-1])
+            case "default":
+                self.preserve_space.append(False)
+            case "preserve":
+                self.preserve_space.append(True)
+            case _:  # invalid values
+                self.preserve_space.append(self.preserve_space[-1])
 
 
 def parse_nodes(
