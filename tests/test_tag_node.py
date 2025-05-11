@@ -96,7 +96,6 @@ def test_copy():
     clone = copy(node)
 
     assert clone is not node
-    assert clone._etree_obj is not node._etree_obj
     assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
 
@@ -106,7 +105,6 @@ def test_deepcopy():
     clone = deepcopy(node)
 
     assert clone is not node
-    assert clone._etree_obj is not node._etree_obj
     assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
     assert clone[0] is not node[0]
@@ -462,7 +460,7 @@ def test_make_node_outside_context():
 def test_make_node_with_namespace():
     node = new_tag_node("foo", namespace="https://name.space")
     assert node.namespace == "https://name.space"
-    assert node._etree_obj.tag == "{https://name.space}foo"
+    assert node.universal_name == "{https://name.space}foo"
 
 
 @pytest.mark.parametrize(

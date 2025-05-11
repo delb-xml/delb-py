@@ -36,7 +36,6 @@ from _delb.plugins import (
 from _delb.names import Namespaces
 from _delb.nodes import (
     _get_serializer,
-    _wrapper_cache,
     altered_default_filters,
     any_of,
     is_comment_node,
@@ -380,16 +379,15 @@ class Document(metaclass=DocumentMeta):
         serializer.writer(
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
         )
-        with _wrapper_cache:
-            for node in self.prologue:
+        for node in self.prologue:
+            serializer.writer(str(node) + possible_newline)
+        with altered_default_filters():
+            serializer.serialize_root(self.root)
+        if self.epilogue:
+            serializer.writer(possible_newline)
+            for node in self.epilogue[:-1]:
                 serializer.writer(str(node) + possible_newline)
-            with altered_default_filters():
-                serializer.serialize_root(self.root)
-            if self.epilogue:
-                serializer.writer(possible_newline)
-                for node in self.epilogue[:-1]:
-                    serializer.writer(str(node) + possible_newline)
-                serializer.writer(str(self.epilogue[-1]))
+            serializer.writer(str(self.epilogue[-1]))
         serializer.writer.buffer.flush()
 
     def write(

@@ -29,7 +29,6 @@ classifiers = [
 keywords = ["xml", "markup", "tei", "text processing", "xhtml"]
 dependencies = [
     "cssselect",
-    "lxml",
     # DROPWITH Python3.10
     "typing-extensions; python_version < '3.11'"
 ]

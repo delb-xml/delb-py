@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import gc
 import warnings
 from abc import abstractmethod, ABC
 from collections import deque
@@ -28,10 +27,8 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import contextmanager
-from copy import copy
 from io import StringIO, TextIOWrapper
 from itertools import chain
-from sys import getrefcount
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -43,8 +40,6 @@ from typing import (
     NamedTuple,
     Optional,
 )
-
-from lxml import etree
 
 from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
 from _delb.names import (
@@ -77,15 +72,6 @@ if TYPE_CHECKING:
     )
 
 
-# shortcuts
-
-
-Comment = etree.Comment
-_Element = etree._Element
-PI = etree.PI
-QName = etree.QName
-
-
 # constants
 
 
@@ -102,201 +88,10 @@ CCE_TABLE_FOR_TEXT: Final = str.maketrans(
     {ord(k): f"&{v};" for k, v in CTRL_CHAR_ENTITY_NAME_MAPPING if k != '"'}
 )
 
-DETACHED, DATA, TAIL, APPENDED = 0, 1, 2, 3
-
-
 ATTRIBUTE_ACCESSOR_MSG: Final = (
     "An attribute name must be provided as string (either a local name or a "
     "universal in Clark notation) or as namespace and local name packed in a tuple."
 )
-
-
-# wrapper cache
-
-
-class _WrapperCache:
-    __slots__ = ("locks", "wrappers")
-
-    def __init__(self):
-        self.wrappers = {}
-        self.locks = 0
-        gc.callbacks.append(self.__gc_callback__)
-
-    def __call__(self, element: _Element) -> _ElementWrappingNode:
-        result = self.wrappers.get(element)
-        if result is None:
-            tag = element.tag
-            if tag is Comment:
-                result = CommentNode(element)
-            elif tag is PI:
-                result = ProcessingInstructionNode(element)
-            else:
-                result = TagNode(element)
-            self.wrappers[element] = result
-            # turn on when running tests, turn off when using a debugger:
-            # assert getrefcount(result) == 3, getrefcount(result)  # noqa: E800
-        return result
-
-    def __enter__(self):
-        self.locks += 1
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.locks -= 1
-        return False
-
-    def __gc_callback__(self, phase: str, info: dict):  # noqa: C901
-        """
-        This is the verbose implementation, please verify changes with this one:
-
-        .. code-block:
-
-            def __gc_callback__(self, phase: str, info: dict):
-                if phase != "stop" or self.locks:
-                    return
-
-                for element, node in tuple(self.wrappers.items()):
-                    node_user_references = (
-                        getrefcount(node)
-                        - 1  # `getrefcount`
-                        - 1  # `self.wrappers`
-                        - 1  # the iterated tuple
-                        - 1  # `node`
-                        - isinstance(node, TagNode)  # node.attributes._node
-                    )
-
-                    # if referenced as a document's root node that itself isn't
-                    # referenced:
-                    if getattr(node, "__document__", None) is not None:
-                        document_user_references = (
-                            getrefcount(node.__document__)
-                            - 1  # `getrefcount`
-                            - 1  # `document.root.__document__
-                            - 1  # `document.head_nodes._document`
-                            - 1  # `document.tail_nodes._document`
-                        )
-                        assert document_user_references >= 0
-                        if document_user_references == 0:
-                            node_user_references -= 1
-
-                    assert node_user_references >= 0
-                    if node_user_references > 0:
-                        continue
-
-                    if isinstance(node, TagNode):
-                        data_node = node._data_node
-                        tail_node = node._tail_node
-                        if self._appendees_are_referenced(
-                            data_node
-                        ) or self._appendees_are_referenced(tail_node):
-                            continue
-                        data_node._merge_appended_text_nodes()
-                    elif isinstance(node, _ElementWrappingNode):
-                        tail_node = node._tail_node
-                        if self._appendees_are_referenced(tail_node):
-                            continue
-                    else:
-                        raise RuntimeError
-
-                    tail_node._merge_appended_text_nodes()
-                    self.wrappers.pop(element)
-
-            def _appendees_are_referenced(self, node: TextNode) -> bool:
-                appendees = []
-                current = node._appended_text_node
-                while current is not None:
-                    appendees.append(current)
-                    current = current._appended_text_node
-
-                if not appendees:
-                    return False
-
-                # the last item in a sequence of text nodes isn't pointed to as a
-                # `_bound_to`:
-                user_references = (
-                    getrefcount(appendees.pop())
-                    - 1  # `getrefcount`
-                    - 1  # the predecessor's `_appended_text_node`
-                )
-
-                assert user_references >= 0
-                if user_references:
-                    return True
-
-                for refcount in (getrefcount(text_node) for text_node in appendees):
-                    user_references = (
-                        refcount
-                        - 1  # `getrefcount`
-                        - 1  # the predecessor's `_appended_text_node`
-                        - 1  # the subsequent's `_bound_to`
-                        - 1  # `appendees`
-                        - 1  # `text_node`
-                    )
-                    assert user_references >= 0
-                    if user_references:
-                        return True
-
-                return False
-        """
-        if phase != "stop" or self.locks:
-            return
-
-        for element, node in tuple(self.wrappers.items()):
-            if getrefcount(node) > (
-                4
-                + isinstance(node, TagNode)
-                + (
-                    getattr(node, "__document__", None) is not None
-                    and getrefcount(node.__document__) == 2
-                )
-            ):
-                continue
-
-            skip = False
-            tail_node = node._tail_node
-
-            if isinstance(node, TagNode):
-                # data node is checked first, assuming that appended text nodes tend
-                # to be used in the depths of a tree
-                data_node = node._data_node
-                current = data_node._appended_text_node
-                while current is not None:
-                    _next = current._appended_text_node
-                    if getrefcount(current) > 3 + (_next is not None):
-                        skip = True
-                        break
-                    current = _next
-                if skip:
-                    continue
-
-                current = tail_node._appended_text_node
-                while current is not None:
-                    _next = current._appended_text_node
-                    if getrefcount(current) > 3 + (_next is not None):
-                        skip = True
-                        break
-                    current = _next
-                if skip:
-                    continue
-
-                data_node._merge_appended_text_nodes()
-
-            else:  # isinstance(node, _ElementWrappingNode)
-                current = tail_node._appended_text_node
-                while current is not None:
-                    _next = current._appended_text_node
-                    if getrefcount(current) > 3 + (_next is not None):
-                        skip = True
-                        break
-                    current = _next
-                if skip:
-                    continue
-
-            tail_node._merge_appended_text_nodes()
-            self.wrappers.pop(element)
-
-
-_wrapper_cache = _WrapperCache()
 
 
 # functions
@@ -310,9 +105,7 @@ def new_comment_node(content: str) -> CommentNode:
     :return: The newly created comment node.
     """
     CommentNode._validate_content(content)
-    result = _wrapper_cache(etree.Comment(content))
-    assert isinstance(result, CommentNode)
-    return result
+    raise NotImplementedError
 
 
 def new_processing_instruction_node(
@@ -326,9 +119,7 @@ def new_processing_instruction_node(
     :return: The newly created processing instruction node.
     """
     ProcessingInstructionNode._validate_target_value(target)
-    result = _wrapper_cache(etree.PI(target, content))
-    assert isinstance(result, ProcessingInstructionNode)
-    return result
+    raise NotImplementedError
 
 
 def new_tag_node(
@@ -353,10 +144,11 @@ def new_tag_node(
     :return: The newly created tag node.
     """
 
-    result = _wrapper_cache(
-        etree.Element(QName(namespace or None, local_name).text),
-    )
-    assert isinstance(result, TagNode)
+    raise NotImplementedError
+
+    result: TagNode
+
+    # TODO move to TagNode.__init__
     if attributes is not None:
         for name, value in attributes.items():
             result.attributes[name] = value
@@ -560,22 +352,11 @@ class Attribute(_StringMixin):
     @property
     def value(self) -> str:
         """The attribute's value."""
-        if self._attributes is None:
-            assert self._detached_value is not None
-            return self._detached_value
-        else:
-            value = self._attributes._etree_attrib[
-                self._attributes._etree_key(self._qualified_name)
-            ]
-            return value.decode() if isinstance(value, bytes) else value
+        raise NotImplementedError
 
     @value.setter
     def value(self, value: str):
-        if self._attributes is None:
-            self._detached_value = value
-        else:
-            etree_key = self._attributes._etree_key(self._qualified_name)
-            self._attributes._etree_attrib[etree_key] = value
+        raise NotImplementedError
 
     # for utils._StringMixin:
     _data = value
@@ -584,24 +365,18 @@ class Attribute(_StringMixin):
 class TagAttributes(MutableMapping):
     """
     A data type to access a :term:`tag node`'s attributes.
-
-    Note that due to the current lxml backend there's no distinction between attributes
-    with no namespace and such in the default namespace, both variants access the same
-    data. If you you managed yourself into a position where that matters, the only
-    technical solution is to re-encode the document to not contain any empty namespace.
-    This will not be an issue with delb 0.7, according to the plan.
     """
 
-    __default = object()
+    __default = object()  # REMOVE?
 
-    __slots__ = ("_attributes", "_etree_attrib", "_node")
+    __slots__ = ("_node",)
 
     def __init__(self, node: TagNode):
-        self._attributes: dict[QualifiedName, Attribute] = {}
-        self._etree_attrib: etree._Attrib = node._etree_obj.attrib
         self._node = node
+        raise NotImplementedError
 
     def __contains__(self, item: Any) -> bool:
+        raise NotImplementedError
         return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
 
     def __delitem__(self, item: AttributeAccessor):
@@ -609,6 +384,9 @@ class TagAttributes(MutableMapping):
             raise KeyError
 
         qualified_name = self.__resolve_accessor(item)
+
+        raise NotImplementedError
+
         attribute = self[qualified_name]
         assert attribute is not None
         attribute._detached_value = attribute.value
@@ -639,18 +417,10 @@ class TagAttributes(MutableMapping):
 
         return True
 
-    def _etree_key(self, item: QualifiedName) -> str:
-        namespace, name = item
-
-        if namespace and self._node._etree_obj.nsmap.get(None) != namespace:
-            return f"{{{namespace}}}{name}"
-        else:
-            return name
-
     def __getitem__(self, item: AttributeAccessor) -> Attribute:
         if item in self:
             qualified_name = self.__resolve_accessor(item)
-            result = self._attributes.get(qualified_name)
+            result = NotImplemented
             if result is None:
                 result = Attribute(self, qualified_name)
                 self._attributes[qualified_name] = result
@@ -659,26 +429,14 @@ class TagAttributes(MutableMapping):
             raise KeyError(item)
 
     def __iter__(self) -> Iterator[QualifiedName]:
-        results = []
-        for key in self._etree_attrib:
-            assert isinstance(key, str)
-            namespace, name = deconstruct_clark_notation(key)
-            if namespace is None:
-                namespace = self._node._etree_obj.nsmap.get(None, "")
-            assert isinstance(namespace, str)
-            results.append((namespace, name))
-        return iter(results)
+        raise NotImplementedError
 
     def __len__(self) -> int:
-        return len(self._etree_attrib)
+        raise NotImplementedError
 
     def __setitem__(self, item: AttributeAccessor, value: str | Attribute):
         qualified_name = self.__resolve_accessor(item)
-        key = self._etree_key(qualified_name)
-        if isinstance(value, Attribute):
-            value = value.value
-        self._etree_attrib[key] = value
-        self._attributes[qualified_name] = Attribute(self, qualified_name)
+        raise NotImplementedError
 
     def __str__(self):
         return str(self.as_dict_with_strings())
@@ -828,9 +586,8 @@ class NodeBase(ABC):
             result += this.add_following_siblings(*queue, clone=clone)
         return result
 
-    @abstractmethod
     def _add_following_sibling(self, node: NodeBase):
-        pass
+        raise NotImplementedError
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
@@ -859,9 +616,8 @@ class NodeBase(ABC):
             result += this.add_preceding_siblings(*queue, clone=clone)
         return result
 
-    @abstractmethod
     def _add_preceding_sibling(self, node: NodeBase):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def clone(self, deep: bool = False) -> NodeBase:
@@ -1065,7 +821,7 @@ class NodeBase(ABC):
     def _iterate_following(self) -> Iterator[NodeBase]:
         def next_sibling_of_an_ancestor(
             node: NodeBase,
-        ) -> Optional[_ElementWrappingNode]:
+        ) -> Optional[NodeBase]:
             parent = node.parent
             if parent is None:
                 return None
@@ -1181,30 +937,22 @@ class NodeBase(ABC):
 
     def _new_tag_node_from(
         self,
-        context: _Element,
+        context: TagNode,
         local_name: str,
         attributes: Optional[dict[AttributeAccessor, str]],
         namespace: Optional[str],
         children: Sequence[NodeSource],
     ) -> TagNode:
-        tag: QName
-
-        context_namespace = QName(context).namespace
+        context_namespace = context.namespace
 
         if namespace:
-            tag = QName(namespace or None, local_name)
+            tag_namespace = namespace
         elif context_namespace:
-            tag = QName(context_namespace, local_name)
+            tag_namespace = context_namespace
         else:
-            tag = QName(local_name)
+            tag_namespace = ""
 
-        result = _wrapper_cache(
-            context.makeelement(
-                tag.text,
-                # TODO https://github.com/lxml/lxml-stubs/issues/62
-                nsmap=context.nsmap,  # type: ignore
-            ),
-        )
+        result = NotImplemented
         assert isinstance(result, TagNode)
 
         if attributes is not None:
@@ -1321,8 +1069,7 @@ class NodeBase(ABC):
             format_options=format_options,
             namespaces=namespaces,
         )
-        with _wrapper_cache:
-            serializer.serialize_node(self)
+        serializer.serialize_node(self)
         return serializer.writer.result
 
     def _validate_sibling_operation(self, node):
@@ -1374,6 +1121,9 @@ class _ChildLessNode(NodeBase):
     def depth(self) -> int:
         return cast("TagNode", self.parent).depth + 1
 
+    def detach(self, retain_child_nodes: bool = False) -> NodeBase:
+        raise NotImplementedError
+
     @property
     def document(self) -> Optional[Document]:
         parent = self.parent
@@ -1398,162 +1148,7 @@ class _ChildLessNode(NodeBase):
         yield from ()
 
 
-class _ElementWrappingNode(NodeBase):
-    __slots__ = ("_etree_obj", "__namespaces", "_tail_node")
-
-    def __init__(self, etree_element: _Element):
-        self._etree_obj = etree_element
-        self._tail_node = TextNode(etree_element, position=TAIL)
-
-    def __copy__(self) -> _ElementWrappingNode:
-        return self.clone(deep=False)
-
-    def __deepcopy__(self, memodict=None) -> _ElementWrappingNode:
-        return self.clone(deep=True)
-
-    def _add_following_sibling(self, node: NodeBase):
-        if isinstance(node, _ElementWrappingNode):
-            my_old_tail = self._tail_node
-
-            if self._tail_node._exists:
-                my_old_tail._bind_to_tail(node)
-                self._etree_obj.tail = None
-                self._etree_obj.addnext(node._etree_obj)
-                self._tail_node = TextNode(self._etree_obj, TAIL)
-
-                assert self._tail_node is not my_old_tail
-                assert node._tail_node is my_old_tail
-            else:
-                self._etree_obj.addnext(node._etree_obj)
-
-                assert self._tail_node is my_old_tail
-                assert node._tail_node is not my_old_tail
-
-        elif isinstance(node, TextNode):
-            assert node._position is DETACHED
-            assert node._appended_text_node is None
-
-            if self._tail_node._exists:
-                my_old_tail = self._tail_node
-                my_old_tail_content = my_old_tail.content
-
-                node._bind_to_tail(self)
-                node._appended_text_node = my_old_tail
-                my_old_tail._bound_to = node
-                my_old_tail._position = APPENDED
-                my_old_tail.content = my_old_tail_content
-            else:
-                node._bind_to_tail(self)
-
-    def _add_preceding_sibling(self, node: NodeBase):
-        previous = self.fetch_preceding_sibling()
-
-        if previous is None:
-            if isinstance(node, _ElementWrappingNode):
-                self._etree_obj.addprevious(node._etree_obj)
-
-            else:
-                assert isinstance(node, TextNode)
-                parent = self.parent
-                assert parent is not None
-                assert not parent._data_node._exists
-                node._bind_to_data(parent)
-
-        else:
-            previous._add_following_sibling(node)
-
-    def clone(self, deep: bool = False) -> _ElementWrappingNode:
-        etree_clone = copy(self._etree_obj)
-        etree_clone.tail = None
-        return _wrapper_cache(etree_clone)
-
-    @altered_default_filters()
-    def detach(self, retain_child_nodes: bool = False) -> _ElementWrappingNode:
-        parent = self.parent
-
-        if parent is None:
-            return self
-
-        etree_obj = self._etree_obj
-
-        if self._tail_node._exists:
-            if self.index == 0:
-                self._tail_node._bind_to_data(parent)
-
-            else:
-                previous_node = self.fetch_preceding_sibling()
-                if isinstance(previous_node, _ElementWrappingNode):
-                    self._tail_node._bind_to_tail(previous_node)
-                elif isinstance(previous_node, TextNode):
-                    previous_node._insert_text_node_as_next_appended(self._tail_node)
-                else:
-                    raise InvalidCodePath
-
-            etree_obj.tail = None
-            self._tail_node = TextNode(etree_obj, position=TAIL)
-
-        cast("_Element", etree_obj.getparent()).remove(etree_obj)
-
-        return self
-
-    def _fetch_following_sibling(self) -> Optional[NodeBase]:
-        if self._tail_node._exists:
-            return self._tail_node
-
-        next_etree_obj = self._etree_obj.getnext()
-        if next_etree_obj is None:
-            return None
-        return _wrapper_cache(next_etree_obj)
-
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        candidate: NodeBase | None = None
-
-        previous_etree_obj = self._etree_obj.getprevious()
-
-        if previous_etree_obj is None:
-            parent = self.parent
-
-            if parent is not None and parent._data_node._exists:
-                candidate = parent._data_node
-                assert isinstance(candidate, TextNode)
-                while candidate._appended_text_node:
-                    candidate = candidate._appended_text_node
-
-        else:
-            wrapper_of_previous = _wrapper_cache(previous_etree_obj)
-
-            if wrapper_of_previous._tail_node._exists:
-                candidate = wrapper_of_previous._tail_node
-                assert isinstance(candidate, TextNode)
-                while candidate._appended_text_node:
-                    candidate = candidate._appended_text_node
-
-            else:
-                candidate = wrapper_of_previous
-
-        if candidate is None:
-            return None
-
-        if all(f(candidate) for f in chain(default_filters[-1], filter)):
-            return candidate
-        else:
-            return candidate.fetch_preceding_sibling(*filter)
-
-    @property
-    def full_text(self) -> str:
-        return ""
-
-    @property
-    def parent(self) -> Optional[TagNode]:
-        etree_parent = self._etree_obj.getparent()
-        if etree_parent is None:
-            return None
-        result = _wrapper_cache(etree_parent)
-        assert isinstance(result, TagNode)
-        return result
-
-
-class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
+class CommentNode(_ChildLessNode, NodeBase):
     """
     The instances of this class represent comment nodes of a tree.
 
@@ -1561,6 +1156,9 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
     """
 
     __slots__ = ()
+
+    def __init__(self, content: str):
+        raise NotImplementedError
 
     def __eq__(self, other) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
@@ -1578,12 +1176,12 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
         :meta category: Node content properties
         """
-        return cast("str", self._etree_obj.text)
+        raise NotImplementedError
 
     @content.setter
     def content(self, value: str):
         self._validate_content(value)
-        self._etree_obj.text = value
+        raise NotImplementedError
 
     @staticmethod
     def _validate_content(value: str):
@@ -1591,7 +1189,7 @@ class CommentNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
             raise ValueError("Invalid Comment content.")
 
 
-class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
+class ProcessingInstructionNode(_ChildLessNode, NodeBase):
     """
     The instances of this class represent processing instruction nodes of a tree.
 
@@ -1623,11 +1221,11 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
         :meta category: Node content properties
         """
-        return cast("str", self._etree_obj.text)
+        raise NotImplementedError
 
     @content.setter
     def content(self, value: str):
-        self._etree_obj.text = value
+        raise NotImplementedError
 
     @property
     def target(self) -> str:
@@ -1636,16 +1234,12 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
 
         :meta category: Node content properties
         """
-        etree_obj = self._etree_obj
-        assert isinstance(etree_obj, etree._ProcessingInstruction)
-        return cast("str", etree_obj.target)
+        raise NotImplementedError
 
     @target.setter
     def target(self, value: str):
         self._validate_target_value(value)
-        etree_obj = self._etree_obj
-        assert isinstance(etree_obj, etree._ProcessingInstruction)
-        etree_obj.target = value
+        raise NotImplementedError
 
     @staticmethod
     def _validate_target_value(value):
@@ -1656,7 +1250,7 @@ class ProcessingInstructionNode(_ChildLessNode, _ElementWrappingNode, NodeBase):
             raise ValueError(f"{value} is a reserved target name.")
 
 
-class TagNode(_ElementWrappingNode, NodeBase):
+class TagNode(NodeBase):
     """
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
@@ -1713,10 +1307,10 @@ class TagNode(_ElementWrappingNode, NodeBase):
         "__document__",
     )
 
-    def __init__(self, etree_element: _Element):
-        super().__init__(etree_element)
-        self._data_node = TextNode(etree_element, position=DATA)
-        self._attributes = TagAttributes(self)
+    # TODO signature as new_tag_node
+    def __init__(self):
+        super().__init__()
+        raise NotImplementedError
         self.__document__: Document | None = None
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
@@ -1818,12 +1412,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
                     + ATTRIBUTE_ACCESSOR_MSG
                 )
 
+    # REMOVE
     def __add_first_child(self, node: NodeBase):
-        assert not len(self)
-        if isinstance(node, _ElementWrappingNode):
-            self._etree_obj.append(node._etree_obj)
-        elif isinstance(node, TextNode):
-            node._bind_to_data(self)
+        raise InvalidCodePath
 
     def _add_following_sibling(self, node: NodeBase):
         if self.parent is None:
@@ -1933,7 +1524,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         >>> "ref-" + node.attributes[("http://namespace", "bar")].lower()
         'ref-x'
         """
-        return self._attributes
+        raise NotImplementedError
 
     @altered_default_filters()
     def clone(self, deep: bool = False) -> TagNode:
@@ -1980,7 +1571,9 @@ class TagNode(_ElementWrappingNode, NodeBase):
         return result
 
     @altered_default_filters()
-    def detach(self, retain_child_nodes: bool = False) -> _ElementWrappingNode:
+    def detach(self, retain_child_nodes: bool = False) -> TagNode:
+        raise NotImplementedError
+
         parent = self.parent
         index = self.index
 
@@ -2009,21 +1602,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         child_nodes = tuple(self.iterate_children())
         for child_node in child_nodes:
             child_node.detach()
-
-        # workaround to keep a default namespace:
-        if parent_has_default_namespace:
-            _wrapper_cache.wrappers.pop(self._etree_obj)
-            assert isinstance(parent, TagNode)
-            self._etree_obj = parent._etree_obj.makeelement(
-                etree.QName(self._etree_obj),
-                attrib=dict(self._etree_obj.attrib),  # type: ignore
-                # TODO https://github.com/lxml/lxml-stubs/issues/62
-                nsmap=parent_namespaces,  # type: ignore
-            )
-            self._attributes._attributes.clear()
-            self._attributes._etree_attrib = self._etree_obj.attrib
-            self._attributes._node = self
-            _wrapper_cache.wrappers[self._etree_obj] = self
 
         if retain_child_nodes:
             if child_nodes:
@@ -2198,7 +1776,8 @@ class TagNode(_ElementWrappingNode, NodeBase):
                 del self.attributes[(XML_NAMESPACE, "id")]
             case str():
                 root = cast("TagNode", last(self.iterate_ancestors())) or self
-                if root._etree_obj.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
+                # TODO optimize
+                if root.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
                     raise ValueError(
                         "An xml:id-attribute with that value is already assigned in "
                         "the tree."
@@ -2261,13 +1840,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
         all_filters = default_filters[-1] + filter
         candidate: NodeBase | None
 
-        assert isinstance(self._data_node, TextNode)
-        if self._data_node._exists:
-            candidate = self._data_node
-        elif len(self._etree_obj):
-            candidate = _wrapper_cache(self._etree_obj[0])
-        else:
-            candidate = None
+        raise NotImplementedError
 
         while candidate is not None:
             if all(f(candidate) for f in all_filters):
@@ -2320,11 +1893,11 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: Node properties
         """
-        return cast("str", QName(self._etree_obj).localname)
+        raise NotImplementedError
 
     @local_name.setter
     def local_name(self, value: str):
-        self._etree_obj.tag = QName(self.namespace or None, value).text
+        raise NotImplementedError
 
     @property
     def location_path(self) -> str:
@@ -2349,18 +1922,19 @@ class TagNode(_ElementWrappingNode, NodeBase):
         Merges all consecutive text nodes in the subtree into one.
         Text nodes without content are dropped.
         """
-        with _wrapper_cache:
-            empty_nodes: list[TextNode] = []
+        empty_nodes: list[TextNode] = []
 
-            for node in self.iterate_descendants():
-                if not isinstance(node, TextNode):
-                    continue
-                node._merge_appended_text_nodes()
-                if not node.content:
-                    empty_nodes.append(node)
+        raise NotImplementedError
 
-            for node in empty_nodes:
-                node.detach()
+        for node in self.iterate_descendants():
+            if not isinstance(node, TextNode):
+                continue
+            node._merge_appended_text_nodes()
+            if not node.content:
+                empty_nodes.append(node)
+
+        for node in empty_nodes:
+            node.detach()
 
     @property
     def namespace(self) -> str:
@@ -2369,13 +1943,14 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         :meta category: Node properties
         """
-        return QName(self._etree_obj.tag).namespace or ""
+        raise NotImplementedError
 
     @namespace.setter
     def namespace(self, value: str):
-        self._etree_obj.tag = QName(value or None, self.local_name).text
+        raise NotImplementedError
 
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
+        raise NotImplementedError
         return self._new_tag_node_from(
             context=self._etree_obj,
             local_name=definition.local_name,
@@ -2414,8 +1989,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def _reduce_whitespace(
         self, normalize_space: Literal["default", "preserve"] = "default"
     ):
-        with _wrapper_cache:
-            self._reduce_whitespace_of_descendants(normalize_space)
+        self._reduce_whitespace_of_descendants(normalize_space)
 
     def _reduce_whitespace_of_descendants(
         self, normalize_space: Literal["default", "preserve"]
@@ -2446,8 +2020,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
             format_options=format_options,
             namespaces=namespaces,
         )
-        with _wrapper_cache:
-            serializer.serialize_root(self)
+        serializer.serialize_root(self)
         return serializer.writer.result
 
     @property
@@ -2459,7 +2032,7 @@ class TagNode(_ElementWrappingNode, NodeBase):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
-        return cast("str", self._etree_obj.tag)
+        raise NotImplementedError
 
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
@@ -2500,31 +2073,19 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     Attributes that rely to child nodes yield nothing respectively :obj:`None`.
     """
 
-    __slots__ = ("_appended_text_node", "_bound_to", "__content", "_position")
+    __slots__ = ("__content",)
 
     def __init__(
         self,
-        reference_or_text: _Element | str | TextNode,
-        position: int = DETACHED,
+        text: str | TextNode,
     ):
-        self._bound_to: _Element | TextNode | None
-        self.__content: str | None
-
-        self._appended_text_node: TextNode | None = None
-        self._position: int = position
-
-        if position is DETACHED:
-            assert isinstance(reference_or_text, str)
-            self._bound_to = None
-            self.__content = reference_or_text
-
-        elif position in (DATA, TAIL):
-            assert isinstance(reference_or_text, _Element)
-            self._bound_to = reference_or_text
-            self.__content = None
-
-        else:
-            raise ValueError
+        match text:
+            case str():
+                self.__content = text
+            case TextNode():
+                self.__content = text.__content
+            case _:
+                raise TypeError
 
     def __eq__(self, other):
         if isinstance(other, TextNode):
@@ -2547,102 +2108,10 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             )
 
     def _add_following_sibling(self, node: NodeBase):
-        if isinstance(node, TextNode):
-            self._insert_text_node_as_next_appended(node)
-
-        elif isinstance(node, _ElementWrappingNode):
-            self._add_next_element_wrapping_node(node)
-
-    def _add_next_element_wrapping_node(self, node: _ElementWrappingNode):
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            appended_text_node = self._appended_text_node
-            self._bound_to.insert(0, node._etree_obj)
-            if appended_text_node is not None:
-                self._appended_text_node = None
-                appended_text_node._bind_to_tail(node)
-
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            data = self._bound_to.tail
-            text_sibling = self._appended_text_node
-            self._appended_text_node = None
-
-            assert not node._tail_node._exists
-
-            self._bound_to.addnext(node._etree_obj)
-            self._bound_to.tail = data
-            node._etree_obj.tail = None
-
-            assert not node._tail_node._exists, repr(node._tail_node)
-
-            if text_sibling is not None:
-                text_sibling._bind_to_tail(node)
-
-        elif self._position is APPENDED:
-            appended_text_node = self._appended_text_node
-            self._appended_text_node = None
-
-            head = self._tail_sequence_head
-            assert head._position in (DATA, TAIL)
-            if head._position is DATA:
-                assert isinstance(head._bound_to, _Element)
-                head._bound_to.insert(0, node._etree_obj)
-            elif head._position is TAIL:
-                head_anchor = head._bound_to
-                assert isinstance(head_anchor, _Element)
-                head_content = head.content
-
-                head_anchor.addnext(node._etree_obj)
-
-                head_anchor.tail = head_content
-                node._etree_obj.tail = None
-
-            if appended_text_node is not None:
-                appended_text_node._bind_to_tail(node)
+        raise NotImplementedError
 
     def _add_preceding_sibling(self, node: NodeBase):
-        if isinstance(node, TextNode):
-            self._prepend_text_node(node)
-
-        elif isinstance(node, _ElementWrappingNode):
-            if self._position is DATA:
-                content = self.content
-                current_bound = self._bound_to
-                assert isinstance(current_bound, _Element)
-                current_bound.insert(0, node._etree_obj)
-
-                current_bound_wrapper = _wrapper_cache(current_bound)
-                assert isinstance(current_bound_wrapper, TagNode)
-                current_bound_wrapper._data_node = TextNode(current_bound, DATA)
-                self._bind_to_tail(node)
-                current_bound.text = None
-                self.content = content
-
-            elif self._position is TAIL:
-                assert isinstance(self._bound_to, _Element)
-                _wrapper_cache(self._bound_to)._add_following_sibling(node)
-
-            elif self._position is APPENDED:
-                assert isinstance(self._bound_to, TextNode)
-                self._bound_to._add_following_sibling(node)
-
-    def _bind_to_data(self, target: TagNode):
-        target._etree_obj.text = self.content
-        target._data_node = self
-        self._bound_to = target._etree_obj
-        self._position = DATA
-        self.__content = None
-        assert isinstance(self.content, str)
-
-    def _bind_to_tail(self, target: _ElementWrappingNode):
-        assert isinstance(target, _ElementWrappingNode)
-        target._etree_obj.tail = self.content
-        target._tail_node = self
-        self._bound_to = target._etree_obj
-        self._position = TAIL
-        self.__content = None
-        assert isinstance(self.content, str)
+        raise NotImplementedError
 
     def clone(self, deep: bool = False) -> NodeBase:
         assert self.content is not None
@@ -2655,154 +2124,22 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
         :meta category: Node content properties
         """
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            return cast("str", self._bound_to.text)
-
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            return cast("str", self._bound_to.tail)
-
-        elif self._position in (APPENDED, DETACHED):
-            assert self._bound_to is None or isinstance(self._bound_to, TextNode)
-            return cast("str", self.__content)
-
-        else:
-            raise ValueError(
-                f"A TextNode._position must not be set to {self._position}"
-            )
+        return self.__content
 
     @content.setter
     def content(self, text: str):
-        if not isinstance(text, str):
-            raise TypeError
-
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            self._bound_to.text = text or None
-
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            self._bound_to.tail = text or None
-
-        elif self._position in (APPENDED, DETACHED):
-            assert self._bound_to is None or isinstance(self._bound_to, TextNode)
-            self.__content = text
+        self.__content = text
 
     # for utils._StringMixin:
     _data = content
 
-    @property
-    def depth(self) -> int:
-        if self._position is DETACHED:
-            return 0
-        return super().depth
-
-    def detach(self, retain_child_nodes: bool = False) -> TextNode:
-        if self._position is DETACHED:
-            return self
-
-        content = self.content
-        text_sibling = self._appended_text_node
-
-        if self._position is DATA:
-            current_parent = self.parent
-            assert current_parent is not None
-
-            assert isinstance(self._bound_to, _Element)
-            assert current_parent._etree_obj is self._bound_to
-
-            if text_sibling:
-                text_sibling._bind_to_data(current_parent)
-            else:
-                current_parent._data_node = TextNode(current_parent._etree_obj, DATA)
-                assert self not in current_parent
-                self._bound_to.text = None
-                assert not current_parent._data_node._exists
-
-        elif self._position is TAIL:
-            current_bound = self._bound_to
-            assert isinstance(current_bound, _Element)
-            current_previous = _wrapper_cache(current_bound)
-
-            if text_sibling:
-                text_sibling._bind_to_tail(current_previous)
-            else:
-                current_previous._tail_node = TextNode(
-                    current_previous._etree_obj, TAIL
-                )
-                current_bound.tail = None
-                assert not current_previous._tail_node._exists
-
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
-            self._bound_to._appended_text_node = text_sibling
-            if text_sibling:
-                text_sibling._bound_to = self._bound_to
-
-        else:
-            raise ValueError(
-                f"A TextNode._position must not be set to {self._position}"
-            )
-
-        self._appended_text_node = None
-        self._bound_to = None
-        self._position = DETACHED
-        self.content = content or ""
-
-        assert self.parent is None
-        assert self._fetch_following_sibling() is None
-
-        return self
-
-    @property
-    def _exists(self) -> bool:
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            return self._bound_to.text is not None
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            return self._bound_to.tail is not None
-        else:
-            return True
-
     def _fetch_following_sibling(self) -> Optional[NodeBase]:
-        if self._position is DETACHED:
-            return None
-
-        if self._appended_text_node:
-            return self._appended_text_node
-
-        elif self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            if len(self._bound_to):
-                return _wrapper_cache(self._bound_to[0])
-            else:
-                return None
-
-        elif self._position is TAIL:
-            return self.__next_candidate_of_tail()
-
-        elif self._position is APPENDED:  # and last in tail sequence
-            return self.__next_candidate_of_last_appended()
-
-        raise InvalidCodePath
+        raise NotImplementedError
 
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         candidate: NodeBase | None
 
-        if self._position in (DATA, DETACHED):
-            return None
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            candidate = _wrapper_cache(self._bound_to)
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
-            candidate = self._bound_to
-        else:
-            raise ValueError(
-                f"A TextNode._position must not be set to {self._position}"
-            )
+        raise NotImplementedError
 
         if candidate is None:
             return None
@@ -2816,122 +2153,9 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     def full_text(self) -> str:
         return self.content or ""
 
-    def _merge_appended_text_nodes(self):
-        sibling = self._appended_text_node
-        if sibling is None:
-            return
-
-        current_node, appendix = sibling, ""
-        while current_node is not None:
-            assert isinstance(current_node.content, str)
-            appendix += current_node.content
-            current_node = current_node._appended_text_node
-
-        self.content += appendix
-        self._appended_text_node = None
-        sibling._bound_to = None
-
-    def _insert_text_node_as_next_appended(self, node: TextNode):
-        old = self._appended_text_node
-        content = node.content
-        node._bound_to = self
-        node._position = APPENDED
-        node.content = content
-        self._appended_text_node = node
-        if old:
-            assert old._position is APPENDED, old
-            node._insert_text_node_as_next_appended(old)
-
-        assert isinstance(self.content, str)
-        assert isinstance(node.content, str)
-
-    def __next_candidate_of_last_appended(self) -> Optional[NodeBase]:
-        head = self._tail_sequence_head
-        assert isinstance(head._bound_to, _Element)
-        if head._position is DATA:
-            assert head.parent is not None
-            if len(head.parent._etree_obj):
-                return _wrapper_cache(head.parent._etree_obj[0])
-            else:
-                return None
-        elif head._position is TAIL:
-            next_etree_element = head._bound_to.getnext()
-            if next_etree_element is None:
-                return None
-            else:
-                return _wrapper_cache(next_etree_element)
-
-        raise InvalidCodePath
-
-    def __next_candidate_of_tail(self) -> Optional[NodeBase]:
-        assert isinstance(self._bound_to, _Element)
-        next_etree_node = self._bound_to.getnext()
-        if next_etree_node is None:
-            return None
-        return _wrapper_cache(next_etree_node)
-
     @property
     def parent(self) -> Optional[TagNode]:
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            result = _wrapper_cache(self._bound_to)
-            assert isinstance(result, TagNode)
-            return result
-
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            return _wrapper_cache(self._bound_to).parent
-
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
-            return self._tail_sequence_head.parent
-
-        elif self._position is DETACHED:
-            assert self._bound_to is None
-            return None
-
-        raise ValueError(f"A TextNode._position must not be set to {self._position}")
-
-    def _prepend_text_node(self, node: TextNode):
-        if self._position is DATA:
-            assert isinstance(self._bound_to, _Element)
-            parent = _wrapper_cache(self._bound_to)
-            assert isinstance(parent, TagNode)
-            content = self.content
-            node._bind_to_data(parent)
-            node._insert_text_node_as_next_appended(self)
-            self.content = content
-
-        elif self._position is TAIL:
-            assert isinstance(self._bound_to, _Element)
-            left_sibling = _wrapper_cache(self._bound_to)
-            content = self.content
-            node._bind_to_tail(left_sibling)
-            node._insert_text_node_as_next_appended(self)
-            self.content = content
-
-        elif self._position is APPENDED:
-            assert node._appended_text_node is None
-            previous = self._bound_to
-            assert isinstance(previous, TextNode)
-            previous._appended_text_node = None
-            previous._insert_text_node_as_next_appended(node)
-            node._insert_text_node_as_next_appended(self)
-
-        else:
-            raise ValueError(
-                f"A TextNode._position must not be set to {self._position}"
-            )
-
-    @property
-    def _tail_sequence_head(self) -> TextNode:
-        if self._position in (DATA, TAIL):
-            return self
-        elif self._position is APPENDED:
-            assert isinstance(self._bound_to, TextNode)
-            return self._bound_to._tail_sequence_head
-        else:
-            raise InvalidCodePath
+        raise NotImplementedError
 
 
 # contributed node filters and filter wrappers

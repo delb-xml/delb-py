@@ -26,13 +26,11 @@ from typing import TYPE_CHECKING, overload, Optional
 from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
-    DETACHED,
     altered_default_filters,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
     _reduce_whitespace_between_siblings,
-    _wrapper_cache,
     Attribute,
     NodeBase,
     _TagDefinition,
@@ -241,7 +239,7 @@ class TreeBuilder:
                 result = self.handle_tag_end(data)
             case EventType.Text:
                 assert isinstance(data, str)
-                result = TextNode(data, DETACHED)
+                result = TextNode(data)
 
         if result is not None:
             if self.started_tags:
@@ -330,8 +328,8 @@ def parse_nodes(
     """Parses the provided input data to a sequence of nodes."""
     if options is None:
         options = ParserOptions()
-    # TODO remove contexts with optimized TreeBuilder
-    with altered_default_filters(), _wrapper_cache:
+    # TODO remove context with optimized TreeBuilder
+    with altered_default_filters():
         yield from TreeBuilder(data, options, base_url)
 
 

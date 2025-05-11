@@ -36,7 +36,6 @@ def test_attributes(parser):
         """<root xmlns="http://fo.org" a="b"/>""",
         ParserOptions(preferred_parsers=parser),
     )
-    assert "{http://fo.org}a" in root.attributes._etree_attrib
     assert ("http://fo.org", "a") in root.attributes
 
 

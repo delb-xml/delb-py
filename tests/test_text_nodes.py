@@ -9,7 +9,6 @@ from delb import (
     parse_tree,
     tag,
 )
-from _delb.nodes import TAIL, APPENDED
 
 
 def test_add_tag_before_tail():
@@ -33,15 +32,10 @@ def test_add_tag_after_tail():
 
 def test_add_text_after_tag():
     tag = parse_tree("<root><tag/></root>")[0]
-
     tag.add_following_siblings(TextNode("foo"))
-
-    assert tag._etree_obj.text is None
-    assert tag._etree_obj.tail == "foo"
 
     foo = tag.fetch_following_sibling()
     assert isinstance(foo, TextNode)
-    assert foo._position == TAIL
     assert foo.content == "foo"
     assert foo._appended_text_node is None
 
@@ -61,13 +55,13 @@ def test_add_text_after_tail():
     assert bar._bound_to is foo
 
     assert isinstance(bar, TextNode)
-    assert bar._position == APPENDED
     assert bar.content == "bar"
     assert bar._appended_text_node is None
 
     document.merge_text_nodes()
     assert len(root) == 2
-    assert root[0]._etree_obj.tail == "foobar"
+
+    assert root.last_child == "foobar"
 
 
 def test_add_text_after_appended():
@@ -81,22 +75,10 @@ def test_add_text_after_appended():
 
     assert len(root) == 4
 
-    assert foo._appended_text_node is bar
-    assert foo._position == TAIL
-    assert bar._bound_to is foo
-
-    assert bar._appended_text_node is peng
-    assert bar._position == APPENDED
-    assert peng._bound_to is bar
-
-    assert peng._appended_text_node is None
-    assert peng._position == APPENDED
-    assert peng._bound_to is bar
-
     root.merge_text_nodes()
 
     assert len(root) == 2
-    assert root[0]._etree_obj.tail == "foobarpeng"
+    assert root.last_child == "foobarpeng"
 
 
 def test_add_tag_between_text_nodes_at_tail_position():

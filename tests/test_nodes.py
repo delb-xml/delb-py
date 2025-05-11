@@ -1,6 +1,5 @@
 import pytest
 
-from _delb.nodes import _wrapper_cache
 from delb import (
     is_tag_node,
     is_text_node,
@@ -94,66 +93,6 @@ def test_insert_issue_in_a_more_complex_situation():
     assert str(document) == (
         '<?xml version="1.0" encoding="UTF-8"?>' "<root><div1><div2/> </div1></root>"
     )
-
-
-# TODO remove with native data model
-def test_wrapper_consistency():
-    # this test is the result of an investigation that asked why
-    # `test_insert_issue_in_a_more_complex_situation` failed.
-    # as a result, the way how node wrapper are tracked has been refactored.
-    # so this test is looking on under-the-hood-expectations for aspects of the
-    # mentioned test. when maintaining this requires effort, it should rather be
-    # dropped.
-    def node_ids():
-        return {
-            "root": id(root),
-            "foo": id(foo),
-            "div1": id(div1),
-            "div2": id(div2),
-            "text": id(text),
-        }
-
-    with _wrapper_cache:
-        document = Document("<root><foo><div1><div2/>text</div1></foo></root>")
-
-        root = document.root
-        foo = root.first_child
-        div1 = foo.first_child
-        div2 = div1.first_child
-        text = div1.last_child
-
-        original_ids = node_ids()
-
-        div1.detach()
-        foo = root.first_child
-        div2 = div1.first_child
-        text = div1.last_child
-        assert node_ids() == original_ids
-
-        foo.detach()
-        assert node_ids() == original_ids
-
-        root.insert_children(0, div1)
-        div1 = root.first_child
-        div2 = div1.first_child
-        text = div1.last_child
-        assert node_ids() == original_ids
-
-        other_doc = Document(str(document))
-        div1 = other_doc.css_select("div1").first
-        div2 = other_doc.css_select("div2").first
-        div2.detach()
-        div1.insert_children(0, div2)
-
-        div1 = document.css_select("div1").first
-        div2 = document.css_select("div2").first
-
-        div2.detach()
-        div1 = root.first_child
-        text = div1.first_child
-        assert node_ids() == original_ids
-
-        div1.insert_children(0, div2)
 
 
 def test_invalid_operations():
