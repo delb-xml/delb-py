@@ -546,11 +546,6 @@ class Attribute(_StringMixin):
         self._set_new_key(namespace, self.local_name)
 
     @property
-    def _namespace(self) -> str:
-        warnings.warn("Use Attribute.namespace instead!", category=DeprecationWarning)
-        return self.namespace
-
-    @property
     def universal_name(self) -> str:
         """
         The attribute's namespace and local name in `Clark notation`_.
@@ -2371,11 +2366,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
     def namespace(self, value: str):
         self._etree_obj.tag = QName(value or None, self.local_name).text
 
-    @property
-    def _namespace(self) -> str:
-        warnings.warn("Use TagNode.namespace instead!")
-        return self.namespace
-
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
         return self._new_tag_node_from(
             context=self._etree_obj,
@@ -2391,26 +2381,6 @@ class TagNode(_ElementWrappingNode, NodeBase):
         raise InvalidOperation(
             "This method has been replaced by `delb.parse_tree`.",
         )
-
-    @property
-    def prefix(self) -> Optional[str]:  # pragma: nocover
-        """
-        The prefix that the node's namespace is currently mapped to.
-
-        :meta category: Node properties
-        """
-        warnings.warn("This attribute will be removed.", category=DeprecationWarning)
-
-        target = QName(self._etree_obj).namespace
-
-        if target is None:
-            return None
-
-        for prefix, namespace in self._etree_obj.nsmap.items():
-            assert isinstance(prefix, str) or prefix is None
-            if namespace == target:
-                return prefix
-        raise InvalidCodePath
 
     def prepend_children(
         self, *node: NodeBase, clone: bool = False
