@@ -131,38 +131,19 @@ def new_tag_node(
     children: Iterable[NodeSource] = (),
 ) -> TagNode:
     """
-    Creates a new :class:`TagNode` instance.
-
-    :param local_name: The tag name.
-    :param attributes: Optional attributes that are assigned to the new node.
-    :param namespace: An optional tag namespace.
-    :param children: An optional iterable of objects that will be appended as child
-                     nodes. This can be existing nodes, strings that will be inserted
-                     as text nodes and in-place definitions of :class:`TagNode`
-                     instances from :func:`tag`. The latter will be assigned to the
-                     same namespace.
-    :return: The newly created tag node.
+    Deprecated. Use :class:`TagNode` directly to instantiate a new tag node.
     """
-
-    raise NotImplementedError
-
-    result: TagNode
-
-    # TODO move to TagNode.__init__
-    if attributes is not None:
-        for name, value in attributes.items():
-            result.attributes[name] = value
-
-    for child in children:
-        if isinstance(child, (str, NodeBase, _TagDefinition)):
-            result.append_children(child)
-        else:
-            raise TypeError(
-                "Either node instances, strings or objects from :func:`delb.tag` must "
-                "be provided as children argument."
-            )
-
-    return result
+    warnings.warn(
+        "This function is deprecated. Use TagNode directly to instantiate new tag "
+        "nodes.",
+        category=DeprecationWarning,
+    )
+    return TagNode(
+        local_name=local_name,
+        attributes=attributes,
+        namespace=namespace,
+        children=children,
+    )
 
 
 def _reduce_whitespace_between_siblings(
@@ -1275,7 +1256,14 @@ class TagNode(NodeBase):
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
 
-    To instantiate new nodes use :func:`new_tag_node`.
+    :param local_name: The tag name.
+    :param attributes: Optional attributes that are assigned to the new node.
+    :param namespace: An optional tag namespace.
+    :param children: An optional iterable of objects that will be appended as child
+                     nodes. This can be existing nodes, strings that will be inserted
+                     as text nodes and in-place definitions of :class:`TagNode`
+                     instances from :func:`tag`. The latter will be assigned to the
+                     same namespace.
 
     Some syntactic sugar is baked in:
 
@@ -1322,16 +1310,28 @@ class TagNode(NodeBase):
     """
 
     __slots__ = (
-        "_attributes",
-        "_data_node",
+        "__attributes",
+        "__child_nodes",
+        "__local_name",
+        "__namespace",
         "__document__",
     )
 
-    # TODO signature as new_tag_node
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError
+    def __init__(
+        self,
+        local_name: str,
+        attributes: Optional[
+            _AttributesData | dict[AttributeAccessor, str] | TagAttributes
+        ] = None,
+        namespace: Optional[str] = None,
+        children: Iterable[NodeSource] = (),
+    ):
         self.__document__: Document | None = None
+        self._parent = None
+        self.namespace = namespace or ""
+        self.local_name = local_name
+        self.__attributes = TagAttributes(data=attributes or {}, node=self)
+        self.__child_nodes = Siblings(nodes=children, belongs_to=self)
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
         match item:
