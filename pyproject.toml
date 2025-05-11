@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "delb"
-version = "0.6-dev"
+version = "0.6-a0"
 description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
 authors = [
     { name = "Frank Sachsenheim", email = "delb-project@posteo.net" }

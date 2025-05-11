@@ -13,6 +13,22 @@ Intentionally.
 
 .. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
 
+0.6-a0 (2025-05-11)
+-------------------
+
+This release includes the future parsing interfaces. The performance with the
+lxml-wrapping data model however is not satisfactory and shows occasional quirks
+so that the integration tests can't be fully checked.
+
+News
+~~~~
+
+- A new parser interface allows the use of arbitrary parsing backends. Support
+  for the standard library's ``expat`` interface and ``lxml`` are contributed.
+  For details see :doc:`installation` and :class:`ParserOptions`.
+- ⚠️ The installation extra ``https-loader`` is renamed to ``web-loader``
+
+
 0.5.1 (2025-01-08)
 ------------------
 
