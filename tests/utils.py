@@ -1,5 +1,6 @@
 import os
 import sys
+from itertools import pairwise
 
 import pytest
 
@@ -8,18 +9,6 @@ from delb import (
     compare_trees,
     NodeBase,
 )
-
-
-if sys.version_info < (3, 10):  # DROPWITH Python 3.9
-    from itertools import tee
-
-    def pairwise(iterable):
-        a, b = tee(iterable, 2)
-        next(b, None)
-        return zip(a, b)
-
-else:
-    from itertools import pairwise
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10

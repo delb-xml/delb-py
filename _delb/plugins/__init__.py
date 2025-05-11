@@ -15,17 +15,11 @@
 
 from __future__ import annotations
 
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Sequence
+from importlib.metadata import entry_points
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, overload
-
-
-if sys.version_info < (3, 10):  # DROPWITH Python3.9
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
 
 
 if TYPE_CHECKING:

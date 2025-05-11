@@ -19,17 +19,12 @@ from __future__ import annotations
 import sys
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, AnyStr, BinaryIO, Protocol, TypeAlias, TypeVar
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from types import SimpleNamespace
-
-    if sys.version_info < (3, 10):  # DROPWITH Python 3.9
-        from typing_extensions import TypeAlias
-    else:
-        from typing import TypeAlias
 
     from _delb.nodes import NodeBase, _TagDefinition
     from _delb.xpath.ast import EvaluationContext

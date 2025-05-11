@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from _delb.typing import NodeTypeNameLiteral, TypeAlias
 
 
-TokenPattern: TypeAlias = Sequence[Union[TokenType, None]]  # noqa: SIM907
+TokenPattern: TypeAlias = Sequence[TokenType | None]
 # TODO meditate over this as it cannot be used with isinstance()
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]  # noqa: TC008
 
