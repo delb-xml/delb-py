@@ -1913,11 +1913,12 @@ class TagNode(NodeBase):
 
         :meta category: Node properties
         """
-        raise NotImplementedError
+        return self.__local_name
 
     @local_name.setter
     def local_name(self, value: str):
-        raise NotImplementedError
+        # TODO validation
+        self.__local_name = value
 
     @property
     def location_path(self) -> str:
