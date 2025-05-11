@@ -79,8 +79,7 @@ _plugin_manager.load_plugins()
 
 
 class _Logue(Siblings):
-    @classmethod
-    def _handle_new_sibling(cls, node: NodeSource) -> NodeBase:
+    def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
         if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
             raise InvalidOperation
         return super()._handle_new_sibling(node)
@@ -250,12 +249,16 @@ class Document(metaclass=DocumentMeta):
         if len(loader_result) == 0:
             raise ParsingEmptyStream()
 
-        prologue = _Logue()
+        prologue = _Logue(belongs_to=None, nodes=None)
         for i, node in enumerate(loader_result):
             if isinstance(node, TagNode):
                 root = loader_result[i]
                 assert isinstance(root, TagNode)
-                return prologue, root, _Logue(loader_result[i + 1 :])
+                return (
+                    prologue,
+                    root,
+                    _Logue(belongs_to=None, nodes=loader_result[i + 1 :]),
+                )
             else:
                 prologue.append(node)
         else:
@@ -316,12 +319,13 @@ class Document(metaclass=DocumentMeta):
 
     @root.setter
     def root(self, node: TagNode):
-        _node = Siblings._handle_new_sibling(node)
-
-        if not isinstance(_node, TagNode):
+        if not isinstance(node, TagNode):
             raise TypeError(
                 "The document root node must be a :class:`TagNode` instance."
             )
+
+        if node.parent is not None:
+            raise NotImplementedError
 
         if node.document is not None:
             raise InvalidOperation(
@@ -332,8 +336,8 @@ class Document(metaclass=DocumentMeta):
         if (current_root := getattr(self, "__root_node__", None)) is not None:
             current_root.__document__ = None
 
-        self.__root_node__ = _node
-        _node.__document__ = self
+        self.__root_node__ = node
+        node.__document__ = self
 
     def save(
         self,

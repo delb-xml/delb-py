@@ -474,10 +474,18 @@ class Siblings:
     Everyone's taken care of.
     """
 
-    __slots__ = ("__data",)
+    __slots__ = (
+        "__belongs_to",
+        "__data",
+    )
 
-    def __init__(self, nodes: Optional[Iterable[NodeBase]] = None):
+    def __init__(
+        self,
+        belongs_to: None | TagNode,
+        nodes: Optional[Iterable[NodeSource]],
+    ):
         self.__data: list[NodeBase] = []
+        self.__belongs_to = belongs_to
         if nodes is not None:
             for node in nodes:
                 self.__data.append(self._handle_new_sibling(node))
@@ -528,20 +536,26 @@ class Siblings:
     def prepend(self, node: NodeSource):
         self.insert(0, node)
 
-    @classmethod
-    def _handle_new_sibling(cls, node: NodeSource) -> NodeBase:
-        if isinstance(node, str):  # noqa: SIM114
-            raise NotImplementedError
-        elif isinstance(node, _TagDefinition):
-            raise NotImplementedError
-        elif isinstance(node, NodeBase):
-            if node.parent is not None:
-                raise InvalidOperation(
-                    "Only a detached node can be added to the tree. Use "
-                    ":meth:`TagNode.clone` or :meth:`TagNode.detach` to get one."
+    def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
+        assert isinstance(self.__belongs_to, TagNode)
+        match node:
+            case str():
+                node = TextNode(node)
+            case _TagDefinition():
+                node = self.__belongs_to._new_tag_node_from_definition(node)
+            case NodeBase():
+                if node.parent is not None:
+                    raise InvalidOperation(
+                        "Only a detached node can be added to the tree. Use "
+                        ":meth:`TagNode.clone` or :meth:`TagNode.detach` to get one."
+                    )
+            case _:
+                raise TypeError(
+                    "Either node instances, strings or objects from :func:`delb.tag` "
+                    "must be provided as child node."
                 )
-        else:
-            raise InvalidOperation("Item must be a `delb.NodeBase` instance.")
+
+        node._parent = self.__belongs_to
 
         return node
 
@@ -550,7 +564,9 @@ class Siblings:
 
 
 class NodeBase(ABC):
-    __slots__ = ("__weakref__",)
+    _parent: None | TagNode
+
+    __slots__ = ("_parent",)
 
     def __str__(self) -> str:
         return self.serialize(
@@ -973,17 +989,17 @@ class NodeBase(ABC):
         return result
 
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
+        assert self.parent is not None
         return self.parent._new_tag_node_from_definition(definition)
 
     @property
-    @abstractmethod
-    def parent(self):
+    def parent(self) -> None | TagNode:
         """
         The node's parent or :obj:`None`.
 
         :meta category: Related document and nodes properties
         """
-        pass
+        return self._parent
 
     @altered_default_filters()
     def _prepare_new_relative(
@@ -1128,8 +1144,12 @@ class _ChildLessNode(NodeBase):
     def document(self) -> Optional[Document]:
         parent = self.parent
         if parent is None:
+        if self._parent is None:
             return None
         return parent.document
+        else:
+            return self._parent.document
+
 
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         """
@@ -1615,7 +1635,7 @@ class TagNode(NodeBase):
 
     @property
     def document(self) -> Optional[Document]:
-        if self.parent is None:
+        if self._parent is None:
             root_node = self
         else:
             root_node = cast("TagNode", last(self.iterate_ancestors()))
@@ -2079,6 +2099,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self,
         text: str | TextNode,
     ):
+        self._parent = None
         match text:
             case str():
                 self.__content = text
@@ -2569,6 +2590,7 @@ class PrettySerializer(Serializer):
             # end of stream
             return False
 
+        assert node.parent is not None
         if node.parent.last_child is node:
             return True
 
@@ -2760,6 +2782,7 @@ class TextWrappingSerializer(PrettySerializer):
 
         if self._node_fits_remaining_line(node):
             self._serialize_appendable_node(node)
+            assert node.parent is not None
             if (
                 (not self._available_space) or (node is node.parent.last_child)
             ) and self._whitespace_is_legit_after_node(node):
