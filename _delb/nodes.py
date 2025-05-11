@@ -1971,9 +1971,7 @@ class TagNode(NodeBase):
         raise NotImplementedError
 
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
-        raise NotImplementedError
-        return self._new_tag_node_from(
-            context=self._etree_obj,
+        return TagNode(
             local_name=definition.local_name,
             attributes=definition.attributes,
             namespace=self.namespace,
