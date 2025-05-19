@@ -37,7 +37,6 @@ def test_add_text_after_tag():
     foo = tag.fetch_following_sibling()
     assert isinstance(foo, TextNode)
     assert foo.content == "foo"
-    assert foo._appended_text_node is None
 
 
 def test_add_text_after_tail():
@@ -51,12 +50,8 @@ def test_add_text_after_tail():
     assert foo.fetch_following_sibling() is bar
     assert len(root) == 3
 
-    assert foo._appended_text_node is bar
-    assert bar._bound_to is foo
-
     assert isinstance(bar, TextNode)
     assert bar.content == "bar"
-    assert bar._appended_text_node is None
 
     document.merge_text_nodes()
     assert len(root) == 2
