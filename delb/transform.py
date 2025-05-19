@@ -112,7 +112,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
-from delb import new_tag_node, Document, TagNode
+from delb import Document, TagNode
 
 
 #
@@ -151,7 +151,7 @@ class Transformation(TransformationBase):
         return result
 
     def __set_placeholder(self):
-        self.root = new_tag_node("transformation-placeholder")
+        self.root = TagNode("transformation-placeholder")
 
     @abstractmethod
     def transform(self):
