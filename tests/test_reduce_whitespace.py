@@ -3,7 +3,7 @@
 from textwrap import dedent
 from typing import Final
 
-from delb import new_tag_node, parse_tree, Document, TagNode
+from delb import parse_tree, Document, TagNode
 
 from tests.utils import assert_equal_trees
 
@@ -18,7 +18,7 @@ def test_contained_milestone_tags_each_followed_by_whitespace():
 
 
 def test_empty_text_node():
-    node = new_tag_node("node", children=[""])
+    node = TagNode("node", children=[""])
     assert len(node) == 1
     node._reduce_whitespace()
     assert len(node) == 0

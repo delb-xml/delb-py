@@ -3,13 +3,13 @@ from typing import Final
 
 import pytest
 from delb import (
+    CommentNode,
     Document,
     DocumentMixinBase,
+    ProcessingInstructionNode,
     TagNode,
     get_traverser,
     is_tag_node,
-    new_comment_node,
-    new_processing_instruction_node,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
 from tests.plugins import PlaygroundDocumentExtension
@@ -137,11 +137,11 @@ def test_root_siblings():
     prologue = document.prologue
     epilogue = document.epilogue
 
-    prologue.append(new_comment_node(" I Roy "))
-    prologue.insert(0, new_processing_instruction_node("Blood", "Fire"))
+    prologue.append(CommentNode(" I Roy "))
+    prologue.insert(0, ProcessingInstructionNode("Blood", "Fire"))
 
-    epilogue.prepend(new_comment_node(" Prince Jazzbo "))
-    epilogue.append(new_processing_instruction_node("over", "out"))
+    epilogue.prepend(CommentNode(" Prince Jazzbo "))
+    epilogue.append(ProcessingInstructionNode("over", "out"))
 
     assert len(prologue) == len(epilogue) == 2
 
@@ -153,7 +153,7 @@ def test_root_siblings():
     assert prologue[0].target == "Blood"
     assert prologue[-1].content == " I Roy "
 
-    epilogue += [new_comment_node("")]
+    epilogue += [CommentNode("")]
 
     with pytest.raises(InvalidOperation):
         epilogue.append("nah")

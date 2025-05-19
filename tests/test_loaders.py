@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pytest_httpx import IteratorStream
 
-from delb import new_tag_node, Document
+from delb import Document, TagNode
 
 from tests.utils import chdir
 
@@ -50,7 +50,7 @@ def test_path_loader():
 
 
 def test_tag_node_loader():
-    node = new_tag_node("root")
+    node = TagNode("root")
     assert node.document is None
 
     document = Document(node)

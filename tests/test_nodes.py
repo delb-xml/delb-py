@@ -3,7 +3,6 @@ import pytest
 from delb import (
     is_tag_node,
     is_text_node,
-    new_tag_node,
     parse_tree,
     tag,
     Document,
@@ -102,7 +101,7 @@ def test_invalid_operations():
     with pytest.raises(InvalidOperation):
         root_1.append_children(root_2[0])
 
-    new_node = new_tag_node("newNode")
+    new_node = TagNode("newNode")
     root_1.append_children(new_node)
 
     with pytest.raises(InvalidOperation):

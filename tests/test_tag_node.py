@@ -11,7 +11,6 @@ from delb import (
     TagNode,
     TextNode,
     is_tag_node,
-    new_tag_node,
     parse_tree,
     tag,
 )
@@ -217,13 +216,13 @@ def test_detach_node_retains_namespace_prefixes():
 
 
 def test_detach_node_without_a_document():
-    root = new_tag_node("root", children=[tag("node")])
+    root = TagNode("root", children=[tag("node")])
     root.first_child.detach()
     assert str(root) == "<root/>"
 
 
 def test_detach_root():
-    unbound_node = new_tag_node("unbound")
+    unbound_node = TagNode("unbound")
     assert unbound_node.detach() is unbound_node
 
     document = Document("<root/>")
@@ -319,7 +318,7 @@ def test_insert_children():
     a.insert_children(1, "-")
     assert str(root) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
 
-    a.insert_children(3, new_tag_node("aaaa"))
+    a.insert_children(3, TagNode("aaaa"))
     assert str(root) == "<root><a>|aa|-|aaa|<aaaa/><b/>c</a></root>"
 
 
@@ -417,28 +416,28 @@ def test_location_path_and_xpath_concordance(file):
 
 
 def test_make_node_with_children():
-    result = new_tag_node("infocard", children=[tag("label")])
+    result = TagNode("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
 
-    result = new_tag_node("infocard", children=[tag("label", {"updated": "never"})])
+    result = TagNode("infocard", children=[tag("label", {"updated": "never"})])
     assert str(result) == '<infocard><label updated="never"/></infocard>'
 
-    result = new_tag_node("infocard", children=[tag("label", "Monty Python")])
+    result = TagNode("infocard", children=[tag("label", "Monty Python")])
     assert str(result) == "<infocard><label>Monty Python</label></infocard>"
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", ("Monty Python", tag("fullstop")))]
     )
     assert str(result) == "<infocard><label>Monty Python<fullstop/></label></infocard>"
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", {"updated": "never"}, "Monty Python")]
     )
     assert str(result) == (
         '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", {"updated": "never"}, ("Monty ", "Python"))]
     )
     assert str(result) == (
@@ -446,19 +445,19 @@ def test_make_node_with_children():
     )
 
     DefaultStringOptions.namespaces = {"foo": "https://foo.org"}
-    result = new_tag_node("root", namespace="https://foo.org", children=[tag("node")])
+    result = TagNode("root", namespace="https://foo.org", children=[tag("node")])
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
 def test_make_node_outside_context():
     root = parse_tree('<root xmlns="ham" />')
-    root.append_children(new_tag_node("a", namespace="https://spam"))
+    root.append_children(TagNode("a", namespace="https://spam"))
     DefaultStringOptions.namespaces = {"spam": "https://spam"}
     assert str(root) == '<root xmlns="ham" xmlns:spam="https://spam"><spam:a/></root>'
 
 
 def test_make_node_with_namespace():
-    node = new_tag_node("foo", namespace="https://name.space")
+    node = TagNode("foo", namespace="https://name.space")
     assert node.namespace == "https://name.space"
     assert node.universal_name == "{https://name.space}foo"
 
@@ -468,7 +467,7 @@ def test_make_node_with_namespace():
     (([""], 0), ([" "], 1), ([" ", " "], 1), (["", "", tag("child"), "", ""], 1)),
 )
 def test_merge_text_nodes(child_nodes, expected_count):
-    node = new_tag_node("node", children=child_nodes)
+    node = TagNode("node", children=child_nodes)
     node.merge_text_nodes()
     assert len(node) == expected_count
 
@@ -494,14 +493,14 @@ def test_names(sample_document):
 
 
 def test_new_tag_node_with_tag_attributes_input():
-    attributes = new_tag_node("node_1", {"a": "b", "{http://}c": "d"}).attributes
-    assert new_tag_node("node_2", attributes).attributes == {
+    attributes = TagNode("node_1", {"a": "b", "{http://}c": "d"}).attributes
+    assert TagNode("node_2", attributes).attributes == {
         "a": "b",
         ("http://", "c"): "d",
     }
 
-    attributes = new_tag_node("node_1", {"a": "b"}, namespace="http://").attributes
-    assert new_tag_node("node_2", attributes).attributes == {
+    attributes = TagNode("node_1", {"a": "b"}, namespace="http://").attributes
+    assert TagNode("node_2", attributes).attributes == {
         ("http://", "a"): "b",
     }
 

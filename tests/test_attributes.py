@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from delb import Document, new_tag_node, parse_tree
+from delb import Document, TagNode, parse_tree
 from delb.nodes import Attribute
 
 
@@ -210,7 +210,7 @@ def test_namespaced_attributes():
 
 
 def test_pop():
-    attributes = new_tag_node("node", {"facs": "0001"}).attributes
+    attributes = TagNode("node", {"facs": "0001"}).attributes
     assert attributes.pop("facs") == "0001"
     assert attributes.pop("facs", None) is None
     with pytest.raises(KeyError):

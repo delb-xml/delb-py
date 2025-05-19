@@ -3,11 +3,9 @@ import pytest
 from delb import (
     CommentNode,
     Document,
+    ProcessingInstructionNode,
     altered_default_filters,
     is_comment_node,
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     parse_tree,
 )
 
@@ -30,12 +28,12 @@ def test_comment_node():
     assert str(comment) == "<!-- comment -->"
 
     tag = root[0]
-    tag.append_children(new_comment_node("b"))
+    tag.append_children(CommentNode("b"))
     comment.content = "comment"
     with altered_default_filters():
         assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
 
-    assert comment == new_comment_node("comment")
+    assert comment == CommentNode("comment")
     assert comment != tag
     with altered_default_filters(is_comment_node):
         assert comment != tag.first_child
@@ -46,8 +44,8 @@ def test_comment_node():
 
         b = tag.first_child
 
-    b.add_preceding_siblings(new_comment_node("a"))
-    b.add_following_siblings(new_comment_node("c"))
+    b.add_preceding_siblings(CommentNode("a"))
+    b.add_following_siblings(CommentNode("c"))
     with altered_default_filters():
         assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
 
@@ -56,9 +54,9 @@ def test_comment_node():
         assert str(root) == "<root><tag><!--a--><!--c--></tag>text</root>"
 
     text = root.last_child
-    x = new_comment_node("x")
+    x = CommentNode("x")
     text.add_preceding_siblings(x)
-    text.add_following_siblings(new_comment_node("y"))
+    text.add_following_siblings(CommentNode("y"))
     with altered_default_filters():
         assert (
             str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
@@ -68,8 +66,8 @@ def test_comment_node():
         for node in tuple(root.iterate_children()):
             node.detach()
 
-    root.add_preceding_siblings(new_comment_node("before"))
-    root.add_following_siblings(new_comment_node("after"))
+    root.add_preceding_siblings(CommentNode("before"))
+    root.add_following_siblings(CommentNode("after"))
 
     with altered_default_filters():
         assert (
@@ -81,8 +79,8 @@ def test_comment_node():
 @pytest.mark.parametrize("content", ("a--z", "foo-"))
 def test_invalid_comment_content(content):
     with pytest.raises(ValueError, match=r"Invalid Comment content\."):
-        new_comment_node(content)
-    node = new_comment_node("comment")
+        CommentNode(content)
+    node = CommentNode("comment")
     with pytest.raises(ValueError, match=r"Invalid Comment content\."):
         node.content = content
 
@@ -90,8 +88,8 @@ def test_invalid_comment_content(content):
 @pytest.mark.parametrize("target", ("xml", "XML", "xMl", ""))
 def test_invalid_pi_target(target):
     with pytest.raises(ValueError, match=r".* target name\."):
-        new_processing_instruction_node(target, "data")
-    node = new_processing_instruction_node("target", "data")
+        ProcessingInstructionNode(target, "data")
+    node = ProcessingInstructionNode("target", "data")
     with pytest.raises(ValueError, match=r".* target name\."):
         node.target = target
 
@@ -99,7 +97,7 @@ def test_invalid_pi_target(target):
 def test_processing_instruction_node():
     root = parse_tree("<root/>")
 
-    root.append_children(new_processing_instruction_node("foo", "bar"))
+    root.append_children(ProcessingInstructionNode("foo", "bar"))
 
     with altered_default_filters():
         pi = root.first_child
@@ -108,14 +106,12 @@ def test_processing_instruction_node():
     assert pi.content == "bar"
     assert str(pi) == "<?foo bar?>"
 
-    assert pi == new_processing_instruction_node("foo", "bar")
+    assert pi == ProcessingInstructionNode("foo", "bar")
     assert pi != root
-    assert pi != new_processing_instruction_node("ham", "bar")
+    assert pi != ProcessingInstructionNode("ham", "bar")
 
     with altered_default_filters():
         assert str(root) == "<root><?foo bar?></root>"
     pi.target = "space"
     with altered_default_filters():
         assert str(root) == "<root><?space bar?></root>"
-
-    assert new_tag_node("ham").local_name == "ham"

@@ -3,10 +3,10 @@ from lxml import etree
 from urllib.error import HTTPError
 
 from delb import (
+    CommentNode,
     Document,
     ParserOptions,
-    new_comment_node,
-    new_tag_node,
+    TagNode,
     parse_tree,
     tag,
 )
@@ -27,8 +27,8 @@ assert len(AVAILABLE_PARSERS := tuple(plugin_manager.parsers)) == 2
 pytestmark = pytest.mark.parametrize("parser", AVAILABLE_PARSERS)
 
 
-c = new_comment_node
-t = new_tag_node
+c = CommentNode
+t = TagNode
 
 
 def test_attributes(parser):
