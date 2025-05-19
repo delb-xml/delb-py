@@ -27,12 +27,11 @@ from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     altered_default_filters,
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     _reduce_whitespace_between_siblings,
     Attribute,
+    CommentNode,
     NodeBase,
+    ProcessingInstructionNode,
     _TagDefinition,
     TagNode,
     TextNode,
@@ -226,10 +225,10 @@ class TreeBuilder:
         match type_:
             case EventType.Comment:
                 assert isinstance(data, str)
-                result = new_comment_node(data)
+                result = CommentNode(data)
             case EventType.ProcessingInstruction:
                 assert isinstance(data, tuple)
-                result = new_processing_instruction_node(data[0], data[1])
+                result = ProcessingInstructionNode(data[0], data[1])
             case EventType.TagStart:
                 assert isinstance(data, TagEventData)
                 self.handle_tag_start(data)
@@ -284,7 +283,7 @@ class TreeBuilder:
         self.children.append([])
 
         self.started_tags.append(
-            new_tag_node(
+            TagNode(
                 local_name=data.local_name,
                 attributes=data.attributes,
                 namespace=data.namespace,
