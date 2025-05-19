@@ -99,27 +99,24 @@ ATTRIBUTE_ACCESSOR_MSG: Final = (
 
 def new_comment_node(content: str) -> CommentNode:
     """
-    Creates a new :class:`CommentNode`.
-
-    :param content: The comment's content a.k.a. text.
-    :return: The newly created comment node.
+    Deprecated. Use :class:`CommentNode` directly.
     """
-    CommentNode._validate_content(content)
-    raise NotImplementedError
+    warnings.warn(
+        "This function is deprecated. Use CommentNode directly.",
+        category=DeprecationWarning,
+    )
+    return CommentNode(content)
 
 
 def new_processing_instruction_node(
     target: str, content: str
 ) -> ProcessingInstructionNode:
-    """
-    Creates a new :class:`ProcessingInstructionNode`.
-
-    :param target: The processing instruction's target name.
-    :param content: The processing instruction's text.
-    :return: The newly created processing instruction node.
-    """
-    ProcessingInstructionNode._validate_target_value(target)
-    raise NotImplementedError
+    """Deprecated. Use :class:`ProcessingInstructionsNode` directly."""
+    warnings.warn(
+        "This function is deprecated. Use ProcessingInstructionsNode directly.",
+        category=DeprecationWarning,
+    )
+    return ProcessingInstructionNode(target, content)
 
 
 def new_tag_node(
@@ -131,7 +128,7 @@ def new_tag_node(
     children: Iterable[NodeSource] = (),
 ) -> TagNode:
     """
-    Deprecated. Use :class:`TagNode` directly to instantiate a new tag node.
+    Deprecated. Use :class:`TagNode` directly.
     """
     warnings.warn(
         "This function is deprecated. Use TagNode directly to instantiate new tag "
@@ -1153,13 +1150,14 @@ class CommentNode(_ChildLessNode, NodeBase):
     """
     The instances of this class represent comment nodes of a tree.
 
-    To instantiate new nodes use :func:`new_comment_node`.
+    :param content: The comment's content a.k.a. text.
     """
 
-    __slots__ = ()
+    __slots__ = ("__content",)
 
     def __init__(self, content: str):
-        raise NotImplementedError
+        self.content = content
+        self._parent = None
 
     def __eq__(self, other) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
@@ -1177,27 +1175,29 @@ class CommentNode(_ChildLessNode, NodeBase):
 
         :meta category: Node content properties
         """
-        raise NotImplementedError
+        return self.__content
 
     @content.setter
     def content(self, value: str):
-        self._validate_content(value)
-        raise NotImplementedError
-
-    @staticmethod
-    def _validate_content(value: str):
         if "--" in value or value.endswith("-"):
             raise ValueError("Invalid Comment content.")
+        self.__content = value
 
 
 class ProcessingInstructionNode(_ChildLessNode, NodeBase):
     """
     The instances of this class represent processing instruction nodes of a tree.
 
-    To instantiate new nodes use :func:`new_processing_instruction_node`.
+    :param target: The processing instruction's target name.
+    :param content: The processing instruction's text.
     """
 
-    __slots__ = ()
+    __slots__ = ("__content", "__target")
+
+    def __init__(self, target: str, content: str):
+        self.content = content
+        self._parent = None
+        self.target = target
 
     def __eq__(self, other) -> bool:
         return (
@@ -1222,11 +1222,12 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
 
         :meta category: Node content properties
         """
-        raise NotImplementedError
+        return self.__content
 
     @content.setter
     def content(self, value: str):
-        raise NotImplementedError
+        # TODO validate
+        self.__content = value
 
     @property
     def target(self) -> str:
@@ -1235,20 +1236,16 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
 
         :meta category: Node content properties
         """
-        raise NotImplementedError
+        return self.__target
 
     @target.setter
     def target(self, value: str):
-        self._validate_target_value(value)
-        raise NotImplementedError
-
-    @staticmethod
-    def _validate_target_value(value):
         if not value:
             # TODO this should rather validate that value is a valid XML name
             raise ValueError("Invalid target name.")
         if value.lower() == "xml":
             raise ValueError(f"{value} is a reserved target name.")
+        self.__target = value
 
 
 class TagNode(NodeBase):
