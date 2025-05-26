@@ -130,7 +130,7 @@ def tag(*args):  # noqa: C901
         for key, value in attributes.items():
             match value:
                 case Attribute():
-                    result[value._qualified_name] = value.value
+                    result[(value.namespace, value.local_name)] = value.value
                 case str() | tuple():
                     result[key] = value
                 case _:

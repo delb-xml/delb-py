@@ -272,12 +272,12 @@ class Attribute(_StringMixin):
     :meth:`delb.TagNode.attributes` documentation for capabilities.
     """
 
-    __slots__ = ("_attributes", "_detached_value", "_qualified_name")
+    __slots__ = ("_attributes", "__qualified_name", "__value")
 
-    def __init__(self, attributes: TagAttributes, qualified_name: QualifiedName):
-        self._attributes: TagAttributes | None = attributes
-        self._detached_value: str | None = None
-        self._qualified_name = qualified_name
+    def __init__(self, qualified_name: QualifiedName, value: str):
+        self._attributes: TagAttributes | None = None
+        self.__qualified_name = qualified_name
+        self.value = value
 
     def __repr__(self):
         return (
@@ -285,35 +285,34 @@ class Attribute(_StringMixin):
             f" [{hex(id(self))}]>"
         )
 
-    def _set_new_key(self, namespace: str, name: str):
-        if self._qualified_name == (namespace, name):
-            return
+    def __set_new_key(self, namespace: str, name: str):
+        assert self.__qualified_name != (namespace, name)
 
-        attributes = self._attributes
-        current = self.namespace, self.local_name
-        assert attributes is not None
-        attributes[(namespace, name)] = self.value
-        self._qualified_name = (namespace, name)
-        del attributes[current]
-        self._attributes = attributes
+        if (attributes := self._attributes) is not None:
+            if __debug__:
+                assert attributes.pop(self.__qualified_name) is self
+            else:
+                del attributes[self.__qualified_name]
+            attributes[(namespace, name)] = self
+        self.__qualified_name = (namespace, name)
 
     @property
     def local_name(self) -> str:
         """The attribute's local name."""
-        return self._qualified_name[1]
+        return self.__qualified_name[1]
 
     @local_name.setter
     def local_name(self, name: str):
-        self._set_new_key(self.namespace, name)
+        self.__set_new_key(self.namespace, name)
 
     @property
     def namespace(self) -> str:
         """The attribute's namespace"""
-        return self._qualified_name[0]
+        return self.__qualified_name[0]
 
     @namespace.setter
     def namespace(self, namespace: str):
-        self._set_new_key(namespace, self.local_name)
+        self.__set_new_key(namespace, self.local_name)
 
     @property
     def universal_name(self) -> str:
@@ -330,11 +329,13 @@ class Attribute(_StringMixin):
     @property
     def value(self) -> str:
         """The attribute's value."""
-        raise NotImplementedError
+        return self.__value
 
     @value.setter
     def value(self, value: str):
-        raise NotImplementedError
+        if not isinstance(value, str):
+            raise TypeError
+        self.__value = value
 
     # for utils._StringMixin:
     _data = value
@@ -345,32 +346,30 @@ class TagAttributes(MutableMapping):
     A data type to access a :term:`tag node`'s attributes.
     """
 
-    __default = object()  # REMOVE?
+    __slots__ = (
+        "__data",
+        "__node",
+    )
 
-    __slots__ = ("_node",)
+    def __init__(
+        self,
+        data: _AttributesData | dict[AttributeAccessor, str] | TagAttributes,
+        node: TagNode,
+    ):
+        if not isinstance(data, Mapping):
+            raise TypeError
 
-    def __init__(self, node: TagNode):
-        self._node = node
-        raise NotImplementedError
+        self.__data: dict[QualifiedName, Attribute] = {}
+        self.__node = node
+        self.update(data)
 
     def __contains__(self, item: Any) -> bool:
-        raise NotImplementedError
-        return self._etree_key(self.__resolve_accessor(item)) in self._etree_attrib
+        return self.__resolve_accessor(item) in self.__data
 
     def __delitem__(self, item: AttributeAccessor):
-        if item not in self:
-            raise KeyError
-
-        qualified_name = self.__resolve_accessor(item)
-
-        raise NotImplementedError
-
-        attribute = self[qualified_name]
-        assert attribute is not None
-        attribute._detached_value = attribute.value
-        del self._etree_attrib[self._etree_key(qualified_name)]
-        del self._attributes[qualified_name]
-        attribute._attributes = None
+        name = self.__resolve_accessor(item)
+        self.__data[name]._attributes = None
+        del self.__data[name]
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Mapping):
@@ -380,41 +379,36 @@ class TagAttributes(MutableMapping):
             return False
 
         if isinstance(other, TagAttributes):
-            # TODO optimize with native data model
-            for key, attribute in self.items():
-                assert isinstance(attribute, Attribute)
-                other_value = other.get((attribute.namespace, attribute.local_name))
-                if (other_value is None) or (attribute != other_value):
-                    return False
-        else:
-            for key, value in other.items():
-                if key not in self:
-                    return False
-                if self[key] != value:
-                    return False
+            return self.__data == other.__data
 
-        return True
+        return self.__data == {self.__resolve_accessor(k): v for k, v in other.items()}
 
     def __getitem__(self, item: AttributeAccessor) -> Attribute:
-        if item in self:
-            qualified_name = self.__resolve_accessor(item)
-            result = NotImplemented
-            if result is None:
-                result = Attribute(self, qualified_name)
-                self._attributes[qualified_name] = result
-            return result
-        else:
-            raise KeyError(item)
+        return self.__data[self.__resolve_accessor(item)]
 
     def __iter__(self) -> Iterator[QualifiedName]:
-        raise NotImplementedError
+        return iter(self.__data)
 
     def __len__(self) -> int:
-        raise NotImplementedError
+        return len(self.__data)
 
     def __setitem__(self, item: AttributeAccessor, value: str | Attribute):
-        qualified_name = self.__resolve_accessor(item)
-        raise NotImplementedError
+        name = self.__resolve_accessor(item)
+
+        match value:
+            case Attribute():
+                if value._attributes is None:
+                    attribute = value
+                else:
+                    attribute = Attribute(name, value.value)
+            case str():
+                attribute = Attribute(name, value)
+            case _:
+                raise TypeError
+
+        assert attribute._attributes in (self, None)
+        attribute._attributes = self
+        self.__data[name] = attribute
 
     def __str__(self):
         return str(self.as_dict_with_strings())
@@ -423,20 +417,17 @@ class TagAttributes(MutableMapping):
 
     def __resolve_accessor(self, item: AttributeAccessor) -> QualifiedName:
         match item:
+            case tuple():
+                assert item[0] is not None
+                return item
             case str():
                 namespace, name = deconstruct_clark_notation(item)
-            case tuple():
-                namespace, name = item
+                if namespace is None:
+                    return (self.__node.namespace, name)
+                else:
+                    return (namespace, name)
             case _:
-                namespace = name = None
-
-        if name is None:
-            raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
-
-        if namespace is None:
-            namespace = self._node.namespace
-
-        return namespace, name
+                raise TypeError(ATTRIBUTE_ACCESSOR_MSG)
 
     def as_dict_with_strings(self) -> dict[str, str]:
         """Returns the attributes as :class:`str` instances in a :class:`dict`."""
@@ -1541,7 +1532,7 @@ class TagNode(NodeBase):
         >>> "ref-" + node.attributes[("http://namespace", "bar")].lower()
         'ref-x'
         """
-        raise NotImplementedError
+        return self.__attributes
 
     @altered_default_filters()
     def clone(self, deep: bool = False) -> TagNode:

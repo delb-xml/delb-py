@@ -98,15 +98,18 @@ def test_attribute_object():
     assert str(node) == '<root ham="spam"/>'
 
     attribute = node["ham"]
+    assert attribute._attributes is attributes
     assert attribute.namespace == ""
     assert attribute.universal_name == "ham"
     assert str(attribute) == attribute.value == "spam"
 
     attribute.namespace = "kitchen.sink"
+    assert attribute._attributes is attributes
     assert str(node) == '<root xmlns:ns0="kitchen.sink" ns0:ham="spam"/>'
     assert attribute.universal_name == "{kitchen.sink}ham"
 
     attribute.local_name = "clam"
+    assert attribute._attributes is attributes
     assert str(node) == '<root xmlns:ns0="kitchen.sink" ns0:clam="spam"/>'
     assert attribute.universal_name == "{kitchen.sink}clam"
 
@@ -119,6 +122,7 @@ def test_attribute_object():
 
     attribute.value = "sham"
     assert str(attribute) == attribute.value == "sham"
+    assert attributes["clam"] == "sham"
     assert str(node) == '<root clam="sham"/>'
 
     with pytest.raises(TypeError):
