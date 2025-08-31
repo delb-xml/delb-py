@@ -132,6 +132,8 @@ class EvaluationContext(NamedTuple):
 
 
 class Node:
+    __slots__ = ()
+
     def __eq__(self, other):
         return type(self) is type(other) and all(
             getattr(self, x) == getattr(other, x) for x in self.__slots__
@@ -268,7 +270,8 @@ class LocationPath(Node):
 
 
 class LocationStep(Node):
-    __slots__ = ("axis", "node_test", "predicates")
+    # __dict__ is used by the cached_property getter
+    __slots__ = ("axis", "node_test", "predicates", "__dict__")
 
     def __init__(
         self,
@@ -362,7 +365,8 @@ class LocationStep(Node):
 
 
 class XPathExpression(Node):
-    __slots__ = ("location_paths",)
+    # __dict__ is used by the cached_property getter
+    __slots__ = ("location_paths", "__dict__")
 
     def __init__(self, location_paths: list[LocationPath]):
         self.location_paths = location_paths
