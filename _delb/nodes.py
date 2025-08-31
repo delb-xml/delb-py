@@ -1146,12 +1146,15 @@ class _ChildLessNode(NodeBase):
             return self._parent.document
 
 
+    # the following yield statements are there to trick mypy
+
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         A :term:`generator iterator` that yields nothing.
 
         :meta category: Methods to iterate over related node
         """
+        return
         yield from ()
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
@@ -1835,15 +1838,9 @@ class TagNode(NodeBase):
 
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         all_filters = default_filters[-1] + filter
-        candidate: NodeBase | None
-
-        raise NotImplementedError
-
-        while candidate is not None:
-            if all(f(candidate) for f in all_filters):
-                yield candidate
-
-            candidate = candidate._fetch_following_sibling()
+        for node in self._child_nodes:
+            if all(f(node) for f in all_filters):
+                yield node
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
         if not self._child_nodes:
