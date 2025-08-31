@@ -2117,8 +2117,6 @@ class TagNode(NodeBase):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
-        raise NotImplementedError
-
     def _validate_sibling_operation(self, node):
         if self.parent is None and not (
             isinstance(node, (CommentNode, ProcessingInstructionNode))
@@ -2130,6 +2128,7 @@ class TagNode(NodeBase):
             raise TypeError(
                 "Not all node types can be added as siblings to a root node."
             )
+        return "{" + self.__namespace + "}" + self.__local_name
 
 
 class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
