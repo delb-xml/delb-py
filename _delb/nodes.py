@@ -642,7 +642,6 @@ class NodeBase(ABC):
             result += 1
         return result
 
-    @abstractmethod
     def detach(self, retain_child_nodes: bool = False) -> NodeBase:
         """
         Removes the node from its tree.
@@ -652,7 +651,9 @@ class NodeBase(ABC):
         :return: The removed node.
         :meta category: Methods to remove a node
         """
-        pass
+        if (parent := self._parent) is not None:
+            parent._child_nodes.remove(self)
+        return self
 
     @property
     @abstractmethod
@@ -1125,9 +1126,6 @@ class _ChildLessNode(NodeBase):
     def __len__(self):
         return 0
 
-    def detach(self, retain_child_nodes: bool = False) -> NodeBase:
-        raise NotImplementedError
-
     @property
     def document(self) -> Optional[Document]:
         parent = self.parent
@@ -1597,45 +1595,26 @@ class TagNode(NodeBase):
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
     def detach(self, retain_child_nodes: bool = False) -> TagNode:
-        raise NotImplementedError
-
-        parent = self.parent
-        index = self.index
-
         if self.__document__ is not None:
             raise InvalidOperation("The root node of a document cannot be detached.")
 
-        if retain_child_nodes and parent is None:
-            raise InvalidOperation(
-                "Child nodes can't be retained when the node to detach has no parent "
-                "node."
-            )
+        if (parent := self._parent) is None:
+            if retain_child_nodes:
+                raise InvalidOperation(
+                    "Child nodes can't be retained when the node to detach has no "
+                    "parent node."
+                )
+            else:
+                return self
 
-        super().detach()
-
-        parent_has_default_namespace = False
-        if parent is None:
-            parent_namespaces = None
-        else:
-            parent_namespaces = parent._etree_obj.nsmap
-            if None in parent_namespaces:
-                parent_has_default_namespace = True
-
-        if not (parent_has_default_namespace or retain_child_nodes):
-            return self
-
-        child_nodes = tuple(self.iterate_children())
-        for child_node in child_nodes:
-            child_node.detach()
-
+        index = parent._child_nodes.index(self)
         if retain_child_nodes:
-            if child_nodes:
-                assert isinstance(parent, TagNode)
-                assert isinstance(index, int)
-                parent.insert_children(index, *child_nodes)
-        else:
-            self.append_children(*child_nodes)
+            for node in self._child_nodes:
+                node._parent = None
+            parent.insert_children(index, *self._child_nodes)
+            self._child_nodes.clear()
 
+        parent._child_nodes.remove(self)
         return self
 
     @property
