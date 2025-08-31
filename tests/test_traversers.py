@@ -2,6 +2,28 @@ import pytest
 
 from delb import get_traverser, is_tag_node, parse_tree
 
+root = parse_tree(
+    """\
+        <root>
+            <a>
+                <aa/>
+                <ab>
+                    <aba/>
+                </ab>
+                <ac/>
+            </a>
+            <b/>
+            <c>
+                <ca>
+                    <caa/>
+                    <cab/>
+                </ca>
+                <cb/>
+            </c>
+        </root>
+    """
+)
+
 
 @pytest.mark.parametrize(
     ("from_left", "depth_first", "from_top", "result"),
@@ -24,30 +46,15 @@ from delb import get_traverser, is_tag_node, parse_tree
             True,
             ["root", "a", "b", "c", "aa", "ab", "ac", "ca", "cb", "aba", "caa", "cab"],
         ),
+        (
+            False,
+            True,
+            False,
+            ["cb", "cab", "caa", "ca", "c", "b", "ac", "aba", "ab", "aa", "a", "root"],
+        ),
     ),
 )
 def test_traverser(from_left, depth_first, from_top, result):
-    root = parse_tree(
-        """\
-            <root>
-                <a>
-                    <aa/>
-                    <ab>
-                        <aba/>
-                    </ab>
-                    <ac/>
-                </a>
-                <b/>
-                <c>
-                    <ca>
-                        <caa/>
-                        <cab/>
-                    </ca>
-                    <cb/>
-                </c>
-            </root>
-        """
-    )
     assert [
         x.local_name
         for x in get_traverser(
