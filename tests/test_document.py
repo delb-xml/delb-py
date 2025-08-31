@@ -155,7 +155,7 @@ def test_root_siblings():
 
     epilogue += [CommentNode("")]
 
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         epilogue.append("nah")
 
 

@@ -81,7 +81,7 @@ _plugin_manager.load_plugins()
 class _Logue(Siblings):
     def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
         if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
-            raise InvalidOperation
+            raise TypeError
         return super()._handle_new_sibling(node)
 
 
