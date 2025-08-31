@@ -331,9 +331,6 @@ def test_insert_first_child():
 def test_insert_at_invalid_index():
     root = parse_tree("<root><a/><b/></root>")
 
-    with pytest.raises(ValueError, match="positive"):
-        root.insert_children(-1, "x")
-
     with pytest.raises(IndexError):
         root.insert_children(3, "x")
 

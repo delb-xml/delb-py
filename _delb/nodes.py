@@ -1831,31 +1831,16 @@ class TagNode(NodeBase):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if index < 0:
-            raise ValueError("Index must be zero or a positive integer.")
+        children_size = len(self._child_nodes)
+        if not (children_size * -1 <= index <= children_size):
+            raise IndexError
 
-        children_count = len(self)
-
-        if index > children_count:
-            raise IndexError("The given index is beyond the target's size.")
-
-        this, *queue = node
-        result: tuple[NodeBase, ...]
-
-        if index == 0:
-            if children_count:
-                result = self[0].add_preceding_siblings(this, clone=clone)
-            else:
-                result = (self._prepare_new_relative((this,), clone=clone)[0],)
-                self.__add_first_child(result[0])
-
-        else:
-            result = self[index - 1].add_following_siblings(this, clone=clone)
-
-        if queue:
-            result += self[index].add_following_siblings(*queue, clone=clone)
-
-        return result
+        result = []
+        for _node in reversed(node):
+            if clone and isinstance(_node, NodeBase):
+                _node = _node.clone(deep=True)
+            result.append(self._child_nodes.insert(index, _node))
+        return tuple(result)
 
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
         all_filters = default_filters[-1] + filter
