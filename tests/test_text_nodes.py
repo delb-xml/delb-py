@@ -201,7 +201,7 @@ def test_construction():
     )
 
 
-def test_content_is_coerced():
+def test_content_is_validated():
     node = TextNode("")
     with pytest.raises(TypeError):
         node.content = 0
