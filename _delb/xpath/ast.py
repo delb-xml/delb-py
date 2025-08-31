@@ -60,13 +60,13 @@ class _DocumentNode:
             node = node.parent
         self.__root_node = node
 
-    def iterate_descendants(self, *args) -> Iterator[NodeBase]:
     @property
     def _child_nodes(self) -> Sequence[NodeBase]:
         return (self.__root_node,)
 
+    def _iterate_descendants(self) -> Iterator[NodeBase]:
         yield self.__root_node
-        yield from self.__root_node.iterate_descendants(*args)
+        yield from self.__root_node._iterate_descendants()
 
     def iterate_children(self, *args) -> Iterator[NodeBase]:
         yield self.__root_node

@@ -815,6 +815,10 @@ class NodeBase(ABC):
         """
         pass
 
+    @abstractmethod
+    def _iterate_descendants(self) -> Iterator[NodeBase]:
+        pass
+
     def iterate_following(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         Iterator over the filter matching nodes on the following axis.
@@ -1156,6 +1160,11 @@ class _ChildLessNode(NodeBase):
 
         :meta category: Methods to iterate over related node
         """
+        return
+        yield from ()
+
+    def _iterate_descendants(self) -> Iterator[NodeBase]:
+        return
         yield from ()
 
 
@@ -1749,7 +1758,7 @@ class TagNode(NodeBase):
     @property
     def full_text(self) -> str:
         return "".join(
-            n.content for n in self.iterate_descendants() if isinstance(n, TextNode)
+            n.content for n in self._iterate_descendants() if isinstance(n, TextNode)
         )
 
     def _get_normalize_space_directive(
@@ -1837,25 +1846,27 @@ class TagNode(NodeBase):
             candidate = candidate._fetch_following_sibling()
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
+        if not self._child_nodes:
+            return
+
         all_filters = default_filters[-1] + filter
-        with altered_default_filters():
-            candidate = self.first_child
-            if candidate is None:
-                return
+        for node in self._iterate_descendants():
+            if all(f(node) for f in all_filters):
+                yield node
 
-            next_candidates: list[NodeBase | None] = []
-            while candidate is not None:
-                if all(f(candidate) for f in all_filters):
-                    yield candidate
+    def _iterate_descendants(self) -> Iterator[NodeBase]:
+        stack = [(self._child_nodes, 0)]
 
-                if isinstance(candidate, TagNode):
-                    next_candidates.append(candidate._fetch_following_sibling())
-                    candidate = candidate.first_child
-                else:
-                    candidate = candidate._fetch_following_sibling()
+        while stack:
+            siblings, pointer = stack.pop()
 
-                while candidate is None and next_candidates:
-                    candidate = next_candidates.pop()
+            for node in siblings[pointer:]:
+                pointer += 1
+                yield node
+
+                if isinstance(node, TagNode) and node._child_nodes:
+                    stack.extend(((siblings, pointer), (node._child_nodes, 0)))
+                    break
 
     @property
     def last_child(self) -> Optional[NodeBase]:
