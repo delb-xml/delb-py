@@ -1204,14 +1204,14 @@ class _ChildLessNode(NodeBase):
 
     @property
     def document(self) -> Optional[Document]:
-        parent = self.parent
-        if parent is None:
         if self._parent is None:
             return None
-        return parent.document
         else:
             return self._parent.document
 
+    @property
+    def full_text(self) -> str:
+        return ""
 
     # the following yield statements are there to trick mypy
 
