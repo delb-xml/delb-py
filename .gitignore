@@ -1,7 +1,7 @@
 __pycache__/
 .benchmarks/
 build/
-.coverage
+.coverage*
 dist/
 *.egg-info/
 .idea/
