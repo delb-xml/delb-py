@@ -5,16 +5,14 @@ from delb.names import XML_NAMESPACE, deconstruct_clark_notation
 
 
 @pytest.mark.parametrize(
-    ("null", "in_", "out"),
+    ("in_", "out"),
     (
-        (None, "a", (None, "a")),
-        ("", "a", ("", "a")),
-        (None, "{http://clark}a", ("http://clark", "a")),
-        ("", "{http://clark}a", ("http://clark", "a")),
+        ("a", (None, "a")),
+        ("{http://clark}a", ("http://clark", "a")),
     ),
 )
-def test_deconstruct_clark_notation(null, in_, out):
-    assert deconstruct_clark_notation(in_, null) == out
+def test_deconstruct_clark_notation(in_, out):
+    assert deconstruct_clark_notation(in_) == out
 
 
 @pytest.mark.parametrize(
