@@ -203,7 +203,7 @@ class Document(metaclass=DocumentMeta):
         Beside the ``parser_options``, this property contains the namespaced data that
         extension classes and loaders may have stored.
         """
-        self.source_url: Optional[str] = vars(self.config).pop("source_url", None)
+        self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
         The source URL where a loader obtained the document's contents or
         :obj:`None`.
