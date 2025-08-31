@@ -947,10 +947,22 @@ class NodeBase(ABC):
                  left.
         :meta category: Methods to iterate over related node
         """
-        previous_node = self.fetch_preceding_sibling(*filter)
-        while previous_node is not None:
-            yield previous_node
-            previous_node = previous_node.fetch_preceding_sibling(*filter)
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_preceding_siblings():
+            if all(f(node) for f in all_filters):
+                yield node
+
+    def _iterate_preceding_siblings(self) -> Iterator[NodeBase]:
+        if self._parent is None:
+            if self.document is not None:
+                yield from reversed(self.document.prologue)
+            return
+
+        pointer = self._parent._child_nodes.index(self) - 1
+        while pointer >= 0:
+            yield self._parent._child_nodes[pointer]
+            pointer -= 1
+
 
     @property
     @abstractmethod
