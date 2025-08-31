@@ -218,7 +218,6 @@ class TreeBuilder:
                 return result
 
     def handle_event(self, event: Event) -> NodeBase | None:
-        # TODO instantiate objects directly with the native data model
         result: NodeBase | None
         type_, data = event
 

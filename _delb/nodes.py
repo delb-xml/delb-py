@@ -24,7 +24,6 @@ from collections.abc import (
     Mapping,
     MutableMapping,
     MutableSequence,
-    Sequence,
 )
 from contextlib import contextmanager
 from io import StringIO, TextIOWrapper
@@ -1015,47 +1014,6 @@ class NodeBase(ABC):
         """
         pass
 
-    def _new_tag_node_from(
-        self,
-        context: TagNode,
-        local_name: str,
-        attributes: Optional[dict[AttributeAccessor, str]],
-        namespace: Optional[str],
-        children: Sequence[NodeSource],
-    ) -> TagNode:
-        context_namespace = context.namespace
-
-        if namespace:
-            tag_namespace = namespace
-        elif context_namespace:
-            tag_namespace = context_namespace
-        else:
-            tag_namespace = ""
-
-        result = NotImplemented
-        assert isinstance(result, TagNode)
-
-        if attributes is not None:
-            for name, value in attributes.items():
-                if isinstance(name, str):
-                    namespace, local_name = deconstruct_clark_notation(name)
-                    if namespace is None:
-                        result.attributes[(context_namespace, local_name)] = value
-                    else:
-                        result[(namespace, local_name)] = value
-                else:
-                    assert isinstance(name, tuple)
-                    result.attributes[name] = value
-
-        if children:
-            result.append_children(*children)
-
-        return result
-
-    def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
-        assert self.parent is not None
-        return self.parent._new_tag_node_from_definition(definition)
-
     @property
     def parent(self) -> None | TagNode:
         """
@@ -1064,41 +1022,6 @@ class NodeBase(ABC):
         :meta category: Related document and nodes properties
         """
         return self._parent
-
-    @altered_default_filters()
-    def _prepare_new_relative(
-        self, nodes: tuple[NodeSource, ...], clone: bool
-    ) -> tuple[NodeBase, list[NodeSource]]:
-        this, *queue = nodes
-        match this:
-            case str():
-                this = TextNode(this)
-            case NodeBase():
-                if clone:
-                    this = this.clone(deep=True)
-            case _TagDefinition():
-                this = self._new_tag_node_from_definition(this)
-            case _:
-                raise TypeError(
-                    "Either node instances, strings or objects from :func:`delb.tag` "
-                    "must be provided as children argument."
-                )
-
-        if not all(
-            x is None
-            for x in (
-                this.parent,
-                this._fetch_following_sibling(),
-                this.fetch_preceding_sibling(),
-            )
-        ):
-            raise InvalidOperation(
-                "A node that shall be added to a tree must have neither a parent nor "
-                "any sibling node. Use :meth:`NodeBase.detach` or a `clone` argument "
-                "to move a node within or between trees."
-            )
-
-        return this, queue
 
     def replace_with(self, node: NodeSource, clone: bool = False) -> NodeBase:
         """
@@ -1153,16 +1076,6 @@ class NodeBase(ABC):
         )
         serializer.serialize_node(self)
         return serializer.writer.result
-
-    def _validate_sibling_operation(self, node):
-        if self.parent is None and not (
-            # is happening among valid root node siblings
-            isinstance(node, (CommentNode, ProcessingInstructionNode))
-            and (isinstance(self, (CommentNode, ProcessingInstructionNode)))
-        ):
-            raise InvalidOperation(
-                "Not all node types can be added as siblings to a root node."
-            )
 
     @altered_default_filters()
     def xpath(
