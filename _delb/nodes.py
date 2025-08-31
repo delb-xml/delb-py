@@ -584,19 +584,16 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if not node:
-            return ()
-
-        this, queue = self._prepare_new_relative(node, clone)
-        self._validate_sibling_operation(this)
-        self._add_following_sibling(this)
-        result: tuple[NodeBase, ...] = (this,)
-        if queue:
-            result += this.add_following_siblings(*queue, clone=clone)
-        return result
-
-    def _add_following_sibling(self, node: NodeBase):
-        raise NotImplementedError
+        if (parent := self.parent) is None:
+            raise NotImplementedError  # TODO
+        else:
+            return tuple(
+                reversed(
+                    parent.insert_children(
+                        parent._child_nodes.index(self) + 1, *node, clone=clone
+                    )
+                )
+            )
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
@@ -614,19 +611,12 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if not node:
-            return ()
-
-        this, queue = self._prepare_new_relative(node, clone)
-        self._validate_sibling_operation(this)
-        self._add_preceding_sibling(this)
-        result: tuple[NodeBase, ...] = (this,)
-        if queue:
-            result += this.add_preceding_siblings(*queue, clone=clone)
-        return result
-
-    def _add_preceding_sibling(self, node: NodeBase):
-        raise NotImplementedError
+        if (parent := self.parent) is None:
+            raise NotImplementedError
+        else:
+            return parent.insert_children(
+                parent._child_nodes.index(self), *reversed(node), clone=clone
+            )
 
     @abstractmethod
     def clone(self, deep: bool = False) -> NodeBase:
@@ -1457,27 +1447,35 @@ class TagNode(NodeBase):
                     + ATTRIBUTE_ACCESSOR_MSG
                 )
 
-    # REMOVE
-    def __add_first_child(self, node: NodeBase):
-        raise InvalidCodePath
-
-    def _add_following_sibling(self, node: NodeBase):
+    def add_following_siblings(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         if self.parent is None:
-            # assert False
             if (document := self.document) is None:
-                raise InvalidOperation
-            document.epilogue.prepend(node)
+                raise InvalidOperation(
+                    "Can't add sibling to a node without parent node."
+                )
+            result = []
+            for _node in node:
+                result.append(document.epilogue.prepend(_node))
+            return tuple(result)
         else:
-            super()._add_following_sibling(node)
+            return super().add_following_siblings(*node)
 
-    def _add_preceding_sibling(self, node: NodeBase):
+    def add_preceding_siblings(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
         if self.parent is None:
-            # assert False
             if (document := self.document) is None:
-                raise InvalidOperation
-            document.prologue.append(node)
+                raise InvalidOperation(
+                    "Can't add sibling to a node without parent node."
+                )
+            result = []
+            for _node in node:
+                result.append(document.prologue.append(_node))
+            return tuple(result)
         else:
-            super()._add_preceding_sibling(node)
+            return super().add_preceding_siblings(*node)
 
     def append_children(
         self, *node: NodeSource, clone: bool = False
@@ -2116,9 +2114,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             return (
                 f"<{self.__class__.__name__}(pos={self._position}) [{hex(id(self))}]>"
             )
-
-    def _add_following_sibling(self, node: NodeBase):
-        raise NotImplementedError
 
     def clone(self, deep: bool = False) -> TextNode:
         return TextNode(self.__content)
