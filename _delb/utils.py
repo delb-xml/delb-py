@@ -20,6 +20,7 @@ import sys
 from collections import defaultdict, deque
 from collections.abc import Iterable, Iterator, Sequence
 from functools import partial
+from itertools import chain
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
 
@@ -289,7 +290,9 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
     :param from_top: The traverser starts yielding nodes with the lowest depth if
                      :obj:`True`. When :obj:`False`, again, the opposite is in effect.
 
-    While traversing the given root node is yielded at some point.
+    While traversing the given root node is yielded at some point if it also passes the
+    filters. The globally set default filters are not considered by the traverser
+    routines.
 
     The returned functions have this signature:
 
@@ -395,9 +398,9 @@ def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
 
 
 def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-    if all(f(root) for f in filters):
-        yield root
-    yield from root.iterate_descendants(*filters)
+    for node in chain((root,), root._iterate_descendants()):
+        if all(f(node) for f in filters):
+            yield node
 
 
 def traverse_df_rtl_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
