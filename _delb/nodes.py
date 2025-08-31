@@ -2117,17 +2117,6 @@ class TagNode(NodeBase):
 
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
         """
-    def _validate_sibling_operation(self, node):
-        if self.parent is None and not (
-            isinstance(node, (CommentNode, ProcessingInstructionNode))
-            and (
-                isinstance(self, (CommentNode, ProcessingInstructionNode))
-                or self.__document__ is not None
-            )
-        ):
-            raise TypeError(
-                "Not all node types can be added as siblings to a root node."
-            )
         return "{" + self.__namespace + "}" + self.__local_name
 
 
@@ -2174,7 +2163,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def __eq__(self, other):
         if isinstance(other, TextNode):
-            return self.content == other.content
+            return self.__content == other.content
         else:
             return super().__eq__(other)
 
@@ -2184,15 +2173,7 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     # TODO? __len__
 
     def __repr__(self):
-        if self._exists:
-            return (
-                f'<{self.__class__.__name__}(text="{self.content}", '
-                f"pos={self._position}) [{hex(id(self))}]>"
-            )
-        else:
-            return (
-                f"<{self.__class__.__name__}(pos={self._position}) [{hex(id(self))}]>"
-            )
+        return f'<{self.__class__.__name__}(text="{self.content}",  [{hex(id(self))}]>'
 
     def clone(self, deep: bool = False) -> TextNode:
         return TextNode(self.__content)
@@ -2208,6 +2189,8 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     @content.setter
     def content(self, text: str):
+        if not isinstance(text, str):
+            raise TypeError
         self.__content = text
 
     # for utils._StringMixin:
@@ -2216,10 +2199,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     @property
     def full_text(self) -> str:
         return self.content or ""
-
-    @property
-    def parent(self) -> Optional[TagNode]:
-        raise NotImplementedError
 
 
 # contributed node filters and filter wrappers
