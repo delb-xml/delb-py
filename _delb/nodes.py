@@ -824,6 +824,8 @@ class NodeBase(ABC):
     def _iterate_descendants(self) -> Iterator[NodeBase]:
         pass
 
+    # TODO add include_descendants=True
+    # FIXME use include_descendants=False for XPath evaluation
     def iterate_following(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         Iterator over the filter matching nodes on the following axis.
@@ -834,36 +836,33 @@ class NodeBase(ABC):
                  document order.
         :meta category: Methods to iterate over related node
         """
+        all_filters = default_filters[-1] + filter
         for node in self._iterate_following():
-            if all(f(node) for f in chain(default_filters[-1], filter)):
+            if all(f(node) for f in all_filters):
                 yield node
 
     def _iterate_following(self) -> Iterator[NodeBase]:
-        def next_sibling_of_an_ancestor(
-            node: NodeBase,
-        ) -> Optional[NodeBase]:
-            parent = node.parent
-            if parent is None:
-                return None
-            parents_next = parent._fetch_following_sibling()
-            if parents_next is None:
-                return next_sibling_of_an_ancestor(parent)
-            return parents_next
+        yield from self._iterate_descendants()
 
-        pointer = self
-        while True:
-            next_node = pointer.first_child
-            if next_node is None:
-                next_node = pointer._fetch_following_sibling()
+        if self._parent is None:
+            if (document := self.document) is not None:
+                yield from document.epilogue
+            return
 
-            if next_node is None:
-                next_node = next_sibling_of_an_ancestor(pointer)
+        for following_sibling in self._iterate_following_siblings():
+            yield following_sibling
+            yield from following_sibling._iterate_descendants()
 
-            if next_node is None:
-                return
+        for ancestor in self._iterate_ancestors():
+            if (
+                ancestors_following_sibling := ancestor._fetch_following_sibling()
+            ) is not None:
+                break
+        else:
+            return
 
-            yield next_node
-            pointer = next_node
+        yield ancestors_following_sibling
+        yield from ancestors_following_sibling._iterate_following()
 
     def iterate_following_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """

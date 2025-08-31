@@ -15,7 +15,7 @@ from delb import (
     tag,
 )
 from delb.exceptions import InvalidOperation
-from tests.conftest import XML_FILES
+from tests.conftest import ORDERED_TREES, XML_FILES
 
 from tests.utils import assert_nodes_are_in_document_order, skip_long_running_test
 
