@@ -26,7 +26,7 @@ root = parse_tree(
 
 
 @pytest.mark.parametrize(
-    ("from_left", "depth_first", "from_top", "result"),
+    ("from_left", "depth_first", "from_top", "expected"),
     (
         (
             True,
@@ -54,10 +54,10 @@ root = parse_tree(
         ),
     ),
 )
-def test_traverser(from_left, depth_first, from_top, result):
+def test_traverser(from_left, depth_first, from_top, expected):
     assert [
         x.local_name
         for x in get_traverser(
             from_left=from_left, depth_first=depth_first, from_top=from_top
         )(root, is_tag_node)
-    ] == result
+    ] == expected
