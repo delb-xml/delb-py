@@ -1188,6 +1188,9 @@ class CommentNode(_ChildLessNode, NodeBase):
     def __str__(self) -> str:
         return f"<!--{self.content}-->"
 
+    def clone(self, deep: bool = False) -> CommentNode:
+        return CommentNode(self.__content)
+
     @property
     def content(self) -> str:
         """
@@ -1234,6 +1237,9 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
 
     def __str__(self) -> str:
         return f"<?{self.target} {self.content}?>"
+
+    def clone(self, deep: bool = False) -> ProcessingInstructionNode:
+        return ProcessingInstructionNode(self.__target, self.__content)
 
     @property
     def content(self) -> str:
@@ -1565,16 +1571,15 @@ class TagNode(NodeBase):
         """
         return self.__attributes
 
-    @altered_default_filters()
     def clone(self, deep: bool = False) -> TagNode:
-        return new_tag_node(
-            local_name=self.local_name,
+        result = TagNode(
+            local_name=self.__local_name,
+            namespace=self.__namespace,
             attributes=self.attributes,
-            namespace=self.namespace,
-            children=(
-                [n.clone(deep=True) for n in self.iterate_children()] if deep else ()
-            ),
         )
+        if deep:
+            result.append_children(*(n.clone(deep=True) for n in self._child_nodes))
+        return result
 
     def css_select(
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
@@ -2137,9 +2142,8 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     def _add_following_sibling(self, node: NodeBase):
         raise NotImplementedError
 
-    def clone(self, deep: bool = False) -> NodeBase:
-        assert self.content is not None
-        return self.__class__(self.content)
+    def clone(self, deep: bool = False) -> TextNode:
+        return TextNode(self.__content)
 
     @property
     def content(self) -> str:
