@@ -386,10 +386,17 @@ def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
     yield from root.iterate_descendants(*filters)
 
 
+def traverse_df_rtl_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+    for node in root._iterate_reversed_descendants():
+        if all(f(node) for f in filters):
+            yield node
+
+
 TRAVERSERS = {
     (True, False, True): traverse_bf_ltr_ttb,
     (True, True, True): traverse_df_ltr_ttb,
     (True, True, False): traverse_df_ltr_btt,
+    (False, True, False): traverse_df_rtl_btt,
 }
 
 
