@@ -143,12 +143,11 @@ def new_tag_node(
     )
 
 
-def _reduce_whitespace_between_siblings(
-    nodes: MutableSequence[NodeBase], in_place: bool
-):
+def _reduce_whitespace_between_siblings(nodes: MutableSequence[NodeBase] | Siblings):
     if not (text_nodes := tuple(n for n in nodes if isinstance(n, TextNode))):
         return
 
+    in_tree = isinstance(nodes, Siblings)
     first_node = nodes[0]
     last_node = nodes[-1]
 
@@ -160,7 +159,7 @@ def _reduce_whitespace_between_siblings(
         ):
             node.content = reduced_content
         else:
-            if in_place:
+            if in_tree:
                 node.detach()
             else:
                 nodes.remove(node)
@@ -2010,7 +2009,8 @@ class TagNode(NodeBase):
         if (
             normalize_space := self._get_normalize_space_directive(normalize_space)
         ) == "default":
-            _reduce_whitespace_between_siblings(child_nodes, True)
+            assert isinstance(child_nodes, Siblings)
+            _reduce_whitespace_between_siblings(child_nodes)
 
         for child_node in (n for n in child_nodes if isinstance(n, TagNode)):
             child_node._reduce_whitespace_of_descendants(normalize_space)

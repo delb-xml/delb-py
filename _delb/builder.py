@@ -263,7 +263,7 @@ class TreeBuilder:
 
         children = self.children.pop()
         if (not self.preserve_space.pop()) and children:
-            _reduce_whitespace_between_siblings(children, False)
+            _reduce_whitespace_between_siblings(children)
 
         # TODO optimize with the native data model
         for node in children:
