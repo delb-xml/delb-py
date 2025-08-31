@@ -1867,13 +1867,16 @@ class TagNode(NodeBase):
             case None:
                 del self.attributes[(XML_NAMESPACE, "id")]
             case str():
-                root = cast("TagNode", last(self.iterate_ancestors())) or self
-                # TODO optimize
-                if root.xpath(f"descendant-or-self::*[@xml:id='{value}']"):
-                    raise ValueError(
-                        "An xml:id-attribute with that value is already assigned in "
-                        "the tree."
-                    )
+                assert value  # TODO validate
+                root = cast("TagNode", last(self._iterate_ancestors())) or self
+                for node in chain((root,), root._iterate_descendants()):
+                    if not isinstance(node, TagNode):
+                        continue
+                    if node.attributes.get((XML_NAMESPACE, "id"), "") == value:
+                        raise ValueError(
+                            "An xml:id-attribute with that value is already assigned "
+                            "in the tree."
+                        )
                 self.attributes[(XML_NAMESPACE, "id")] = value
             case _:
                 raise TypeError("Value must be None or a string.")
