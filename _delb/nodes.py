@@ -639,14 +639,18 @@ class NodeBase(ABC):
         pass
 
     @property
-    @abstractmethod
     def depth(self) -> int:
         """
         The depth (or level) of the node in its tree.
 
         :meta category: Node properties
         """
-        pass
+        result = 0
+        pointer: NodeBase | None = self
+        assert pointer is not None
+        while (pointer := pointer._parent) is not None:
+            result += 1
+        return result
 
     @abstractmethod
     def detach(self, retain_child_nodes: bool = False) -> NodeBase:
@@ -1129,10 +1133,6 @@ class _ChildLessNode(NodeBase):
     def __len__(self):
         return 0
 
-    @property
-    def depth(self) -> int:
-        return cast("TagNode", self.parent).depth + 1
-
     def detach(self, retain_child_nodes: bool = False) -> NodeBase:
         raise NotImplementedError
 
@@ -1598,16 +1598,6 @@ class TagNode(NodeBase):
         """
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
-    @property
-    def depth(self) -> int:
-        result = 0
-        node = self
-        while node.parent:
-            node = node.parent
-            result += 1
-        return result
-
-    @altered_default_filters()
     def detach(self, retain_child_nodes: bool = False) -> TagNode:
         raise NotImplementedError
 
@@ -2149,9 +2139,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
             )
 
     def _add_following_sibling(self, node: NodeBase):
-        raise NotImplementedError
-
-    def _add_preceding_sibling(self, node: NodeBase):
         raise NotImplementedError
 
     def clone(self, deep: bool = False) -> NodeBase:
