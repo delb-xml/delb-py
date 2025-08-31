@@ -211,12 +211,10 @@ class Document(metaclass=DocumentMeta):
         self.prologue: Siblings
         """
         A list-like accessor to the nodes that precede the document's root node.
-        Note that nodes can't be removed or replaced.
         """
         self.epilogue: Siblings
         """
         A list-like accessor to the nodes that follow the document's root node.
-        Note that nodes can't be removed or replaced.
         """
 
     def __init_subclass__(cls):
