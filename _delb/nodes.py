@@ -779,11 +779,16 @@ class NodeBase(ABC):
                  to top.
         :meta category: Methods to iterate over related node
         """
-        parent = self.parent
-        if parent:
-            if all(f(parent) for f in filter):
-                yield parent
-            yield from parent.iterate_ancestors(*filter)
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_ancestors():
+            if all(f(node) for f in all_filters):
+                yield node
+
+    def _iterate_ancestors(self) -> Iterator[TagNode]:
+        node: None | NodeBase = self
+        assert node is not None
+        while (node := node._parent) is not None:
+            yield node
 
     @abstractmethod
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
@@ -1622,7 +1627,7 @@ class TagNode(NodeBase):
         if self._parent is None:
             root_node = self
         else:
-            root_node = cast("TagNode", last(self.iterate_ancestors()))
+            root_node = cast("TagNode", last(self._iterate_ancestors()))
         return root_node.__document__
 
     def fetch_or_create_by_xpath(
