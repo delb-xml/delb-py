@@ -185,12 +185,12 @@ class Axis(Node):
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
     def ancestor(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
-        yield from node.iterate_ancestors()
+        yield from node._iterate_ancestors()
         yield _DocumentNode(node)
 
     def ancestor_or_self(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         yield node
-        yield from node.iterate_ancestors()
+        yield from node._iterate_ancestors()
         yield _DocumentNode(node)
 
     def evaluate(
@@ -199,20 +199,20 @@ class Axis(Node):
         yield from self.generator(node)
 
     def child(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_children()
+        yield from node._child_nodes
 
     def descendant(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_descendants()
+        yield from node._iterate_descendants()
 
     def descendant_or_self(self, node: NodeBase) -> Iterator[NodeBase]:
         yield node
-        yield from node.iterate_descendants()
+        yield from node._iterate_descendants()
 
     def following(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_following()
+        yield from node._iterate_following()
 
     def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_following_siblings()
+        yield from node._iterate_following_siblings()
 
     def parent(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         parent = node.parent
@@ -222,10 +222,10 @@ class Axis(Node):
             yield _DocumentNode(node)
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_preceding()
+        yield from node._iterate_preceding()
 
     def preceding_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node.iterate_preceding_siblings()
+        yield from node._iterate_preceding_siblings()
 
     def self(self, node: NodeBase) -> Iterator[NodeBase]:
         yield node
