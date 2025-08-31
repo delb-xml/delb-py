@@ -557,6 +557,10 @@ class NodeBase(ABC):
 
     __slots__ = ("_parent",)
 
+    @abstractmethod
+    def __len__(self):
+        pass
+
     def __str__(self) -> str:
         return self.serialize(
             format_options=DefaultStringOptions.format_options,
@@ -1122,6 +1126,9 @@ class _ChildLessNode(NodeBase):
     last_descendant = None
     """ The node's last descendant. """
 
+    def __len__(self):
+        return 0
+
     @property
     def depth(self) -> int:
         return cast("TagNode", self.parent).depth + 1
@@ -1405,10 +1412,12 @@ class TagNode(NodeBase):
         )
 
     def __len__(self) -> int:
-        i = 0
-        for i, _ in enumerate(self.iterate_children(), start=1):
-            pass
-        return i
+        result = 0
+        for node in self._child_nodes:
+            if all(f(node) for f in default_filters[-1]):
+                result += 1
+
+        return result
 
     def __repr__(self) -> str:
         return (
@@ -2125,6 +2134,8 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
 
     def __getitem__(self, item):
         return self.content[item]
+
+    # TODO? __len__
 
     def __repr__(self):
         if self._exists:
