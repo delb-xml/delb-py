@@ -190,13 +190,15 @@ check = "mypy _delb delb"
 dependencies = [
     "pytest-cov",
     "pytest-httpx",
+    "pytest-xdist[psutil]",
 ]
 [tool.hatch.envs.unit-tests.scripts]
-check = "python -m pytest --cov=_delb --cov=delb tests"
+check = "python -m pytest --cov=_delb --cov=delb -n logical tests"
 coverage-report = """
     python -m pytest \
         --cov-report term-missing:skip-covered \
         --cov=_delb --cov=delb \
+        -n logical \
         tests
 """
 
