@@ -92,12 +92,13 @@ def test_contains():
 
 
 def test_copy():
-    node = parse_tree("<x/>")
+    node = parse_tree("<x><y/></x>")
     clone = copy(node)
 
     assert clone is not node
     assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
+    assert len(clone._child_nodes) == 0
 
 
 def test_deepcopy():

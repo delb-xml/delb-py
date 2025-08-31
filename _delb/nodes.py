@@ -556,6 +556,12 @@ class NodeBase(ABC):
 
     __slots__ = ("_parent",)
 
+    def __copy__(self):
+        return self.clone(deep=False)
+
+    def __deepcopy__(self, memo):
+        return self.clone(deep=True)
+
     @abstractmethod
     def __len__(self):
         pass
