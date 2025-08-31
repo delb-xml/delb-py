@@ -289,12 +289,12 @@ class Document(metaclass=DocumentMeta):
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
-    def merge_text_nodes(self):
+    def merge_text_nodes(self, deep: bool = True):
         """
         This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
         document's :attr:`root <Document.root>` node.
         """
-        self.root.merge_text_nodes()
+        self.root.merge_text_nodes(deep=deep)
 
     def reduce_whitespace(self):
         """

@@ -1982,25 +1982,32 @@ class TagNode(NodeBase):
             steps.append(self)
             return "/*" + "".join(f"/*[{cast('int', n.index)+1}]" for n in steps)
 
-    @altered_default_filters()
-    def merge_text_nodes(self):
+    def merge_text_nodes(self, deep: bool = False):
         """
         Merges all consecutive text nodes in the subtree into one.
         Text nodes without content are dropped.
         """
         empty_nodes: list[TextNode] = []
 
-        raise NotImplementedError
+        for index in range(len(self._child_nodes) - 1, -1, -1):
+            node = self._child_nodes[index]
+            if isinstance(node, TextNode):
+                if not node.content:
+                    empty_nodes.append(node)
 
-        for node in self.iterate_descendants():
-            if not isinstance(node, TextNode):
-                continue
-            node._merge_appended_text_nodes()
-            if not node.content:
-                empty_nodes.append(node)
+                elif index and isinstance(
+                    (preceding_node := self._child_nodes[index - 1]), TextNode
+                ):
+                    preceding_node.content += node.content
+                    empty_nodes.append(node)
 
         for node in empty_nodes:
+            node.content = ""
             node.detach()
+
+        if deep:
+            for node in (n for n in self._child_nodes if isinstance(n, TagNode)):
+                node.merge_text_nodes(deep=True)
 
     @property
     def namespace(self) -> str:
