@@ -739,7 +739,23 @@ class NodeBase(ABC):
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
         """
-        pass
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_preceding_siblings():
+            if all(f(node) for f in all_filters):
+                return node
+        else:
+            return None
+
+    def _fetch_preceding_sibling(self):
+        if self._parent is None:
+            if self.document and self.document.prologue:
+                return self.document.prologue[-1]
+            else:
+                return None
+
+        if (siblings := self._parent._child_nodes)[0] is self:
+            return None
+        return siblings[siblings.index(self) - 1]
 
     @property
     @abstractmethod
@@ -2160,19 +2176,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     # for utils._StringMixin:
     _data = content
 
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        candidate: NodeBase | None
-
-        raise NotImplementedError
-
-        if candidate is None:
-            return None
-
-        if all(f(candidate) for f in chain(default_filters[-1], filter)):
-            return candidate
-        else:
-            return candidate.fetch_preceding_sibling(*filter)
-
     @property
     def full_text(self) -> str:
         return self.content or ""
@@ -2617,7 +2620,7 @@ class PrettySerializer(Serializer):
         if isinstance(node, TextNode):
             return node.content[0].isspace()
 
-        preceding_sibling = node.fetch_preceding_sibling()
+        preceding_sibling = node._fetch_preceding_sibling()
         assert preceding_sibling is not None
         if isinstance(preceding_sibling, TextNode):
             return self._whitespace_is_legit_after_node(preceding_sibling)
