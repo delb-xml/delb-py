@@ -117,7 +117,7 @@ def tag(*args):  # noqa: C901
     >>> str(root)
     '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
     >>> root.append_children(tag("addendum"))  # doctest: +ELLIPSIS
-    (<TagNode("addendum", {}, /*/*[3]) [0x...]>,)
+    (<TagNode("{}addendum", {}, /*/*[3]) [0x...]>,)
     >>> str(root)[-26:]
     '</items><addendum/></root>'
     """
