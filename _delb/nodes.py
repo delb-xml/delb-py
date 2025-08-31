@@ -690,17 +690,22 @@ class NodeBase(ABC):
         :meta category: Methods to fetch a relative node
         """
         all_filters = default_filters[-1] + filter
-        candidate = self._fetch_following_sibling()
-        while candidate is not None:
-            if all(f(candidate) for f in all_filters):
-                return candidate
-            candidate = candidate._fetch_following_sibling()
+        for node in self._iterate_following_siblings():
+            if all(f(node) for f in all_filters):
+                return node
+        else:
+            return None
 
-        return None
+    def _fetch_following_sibling(self) -> Optional[NodeBase]:
+        if self._parent is None:
+            if self.document and self.document.epilogue:
+                return self.document.epilogue[0]
+            else:
+                return None
 
-    @abstractmethod
-    def _fetch_following_sibling(self):
-        pass
+        if (siblings := self._parent._child_nodes)[-1] is self:
+            return None
+        return siblings[siblings.index(self) + 1]
 
     def fetch_preceding(self, *filter: Filter) -> Optional[NodeBase]:
         """
@@ -2136,9 +2141,6 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     # for utils._StringMixin:
     _data = content
 
-    def _fetch_following_sibling(self) -> Optional[NodeBase]:
-        raise NotImplementedError
-
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         candidate: NodeBase | None
 
@@ -2578,7 +2580,7 @@ class PrettySerializer(Serializer):
         if isinstance(node, TextNode):
             return node.content[-1].isspace()
 
-        following_sibling = node.fetch_following_sibling()
+        following_sibling = node._fetch_following_sibling()
         assert following_sibling is not None
         if isinstance(following_sibling, TextNode):
             return self._whitespace_is_legit_before_node(following_sibling)
@@ -2894,7 +2896,7 @@ class TextWrappingSerializer(PrettySerializer):
         if (
             lines[-1].endswith(" ")
             and self._whitespace_is_legit_after_node(nodes[-1])
-            and (following_sibling := nodes[-1].fetch_following_sibling()) is not None
+            and (following_sibling := nodes[-1]._fetch_following_sibling()) is not None
             and not self._required_space(
                 following_sibling, self._width - len(lines[-1])
             )
