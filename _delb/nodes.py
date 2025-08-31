@@ -913,6 +913,8 @@ class NodeBase(ABC):
         siblings = self._parent._child_nodes
         yield from siblings[siblings.index(self) + 1 :]
 
+    # TODO add include_ancestors=True
+    # FIXME use include_ancestors=False for XPath evaluation
     def iterate_preceding(self, *filter: Filter) -> Iterator[NodeBase]:
         """
         Iterator over the filter matching nodes on the preceding axis.
@@ -923,35 +925,22 @@ class NodeBase(ABC):
                  order.
         :meta category: Methods to iterate over related node
         """
+        all_filters = default_filters[-1] + filter
         for node in self._iterate_preceding():
-            if all(f(node) for f in filter):
+            if all(f(node) for f in all_filters):
                 yield node
 
-    @altered_default_filters()
     def _iterate_preceding(self) -> Iterator[NodeBase]:
-        def iter_children(node: NodeBase) -> Iterator[NodeBase]:
-            for child_node in reversed(tuple(node.iterate_children())):
-                yield from iter_children(child_node)
-                yield child_node
+        if (parent := self._parent) is None:
+            if self.document:
+                yield from reversed(self.document.prologue)
+            return
 
-        pointer: NodeBase | None = self
-        assert pointer is not None
-        last_yield: NodeBase = pointer
+        for preceding_sibling in self._iterate_preceding_siblings():
+            yield from preceding_sibling._iterate_reversed_descendants()
 
-        while True:
-            pointer = pointer.fetch_preceding_sibling()
-
-            if pointer is not None:
-                yield from iter_children(pointer)
-                yield pointer
-                last_yield = pointer
-
-            else:
-                parent = last_yield.parent
-                if parent is None:
-                    return
-                yield parent
-                pointer = last_yield = parent
+        yield parent
+        yield from parent._iterate_preceding()
 
     def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
@@ -979,6 +968,25 @@ class NodeBase(ABC):
             yield self._parent._child_nodes[pointer]
             pointer -= 1
 
+    def _iterate_reversed_descendants(self) -> Iterator[NodeBase]:
+        if not isinstance(self, TagNode) or not self._child_nodes:
+            yield self
+            return
+
+        stack = [(self, list(self._child_nodes))]
+
+        while stack:
+            parent, children = stack[-1]
+
+            if children:
+                node = children.pop()
+                if isinstance(node, TagNode) and node._child_nodes:
+                    stack.append((node, list(node._child_nodes)))
+                else:
+                    yield node
+            else:
+                stack.pop()
+                yield parent
 
     @property
     @abstractmethod
