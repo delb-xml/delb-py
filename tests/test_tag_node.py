@@ -6,6 +6,7 @@ import pytest
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import DefaultStringOptions, altered_default_filters
 from delb import (
+    CommentNode,
     Document,
     ParserOptions,
     TagNode,
@@ -350,7 +351,10 @@ def test_iterate_preceding_siblings():
     root = parse_tree("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
     expected = "abcde"[::-1]
 
-    for i, node in enumerate(root[5].iterate_preceding_siblings()):
+    start_node = root[5]
+    assert start_node.local_name == "f"
+
+    for i, node in enumerate(start_node.iterate_preceding_siblings()):
         if isinstance(node, TagNode):
             assert node.local_name == expected[i]
         else:
@@ -540,14 +544,14 @@ def test_fetch_following(files_path):
     assert_nodes_are_in_document_order(*result)
 
 
-def test_no_siblings_on_root():
+def test_no_siblings_on_root_without_document():
     root = parse_tree("<root/>")
 
-    with pytest.raises(TypeError):
-        root.add_following_siblings("sibling")
+    with pytest.raises(InvalidOperation):
+        root.add_following_siblings(CommentNode("sibling"))
 
-    with pytest.raises(TypeError):
-        root.add_preceding_siblings("sibling")
+    with pytest.raises(InvalidOperation):
+        root.add_preceding_siblings(CommentNode("sibling"))
 
 
 def test_prepend_children():
@@ -562,14 +566,16 @@ def test_prepend_children():
 def test_fetch_preceding(files_path):
     root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
 
-    result = []
-    for node in root.iterate_descendants(is_pagebreak):
+    for i, node in enumerate(root.iterate_descendants(is_pagebreak)):
         if isinstance(node, TagNode) and node.local_name == "pb":
             pass
 
-    while node is not None:
+    assert i == 22
+    assert node.local_name == "pb"
+
+    result = [node]
+    while (node := node.fetch_preceding(is_pagebreak)) is not None:
         result.append(node)
-        node = node.fetch_preceding(is_pagebreak)
 
     assert len(result) == 23
     assert_nodes_are_in_document_order(*reversed(result))

@@ -114,20 +114,19 @@ def test_invalid_operations():
 def test_iter_following_nodes_over_long_stream(files_path):
     root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
 
-    node = root.fetch_following(lambda _: False)
-    assert node is None
+    assert root.fetch_following(lambda _: False) is None
 
-    all_node_locations = set()
+    all_location_paths = set()
     for node in root.iterate_descendants(is_tag_node):
-        all_node_locations.add(node.location_path)
+        all_location_paths.add(node.location_path)
     encountered_location_paths = set()
     for node in root.iterate_following(is_tag_node):
         location_path = node.location_path
         assert location_path not in encountered_location_paths
         encountered_location_paths.add(location_path)
-    assert encountered_location_paths == all_node_locations
+    assert encountered_location_paths == all_location_paths
 
-    expected_text = root.full_text  # operates in tree dimension
+    expected_text = root.full_text  # operates on the descendants axis
     collected_text = ""
     for node in root.iterate_following(is_text_node):
         collected_text += node.content
@@ -178,8 +177,8 @@ def test_replace_with_tag_definition():
     assert str(root) == '<root xmlns="https://name.space"><vertex type="xml"/></root>'
 
 
-def test_root_takes_no_siblings():
-    root = parse_tree("<root/>")
+def test_root_takes_no_tag_and_text_siblings():
+    root = Document("<root/>").root
 
     with pytest.raises(TypeError):
         root.add_following_siblings(tag("x"))
