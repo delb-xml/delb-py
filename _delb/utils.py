@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 import sys
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Iterable, Iterator, Sequence
 from functools import partial
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
@@ -26,6 +26,9 @@ from typing import TYPE_CHECKING, cast, Any, Final, Optional
 if TYPE_CHECKING:
     from _delb.nodes import NodeBase, TagNode
     from _delb.typing import Filter, NodeTypeNameLiteral
+
+
+NODE_MODULE_FQN: Final = f"{__package__}.nodes"
 
 
 _crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
@@ -306,7 +309,7 @@ def _is_node_of_type(
     type_name: NodeTypeNameLiteral,
 ) -> bool:
     return (
-        node.__class__.__module__ == f"{__package__}.nodes"
+        node.__class__.__module__ == NODE_MODULE_FQN
         and node.__class__.__qualname__ == type_name
     )
 
@@ -360,29 +363,40 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
 
 
 def traverse_bf_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-    if all(f(root) for f in filters):
-        yield root
-
-    queue = list(root.iterate_children())
+    queue = deque((root,))
     while queue:
-        node = queue.pop(0)
+        node = queue.popleft()
         if _is_node_of_type(node, "TagNode"):
-            queue.extend(node.iterate_children())
+            queue.extend(node._child_nodes)
         if all(f(node) for f in filters):
             yield node
 
 
 def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-    def yield_children(node):
-        for child in tuple(node.iterate_children(*filters)):
-            yield from yield_children(child)
-        yield node
+    stack = [(root, deque(root._child_nodes))]
 
-    yield from yield_children(root)
+    while stack:
+        node, remaining_children = stack.pop()
+
+        while remaining_children:
+            child = remaining_children.popleft()
+            if _is_node_of_type(child, "TagNode") and child._child_nodes:
+                stack.extend(
+                    ((node, remaining_children), (child, deque(child._child_nodes)))
+                )
+                break
+            else:
+                if all(f(child) for f in filters):
+                    yield child
+
+        else:
+            if all(f(node) for f in filters):
+                yield node
 
 
 def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
-    yield root
+    if all(f(root) for f in filters):
+        yield root
     yield from root.iterate_descendants(*filters)
 
 
