@@ -1,3 +1,4 @@
+from itertools import product
 from pathlib import Path
 
 import pytest
@@ -6,11 +7,12 @@ import pytest
 from tests import plugins  # noqa: F401
 
 from _delb.nodes import default_filters
-from delb import DefaultStringOptions, Document
+from delb import DefaultStringOptions, Document, TagNode
 
 
 FAILED_RESULT = "failed_result_of_"
 FILES_PATH = Path(__file__).parent / "files"
+ORDERED_TREES = []
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
 XML_FILES = tuple(
     p for p in FILES_PATH.glob("*.xml") if not p.name.startswith(FAILED_RESULT)
@@ -20,6 +22,25 @@ XML_FILES = tuple(
 default_filters_default = tuple(default_filters)
 _referenced_objects_for_wrapper_cache_tests = {}
 phase_report_key = pytest.StashKey()
+
+
+# TODO generate these trees ad doc in favor of less memory usage
+for assembly_axes in product(("child", "following"), repeat=9):
+    root = TagNode("root")
+    ORDERED_TREES.append(root)
+
+    node = root.prepend_children(TagNode("begin"))[0]
+
+    for i, direction in enumerate(assembly_axes):
+        new_node = TagNode(chr(ord("a") + i))
+        match direction:
+            case "child":
+                node.append_children(new_node)
+            case "following":
+                node.add_following_siblings(new_node)
+        node = new_node
+
+    root.append_children(TagNode("end"))
 
 
 # per https://docs.pytest.org/en/latest/example/simple.html

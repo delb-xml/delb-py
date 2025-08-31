@@ -357,20 +357,43 @@ def test_iterate_preceding_siblings():
             assert node.content == expected[i]
 
 
-def test_iterate_preceding():
-    root = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
-    k = root[1][1][0][1]
-    assert k.local_name == "k"
-    expected = "abcdefghij"[::-1]
-    for i, node in enumerate(k.iterate_preceding()):
-        assert node.local_name == expected[i]
+@skip_long_running_test
+@pytest.mark.parametrize("tree", ORDERED_TREES)
+@pytest.mark.parametrize("start_position", range(1, 10))
+def test_iterate_following(start_position, tree):
+    assert isinstance(start_position, int)
+
+    for i, start_node in enumerate(tree._iterate_descendants()):
+        if i == start_position:
+            break
+
+    for i, node in enumerate(start_node._iterate_following(), start=start_position):
+        if node.local_name == "end":
+            break
+        assert node.local_name == chr(ord("a") + i)
+
+    assert node.local_name == "end"
+    assert i == 9
 
 
-def test_iterate_following():
-    a = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
-    expected = "bcdefghijk"
-    for i, node in enumerate(a.iterate_following()):
-        assert node.local_name == expected[i]
+@skip_long_running_test
+@pytest.mark.parametrize("tree", ORDERED_TREES)
+@pytest.mark.parametrize("start_position", range(1, 10))
+def test_iterate_preceding(start_position, tree):
+    for i, start_node in enumerate(tree._iterate_descendants()):
+        if i == start_position:
+            break
+
+    pointer = start_position
+    for i, node in enumerate(start_node._iterate_preceding()):
+        pointer -= 1
+        if node.local_name == "begin":
+            break
+        assert node.local_name == chr(ord("a") + pointer - 1)
+
+    assert node.local_name == "begin"
+    assert pointer == 0
+    assert i + 1 == start_position
 
 
 def test_last_descendant():
