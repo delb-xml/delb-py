@@ -1797,7 +1797,7 @@ class TagNode(NodeBase):
                     assert isinstance(node, TagNode)
                     assert isinstance(node_test, NameMatchTest)
 
-                    new_node = new_tag_node(
+                    new_node = TagNode(
                         local_name=node_test.local_name,
                         attributes=None,
                         namespace=namespaces.get(node_test.prefix),
