@@ -1114,14 +1114,16 @@ class NodeBase(ABC):
         :return: The removed node.
         :meta category: Methods to remove a node
         """
-        if self.parent is None:
+        if (parent := self._parent) is None:
             raise InvalidOperation(
                 "Cannot replace a root node of a tree. Maybe you want to set the "
                 "`root` property of a Document instance?"
             )
 
-        self.add_following_siblings(node, clone=clone)
-        return self.detach()
+        if clone and isinstance(node, NodeBase):
+            node = node.clone(deep=True)
+        parent._child_nodes.insert(parent._child_nodes.index(self), node)
+        return self.detach(retain_child_nodes=False)
 
     @altered_default_filters()
     def serialize(
