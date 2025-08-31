@@ -46,7 +46,9 @@ class ContentHandler(sax.handler.ContentHandler):
     def characters(self, content: str):
         self.events.append((EventType.Text, content))
 
-    def endElementNS(self, name: tuple[None | str, str], qname: str):  # noqa: N802
+    def endElementNS(  # noqa: N802
+        self, name: tuple[None | str, str], qname: str | None
+    ):
         self.events.append(
             (EventType.TagEnd, TagEventData(name[0] or "", name[1], None))
         )
@@ -60,7 +62,7 @@ class ContentHandler(sax.handler.ContentHandler):
     def startElementNS(  # noqa: N802
         self,
         name: tuple[None | str, str],
-        qname: str,
+        qname: str | None,
         attrs: sax.xmlreader.AttributesNSImpl,
     ):
         namespace = name[0] or ""
