@@ -760,21 +760,23 @@ class NodeBase(ABC):
     @property
     def index(self) -> Optional[int]:
         """
-        The node's index within the parent's collection of child nodes or :obj:`None`
-        when the node has no parent.
+        The node's index within the parent's collection of child nodes. When this
+        property is read the currently set default filters are applied.
+        The value :obj:`None` is returned for node without parents and when themself
+        are not matching the filters.
 
         :meta category: Node properties
         """
-        parent = self.parent
+        if self._parent is not None:
+            for result, node in enumerate(
+                n
+                for n in self._parent._child_nodes
+                if all(f(n) for f in default_filters[-1])
+            ):
+                if node is self:
+                    return result
 
-        if parent is None:
-            return None
-
-        for index, node in enumerate(parent.iterate_children()):
-            if node is self:
-                return index
-
-        raise InvalidCodePath
+        return None
 
     def iterate_ancestors(self, *filter: Filter) -> Iterator[TagNode]:
         """
@@ -1812,12 +1814,6 @@ class TagNode(NodeBase):
                 self.attributes[(XML_NAMESPACE, "id")] = value
             case _:
                 raise TypeError("Value must be None or a string.")
-
-    @property
-    def index(self) -> Optional[int]:
-        if self.parent is None:
-            return None
-        return super().index
 
     def insert_children(
         self, index: int, *node: NodeSource, clone: bool = False
