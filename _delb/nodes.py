@@ -1899,11 +1899,11 @@ class TagNode(NodeBase):
         if self.parent is None:
             return "/*"
 
-        with altered_default_filters(is_tag_node):
-            steps = list(self.iterate_ancestors())
-            steps.pop()  # root
-            steps.reverse()
-            steps.append(self)
+        steps = list(self._iterate_ancestors())
+        steps.pop()  # root
+        steps.reverse()
+        steps.append(self)
+        with altered_default_filters(is_tag_node):  # to affect the .index value
             return "/*" + "".join(f"/*[{cast('int', n.index)+1}]" for n in steps)
 
     def merge_text_nodes(self, deep: bool = False):
