@@ -647,17 +647,24 @@ def test_set_tag_components():
 
 
 def test_set_item():
-    namespace = "http://foo"
     root = parse_tree("<root/>")
-    root[0] = tag("b")
     root[0] = tag("a")
     root["A"] = "1"
-    root[(namespace, "B")] = "2"
-    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"/>'
-    with pytest.raises(IndexError):
-        root[-1] = "text"
-    with pytest.raises(IndexError):
-        root[1] = "text"
+    root[("http://foo", "B")] = "2"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><a/></root>'
+
+    root[0] = tag("b")
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/></root>'
+
+    root[1] = "foo"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/>foo</root>'
+
+    root[-1] = "bar"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/>bar</root>'
+
+    for index in (-3, 3):
+        with pytest.raises(IndexError):
+            root[index] = "nah"
 
 
 def test_tag_definition_copies_attributes():
