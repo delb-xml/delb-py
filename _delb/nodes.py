@@ -1823,9 +1823,11 @@ class TagNode(NodeBase):
 
     @property
     def first_child(self) -> Optional[NodeBase]:
-        for result in self.iterate_children():
-            return result
-        return None
+        for node in self._child_nodes:
+            if all(f(node) for f in default_filters[-1]):
+                return node
+        else:
+            return None
 
     @property
     def full_text(self) -> str:
@@ -1936,20 +1938,26 @@ class TagNode(NodeBase):
 
     @property
     def last_child(self) -> Optional[NodeBase]:
-        result = None
-        for result in self.iterate_children():
-            pass
-        return result
+        if self._child_nodes:
+            filters = default_filters[-1]
+            for node in self._child_nodes[::-1]:
+                if all(f(node) for f in filters):
+                    return node
+        return None
 
     @property
     def last_descendant(self) -> Optional[NodeBase]:
-        node = self.last_child
-        while node is not None:
-            candidate = node.last_child
-            if candidate is None:
-                break
-            node = candidate
-        return node
+        # FIXME filter!
+        if not self._child_nodes:
+            return None
+
+        if (
+            isinstance((last_child := self._child_nodes[-1]), TagNode)
+            and last_child._child_nodes
+        ):
+            return last_child.last_descendant
+        else:
+            return self.last_child
 
     @property
     def local_name(self) -> str:
