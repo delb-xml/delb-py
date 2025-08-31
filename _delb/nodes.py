@@ -675,9 +675,17 @@ class NodeBase(ABC):
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
         """
-        try:
-            return next(self.iterate_following(*filter))
-        except StopIteration:
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_following():
+            if all(f(node) for f in all_filters):
+                return node
+        else:
+            return None
+
+    def _fetch_following(self) -> Optional[NodeBase]:
+        for node in self._iterate_following():
+            return node
+        else:
             return None
 
     def fetch_following_sibling(self, *filter: Filter) -> Optional[NodeBase]:
@@ -2716,7 +2724,7 @@ class TextWrappingSerializer(PrettySerializer):
         if self._whitespace_is_legit_after_node(node):
             return 0
 
-        if (following := node.fetch_following()) is None:
+        if (following := node._fetch_following()) is None:
             return 0
 
         if not isinstance(following, TextNode):
@@ -2794,7 +2802,7 @@ class TextWrappingSerializer(PrettySerializer):
 
         if self._whitespace_is_legit_after_node(node) and not (
             (
-                (following := node.fetch_following()) is not None
+                (following := node._fetch_following()) is not None
                 and self._node_fits_remaining_line(following)
             )
         ):
@@ -2830,7 +2838,7 @@ class TextWrappingSerializer(PrettySerializer):
 
             if (
                 (last_node is last_node.parent.last_child)
-                or (following := last_node.fetch_following()) is not None
+                or (following := last_node._fetch_following()) is not None
                 and (
                     self._whitespace_is_legit_before_node(following)
                     and self._required_space(
