@@ -1516,13 +1516,15 @@ class TagNode(NodeBase):
             case str() | tuple():
                 self.attributes[item] = value
             case int():
-                children_size = len(self)
-                if not children_size and item == 0:
-                    self.__add_first_child(value)
-                else:
-                    if not 0 <= item < children_size:
-                        raise IndexError
+                children_size = len(self._child_nodes)
+                if children_size == item:
+                    self._child_nodes.append(value)
+                elif 0 <= item < children_size or (
+                    item < 0 and abs(item) <= children_size
+                ):
                     self[item].replace_with(value)
+                else:
+                    raise IndexError
             case _:
                 raise TypeError(
                     "Argument must be an integer or an attribute name. "
