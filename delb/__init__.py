@@ -322,10 +322,7 @@ class Document(metaclass=DocumentMeta):
                 "The document root node must be a :class:`TagNode` instance."
             )
 
-        if node.parent is not None:
-            raise NotImplementedError
-
-        if node.document is not None:
+        if node.parent is not None or node.document is not None:
             raise InvalidOperation(
                 "Only a detached node can be set as root. Use :meth:`TagNode.clone` "
                 "or :meth:`TagNode.detach` on the designated root node."
