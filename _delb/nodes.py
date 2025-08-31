@@ -1499,21 +1499,14 @@ class TagNode(NodeBase):
         if not node:
             return ()
 
-        queue: Sequence[NodeSource]
+        result: list[NodeBase] = []
 
-        if (last_child := self.last_child) is None:
-            last_child, queue = self._prepare_new_relative(node, clone=clone)
-            self.__add_first_child(last_child)
-            result: tuple[NodeBase, ...] = (last_child,)
+        for _node in node:
+            if clone and isinstance(_node, NodeBase):
+                _node = _node.clone(deep=True)
+            result.append(self._child_nodes.append(_node))
 
-        else:
-            queue = node
-            result = ()
-
-        if queue:
-            result += last_child.add_following_siblings(*queue, clone=clone)
-
-        return result
+        return tuple(result)
 
     @property
     def attributes(self) -> TagAttributes:
