@@ -466,7 +466,7 @@ class Siblings:
 
         raise TypeError
 
-    def __delitem__(self, index: int):
+    def __delitem__(self, index: int | slice):
         del self.__data[index]
 
     @overload
@@ -474,17 +474,14 @@ class Siblings:
         pass
 
     @overload
-    def __getitem__(self, index: slice) -> tuple[NodeBase, ...]:
+    def __getitem__(self, index: slice) -> list[NodeBase]:
         pass
 
-    def __getitem__(self, index: int | slice) -> NodeBase | tuple[NodeBase, ...]:
-        match index:
-            case int():
-                return self.__data[index]
-            case slice():
-                return tuple(self.__data[index])
-            case _:
-                raise TypeError
+    def __getitem__(self, index: int | slice) -> NodeBase | list[NodeBase]:
+        if not isinstance(index, (int, slice)):
+            raise TypeError
+
+        return self.__data[index]
 
     def __iter__(self) -> Iterator[NodeBase]:
         return iter(self.__data)
@@ -492,25 +489,48 @@ class Siblings:
     def __len__(self) -> int:
         return len(self.__data)
 
-    def __setitem__(self, index: int, node: NodeSource):
-        self.__data[index] = self._handle_new_sibling(node)
+    def __setitem__(self, index: int, node: NodeSource) -> NodeBase:
+        result = self._handle_new_sibling(node)
+        self.__data[index] = result
+        return result
 
-    def append(self, node: NodeBase):
-        self.__data.append(self._handle_new_sibling(node))
+    def append(self, node: NodeSource) -> NodeBase:
+        result = self._handle_new_sibling(node)
+        self.__data.append(result)
+        return result
 
-    def insert(self, index: int, node: NodeSource):
-        self.__data.insert(index, self._handle_new_sibling(node))
+    def clear(self):
+        self.__data.clear()
 
-    def prepend(self, node: NodeSource):
-        self.insert(0, node)
+    def index(self, node: NodeBase) -> int:
+        for result, n in enumerate(self.__data):
+            if n is node:
+                return result
+        else:
+            raise IndexError
+
+    def insert(self, index: int, node: NodeSource) -> NodeBase:
+        result = self._handle_new_sibling(node)
+        self.__data.insert(index, result)
+        return result
+
+    def prepend(self, node: NodeSource) -> NodeBase:
+        result = self._handle_new_sibling(node)
+        self.__data.insert(0, result)
+        return result
+
+    def remove(self, node: NodeBase):
+        node._parent = None
+        self.__data.remove(node)
 
     def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
-        assert isinstance(self.__belongs_to, TagNode)
         match node:
             case str():
                 node = TextNode(node)
             case _TagDefinition():
-                node = self.__belongs_to._new_tag_node_from_definition(node)
+                if (context := self.__belongs_to) is None:
+                    raise NotImplementedError
+                node = context._new_tag_node_from_definition(node)
             case NodeBase():
                 if node.parent is not None:
                     raise InvalidOperation(
@@ -532,6 +552,7 @@ class Siblings:
 
 
 class NodeBase(ABC):
+    _child_nodes: Siblings
     _parent: None | TagNode
 
     __slots__ = ("_parent",)
@@ -1298,7 +1319,7 @@ class TagNode(NodeBase):
 
     __slots__ = (
         "__attributes",
-        "__child_nodes",
+        "_child_nodes",
         "__local_name",
         "__namespace",
         "__document__",
@@ -1318,14 +1339,14 @@ class TagNode(NodeBase):
         self.namespace = namespace or ""
         self.local_name = local_name
         self.__attributes = TagAttributes(data=attributes or {}, node=self)
-        self.__child_nodes = Siblings(nodes=children, belongs_to=self)
+        self._child_nodes = Siblings(nodes=children, belongs_to=self)
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
         match item:
             case str() | tuple():
                 return item in self.attributes
             case NodeBase():
-                return any(n is item for n in self.iterate_children())
+                return item in self._child_nodes
             case _:
                 raise TypeError(
                     "Argument must be a node instance or an attribute name. "
@@ -2001,10 +2022,10 @@ class TagNode(NodeBase):
     def _reduce_whitespace_of_descendants(
         self, normalize_space: Literal["default", "preserve"]
     ):
-        if not (child_nodes := list(self.iterate_children())):
+        if not (child_nodes := self._child_nodes):
             return
 
-        self.merge_text_nodes()
+        self.merge_text_nodes(deep=False)
 
         if (
             normalize_space := self._get_normalize_space_directive(normalize_space)
@@ -2340,7 +2361,7 @@ class Serializer:
             )
         return data
 
-    def _handle_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+    def _handle_child_nodes(self, child_nodes: Siblings):
         for child_node in child_nodes:
             self.serialize_node(child_node)
 
@@ -2392,16 +2413,15 @@ class Serializer:
         node: TagNode,
         attributes_data: dict[str, str],
     ):
-        child_nodes = tuple(node.iterate_children())
         prefixed_name = self._prefixes[node.namespace] + node.local_name
 
         self.writer(f"<{prefixed_name}")
         if attributes_data:
             self._serialize_attributes(attributes_data)
 
-        if child_nodes:
+        if node._child_nodes:
             self.writer(">")
-            self._handle_child_nodes(child_nodes)
+            self._handle_child_nodes(node._child_nodes)
             self.writer(f"</{prefixed_name}>")
         else:
             self.writer("/>")
@@ -2478,7 +2498,7 @@ class PrettySerializer(Serializer):
         super()._collect_prefixes(root)
         self._space_preserving_serializer._prefixes = self._prefixes
 
-    def _handle_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+    def _handle_child_nodes(self, child_nodes: Siblings):
         # newline between an opening tag and its first child
         if self._whitespace_is_legit_before_node(child_nodes[0]):
             self.writer("\n")
@@ -2510,7 +2530,7 @@ class PrettySerializer(Serializer):
         else:
             super()._serialize_attributes(attributes_data)
 
-    def _serialize_child_nodes(self, child_nodes: tuple[NodeBase, ...]):
+    def _serialize_child_nodes(self, child_nodes: Siblings):
         for node in child_nodes:
             if isinstance(node, TextNode):
                 if node.content:
@@ -2684,7 +2704,7 @@ class TextWrappingSerializer(PrettySerializer):
             return None
         used_space += attributes_space
 
-        for child_node in node.iterate_children():
+        for child_node in node._child_nodes:
             if (
                 child_space := self._required_space(child_node, up_to - used_space)
             ) is None:
