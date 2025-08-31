@@ -724,12 +724,19 @@ class NodeBase(ABC):
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
         """
-        try:
-            return next(self.iterate_preceding(*filter))
-        except StopIteration:
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_preceding():
+            if all(f(node) for f in all_filters):
+                return node
+        else:
             return None
 
-    @abstractmethod
+    def _fetch_preceding(self) -> Optional[NodeBase]:
+        for node in self._iterate_preceding():
+            return node
+        else:
+            return None
+
     def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
         """
         Retrieves the next filter matching node on the preceding-sibling axis.
