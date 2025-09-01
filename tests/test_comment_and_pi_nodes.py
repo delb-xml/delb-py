@@ -13,8 +13,7 @@ from delb import (
 def test_appended_text_node():
     root = parse_tree("<root><!-- c -->tail</root>")
     root.last_child.add_following_siblings("|appended")
-    with altered_default_filters():
-        assert str(root) == "<root><!-- c -->tail|appended</root>"
+    assert str(root) == "<root><!-- c -->tail|appended</root>"
 
 
 def test_comment_node():
@@ -30,8 +29,7 @@ def test_comment_node():
     tag = root[0]
     tag.append_children(CommentNode("b"))
     comment.content = "comment"
-    with altered_default_filters():
-        assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
+    assert str(root) == "<root><tag><!--b--></tag><!--comment-->text</root>"
 
     assert comment == CommentNode("comment")
     assert comment != tag
@@ -39,28 +37,23 @@ def test_comment_node():
         assert comment != tag.first_child
 
     comment.detach()
-    with altered_default_filters():
-        assert str(root) == "<root><tag><!--b--></tag>text</root>"
+    assert str(root) == "<root><tag><!--b--></tag>text</root>"
 
+    with altered_default_filters():
         b = tag.first_child
 
     b.add_preceding_siblings(CommentNode("a"))
     b.add_following_siblings(CommentNode("c"))
-    with altered_default_filters():
-        assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
+    assert str(root) == "<root><tag><!--a--><!--b--><!--c--></tag>text</root>"
 
     b.detach()
-    with altered_default_filters():
-        assert str(root) == "<root><tag><!--a--><!--c--></tag>text</root>"
+    assert str(root) == "<root><tag><!--a--><!--c--></tag>text</root>"
 
     text = root.last_child
     x = CommentNode("x")
     text.add_preceding_siblings(x)
     text.add_following_siblings(CommentNode("y"))
-    with altered_default_filters():
-        assert (
-            str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
-        )
+    assert str(root) == "<root><tag><!--a--><!--c--></tag><!--x-->text<!--y--></root>"
 
     with altered_default_filters():
         for node in tuple(root.iterate_children()):
@@ -69,11 +62,10 @@ def test_comment_node():
     root.add_preceding_siblings(CommentNode("before"))
     root.add_following_siblings(CommentNode("after"))
 
-    with altered_default_filters():
-        assert (
-            str(root.document)
-            == '<?xml version="1.0" encoding="UTF-8"?><!--before--><root/><!--after-->'
-        )
+    assert (
+        str(root.document)
+        == '<?xml version="1.0" encoding="UTF-8"?><!--before--><root/><!--after-->'
+    )
 
 
 @pytest.mark.parametrize("content", ("a--z", "foo-"))
@@ -110,8 +102,6 @@ def test_processing_instruction_node():
     assert pi != root
     assert pi != ProcessingInstructionNode("ham", "bar")
 
-    with altered_default_filters():
-        assert str(root) == "<root><?foo bar?></root>"
+    assert str(root) == "<root><?foo bar?></root>"
     pi.target = "space"
-    with altered_default_filters():
-        assert str(root) == "<root><?space bar?></root>"
+    assert str(root) == "<root><?space bar?></root>"

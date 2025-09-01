@@ -4,7 +4,7 @@ from typing import Final
 import pytest
 
 from _delb.names import XML_NAMESPACE
-from _delb.nodes import DefaultStringOptions, altered_default_filters
+from _delb.nodes import DefaultStringOptions
 from delb import (
     CommentNode,
     Document,
@@ -191,13 +191,11 @@ def test_detach_node_retain_child_nodes():
     node.detach(retain_child_nodes=True)
 
     assert len(node) == 0
-    with altered_default_filters():
-        assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
+    assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
     child = root.first_child
     child.detach(retain_child_nodes=True)
-    with altered_default_filters():
-        assert str(root) == "<root>childish<!-- [~.ö] --></root>"
+    assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
     with pytest.raises(InvalidOperation):
         root.detach(retain_child_nodes=True)

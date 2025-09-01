@@ -368,7 +368,6 @@ class Document(metaclass=DocumentMeta):
                 newline=newline,
             )
 
-    @altered_default_filters()
     def __serialize(
         self,
         serializer: Serializer,
@@ -381,8 +380,7 @@ class Document(metaclass=DocumentMeta):
         )
         for node in self.prologue:
             serializer.writer(str(node) + possible_newline)
-        with altered_default_filters():
-            serializer.serialize_root(self.root)
+        serializer.serialize_root(self.root)
         if self.epilogue:
             serializer.writer(possible_newline)
             for node in self.epilogue[:-1]:
