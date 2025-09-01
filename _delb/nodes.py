@@ -457,17 +457,6 @@ class Siblings:
             for node in nodes:
                 self.__data.append(self._handle_new_sibling(node))
 
-    def __add__(self, other: Any):
-        if isinstance(other, Iterable):
-            for item in other:
-                self.append(self._handle_new_sibling(item))
-            return self
-
-        raise TypeError
-
-    def __delitem__(self, index: int | slice):
-        del self.__data[index]
-
     @overload
     def __getitem__(self, index: int) -> NodeBase:
         pass
@@ -490,6 +479,7 @@ class Siblings:
 
     def __setitem__(self, index: int, node: NodeSource) -> NodeBase:
         result = self._handle_new_sibling(node)
+        self.__data[index]._parent = None
         self.__data[index] = result
         return result
 
@@ -499,6 +489,8 @@ class Siblings:
         return result
 
     def clear(self):
+        for node in self.__data:
+            node._parent = None
         self.__data.clear()
 
     def index(self, node: NodeBase) -> int:
@@ -527,9 +519,8 @@ class Siblings:
             case str():
                 node = TextNode(node)
             case _TagDefinition():
-                if (context := self.__belongs_to) is None:
-                    raise NotImplementedError
-                node = context._new_tag_node_from_definition(node)
+                assert self.__belongs_to is not None
+                node = self.__belongs_to._new_tag_node_from_definition(node)
             case NodeBase():
                 if node.parent is not None:
                     raise InvalidOperation(
@@ -1614,10 +1605,9 @@ class TagNode(NodeBase):
 
         index = parent._child_nodes.index(self)
         if retain_child_nodes:
-            for node in self._child_nodes:
-                node._parent = None
-            parent.insert_children(index, *self._child_nodes)
+            children = tuple(self._child_nodes)
             self._child_nodes.clear()
+            parent.insert_children(index, *children)
 
         parent._child_nodes.remove(self)
         return self
