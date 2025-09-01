@@ -337,6 +337,7 @@ def last(iterable: Iterable) -> Optional[Any]:
 def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
     node_index_cache: dict[int, int] = {}
     sorter = _NodesSorter()
+
     for node in nodes:
         if not _is_node_of_type(node, "TagNode"):
             raise NotImplementedError(
@@ -345,20 +346,22 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
             )
 
         node = cast("TagNode", node)
-        ancestors_indexes = []
+        ancestors_indexes: deque[int] = deque()
 
-        cursor = node
-        while cursor.parent is not None:
-            node_id = id(cursor)
-            if node_id in node_index_cache:
+        for cursor in chain((node,), node._iterate_ancestors()):
+            if cursor._parent is None:
+                break
+
+            if (node_id := id(cursor)) in node_index_cache:
                 index = node_index_cache[node_id]
             else:
-                assert cursor.index is not None
-                node_index_cache[node_id] = index = cursor.index
-            ancestors_indexes.append(index)
-            cursor = cursor.parent
+                node_index_cache[node_id] = index = cursor._parent._child_nodes.index(
+                    cursor
+                )
+            ancestors_indexes.appendleft(index)
 
-        sorter.add(tuple(reversed(ancestors_indexes)), node)
+        sorter.add(tuple(ancestors_indexes), node)
+
     yield from sorter.emit()
 
 
