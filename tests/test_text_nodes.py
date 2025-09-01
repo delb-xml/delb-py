@@ -290,6 +290,10 @@ def test_index():
     assert parse_tree("<root>test</root>").first_child.index == 0
 
 
+def test_len():
+    assert len(TextNode("foo")) == 3
+
+
 def test_none_content_wrapping():
     root = parse_tree("<root><e1/></root>")
 

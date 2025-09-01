@@ -2080,7 +2080,8 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
     def __getitem__(self, item):
         return self.content[item]
 
-    # TODO? __len__
+    def __len__(self):
+        return len(self.__content)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(text="{self.content}",  [{hex(id(self))}]>'
