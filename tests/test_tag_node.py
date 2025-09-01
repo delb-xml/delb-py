@@ -11,6 +11,7 @@ from delb import (
     ParserOptions,
     TagNode,
     TextNode,
+    altered_default_filters,
     is_tag_node,
     parse_tree,
     tag,
@@ -414,9 +415,10 @@ def test_iterate_preceding(start_position, tree):
 def test_last_descendant():
     root = parse_tree(
         "<root>"
-        "<a><aa><aaa/><aab/></aa><ab><aba/><abb/></ab></a>"
-        "<b><ba>baa</ba></b>"
+        "<a><aa><aaa/><aab/></aa><ab><aba/><abb/><!--comment--></ab></a>"
+        "<b><ba>baa</ba><!--comment--></b>"
         "<c/>"
+        "<!--comment-->"
         "</root>"
     )
     a, b, c = tuple(root.iterate_children())
@@ -433,6 +435,9 @@ def test_last_descendant():
     assert b_ld.last_descendant is None
 
     assert c.last_descendant is None
+
+    with altered_default_filters():
+        assert isinstance(root.last_descendant, CommentNode)
 
 
 @skip_long_running_test

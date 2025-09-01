@@ -1869,17 +1869,11 @@ class TagNode(NodeBase):
 
     @property
     def last_descendant(self) -> Optional[NodeBase]:
-        # FIXME filter!
-        if not self._child_nodes:
-            return None
-
-        if (
-            isinstance((last_child := self._child_nodes[-1]), TagNode)
-            and last_child._child_nodes
-        ):
-            return last_child.last_descendant
+        for node in self._iterate_reversed_descendants():
+            if node is not self and all(f(node) for f in default_filters[-1]):
+                return node
         else:
-            return self.last_child
+            return None
 
     @property
     def local_name(self) -> str:
