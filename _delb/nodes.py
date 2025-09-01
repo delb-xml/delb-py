@@ -580,16 +580,16 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if (parent := self.parent) is None:
-            raise NotImplementedError  # TODO
-        else:
-            return tuple(
-                reversed(
-                    parent.insert_children(
-                        parent._child_nodes.index(self) + 1, *node, clone=clone
-                    )
+        if self._parent is None:
+            raise InvalidOperation("Can't add sibling to a node without parent node.")
+
+        return tuple(
+            reversed(
+                self._parent.insert_children(
+                    self._parent._child_nodes.index(self) + 1, *node, clone=clone
                 )
             )
+        )
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
@@ -607,12 +607,12 @@ class NodeBase(ABC):
         function that are used to derive :class:`TextNode` respectively :class:`TagNode`
         instances from.
         """
-        if (parent := self.parent) is None:
-            raise NotImplementedError
-        else:
-            return parent.insert_children(
-                parent._child_nodes.index(self), *reversed(node), clone=clone
-            )
+        if self._parent is None:
+            raise InvalidOperation("Can't add sibling to a node without parent node.")
+
+        return self._parent.insert_children(
+            self._parent._child_nodes.index(self), *reversed(node), clone=clone
+        )
 
     @abstractmethod
     def clone(self, deep: bool = False) -> NodeBase:
