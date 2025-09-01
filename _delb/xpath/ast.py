@@ -209,7 +209,7 @@ class Axis(Node):
         yield from node._iterate_descendants()
 
     def following(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node._iterate_following()
+        yield from node._iterate_following(include_descendants=False)
 
     def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node._iterate_following_siblings()
@@ -221,7 +221,7 @@ class Axis(Node):
             yield node._parent
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
-        yield from node._iterate_preceding()
+        yield from node._iterate_preceding(include_ancestors=False)
 
     def preceding_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node._iterate_preceding_siblings()

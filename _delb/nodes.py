@@ -851,25 +851,31 @@ class NodeBase(ABC):
     def _iterate_descendants(self) -> Iterator[NodeBase]:
         pass
 
-    # TODO add include_descendants=True
-    # FIXME use include_descendants=False for XPath evaluation
-    def iterate_following(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_following(
+        self, *filter: Filter, include_descendants: bool = True
+    ) -> Iterator[NodeBase]:
         """
         Iterator over the filter matching nodes on the following axis.
 
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
+        :param include_descendants: Also yields descendants of the staring node. This
+                                    deviates from the XPath definition of the following
+                                    axes.
         :return: A :term:`generator iterator` that yields the following nodes in
                  document order.
         :meta category: Methods to iterate over related node
         """
         all_filters = default_filters[-1] + filter
-        for node in self._iterate_following():
+        for node in self._iterate_following(include_descendants=include_descendants):
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_following(self) -> Iterator[NodeBase]:
-        yield from self._iterate_descendants()
+    def _iterate_following(
+        self, *, include_descendants: bool = True
+    ) -> Iterator[NodeBase]:
+        if include_descendants:
+            yield from self._iterate_descendants()
 
         if self._parent is None:
             if (document := self.document) is not None:
@@ -889,7 +895,9 @@ class NodeBase(ABC):
             return
 
         yield ancestors_following_sibling
-        yield from ancestors_following_sibling._iterate_following()
+        yield from ancestors_following_sibling._iterate_following(
+            include_descendants=True
+        )
 
     def iterate_following_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
@@ -916,24 +924,29 @@ class NodeBase(ABC):
         for index in range(siblings.index(self) + 1, len(siblings)):
             yield siblings[index]
 
-    # TODO add include_ancestors=True
-    # FIXME use include_ancestors=False for XPath evaluation
-    def iterate_preceding(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_preceding(
+        self, *filter: Filter, include_ancestors: bool = True
+    ) -> (Iterator)[NodeBase]:
         """
         Iterator over the filter matching nodes on the preceding axis.
 
         :param filter: Any number of :term:`filter` s that a node must match to be
                yielded.
+        :param include_ancestors: Also yields ancestor nodes / tag nodes that were
+                                  started earlier in the stream. This deviates from the
+                                  XPath definition of the preceding axis.
         :return: A :term:`generator iterator` that yields the previous nodes in document
                  order.
         :meta category: Methods to iterate over related node
         """
         all_filters = default_filters[-1] + filter
-        for node in self._iterate_preceding():
+        for node in self._iterate_preceding(include_ancestors=include_ancestors):
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_preceding(self) -> Iterator[NodeBase]:
+    def _iterate_preceding(
+        self, *, include_ancestors: bool = True
+    ) -> Iterator[NodeBase]:
         if (parent := self._parent) is None:
             if self.document:
                 yield from reversed(self.document.prologue)
@@ -942,8 +955,9 @@ class NodeBase(ABC):
         for preceding_sibling in self._iterate_preceding_siblings():
             yield from preceding_sibling._iterate_reversed_descendants()
 
-        yield parent
-        yield from parent._iterate_preceding()
+        if include_ancestors:
+            yield parent
+        yield from parent._iterate_preceding(include_ancestors=include_ancestors)
 
     def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
         """
