@@ -62,7 +62,7 @@ def starts_with(_: EvaluationContext, string: str, prefix: str) -> bool:
 
 @plugin_manager.register_xpath_function
 def text(context: EvaluationContext) -> str:
-    for node in context.node.iterate_children():
+    for node in context.node._child_nodes:
         if _is_node_of_type(node, "TextNode"):
             break
     else:
