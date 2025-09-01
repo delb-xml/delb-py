@@ -21,6 +21,8 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple
 
 from _delb.exceptions import XPathParsingError
+from _delb.grammar import name_pattern
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -73,19 +75,6 @@ string_pattern: Final = (
     + "*?"  # non-greedy until the reoccurring opening delimiter as:
     + named_group_reference("stringDelimiter")  # closing string delimiter
 )
-
-# https://www.w3.org/TR/REC-xml-names/#NT-NCName
-# https://www.w3.org/TR/REC-xml/#NT-Name
-name_start_characters: Final = (
-    "A-Z_a-z"
-    r"\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u037d\u037f-\u1fff"
-    r"\u200c-\u200d\u2070-\u218f\u2c00-\u2fef"
-    r"\u3001-\ud7ff"
-    r"\uf900-\ufdcf\ufdf0-\ufffd"
-    r"\U00010000-\U000effff"
-)
-name_characters = name_start_characters + r"\.0-9\u00b7\u0300-\u036f\u203f-\u2040-"
-name_pattern = f"[{name_start_characters}][{name_characters}]*"
 
 
 grab_token: Final = re.compile(

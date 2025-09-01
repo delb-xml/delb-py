@@ -41,6 +41,7 @@ from typing import (
 )
 
 from _delb.exceptions import AmbiguousTreeError, InvalidOperation
+from _delb.grammar import _is_xml_char, _is_xml_name
 from _delb.names import (
     GLOBAL_PREFIXES,
     XML_NAMESPACE,
@@ -301,6 +302,8 @@ class Attribute(_StringMixin):
 
     @local_name.setter
     def local_name(self, name: str):
+        if not _is_xml_name(name):
+            raise ValueError("Name is not a valid xml name.")
         self.__set_new_key(self.namespace, name)
 
     @property
@@ -310,6 +313,9 @@ class Attribute(_StringMixin):
 
     @namespace.setter
     def namespace(self, namespace: str):
+        # TODO see https://github.com/delb-xml/delb-py/issues/69
+        if namespace and not _is_xml_char(namespace):
+            raise ValueError("Invalid XML character data.")
         self.__set_new_key(namespace, self.local_name)
 
     @property
@@ -333,6 +339,8 @@ class Attribute(_StringMixin):
     def value(self, value: str):
         if not isinstance(value, str):
             raise TypeError
+        if value and not _is_xml_char(value):
+            raise ValueError("Invalid XML character data.")
         self.__value = value
 
     # for utils._StringMixin:
@@ -1195,6 +1203,8 @@ class CommentNode(_ChildLessNode, NodeBase):
 
     @content.setter
     def content(self, value: str):
+        if value and not _is_xml_char(value):
+            raise ValueError("Invalid XML character data.")
         if "--" in value or value.endswith("-"):
             raise ValueError("Invalid Comment content.")
         self.__content = value
@@ -1245,7 +1255,10 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
 
     @content.setter
     def content(self, value: str):
-        # TODO validate
+        if value and not _is_xml_char(value):
+            raise ValueError("Invalid XML character data.")
+        if "?>" in value:
+            raise ValueError("Content text must not contain '?>'.")
         self.__content = value
 
     @property
@@ -1259,8 +1272,7 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
 
     @target.setter
     def target(self, value: str):
-        if not value:
-            # TODO this should rather validate that value is a valid XML name
+        if not _is_xml_name(value):
             raise ValueError("Invalid target name.")
         if value.lower() == "xml":
             raise ValueError(f"{value} is a reserved target name.")
@@ -1786,7 +1798,8 @@ class TagNode(NodeBase):
             case None:
                 del self.attributes[(XML_NAMESPACE, "id")]
             case str():
-                assert value  # TODO validate
+                if not _is_xml_name(value):
+                    raise ValueError("Value is not a valid xml name.")
                 root = cast("TagNode", last(self._iterate_ancestors())) or self
                 for node in chain((root,), root._iterate_descendants()):
                     if not isinstance(node, TagNode):
@@ -1886,7 +1899,8 @@ class TagNode(NodeBase):
 
     @local_name.setter
     def local_name(self, value: str):
-        # TODO validation
+        if not _is_xml_name(value):
+            raise ValueError("Value is not a valid xml name.")
         self.__local_name = value
 
     @property
@@ -1936,7 +1950,7 @@ class TagNode(NodeBase):
     @property
     def namespace(self) -> str:
         """
-        The node's namespace.
+        The node's namespace. An empty string represents an empty namespace.
 
         :meta category: Node properties
         """
@@ -1944,7 +1958,9 @@ class TagNode(NodeBase):
 
     @namespace.setter
     def namespace(self, value: str):
-        # TODO validate
+        # TODO see https://github.com/delb-xml/delb-py/issues/69
+        if value and not _is_xml_char(value):
+            raise ValueError("Invalid XML character data.")
         self.__namespace = value
 
     def _new_tag_node_from_definition(self, definition: _TagDefinition) -> TagNode:
@@ -2065,9 +2081,9 @@ class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
         self._parent = None
         match text:
             case str():
-                self.__content = text
+                self.content = text
             case TextNode():
-                self.__content = text.__content
+                self.content = text.__content
             case _:
                 raise TypeError
 
