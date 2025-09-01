@@ -522,7 +522,7 @@ class Siblings:
                 assert self.__belongs_to is not None
                 node = self.__belongs_to._new_tag_node_from_definition(node)
             case NodeBase():
-                if node.parent is not None:
+                if node._parent is not None:
                     raise InvalidOperation(
                         "Only a detached node can be added to the tree. Use "
                         ":meth:`TagNode.clone` or :meth:`TagNode.detach` to get one."
@@ -1443,7 +1443,7 @@ class TagNode(NodeBase):
     def add_following_siblings(
         self, *node: NodeSource, clone: bool = False
     ) -> tuple[NodeBase, ...]:
-        if self.parent is None:
+        if self._parent is None:
             if (document := self.document) is None:
                 raise InvalidOperation(
                     "Can't add sibling to a node without parent node."
@@ -1458,7 +1458,7 @@ class TagNode(NodeBase):
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
     ) -> tuple[NodeBase, ...]:
-        if self.parent is None:
+        if self._parent is None:
             if (document := self.document) is None:
                 raise InvalidOperation(
                     "Can't add sibling to a node without parent node."
@@ -1688,13 +1688,11 @@ class TagNode(NodeBase):
     ) -> TagNode:
         node: _DocumentNode | TagNode
 
+        node = self
         if ast.location_paths[0].absolute:
-            node = self
-            while node.parent is not None:
-                node = node.parent
+            while node._parent is not None:
+                node = node._parent
             node = _DocumentNode(node)
-        else:
-            node = self
 
         for i, step in enumerate(ast.location_paths[0].location_steps):
             candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
@@ -1891,7 +1889,7 @@ class TagNode(NodeBase):
 
         :meta category: Node properties
         """
-        if self.parent is None:
+        if self._parent is None:
             return "/*"
 
         steps = list(self._iterate_ancestors())
@@ -2139,7 +2137,7 @@ def is_root_node(node: NodeBase) -> bool:
     """
     A node filter that matches root nodes.
     """
-    return node.parent is None
+    return node._parent is None
 
 
 def is_tag_node(node: NodeBase) -> bool:
@@ -2516,8 +2514,8 @@ class PrettySerializer(Serializer):
             # end of stream
             return False
 
-        assert node.parent is not None
-        if node.parent._child_nodes[-1] is node:
+        assert node._parent is not None
+        if node._parent._child_nodes[-1] is node:
             return True
 
         if isinstance(node, TextNode):
@@ -2709,9 +2707,9 @@ class TextWrappingSerializer(PrettySerializer):
 
         if self._node_fits_remaining_line(node):
             self._serialize_appendable_node(node)
-            assert node.parent is not None
+            assert node._parent is not None
             if (
-                (not self._available_space) or (node is node.parent._child_nodes[-1])
+                (not self._available_space) or (node is node._parent._child_nodes[-1])
             ) and self._whitespace_is_legit_after_node(node):
                 self.writer("\n")
                 return
@@ -2774,7 +2772,7 @@ class TextWrappingSerializer(PrettySerializer):
                 content = self._level * self.indentation + content.lstrip()
 
             if (
-                (last_node is last_node.parent._child_nodes[-1])
+                (last_node is last_node._parent._child_nodes[-1])
                 or (following := last_node._fetch_following()) is not None
                 and (
                     self._whitespace_is_legit_before_node(following)
@@ -2860,10 +2858,10 @@ class TextWrappingSerializer(PrettySerializer):
 
     def _consolidate_text_lines(self, lines: list[str]):
         last_node = self._unwritten_text_nodes[-1]
-        assert last_node.parent is not None
+        assert last_node._parent is not None
         if (
             lines[0] == ""
-            and last_node is last_node.parent._child_nodes[-1]
+            and last_node is last_node._parent._child_nodes[-1]
             and self._whitespace_is_legit_after_node(last_node)
         ):
             lines.append("")

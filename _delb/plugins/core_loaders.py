@@ -42,7 +42,7 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     descendant nodes.
     """
     if isinstance(data, TagNode):
-        if data.parent is not None:
+        if data._parent is not None:
             return "Node has a parent node."
         if data.document is not None:
             data = data.clone(deep=True)

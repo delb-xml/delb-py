@@ -56,8 +56,8 @@ class _DocumentNode:
     __slots__ = ("__root_node",)
 
     def __init__(self, node: NodeBase):
-        while node.parent is not None:
-            node = node.parent
+        while node._parent is not None:
+            node = node._parent
         self.__root_node = node
 
     @property
@@ -215,11 +215,10 @@ class Axis(Node):
         yield from node._iterate_following_siblings()
 
     def parent(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
-        parent = node.parent
-        if parent:
-            yield parent
-        else:
+        if node._parent is None:
             yield _DocumentNode(node)
+        else:
+            yield node._parent
 
     def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
         yield from node._iterate_preceding()

@@ -71,8 +71,7 @@ class TreesComparisonResult:
 
     def __str_child(self) -> str:
         assert self.lhn is not None
-        parent = self.lhn.parent
-        if parent is None:
+        if (parent := self.lhn._parent) is None:
             parent_msg_tail = ":"
         else:
             parent_msg_tail = f", parent node has location_path {parent.location_path}:"
