@@ -912,9 +912,9 @@ class NodeBase(ABC):
                 yield from self.document.epilogue
             return
 
-        # TODO use a pointer
         siblings = self._parent._child_nodes
-        yield from siblings[siblings.index(self) + 1 :]
+        for index in range(siblings.index(self) + 1, len(siblings)):
+            yield siblings[index]
 
     # TODO add include_ancestors=True
     # FIXME use include_ancestors=False for XPath evaluation
@@ -966,10 +966,9 @@ class NodeBase(ABC):
                 yield from reversed(self.document.prologue)
             return
 
-        pointer = self._parent._child_nodes.index(self) - 1
-        while pointer >= 0:
-            yield self._parent._child_nodes[pointer]
-            pointer -= 1
+        siblings = self._parent._child_nodes
+        for index in range(siblings.index(self) - 1, -1, -1):
+            yield siblings[index]
 
     def _iterate_reversed_descendants(self) -> Iterator[NodeBase]:
         if not isinstance(self, TagNode) or not self._child_nodes:
