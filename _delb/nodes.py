@@ -2520,7 +2520,7 @@ class PrettySerializer(Serializer):
             return False
 
         assert node.parent is not None
-        if node.parent.last_child is node:
+        if node.parent._child_nodes[-1] is node:
             return True
 
         if isinstance(node, TextNode):
@@ -2538,7 +2538,8 @@ class PrettySerializer(Serializer):
             # begin of stream
             return False
 
-        if node.index == 0:
+        assert isinstance(node._parent, TagNode)
+        if node._parent._child_nodes[0] is node:
             return True
 
         if isinstance(node, TextNode):
@@ -2713,7 +2714,7 @@ class TextWrappingSerializer(PrettySerializer):
             self._serialize_appendable_node(node)
             assert node.parent is not None
             if (
-                (not self._available_space) or (node is node.parent.last_child)
+                (not self._available_space) or (node is node.parent._child_nodes[-1])
             ) and self._whitespace_is_legit_after_node(node):
                 self.writer("\n")
                 return
@@ -2776,7 +2777,7 @@ class TextWrappingSerializer(PrettySerializer):
                 content = self._level * self.indentation + content.lstrip()
 
             if (
-                (last_node is last_node.parent.last_child)
+                (last_node is last_node.parent._child_nodes[-1])
                 or (following := last_node._fetch_following()) is not None
                 and (
                     self._whitespace_is_legit_before_node(following)
@@ -2865,7 +2866,7 @@ class TextWrappingSerializer(PrettySerializer):
         assert last_node.parent is not None
         if (
             lines[0] == ""
-            and last_node is last_node.parent.last_child
+            and last_node is last_node.parent._child_nodes[-1]
             and self._whitespace_is_legit_after_node(last_node)
         ):
             lines.append("")
