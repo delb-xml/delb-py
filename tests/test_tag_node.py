@@ -17,9 +17,13 @@ from delb import (
     tag,
 )
 from delb.exceptions import InvalidOperation
-from tests.conftest import ORDERED_TREES, XML_FILES
+from tests.conftest import XML_FILES
 
-from tests.utils import assert_nodes_are_in_document_order, skip_long_running_test
+from tests.utils import (
+    assert_nodes_are_in_document_order,
+    skip_long_running_test,
+    variety_forest,
+)
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
@@ -374,7 +378,7 @@ def test_iterate_preceding_siblings():
 
 
 @skip_long_running_test
-@pytest.mark.parametrize("tree", ORDERED_TREES)
+@pytest.mark.parametrize("tree", variety_forest())
 @pytest.mark.parametrize("start_position", range(1, 10))
 def test_iterate_following(start_position, tree):
     assert isinstance(start_position, int)
@@ -393,7 +397,7 @@ def test_iterate_following(start_position, tree):
 
 
 @skip_long_running_test
-@pytest.mark.parametrize("tree", ORDERED_TREES)
+@pytest.mark.parametrize("tree", variety_forest())
 @pytest.mark.parametrize("start_position", range(1, 10))
 def test_iterate_preceding(start_position, tree):
     for i, start_node in enumerate(tree._iterate_descendants()):

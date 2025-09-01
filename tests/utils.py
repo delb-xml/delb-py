@@ -1,14 +1,10 @@
 import os
 import sys
-from itertools import pairwise
+from itertools import pairwise, product
 
 import pytest
 
-from delb import (
-    altered_default_filters,
-    compare_trees,
-    NodeBase,
-)
+from delb import altered_default_filters, compare_trees, NodeBase, TagNode
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
@@ -62,6 +58,26 @@ def index_path(node: NodeBase):
         node = node.parent
     result.reverse()
     return result
+
+
+def variety_forest():
+    for assembly_axes in product(("child", "following"), repeat=9):
+        root = TagNode("root")
+
+        node = root.prepend_children(TagNode("begin"))[0]
+
+        for i, direction in enumerate(assembly_axes):
+            new_node = TagNode(chr(ord("a") + i))
+            match direction:
+                case "child":
+                    node.append_children(new_node)
+                case "following":
+                    node.add_following_siblings(new_node)
+            node = new_node
+
+        root.append_children(TagNode("end"))
+
+        yield root
 
 
 skip_long_running_test = pytest.mark.skipif(
