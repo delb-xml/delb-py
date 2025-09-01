@@ -19,14 +19,12 @@
 from __future__ import annotations
 
 import warnings
-from collections import deque
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
 from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
-    altered_default_filters,
     _reduce_whitespace_between_siblings,
     Attribute,
     CommentNode,
@@ -200,11 +198,11 @@ class TreeBuilder:
     def __init__(
         self, data: InputStream, parse_options: ParserOptions, base_url: str | None
     ):
-        self.children: deque[list[NodeBase]] = deque()
+        self.children: list[list[NodeBase]] = []
         self.event_feed = parse_events(data, parse_options, base_url)
         self.options = parse_options
-        self.preserve_space: deque[bool] = deque()
-        self.started_tags: deque[TagNode] = deque()
+        self.preserve_space: list[bool] = []
+        self.started_tags: list[TagNode] = []
         self.xml_ids: set[str] = set()
 
     def __iter__(self):
@@ -264,9 +262,8 @@ class TreeBuilder:
         if (not self.preserve_space.pop()) and children:
             _reduce_whitespace_between_siblings(children)
 
-        # TODO optimize with the native data model
         for node in children:
-            result.append_children(node)
+            result._child_nodes.append(node)
 
         return result
 
@@ -326,9 +323,7 @@ def parse_nodes(
     """Parses the provided input data to a sequence of nodes."""
     if options is None:
         options = ParserOptions()
-    # TODO remove context with optimized TreeBuilder
-    with altered_default_filters():
-        yield from TreeBuilder(data, options, base_url)
+    yield from TreeBuilder(data, options, base_url)
 
 
 def parse_tree(
