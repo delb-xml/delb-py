@@ -1045,7 +1045,6 @@ class NodeBase(ABC):
         parent._child_nodes.insert(parent._child_nodes.index(self), node)
         return self.detach(retain_child_nodes=False)
 
-    @altered_default_filters()
     def serialize(
         self,
         *,
@@ -1074,7 +1073,6 @@ class NodeBase(ABC):
         serializer.serialize_node(self)
         return serializer.writer.result
 
-    @altered_default_filters()
     def xpath(
         self,
         expression: str,
@@ -1977,7 +1975,6 @@ class TagNode(NodeBase):
         """
         return self.insert_children(0, *node, clone=clone)
 
-    @altered_default_filters()
     def _reduce_whitespace(
         self, normalize_space: Literal["default", "preserve"] = "default"
     ):
@@ -2000,7 +1997,6 @@ class TagNode(NodeBase):
         for child_node in (n for n in child_nodes if isinstance(n, TagNode)):
             child_node._reduce_whitespace_of_descendants(normalize_space)
 
-    @altered_default_filters()
     def serialize(
         self,
         *,
