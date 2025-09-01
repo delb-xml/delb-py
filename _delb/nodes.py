@@ -1354,13 +1354,14 @@ class TagNode(NodeBase):
                 del self.attributes[item]
             case int():
                 self[item].detach(retain_child_nodes=False)
+            case slice() if all(
+                (isinstance(x, int) or x is None)
+                for x in (cast("slice", item).start, cast("slice", item).stop)
+            ):
+                for node in self[item]:
+                    node.detach(retain_child_nodes=False)
             case slice():
-                if isinstance(item.start, int) or isinstance(item.stop, int):
-                    raise NotImplementedError(
-                        "This will be implemented in a later version."
-                    )
-                else:
-                    del self.attributes[(item.start, item.stop)]
+                del self.attributes[(item.start, item.stop)]
             case _:
                 raise TypeError(
                     "Argument must be an integer or an attribute name. "
