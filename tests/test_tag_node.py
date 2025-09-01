@@ -124,6 +124,18 @@ def test_delitem():
     with pytest.raises(KeyError):
         del root["A"]
 
+    root = parse_tree("<root><a/><b/><c/><d/><e/><f/><g/></root>")
+    del root[1:3]
+    assert str(root) == "<root><a/><d/><e/><f/><g/></root>"
+    del root[:1]
+    assert str(root) == "<root><d/><e/><f/><g/></root>"
+    del root[-1:]
+    assert str(root) == "<root><d/><e/><f/></root>"
+    del root[1:]
+    assert str(root) == "<root><d/></root>"
+    del root[:]
+    assert str(root) == "<root/>"
+
 
 def test_depth():
     root = parse_tree("<root><a><b/></a></root>")
