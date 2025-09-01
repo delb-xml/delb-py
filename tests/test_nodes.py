@@ -5,6 +5,7 @@ from delb import (
     is_text_node,
     parse_tree,
     tag,
+    CommentNode,
     Document,
     TagNode,
     TextNode,
@@ -22,6 +23,20 @@ def test_add_preceding_siblings():
     assert result[0].local_name == "e2"
     assert result[1].local_name == "e3"
 
+    comment = CommentNode("comment")
+
+    with pytest.raises(InvalidOperation):
+        root.add_preceding_siblings(comment)
+
+    with pytest.raises(InvalidOperation):
+        TextNode("text").add_preceding_siblings(comment)
+
+    document = Document("<root/>")
+    document.root.add_preceding_siblings(comment)
+    assert (
+        str(document) == '<?xml version="1.0" encoding="UTF-8"?><!--comment--><root/>'
+    )
+
 
 def test_add_following_siblings():
     root = parse_tree("<root><e1/></root>")
@@ -32,6 +47,20 @@ def test_add_following_siblings():
     assert all(isinstance(n, TagNode) for n in result)
     assert result[0].local_name == "e2"
     assert result[1].local_name == "e3"
+
+    comment = CommentNode("comment")
+
+    with pytest.raises(InvalidOperation):
+        root.add_following_siblings(comment)
+
+    with pytest.raises(InvalidOperation):
+        TextNode("text").add_following_siblings(comment)
+
+    document = Document("<root/>")
+    document.root.add_following_siblings(comment)
+    assert (
+        str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/><!--comment-->'
+    )
 
 
 def test_iterate_ancestors():
