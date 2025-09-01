@@ -153,8 +153,6 @@ def test_root_siblings():
     assert prologue[0].target == "Blood"
     assert prologue[-1].content == " I Roy "
 
-    epilogue += [CommentNode("")]
-
     with pytest.raises(TypeError):
         epilogue.append("nah")
 
