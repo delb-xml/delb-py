@@ -40,7 +40,7 @@ from typing import (
     Optional,
 )
 
-from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
+from _delb.exceptions import AmbiguousTreeError, InvalidOperation
 from _delb.names import (
     GLOBAL_PREFIXES,
     XML_NAMESPACE,
@@ -2306,8 +2306,6 @@ class Serializer:
                 )
             case TextNode() if node.content:
                 self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
-            case _:
-                raise InvalidCodePath
 
     def serialize_root(self, root: TagNode):
         self._collect_prefixes(root)
@@ -2495,19 +2493,21 @@ class PrettySerializer(Serializer):
         nodes = self._unwritten_text_nodes
         content = self._normalize_text("".join(n.content for n in nodes))
 
-        # a whitespace-only node can be omitted as a newline has been inserted before
         if content == " ":
-            nodes.clear()
-            return
+            # a whitespace-only node can be omitted as a newline has been inserted
+            # before
+            pass
 
-        if self.indentation and self._whitespace_is_legit_before_node(nodes[0]):
-            content = self._level * self.indentation + content.lstrip()
+        else:
+            if self.indentation and self._whitespace_is_legit_before_node(nodes[0]):
+                content = self._level * self.indentation + content.lstrip()
 
-        if self._whitespace_is_legit_after_node(nodes[-1]):
-            content = content.rstrip() + "\n"
+            if self._whitespace_is_legit_after_node(nodes[-1]):
+                content = content.rstrip() + "\n"
 
-        assert content
-        self.writer(content)
+            assert content
+            self.writer(content)
+
         nodes.clear()
 
     def _whitespace_is_legit_after_node(self, node: NodeBase) -> bool:
