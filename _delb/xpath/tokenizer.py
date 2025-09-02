@@ -55,7 +55,7 @@ class Token(NamedTuple):
 
 
 def alternatives(*choices: str) -> str:
-    return "(" + "|".join(choices) + ")"
+    return "|".join(choices)
 
 
 def named_group(name: str, content: str) -> str:
@@ -68,16 +68,18 @@ def named_group_reference(name: str) -> str:
 
 string_pattern: Final = (
     named_group("stringDelimiter", """["']""")  # opening string delimiter
+    + "("
     + alternatives(
         r"\\.",  # either a backslash followed by any character
         r"[^\\]",  # or any one character except a backslash
     )
+    + ")"
     + "*?"  # non-greedy until the reoccurring opening delimiter as:
     + named_group_reference("stringDelimiter")  # closing string delimiter
 )
 
 
-grab_token: Final = re.compile(
+iterate_tokens: Final = re.compile(
     alternatives(
         named_group("STRING", string_pattern),
         named_group("NUMBER", r"\d+"),
@@ -101,10 +103,10 @@ grab_token: Final = re.compile(
         ),
         # https://www.w3.org/TR/REC-xml/#NT-S
         named_group("WHITESPACE", "[ \n\t]+"),
-        named_group("ERROR", ".*"),
+        named_group("ERROR", ".+"),
     ),
     re.UNICODE,
-).search
+).finditer
 
 
 # interface
@@ -113,31 +115,25 @@ grab_token: Final = re.compile(
 @lru_cache(64)  # TODO? configurable
 def tokenize(expression: str) -> Sequence[Token]:
     result = []
-    index = 0
-    end = len(expression)
 
-    while index < end:
-        match = grab_token(expression, pos=index)
+    for match in iterate_tokens(expression):
         assert match is not None
-
-        if match.groupdict().get("ERROR") is not None:
-            raise XPathParsingError(position=index, message="Unrecognized token.")
-
-        for token_type, value in match.groupdict().items():
-            if value is not None:
-                break
-        else:  # pragma: no cover
-            raise RuntimeError
-
-        token = match[token_type]
-        assert isinstance(token, str)
-
-        if token_type != "WHITESPACE":
-            result.append(
-                Token(position=index, string=token, type=getattr(TokenType, token_type))
-            )
-
-        index += len(token)
+        match token_type := match.lastgroup:
+            case "ERROR":
+                raise XPathParsingError(
+                    position=match.start(), message="Unrecognized token."
+                )
+            case "WHITESPACE":
+                pass
+            case _:
+                assert token_type is not None
+                result.append(
+                    Token(
+                        position=match.start(),
+                        string=match.group(),
+                        type=TokenType[token_type],
+                    )
+                )
 
     return result
 
