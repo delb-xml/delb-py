@@ -203,8 +203,7 @@ class ExpatParser(XMLEventParserInterface):
 
         self.parser.close()
         yield from self.emit_events()
-        if self.unprocessed_text:
-            yield EventType.Text, self.unprocessed_text
+        assert not self.unprocessed_text
 
 
 __all__ = (ExpatParser.__name__,)

@@ -192,8 +192,7 @@ def parse_location_path(tokens: TokenTree) -> LocationPath:
         raise XPathParsingError(message="Missing location path.")
 
     tokens = expand_axes(tokens)
-    if not isinstance(tokens[0], Token):
-        raise NotImplementedError
+    assert isinstance(tokens[0], Token)
     absolute = tokens[0].type is TokenType.SLASH
 
     return LocationPath(
@@ -417,6 +416,7 @@ def partition_tokens(
         else:
             current_partition.append(token)
 
+    assert current_partition
     yield current_partition
 
 
