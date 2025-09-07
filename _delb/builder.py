@@ -47,32 +47,25 @@ if TYPE_CHECKING:
 
 
 @overload
-def tag(local_name: str):  # pragma: no cover
-    ...
+def tag(local_name: str): ...
 
 
 @overload
-def tag(
-    local_name: str, attributes: Mapping[AttributeAccessor, str]
-):  # pragma: no cover
-    ...
+def tag(local_name: str, attributes: Mapping[AttributeAccessor, str]): ...
 
 
 @overload
-def tag(local_name: str, child: NodeSource):  # pragma: no cover
-    ...
+def tag(local_name: str, child: NodeSource): ...
 
 
 @overload
-def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
-    ...
+def tag(local_name: str, children: Sequence[NodeSource]): ...
 
 
 @overload
 def tag(
     local_name: str, attributes: Mapping[AttributeAccessor, str], child: NodeSource
-):  # pragma: no cover
-    ...
+): ...
 
 
 @overload
@@ -80,8 +73,7 @@ def tag(
     local_name: str,
     attributes: Mapping[AttributeAccessor, str],
     children: Sequence[NodeSource],
-):  # pragma: no cover
-    ...
+): ...
 
 
 def tag(*args):  # noqa: C901
@@ -179,7 +171,7 @@ def tag(*args):  # noqa: C901
                 children=tuple(third_arg),
             )
 
-    raise ValueError
+    raise ValueError("Unrecognized arguments.")
 
 
 # deserializing streams
