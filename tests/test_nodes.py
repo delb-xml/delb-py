@@ -186,10 +186,12 @@ def test_replace_with():
     assert str(root) == "<root><a><b/></a>c<d>e</d></root>"
 
     c_text = root[1]
-    c_text.replace_with(tag("c"))
+    c_replacement = TagNode("c")
+    c_text.replace_with(c_replacement, clone=True)
     expected_new = root[1]
 
     assert c_text.parent is None
+    assert expected_new is not c_replacement
     assert expected_new is not c_text
     assert isinstance(expected_new, TagNode)
     assert expected_new.local_name == "c"
