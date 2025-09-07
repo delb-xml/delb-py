@@ -34,6 +34,21 @@ def test_invalid_namespace_type():
         Namespaces(("foo", "http://foo"))
 
 
+def test_namespaces():
+    # low expectations here, this aims to cover all lines
+    # more specific test shall have their own test function
+
+    namespaces = Namespaces({"a": "http://a.org/"})
+
+    assert len(namespaces) == 18  # includes common and global declarations
+
+    assert str(namespaces)
+
+    # to hit the cache eviction in Namespaces.__init_data
+    for i in range(17):
+        Namespaces({chr(97 + i): "http://foo.org"})
+
+
 def test_prefix_lookup():
     namespaces = Namespaces({"foo": "ftp://super.delb/", "sko": "https://extra.delb/"})
     # global
