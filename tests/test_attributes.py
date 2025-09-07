@@ -95,6 +95,7 @@ def test_attribute_object():
     attributes = node.attributes
 
     attributes["ham"] = "spam"
+    assert str(attributes) == "{'ham': 'spam'}"
     assert str(node) == '<root ham="spam"/>'
 
     attribute = node["ham"]
