@@ -485,12 +485,6 @@ class Siblings:
     def __len__(self) -> int:
         return len(self.__data)
 
-    def __setitem__(self, index: int, node: NodeSource) -> NodeBase:
-        result = self._handle_new_sibling(node)
-        self.__data[index]._parent = None
-        self.__data[index] = result
-        return result
-
     def append(self, node: NodeSource) -> NodeBase:
         result = self._handle_new_sibling(node)
         self.__data.append(result)
