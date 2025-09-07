@@ -80,6 +80,14 @@ def test_empty_below_default_namespace():
     assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
 
 
+def test_format_options():
+    with pytest.raises(ValueError, match=r"Invalid indentation characters\."):
+        TextNode("a").serialize(format_options=FormatOptions(indentation="X0X0"))
+
+    with pytest.raises(ValueError, match=r"Invalid width option value\."):
+        TextNode("a").serialize(format_options=FormatOptions(width=-1))
+
+
 @pytest.mark.parametrize(
     ("indentation", "in_", "out"),
     (

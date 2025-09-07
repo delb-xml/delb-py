@@ -125,15 +125,30 @@ def test_attribute_object():
     assert attributes["clam"] == "sham"
     assert str(node) == '<root clam="sham"/>'
 
-    with pytest.raises(TypeError):
-        attribute.value = None
-
     attribute = attributes.pop("clam")
     assert attribute._attributes is None
     assert str(attribute) == attribute.value == "sham"
     attribute.value = "detached"
     assert attribute.universal_name == "clam"
     assert str(attribute) == attribute.value == "detached"
+
+    with pytest.raises(TypeError):
+        attributes["ham"] = 0
+
+    with pytest.raises(ValueError, match=r"` no` is not a valid xml name\."):
+        attribute.local_name = " no"
+
+    with pytest.raises(TypeError):
+        attribute.value = None
+
+    with pytest.raises(ValueError, match=r"Invalid XML character data\."):
+        attribute.namespace = "\x00"
+
+    with pytest.raises(ValueError, match=r"Invalid XML character data\."):
+        attribute.value = "\x00"
+
+    with pytest.raises(TypeError):
+        TagNode("a", attributes=(0,))
 
 
 def test_comparison():

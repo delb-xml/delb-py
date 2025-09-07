@@ -77,6 +77,18 @@ def test_invalid_comment_content(content):
         node.content = content
 
 
+@pytest.mark.parametrize(
+    ("content", "message"),
+    (
+        ("\x00", r"Invalid XML character data\."),
+        ("blob?>blob", r"Content text must not contain '\?>'\."),
+    ),
+)
+def test_invalid_pi_content(content, message):
+    with pytest.raises(ValueError, match=message):
+        ProcessingInstructionNode("target", content)
+
+
 @pytest.mark.parametrize("target", ("xml", "XML", "xMl", ""))
 def test_invalid_pi_target(target):
     with pytest.raises(ValueError, match=r".* target name\."):

@@ -29,6 +29,11 @@ def test_invalid_namespace_declarations(data):
         Namespaces(data)
 
 
+def test_invalid_namespace_type():
+    with pytest.raises(TypeError):
+        Namespaces(("foo", "http://foo"))
+
+
 def test_prefix_lookup():
     namespaces = Namespaces({"foo": "ftp://super.delb/", "sko": "https://extra.delb/"})
     # global

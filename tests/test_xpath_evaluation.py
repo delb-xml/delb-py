@@ -1,6 +1,8 @@
 import pytest
 
+from _delb.xpath import evaluate
 from _delb.xpath.ast import Axis
+from _delb.names import Namespaces
 from delb import (
     altered_default_filters,
     is_tag_node,
@@ -112,6 +114,12 @@ def test_evaluation_from_text_node():
     result = node.xpath("ancestor::p")
     assert result.size == 1
     assert result.first is p
+
+
+@pytest.mark.parametrize("namespaces", (0, Namespaces({})))
+def test_invalid_namespace(namespaces):
+    with pytest.raises(TypeError):
+        evaluate(TagNode("root"), "//*", namespaces)
 
 
 def test_multiple_identical_location_paths():

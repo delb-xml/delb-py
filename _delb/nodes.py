@@ -303,7 +303,7 @@ class Attribute(_StringMixin):
     @local_name.setter
     def local_name(self, name: str):
         if not _is_xml_name(name):
-            raise ValueError("Name is not a valid xml name.")
+            raise ValueError(f"`{name}` is not a valid xml name.")
         self.__set_new_key(self.namespace, name)
 
     @property
@@ -2581,7 +2581,7 @@ class TextWrappingSerializer(PrettySerializer):
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
         if format_options.width < 1:
-            raise ValueError
+            raise ValueError("Invalid width option value.")
         self.writer: _LengthTrackingWriter
         super().__init__(
             writer=_LengthTrackingWriter(writer.buffer),

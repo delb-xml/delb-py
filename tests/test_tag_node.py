@@ -141,6 +141,9 @@ def test_delitem():
     del root[:]
     assert str(root) == "<root/>"
 
+    with pytest.raises(TypeError):
+        del root[0.0]
+
 
 def test_depth():
     root = parse_tree("<root><a><b/></a></root>")
@@ -290,6 +293,9 @@ def test_getitem():
     with pytest.raises(IndexError):
         root[4]
 
+    with pytest.raises(TypeError):
+        root[0.0]
+
 
 def test_id_property(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
@@ -305,6 +311,9 @@ def test_id_property(files_path):
 
     with pytest.raises(TypeError):
         publisher.id = 1234
+
+    with pytest.raises(ValueError, match=r"Value is not a valid xml name\."):
+        publisher.id = " a"
 
     with pytest.raises(ValueError, match="already assigned"):
         publisher.parent.id = "foo"
@@ -535,6 +544,12 @@ def test_names(sample_document):
     text.namespace = "https://space.name"
     assert text.universal_name == "{https://space.name}text"
 
+    with pytest.raises(ValueError, match=r"Value is not a valid xml name\."):
+        root.local_name = " a"
+
+    with pytest.raises(ValueError, match=r"Invalid XML character data\."):
+        root.namespace = "\x00"
+
 
 def test_new_tag_node_with_tag_attributes_input():
     attributes = TagNode("node_1", {"a": "b", "{http://}c": "d"}).attributes
@@ -691,6 +706,14 @@ def test_set_item():
     for index in (-3, 3):
         with pytest.raises(IndexError):
             root[index] = "nah"
+
+    with pytest.raises(TypeError):
+        root[0.0] = "1"
+
+
+def test_tag_facility():
+    with pytest.raises(TypeError):
+        tag("a", {"foo": 1.0})
 
 
 def test_tag_definition_copies_attributes():
