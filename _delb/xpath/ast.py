@@ -59,7 +59,7 @@ class _DocumentNode:
     def __init__(self, node: NodeBase):
         while node._parent is not None:
             node = node._parent
-        self.__root_node = node
+        self.__root_node: Final = node
 
     @property
     def _child_nodes(self) -> Sequence[NodeBase]:
@@ -176,7 +176,7 @@ class Axis(Node):
         generator = getattr(self, name.replace("-", "_"), None)
         if generator is None:
             raise XPathParsingError(message="Invalid axis specifier.")
-        self.generator = generator
+        self.generator: Final = generator
 
     def __eq__(self, other):
         return (
@@ -238,13 +238,13 @@ class LocationPath(Node):
 
     def __init__(self, location_steps: Iterable[LocationStep], absolute: bool = False):
         location_steps = tuple(location_steps)
-        self.parent_path = (
+        self.parent_path: Final = (
             LocationPath(location_steps=location_steps[:-1], absolute=absolute)
             if len(location_steps) > 1
             else None
         )
-        self.location_steps = location_steps
-        self.absolute = absolute
+        self.location_steps: Final = location_steps
+        self.absolute: Final = absolute
 
     def __repr__(self):
         return nested_repr(self)
@@ -281,9 +281,9 @@ class LocationStep(Node):
         node_test: NodeTestNode,
         predicates: Sequence[EvaluationNode] = (),
     ):
-        self.axis = axis
-        self.node_test = node_test
-        self.predicates = tuple(predicates)
+        self.axis: Final = axis
+        self.node_test: Final = node_test
+        self.predicates: Final = tuple(predicates)
 
     @cached_property
     def _anders_predicates(self) -> BooleanOperator:
@@ -371,7 +371,7 @@ class XPathExpression(Node):
     __slots__ = ("location_paths", "__dict__")
 
     def __init__(self, location_paths: list[LocationPath]):
-        self.location_paths = location_paths
+        self.location_paths: Final = location_paths
 
     def __repr__(self):
         return nested_repr(self)
@@ -401,7 +401,7 @@ class AnyNameTest(NodeTestNode):
     __slots__ = ("prefix",)
 
     def __init__(self, prefix: Optional[str]):
-        self.prefix = prefix
+        self.prefix: Final = prefix
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
@@ -419,8 +419,8 @@ class NameMatchTest(NodeTestNode):
     __slots__ = ("local_name", "prefix")
 
     def __init__(self, prefix: Optional[str], local_name: str):
-        self.prefix = prefix
-        self.local_name = local_name
+        self.prefix: Final = prefix
+        self.local_name: Final = local_name
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
@@ -468,7 +468,7 @@ class NodeTypeTest(NodeTestNode):
     __slots__ = ("type_name",)
 
     def __init__(self, type_name: NodeTypeNameLiteral):
-        self.type_name = type_name
+        self.type_name: Final = type_name
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         return _is_node_of_type(node, self.type_name) or isinstance(node, _DocumentNode)
@@ -479,7 +479,7 @@ class ProcessingInstructionTest(NodeTypeTest):
 
     def __init__(self, target: str):
         super().__init__("ProcessingInstructionNode")
-        self.target = target
+        self.target: Final = target
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         if not super().evaluate(node=node, namespaces=namespaces):
@@ -495,7 +495,7 @@ class AnyValue(EvaluationNode):
     __slots__ = ("value",)
 
     def __init__(self, value: Any):
-        self.value = value
+        self.value: Final = value
 
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> Any:
         return self.value
@@ -505,8 +505,8 @@ class AttributeValue(EvaluationNode):
     __slots__ = ("local_name", "prefix")
 
     def __init__(self, prefix: Optional[str], name: str):
-        self.prefix = prefix
-        self.local_name = name
+        self.prefix: Final = prefix
+        self.local_name: Final = name
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> Optional[str]:
@@ -532,9 +532,9 @@ class BooleanOperator(EvaluationNode):
         left: EvaluationNode,
         right: EvaluationNode,
     ):
-        self.operator = operator
-        self.left = left
-        self.right = right
+        self.operator: Final = operator
+        self.left: Final = left
+        self.right: Final = right
 
     @property
     def _derived_attributes(self) -> list[tuple[str, str, str]]:
@@ -600,8 +600,8 @@ class Function(EvaluationNode):
             raise XPathParsingError(
                 message=f"Arguments to function `{name}` don't match its signature."
             )
-        self.function = function
-        self.arguments = tuple(arguments)
+        self.function: Final = function
+        self.arguments: Final = tuple(arguments)
 
     def __eq__(self, other):
         return (
@@ -620,8 +620,8 @@ class HasAttribute(EvaluationNode):
     __slots__ = ("local_name", "prefix")
 
     def __init__(self, prefix: Optional[str], local_name: str):
-        self.prefix = prefix
-        self.local_name = local_name
+        self.prefix: Final = prefix
+        self.local_name: Final = local_name
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:

@@ -49,7 +49,7 @@ class _EncodingDetectingReader:
     __slots__ = ("buffer", "first_bytes", "reading")
 
     def __init__(self, buffer: BinaryReader):
-        self.buffer = buffer
+        self.buffer: Final = buffer
         self.first_bytes = b""
         self.reading = False
 

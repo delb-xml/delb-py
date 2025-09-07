@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, overload, Optional
+from typing import TYPE_CHECKING, overload, Final, Optional
 
 from _delb.exceptions import ParsingValidityError
 from _delb.names import XML_NAMESPACE
@@ -190,12 +190,12 @@ class TreeBuilder:
     def __init__(
         self, data: InputStream, parse_options: ParserOptions, base_url: str | None
     ):
-        self.children: list[list[NodeBase]] = []
-        self.event_feed = parse_events(data, parse_options, base_url)
-        self.options = parse_options
-        self.preserve_space: list[bool] = []
-        self.started_tags: list[TagNode] = []
-        self.xml_ids: set[str] = set()
+        self.children: Final[list[list[NodeBase]]] = []
+        self.event_feed: Final = parse_events(data, parse_options, base_url)
+        self.options: Final = parse_options
+        self.preserve_space: Final[list[bool]] = []
+        self.started_tags: Final[list[TagNode]] = []
+        self.xml_ids: Final[set[str]] = set()
 
     def __iter__(self):
         return self

@@ -65,7 +65,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from functools import lru_cache
-from typing import TYPE_CHECKING, cast, Optional
+from typing import TYPE_CHECKING, cast, Final, Optional
 
 from cssselect import GenericTranslator
 
@@ -90,7 +90,7 @@ class QueryResults(Sequence["NodeBase"]):
     """
 
     def __init__(self, results: Iterable[NodeBase]):
-        self.__items = tuple(results)
+        self.__items: Final = tuple(results)
 
     def __eq__(self, other):
         if not isinstance(other, Collection):

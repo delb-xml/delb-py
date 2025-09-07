@@ -110,7 +110,7 @@ interface allows also to chain multiple chains::
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional
+from typing import Final, NamedTuple, Optional
 
 from delb import Document, TagNode
 
@@ -137,7 +137,7 @@ class Transformation(TransformationBase):
         self.root: TagNode
         if options is None and self.options_class is not None:
             options = self.options_class()
-        self.options = options
+        self.options: Final = options
         self.__set_placeholder()
 
     def __call__(
@@ -189,7 +189,7 @@ class TransformationSequence(TransformationBase):
                     "Only subclasses of TransformationBase or instances of such are "
                     "allowed."
                 )
-        self.transformations = tuple(_transformations)
+        self.transformations: Final = tuple(_transformations)
 
     def __call__(
         self, root: TagNode, origin_document: Optional[Document] = None

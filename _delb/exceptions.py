@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Any
+from typing import Optional, TYPE_CHECKING, Any, Final
 
 if TYPE_CHECKING:
     from _delb.typing import Loader
@@ -39,8 +39,8 @@ class AmbiguousTreeError(DelbBaseException):
 
 class FailedDocumentLoading(DelbBaseException):
     def __init__(self, source: Any, excuses: dict[Loader, str | Exception]):
-        self.source = source
-        self.excuses = excuses
+        self.source: Final = source
+        self.excuses: Final = excuses
 
     def __str__(self):  # pragma: no cover
         return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
@@ -89,7 +89,7 @@ class XPathParsingError(DelbBaseException):
     ):
         self.expression = expression
         self.position = position
-        self.message = message
+        self.message: Final = message
 
     def __str__(self):
         expression = self.expression

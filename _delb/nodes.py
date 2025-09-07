@@ -459,8 +459,8 @@ class Siblings:
         belongs_to: None | TagNode,
         nodes: Optional[Iterable[NodeSource]],
     ):
-        self.__data: list[NodeBase] = []
-        self.__belongs_to = belongs_to
+        self.__data: Final[list[NodeBase]] = []
+        self.__belongs_to: Final = belongs_to
         if nodes is not None:
             for node in nodes:
                 self.__data.append(self._handle_new_sibling(node))
@@ -2229,7 +2229,7 @@ class Serializer:
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
-        self._namespaces = (
+        self._namespaces: Final = (
             Namespaces({}) if namespaces is None else Namespaces(namespaces)
         )
         self._prefixes: dict[str, str] = {}
@@ -2418,14 +2418,14 @@ class PrettySerializer(Serializer):
         namespaces: Optional[NamespaceDeclarations] = None,
     ):
         super().__init__(writer, namespaces=namespaces)
-        self._align_attributes = format_options.align_attributes
-        self.indentation = format_options.indentation
+        self._align_attributes: Final = format_options.align_attributes
+        self.indentation: Final = format_options.indentation
         self._level = 0
         self._serialization_root: None | TagNode = None
-        self._space_preserving_serializer = Serializer(
+        self._space_preserving_serializer: Final = Serializer(
             self.writer, namespaces=self._namespaces
         )
-        self._unwritten_text_nodes: list[TextNode] = []
+        self._unwritten_text_nodes: Final[list[TextNode]] = []
 
     def _collect_prefixes(self, root: TagNode):
         super()._collect_prefixes(root)
@@ -2588,10 +2588,10 @@ class TextWrappingSerializer(PrettySerializer):
             format_options=format_options,
             namespaces=namespaces,
         )
-        self._line_fitting_serializer = _LineFittingSerializer(
+        self._line_fitting_serializer: Final = _LineFittingSerializer(
             self.writer, namespaces=self._namespaces
         )
-        self._width = format_options.width
+        self._width: Final = format_options.width
 
     @property
     def _available_space(self):
@@ -2989,7 +2989,7 @@ class _SerializationWriter(ABC):
     __slots__ = ("buffer",)
 
     def __init__(self, buffer: TextIO):
-        self.buffer = buffer
+        self.buffer: Final = buffer
 
     def __call__(self, data: str):
         self.buffer.write(data)

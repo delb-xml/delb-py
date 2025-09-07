@@ -38,7 +38,7 @@ _crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
 class _NodesSorter:
     def __init__(self):
         self.__node = None
-        self.__items = defaultdict(_NodesSorter)
+        self.__items: Final = defaultdict(_NodesSorter)
 
     def add(self, path: Sequence[int], node: TagNode):
         assert _is_node_of_type(node, "TagNode")
@@ -411,7 +411,7 @@ def traverse_df_rtl_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
             yield node
 
 
-TRAVERSERS = {
+TRAVERSERS: Final = {
     (True, False, True): traverse_bf_ltr_ttb,
     (True, True, True): traverse_df_ltr_ttb,
     (True, True, False): traverse_df_ltr_btt,

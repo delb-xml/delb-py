@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import enum
 from itertools import zip_longest
+from typing import Final
 
 from _delb.exceptions import InvalidCodePath
 from _delb.nodes import NodeBase, TagNode
@@ -51,9 +52,9 @@ class TreesComparisonResult:
         lhn: NodeBase | None,
         rhn: NodeBase | None,
     ):
-        self.difference_kind = difference_kind
-        self.lhn: NodeBase | None = lhn
-        self.rhn: NodeBase | None = rhn
+        self.difference_kind: Final = difference_kind
+        self.lhn: Final[NodeBase | None] = lhn
+        self.rhn: Final[NodeBase | None] = rhn
 
     def __bool__(self):
         return self.difference_kind is TreeDifferenceKind.None_
