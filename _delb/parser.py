@@ -54,7 +54,7 @@ class _EncodingDetectingReader:
         self.reading = False
 
     def get_encoding(self) -> str | None:
-        if self.reading:
+        if self.reading:  # pragma: no cover
             raise RuntimeError("Get the encoding before reading from the buffer!")
 
         self.first_bytes = self.buffer.read(64)

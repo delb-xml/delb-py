@@ -301,8 +301,7 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
         def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
             ...
     """
-    result = TRAVERSERS.get((from_left, depth_first, from_top))
-    if result is None:
+    if (result := TRAVERSERS.get((from_left, depth_first, from_top))) is None:
         raise NotImplementedError
     return result
 
@@ -338,7 +337,7 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
     node_index_cache: dict[int, int] = {}
     sorter = _NodesSorter()
 
-    for node in nodes:
+    for node in nodes:  # pragma: no cover
         if not _is_node_of_type(node, "TagNode"):
             raise NotImplementedError(
                 "Support for sorting other node types than TagNodes isn't scheduled"

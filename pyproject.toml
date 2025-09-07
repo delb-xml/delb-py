@@ -73,11 +73,8 @@ exclude_also = [
     "if TYPE_CHECKING:",
     "pass",
     "raise InvalidCodePath",
-    "raise NotImplementedError",
-    "raise TypeError",
-    "raise ValueError"
 ]
-fail_under = 96
+fail_under = 99
 
 #
 

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 try:
     import h2  # type: ignore
-except ImportError:
+except ImportError:  # pragma: no cover
     http2 = False
 else:
     http2 = True

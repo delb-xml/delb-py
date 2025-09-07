@@ -97,7 +97,7 @@ ATTRIBUTE_ACCESSOR_MSG: Final = (
 # functions
 
 
-def new_comment_node(content: str) -> CommentNode:
+def new_comment_node(content: str) -> CommentNode:  # pragma: no cover
     """
     Deprecated. Use :class:`CommentNode` directly.
     """
@@ -108,7 +108,7 @@ def new_comment_node(content: str) -> CommentNode:
     return CommentNode(content)
 
 
-def new_processing_instruction_node(
+def new_processing_instruction_node(  # pragma: no cover
     target: str, content: str
 ) -> ProcessingInstructionNode:
     """Deprecated. Use :class:`ProcessingInstructionsNode` directly."""
@@ -119,7 +119,7 @@ def new_processing_instruction_node(
     return ProcessingInstructionNode(target, content)
 
 
-def new_tag_node(
+def new_tag_node(  # pragma: no cover
     local_name: str,
     attributes: Optional[
         _AttributesData | dict[AttributeAccessor, str] | TagAttributes
@@ -1966,7 +1966,8 @@ class TagNode(NodeBase):
         )
 
     @staticmethod
-    def parse(text, parser_options):
+    def parse(text, parser_options):  # pragma: no cover
+        # REMOVE with version 0.7
         """This method has been replaced by :func:`delb.parse_tree`."""
         raise InvalidOperation(
             "This method has been replaced by `delb.parse_tree`.",
@@ -2305,7 +2306,7 @@ class Serializer:
             if prefix not in self._prefixes.values():
                 self._prefixes[namespace] = prefix
                 return
-        else:
+        else:  # pragma: no cover
             raise NotImplementedError("Just don't.")
 
     def _serialize_attributes(self, attributes_data):
@@ -2997,7 +2998,9 @@ class _SerializationWriter(ABC):
     def result(self):
         if isinstance(self.buffer, StringIO):
             return self.buffer.getvalue()
-        raise TypeError("Underlying buffer must be an instance of `io.StingIO`")
+        raise TypeError(  # pragma: no cover
+            "Underlying buffer must be an instance of `io.StingIO`"
+        )
 
 
 class _LengthTrackingWriter(_SerializationWriter):

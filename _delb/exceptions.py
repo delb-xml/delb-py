@@ -42,7 +42,7 @@ class FailedDocumentLoading(DelbBaseException):
         self.source = source
         self.excuses = excuses
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
 
 
