@@ -3,7 +3,9 @@
 from textwrap import dedent
 from typing import Final
 
-from delb import parse_tree, Document, TagNode
+import pytest
+
+from delb import parse_tree, Document, ParserOptions, TagNode
 
 from tests.utils import assert_equal_trees
 
@@ -40,6 +42,51 @@ def test_milestone_tag_with_altering_whitespace_neighbour():
     root = parse_tree("<p><hi>then</hi> give <lb/>the</p>")
     root._reduce_whitespace()
     assert " give " in root.full_text
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_nested_declarations():
+    stream = """\
+        <root>
+            <a>
+                <aa>\t</aa>
+                <ab xml:space="default">\t</ab>
+                <ac xml:space="preserve">\t</ac>
+                <ad xml:space="brian">\t</ad>
+            </a>
+            <b xml:space="default">
+                <ba>\t</ba>
+                <bb xml:space="default">\t</bb>
+                <bc xml:space="preserve">\t</bc>
+                <bd xml:space="brian">\t</bd>
+            </b>
+            <c xml:space="preserve">
+                <ca>\t</ca>
+                <cb xml:space="default">\t</cb>
+                <cc xml:space="preserve">\t</cc>
+                <cd xml:space="brian">\t</cd>
+            </c>
+            <d xml:space="brian">
+                <da>\t</da>
+                <db xml:space="default">\t</db>
+                <dc xml:space="preserve">\t</dc>
+                <dd xml:space="brian">\t</dd>
+            </d>
+        </root>
+        """
+    root = parse_tree(
+        stream,
+        options=ParserOptions(reduce_whitespace=True),
+    )
+
+    for counter, node in enumerate(
+        root.iterate_descendants(lambda n: isinstance(n, TagNode) and n.depth == 2)
+    ):
+        if node.full_text == "\t":
+            assert node.local_name in ("ac", "bc", "ca", "cc", "cd", "dc")
+        else:
+            assert node.full_text == " "
+    assert counter == 15
 
 
 def test_nodes_in_between():
