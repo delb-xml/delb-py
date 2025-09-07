@@ -73,11 +73,6 @@ class ParsingValidityError(ParsingError):
     pass
 
 
-class ParsingEmptyStream(ParsingProcessingError):
-    def __init__(self):
-        super().__init__("The input stream is empty.")
-
-
 class XPathEvaluationError(DelbBaseException):
     def __init__(self, message: str):
         super().__init__(message)
@@ -137,7 +132,6 @@ __all__ = (
     FailedDocumentLoading.__name__,
     InvalidCodePath.__name__,
     InvalidOperation.__name__,
-    ParsingEmptyStream.__name__,
     ParsingError.__name__,
     ParsingProcessingError.__name__,
     ParsingValidityError.__name__,

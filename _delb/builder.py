@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, overload, Optional
 
-from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
+from _delb.exceptions import ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
     _reduce_whitespace_between_siblings,
@@ -339,10 +339,8 @@ def parse_tree(
             raise ParsingValidityError("The stream contained extra contents.", node)
         result = node
 
-    if result is None:
-        raise ParsingEmptyStream()
-
-    return node
+    assert result is not None
+    return result
 
 
 __all__ = (parse_nodes.__name__, parse_tree.__name__, tag.__name__)
