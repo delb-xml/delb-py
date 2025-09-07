@@ -12,13 +12,16 @@ from delb import altered_default_filters, compare_trees, first, is_tag_node, par
         ("<node a=''/>", "<node xmlns:p='http://foo.ls' p:a=''/>"),
         ("<node><!--a--></node>", "<node><!-- a --></node>"),
         ("<node>foo</node>", "<node>bar</node>"),
+        ("<node>foo</node>", "<node><foo/></node>"),
         ("<node><a/></node>", "<node><a/><a/></node>"),
         ("<node><a/><b/></node>", "<node><a/><a/></node>"),
     ),
 )
 def test_compare_unequal_trees(a, b):
     with altered_default_filters():
-        assert not compare_trees(parse_tree(a), parse_tree(b))
+        result = compare_trees(parse_tree(a), parse_tree(b))
+        assert not result
+        str(result)
 
 
 def test_first():
