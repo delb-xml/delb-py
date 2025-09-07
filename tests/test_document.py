@@ -8,6 +8,7 @@ from delb import (
     DocumentMixinBase,
     ProcessingInstructionNode,
     TagNode,
+    TextNode,
     get_traverser,
     is_tag_node,
 )
@@ -101,17 +102,17 @@ def test_css_select():
     assert results[0].universal_name == "{y}c"
 
 
+def test_explicitly_passed_source_url():
+    document = Document("<root/>", source_url="https://root.io/")
+    assert document.source_url == "https://root.io/"
+
+
 def test_invalid_document():
     with pytest.raises(FailedDocumentLoading):
         Document(0)
 
 
-def test_mixin_method():
-    document = Document("<root/>", playground_property="foo")
-    assert document.playground_method() == "f00"
-
-
-def test_mro():
+def test_metaclass():
     class DocumentSubclass(Document):
         pass
 
@@ -122,6 +123,7 @@ def test_mro():
         DocumentMixinBase,
         object,
     )
+    assert "describes PlaygroundDocumentExtension." in Document.__doc__
 
     assert DocumentSubclass.__mro__ == (
         DocumentSubclass,
@@ -130,6 +132,11 @@ def test_mro():
         DocumentMixinBase,
         object,
     )
+
+
+def test_mixin_method():
+    document = Document("<root/>", playground_property="foo")
+    assert document.playground_method() == "f00"
 
 
 def test_root_siblings():
@@ -161,6 +168,9 @@ def test_set_root():
     document = Document("<root><node/></root>")
     document.root = document.root[0].detach()
     assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
+
+    with pytest.raises(TypeError):
+        document.root = TextNode("")
 
     document_2 = Document("<root><replacement/>parts</root>")
     with pytest.raises(InvalidOperation, match="detached node"):
