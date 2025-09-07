@@ -38,8 +38,9 @@ if TYPE_CHECKING:
 
 def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    This loader loads, or rather clones, a :class:`delb.TagNode` instance and its
-    descendant nodes.
+    This loader loads either uses a root node (of type :class:`delb.TagNode)
+    that has no :class:`Document` context or clones those with such and any
+    non-root node.
     """
     if isinstance(data, TagNode):
         if data._parent is not None:
