@@ -10,6 +10,9 @@ from delb import (
     tag,
 )
 
+# there are plenty tests here that consider how text content would be accessed with
+# lxml's API.  the necessity for that is vanished.
+
 
 def test_add_tag_before_tail():
     root = parse_tree("<root><a/>b</root>")
