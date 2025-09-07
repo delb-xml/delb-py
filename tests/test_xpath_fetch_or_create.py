@@ -31,6 +31,23 @@ def test_fetch_or_create_by_xpath(absolute):
     with pytest.raises(AmbiguousTreeError):
         root.fetch_or_create_by_xpath(f"{absolute}intermediate/test")
 
+    intermediate_1 = root.first_child
+    intermediate_1.fetch_or_create_by_xpath(f"{absolute}target/x")
+    if absolute:
+        assert (
+            str(root) == "<root>"
+            "<intermediate><target/></intermediate><test/><intermediate/>"
+            "<target><x/></target>"
+            "</root>"
+        )
+    else:
+        assert (
+            str(root) == "<root>"
+            "<intermediate><target><x/></target></intermediate>"
+            "<test/><intermediate/>"
+            "</root>"
+        )
+
 
 def test_fetch_or_create_by_xpath_with_attributes():
     root = parse_tree("<root/>")
