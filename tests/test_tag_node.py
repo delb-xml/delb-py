@@ -72,6 +72,11 @@ def test_append_children():
     assert isinstance(result[1], TextNode)
     assert str(root) == "<root><a/>b</root>"
 
+    c = TagNode("c")
+    c_clone = root.append_children(c, clone=True)[0]
+    assert root.last_child.local_name == "c"
+    assert c_clone is not c
+
 
 def test_append_no_child():
     root = parse_tree("<root/>")
@@ -532,8 +537,7 @@ def test_names(sample_document):
     assert root.local_name == "doc"
     assert root.universal_name == "{https://name.space}doc"
 
-    first_level_children = tuple(x for x in root.iterate_children())
-    header, text = first_level_children[0], first_level_children[1]
+    header, text = root[:]
 
     assert header.namespace == "https://name.space"
     assert header.local_name == "header"
