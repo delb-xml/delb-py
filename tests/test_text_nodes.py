@@ -286,8 +286,22 @@ def test_equality():
     assert TextNode("1") != 1
 
 
+def full_text():
+    assert TextNode("foo").full_text == "foo"
+
+
 def test_index():
     assert parse_tree("<root>test</root>").first_child.index == 0
+
+
+def test_instantiation():
+    a = TextNode("foo")
+    b = TextNode(a)
+    assert a is not b
+    assert a == b
+
+    with pytest.raises(TypeError):
+        TextNode(0)
 
 
 def test_len():
