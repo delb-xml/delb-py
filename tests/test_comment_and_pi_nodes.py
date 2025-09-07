@@ -1,3 +1,5 @@
+from copy import copy
+
 import pytest
 
 from delb import (
@@ -67,6 +69,13 @@ def test_comment_node():
         == '<?xml version="1.0" encoding="UTF-8"?><!--before--><root/><!--after-->'
     )
 
+    with pytest.raises(ValueError, match=r"Invalid XML character data\."):
+        comment.content = "\x00"
+
+    clone = copy(comment)
+    assert comment == clone
+    assert comment is not clone
+
 
 @pytest.mark.parametrize("content", ("a--z", "foo-"))
 def test_invalid_comment_content(content):
@@ -117,3 +126,17 @@ def test_processing_instruction_node():
     assert str(root) == "<root><?foo bar?></root>"
     pi.target = "space"
     assert str(root) == "<root><?space bar?></root>"
+
+    clone = copy(pi)
+    assert pi == clone
+    assert pi is not clone
+
+    # in _ChildLessNode:
+    assert pi.full_text == ""
+    assert len(pi) == 0
+
+    for _ in pi.iterate_children():
+        raise AssertionError
+
+    for _ in pi.iterate_descendants():
+        raise AssertionError
