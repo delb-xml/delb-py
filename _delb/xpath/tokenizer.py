@@ -99,7 +99,7 @@ iterate_tokens: Final = re.compile(
         named_group("COMMA", ","),
         named_group("PASEQ", r"\|"),
         named_group(
-            "OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">", "=")
+            "OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">", "==", "=")
         ),
         # https://www.w3.org/TR/REC-xml/#NT-S
         named_group("WHITESPACE", "[ \n\t]+"),

@@ -364,6 +364,8 @@ def parse_evaluation_expression(tokens: TokenTree) -> EvaluationNode:  # noqa: C
         assert isinstance(tokens[1], Sequence)
         return parse_evaluation_expression(cast("TokenTree", tokens[1]))
 
+    scan_for_double_colon(tokens)
+
     for _operator in (
         (TokenType.NAME, "or"),
         (TokenType.NAME, "and"),
@@ -438,6 +440,15 @@ def parse(expression: str) -> XPathExpression:
         if e.position is None:
             e.position = 0
         raise e
+
+
+def scan_for_double_colon(tokens: TokenTree):
+    for token in (t for t in tokens if isinstance(t, Token)):
+        if token.type is TokenType.OTHER_OPS and token.string == "==":
+            raise XPathParsingError(
+                position=token.position,
+                message=f"Unrecognized operator: `{token.string}`",
+            )
 
 
 __all__ = ("parse",)

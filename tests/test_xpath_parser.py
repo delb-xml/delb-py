@@ -73,6 +73,8 @@ def test_css_selectors(selector):
         (":*", r" 0 \(`:\*`\): Unrecognized node test\."),
         ("*.", r" 1 \(`\.`\): Unrecognized expression\."),
         ("*[~lang]", r" 2 \(`~lang\]`\): Unrecognized token\."),
+        ("*[ahoy()]", r" 0 \(`\*\[ahoy\(\)\]`\): Unknown function: `ahoy`"),
+        ("*[last()==1]", r" 8 \(`==1]`\): Unrecognized operator: `==`"),
     ),
 )
 def test_invalid_expressions(expression, string):
