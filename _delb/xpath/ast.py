@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import inspect
 import operator
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from functools import cached_property, wraps
 from textwrap import indent
@@ -131,7 +132,7 @@ class EvaluationContext(NamedTuple):
 # base classes for nodes
 
 
-class Node:
+class Node(ABC):
     __slots__ = ()
 
     def __eq__(self, other):
@@ -147,8 +148,9 @@ class Node:
 
 
 class EvaluationNode(Node):
+    @abstractmethod
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:
-        raise NotImplementedError
+        pass
 
     @property
     def _derived_attributes(self):
@@ -159,8 +161,9 @@ class EvaluationNode(Node):
 
 
 class NodeTestNode(Node):
+    @abstractmethod
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        raise NotImplementedError
+        pass
 
 
 # aggregators
