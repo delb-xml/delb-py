@@ -88,6 +88,25 @@ def test_attribute_value_test(namespaces):
     root = parse_tree("<root xmlns='http://'><a b='c'/></root>")
     assert root.xpath("//a[@b='c']", namespaces=namespaces).size == 1
 
+    start = parse_tree("<root>a</root>")
+    start.xpath("self::text()[@foo='bar']")
+
+
+def test_contributed_function_concat():
+    root = parse_tree("<root><a foo='bar'/></root>")
+    assert root.xpath("*[@foo=concat('b','a', 'r')]").size == 1
+
+
+def test_contributed_function_bool():
+    root = parse_tree("<root><a/></root>")
+    assert root.xpath("*[boolean(0)]").size == 0
+    assert root.xpath("*[boolean(1)]").size == 1
+
+
+def test_contributed_functions_position_and_last():
+    root = parse_tree("<root><a/><b/></root>")
+    assert root.xpath("*[position()=last()]").size == 1
+
 
 def test_contributed_function_text():
     document = Document("<root><a>foo</a><b>bar</b><c>f<x/>oo</c></root>")
