@@ -62,7 +62,7 @@ Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 
 NodeTypeNameLiteral: TypeAlias = Literal[
-    "CommentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
+    "CommentNode", "_DocumentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
 ]
 
 

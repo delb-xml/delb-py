@@ -348,7 +348,9 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
         ancestors_indexes: deque[int] = deque()
 
         for cursor in chain((node,), node._iterate_ancestors()):
-            if cursor._parent is None:
+            if cursor._parent is None or _is_node_of_type(
+                cursor._parent, "_DocumentNode"
+            ):
                 break
 
             if (node_id := id(cursor)) in node_index_cache:

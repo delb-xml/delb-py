@@ -40,7 +40,7 @@ from typing import (
     Optional,
 )
 
-from _delb.exceptions import AmbiguousTreeError, InvalidOperation
+from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
 from _delb.grammar import _is_xml_char, _is_xml_name
 from _delb.names import (
     GLOBAL_PREFIXES,
@@ -56,7 +56,7 @@ from _delb.utils import (
 )
 from _delb.xpath import QueryResults, _css_to_xpath
 from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
-from _delb.xpath.ast import _DocumentNode, NameMatchTest, XPathExpression
+from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from typing import TextIO
@@ -456,7 +456,7 @@ class Siblings:
 
     def __init__(
         self,
-        belongs_to: None | TagNode,
+        belongs_to: None | _ParentNode,
         nodes: Optional[Iterable[NodeSource]],
     ):
         self.__data: Final[list[NodeBase]] = []
@@ -517,17 +517,25 @@ class Siblings:
         self.__data.remove(node)
 
     def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
+        if isinstance(self.__belongs_to, _DocumentNode):
+            if isinstance(node, (str, _TagDefinition)):
+                raise TypeError
+            if isinstance(node, TagNode) and any(
+                isinstance(n, TagNode) for n in self.__data
+            ):
+                raise InvalidCodePath
+
         match node:
             case str():
                 node = TextNode(node)
             case _TagDefinition():
-                assert self.__belongs_to is not None
+                assert isinstance(self.__belongs_to, TagNode)
                 node = self.__belongs_to._new_tag_node_from_definition(node)
             case NodeBase():
                 if node._parent is not None:
                     raise InvalidOperation(
                         "Only a detached node can be added to the tree. Use "
-                        ":meth:`TagNode.clone` or :meth:`TagNode.detach` to get one."
+                        ":meth:`NodeBase.clone` or :meth:`NodeBase.detach` to get one."
                     )
             case _:
                 raise TypeError(
@@ -535,8 +543,8 @@ class Siblings:
                     "must be provided as child node."
                 )
 
+        assert isinstance(node, NodeBase)
         node._parent = self.__belongs_to
-
         return node
 
 
@@ -545,7 +553,7 @@ class Siblings:
 
 class NodeBase(ABC):
     _child_nodes: Siblings
-    _parent: None | TagNode
+    _parent: None | _ParentNode
 
     __slots__ = ("_parent",)
 
@@ -636,7 +644,10 @@ class NodeBase(ABC):
         result = 0
         pointer: NodeBase | None = self
         assert pointer is not None
-        while (pointer := pointer._parent) is not None:
+        while True:
+            pointer = pointer._parent
+            if pointer is None or isinstance(pointer, _DocumentNode):
+                break
             result += 1
         return result
 
@@ -704,11 +715,7 @@ class NodeBase(ABC):
 
     def _fetch_following_sibling(self) -> Optional[NodeBase]:
         if self._parent is None:
-            if self.document and self.document.epilogue:
-                return self.document.epilogue[0]
-            else:
-                return None
-
+            return None
         if (siblings := self._parent._child_nodes)[-1] is self:
             return None
         return siblings[siblings.index(self) + 1]
@@ -753,10 +760,7 @@ class NodeBase(ABC):
 
     def _fetch_preceding_sibling(self):
         if self._parent is None:
-            if self.document and self.document.prologue:
-                return self.document.prologue[-1]
-            else:
-                return None
+            return None
 
         if (siblings := self._parent._child_nodes)[0] is self:
             return None
@@ -803,7 +807,7 @@ class NodeBase(ABC):
 
         return None
 
-    def iterate_ancestors(self, *filter: Filter) -> Iterator[TagNode]:
+    def iterate_ancestors(self, *filter: Filter) -> Iterator[_ParentNode]:
         """
         Iterator over the filter matching nodes on the ancestor axis.
 
@@ -818,11 +822,20 @@ class NodeBase(ABC):
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_ancestors(self) -> Iterator[TagNode]:
+    def _iterate_ancestors(
+        self, *, _include_document_node: bool = False
+    ) -> Iterator[_ParentNode]:
         node: None | NodeBase = self
         assert node is not None
-        while (node := node._parent) is not None:
-            yield node
+        if _include_document_node:
+            while (node := node._parent) is not None:
+                yield node
+        else:
+            while True:
+                node = node._parent
+                if node is None or isinstance(node, _DocumentNode):
+                    return
+                yield node
 
     @abstractmethod
     def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
@@ -950,12 +963,13 @@ class NodeBase(ABC):
         self, *, include_ancestors: bool = True
     ) -> Iterator[NodeBase]:
         if (parent := self._parent) is None:
-            if self.document:
-                yield from reversed(self.document.prologue)
             return
 
         for preceding_sibling in self._iterate_preceding_siblings():
             yield from preceding_sibling._iterate_reversed_descendants()
+
+        if isinstance(parent, _DocumentNode):
+            return
 
         if include_ancestors:
             yield parent
@@ -1027,13 +1041,13 @@ class NodeBase(ABC):
         pass
 
     @property
-    def parent(self) -> None | TagNode:
+    def parent(self) -> None | _ParentNode:
         """
         The node's parent or :obj:`None`.
 
         :meta category: Related document and nodes properties
         """
-        return self._parent
+        return None if isinstance(self._parent, _DocumentNode) else self._parent
 
     def replace_with(self, node: NodeSource, clone: bool = False) -> NodeBase:
         """
@@ -1161,6 +1175,162 @@ class _ChildLessNode(NodeBase):
         yield from ()
 
 
+class _ParentNode(NodeBase):
+
+    __slots__ = ("_child_nodes",)
+
+    def __init__(
+        self,
+        children: Iterable[NodeSource] = (),
+    ):
+        self._child_nodes = Siblings(nodes=children, belongs_to=self)
+
+    def __len__(self) -> int:
+        result = 0
+        for node in self._child_nodes:
+            if all(f(node) for f in default_filters[-1]):
+                result += 1
+
+        return result
+
+    def append_children(
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
+        """
+        Adds one or more nodes as child nodes after any existing to the child nodes of
+        the node this method is called on.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were appended.
+        :meta category: Methods to add nodes to a tree
+
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
+        """
+        if not node:
+            return ()
+
+        result: list[NodeBase] = []
+
+        for _node in node:
+            if clone and isinstance(_node, NodeBase):
+                _node = _node.clone(deep=True)
+            result.append(self._child_nodes.append(_node))
+
+        return tuple(result)
+
+    @property
+    def first_child(self) -> Optional[NodeBase]:
+        for node in self._child_nodes:
+            if all(f(node) for f in default_filters[-1]):
+                return node
+        else:
+            return None
+
+    @property
+    def full_text(self) -> str:
+        return "".join(
+            n.content for n in self._iterate_descendants() if isinstance(n, TextNode)
+        )
+
+    def insert_children(
+        self, index: int, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
+        """
+        Inserts one or more child nodes.
+
+        :param index: The index at which the first of the given nodes will be inserted,
+                      the remaining nodes are added afterwards in the given order.
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were inserted.
+        :meta category: Methods to add nodes to a tree
+
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
+        """
+        children_size = len(self._child_nodes)
+        if not (children_size * -1 <= index <= children_size):
+            raise IndexError
+
+        result = []
+        for _node in reversed(node):
+            if clone and isinstance(_node, NodeBase):
+                _node = _node.clone(deep=True)
+            result.append(self._child_nodes.insert(index, _node))
+        return tuple(result)
+
+    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
+        all_filters = default_filters[-1] + filter
+        for node in self._child_nodes:
+            if all(f(node) for f in all_filters):
+                yield node
+
+    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
+        if not self._child_nodes:
+            return
+
+        all_filters = default_filters[-1] + filter
+        for node in self._iterate_descendants():
+            if all(f(node) for f in all_filters):
+                yield node
+
+    def _iterate_descendants(self) -> Iterator[NodeBase]:
+        stack = [(self._child_nodes, 0)]
+
+        while stack:
+            siblings, pointer = stack.pop()
+
+            for node in siblings[pointer:]:
+                pointer += 1
+                yield node
+
+                if isinstance(node, TagNode) and node._child_nodes:
+                    stack.extend(((siblings, pointer), (node._child_nodes, 0)))
+                    break
+
+    @property
+    def last_child(self) -> Optional[NodeBase]:
+        if self._child_nodes:
+            filters = default_filters[-1]
+            for node in self._child_nodes[::-1]:
+                if all(f(node) for f in filters):
+                    return node
+        return None
+
+    @property
+    def last_descendant(self) -> Optional[NodeBase]:
+        for node in self._iterate_reversed_descendants():
+            if node is not self and all(f(node) for f in default_filters[-1]):
+                return node
+        else:
+            return None
+
+    def prepend_children(
+        self, *node: NodeBase, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
+        """
+        Adds one or more nodes as child nodes before any existing to the child nodes of
+        the node this method is called on.
+
+        :param node: The node(s) to be added.
+        :param clone: Clones the concrete nodes before adding if :obj:`True`.
+        :return: The concrete nodes that were prepended.
+        :meta category: Methods to add nodes to a tree
+
+        The nodes can be concrete instances of any node type or rather abstract
+        descriptions in the form of strings or objects returned from the :func:`tag`
+        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
+        instances from.
+        """
+        return self.insert_children(0, *node, clone=clone)
+
+
 class CommentNode(_ChildLessNode, NodeBase):
     """
     The instances of this class represent comment nodes of a tree.
@@ -1202,6 +1372,59 @@ class CommentNode(_ChildLessNode, NodeBase):
         if "--" in value or value.endswith("-"):
             raise ValueError("Invalid Comment content.")
         self.__content = value
+
+
+class _DocumentNode(_ParentNode):
+    """
+    This node type is only supposed to facilitate tree traversal beyond a root node via
+    its :attr:`_DocumentNode._child_nodes` attribute. Therefore it shall be only
+    accessible by :attr:`NodeBase._parent` and yielded by
+    :meth:`NodeBase._iterate_ancestors` if requested with an argument.
+    It also holds information to the related :class:`Document` instance of a tree.
+    In the context of XPath evaluations it acts like :class:`xpath.ast._DocumentNode`
+    that is used as shim for queries that target trees that are not associated to a
+    :class:`Document` instance.
+    """
+
+    __slots__ = ("__document",)
+
+    def __init__(self, document: Document | None, children: Iterable[NodeBase]):
+        self.__document: Final = document
+        super().__init__(children)
+
+    def clone(self, deep: bool = False) -> NodeBase:  # pragma: no cover
+        raise InvalidCodePath
+
+    @property
+    def document(self) -> Document:
+        assert self.__document is not None
+        return self.__document
+
+    def add_following_siblings(  # pragma: no cover
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
+        raise InvalidCodePath
+
+    def add_preceding_siblings(  # pragma: no cover
+        self, *node: NodeSource, clone: bool = False
+    ) -> tuple[NodeBase, ...]:
+        raise InvalidCodePath
+
+    def detach(self, retain_child_nodes: bool = False) -> NodeBase:  # pragma: no cover
+        raise InvalidCodePath
+
+    @property
+    def _parent(self) -> None:
+        return None
+
+    @_parent.setter
+    def _parent(self, value):  # pragma: no cover
+        raise InvalidCodePath
+
+    def replace_with(  # pragma: no cover
+        self, node: NodeSource, clone: bool = False
+    ) -> NodeBase:
+        raise InvalidCodePath
 
 
 class ProcessingInstructionNode(_ChildLessNode, NodeBase):
@@ -1273,7 +1496,7 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
         self.__target = value
 
 
-class TagNode(NodeBase):
+class TagNode(_ParentNode):
     """
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
@@ -1333,10 +1556,8 @@ class TagNode(NodeBase):
 
     __slots__ = (
         "__attributes",
-        "_child_nodes",
         "__local_name",
         "__namespace",
-        "__document__",
     )
 
     def __init__(
@@ -1348,12 +1569,11 @@ class TagNode(NodeBase):
         namespace: Optional[str] = None,
         children: Iterable[NodeSource] = (),
     ):
-        self.__document__: Document | None = None
         self._parent = None
         self.namespace = namespace or ""
         self.local_name = local_name
         self.__attributes = TagAttributes(data=attributes or {}, node=self)
-        self._child_nodes = Siblings(nodes=children, belongs_to=self)
+        super().__init__(children)
 
     def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
         match item:
@@ -1419,14 +1639,6 @@ class TagNode(NodeBase):
             "name. " + ATTRIBUTE_ACCESSOR_MSG
         )
 
-    def __len__(self) -> int:
-        result = 0
-        for node in self._child_nodes:
-            if all(f(node) for f in default_filters[-1]):
-                result += 1
-
-        return result
-
     def __repr__(self) -> str:
         return (
             f'<{self.__class__.__name__}("{self.universal_name}", '
@@ -1463,60 +1675,17 @@ class TagNode(NodeBase):
         self, *node: NodeSource, clone: bool = False
     ) -> tuple[NodeBase, ...]:
         if self._parent is None:
-            if (document := self.document) is None:
-                raise InvalidOperation(
-                    "Can't add sibling to a node without parent node."
-                )
-            result = []
-            for _node in node:
-                result.append(document.epilogue.prepend(_node))
-            return tuple(result)
-        else:
-            return super().add_following_siblings(*node)
+            raise InvalidOperation("Can't add sibling to a node without parent node.")
+
+        return super().add_following_siblings(*node)
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
     ) -> tuple[NodeBase, ...]:
         if self._parent is None:
-            if (document := self.document) is None:
-                raise InvalidOperation(
-                    "Can't add sibling to a node without parent node."
-                )
-            result = []
-            for _node in node:
-                result.append(document.prologue.append(_node))
-            return tuple(result)
-        else:
-            return super().add_preceding_siblings(*node)
+            raise InvalidOperation("Can't add sibling to a node without parent node.")
 
-    def append_children(
-        self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes as child nodes after any existing to the child nodes of
-        the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were appended.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
-        if not node:
-            return ()
-
-        result: list[NodeBase] = []
-
-        for _node in node:
-            if clone and isinstance(_node, NodeBase):
-                _node = _node.clone(deep=True)
-            result.append(self._child_nodes.append(_node))
-
-        return tuple(result)
+        return super().add_preceding_siblings(*node)
 
     @property
     def attributes(self) -> TagAttributes:
@@ -1609,34 +1778,33 @@ class TagNode(NodeBase):
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
     def detach(self, retain_child_nodes: bool = False) -> TagNode:
-        if self.__document__ is not None:
+        if isinstance(self._parent, _DocumentNode):
             raise InvalidOperation("The root node of a document cannot be detached.")
 
-        if (parent := self._parent) is None:
+        if self._parent is None:
             if retain_child_nodes:
                 raise InvalidOperation(
                     "Child nodes can't be retained when the node to detach has no "
                     "parent node."
                 )
-            else:
-                return self
+            return self
 
-        index = parent._child_nodes.index(self)
+        index = self._parent._child_nodes.index(self)
         if retain_child_nodes:
             children = tuple(self._child_nodes)
             self._child_nodes.clear()
-            parent.insert_children(index, *children)
+            self._parent.insert_children(index, *children)
 
-        parent._child_nodes.remove(self)
+        self._parent._child_nodes.remove(self)
         return self
 
     @property
     def document(self) -> Optional[Document]:
-        if self._parent is None:
-            root_node = self
+        document_node = last(self._iterate_ancestors(_include_document_node=True))
+        if isinstance(document_node, _DocumentNode):
+            return document_node.document
         else:
-            root_node = cast("TagNode", last(self._iterate_ancestors()))
-        return root_node.__document__
+            return None
 
     def fetch_or_create_by_xpath(
         self,
@@ -1705,13 +1873,17 @@ class TagNode(NodeBase):
         ast: XPathExpression,
         namespaces: Namespaces,
     ) -> TagNode:
-        node: _DocumentNode | TagNode
-
-        node = self
+        node: _ParentNode
         if ast.location_paths[0].absolute:
-            while node._parent is not None:
-                node = node._parent
-            node = _DocumentNode(node)
+            match root := last(self._iterate_ancestors(_include_document_node=True)):
+                case _DocumentNode():
+                    node = root
+                case TagNode():
+                    node = _DocumentNode(None, (root,))
+                case None:
+                    node = _DocumentNode(None, (self,))
+        else:
+            node = self
 
         for i, step in enumerate(ast.location_paths[0].location_steps):
             candidates = tuple(step.evaluate(node_set=(node,), namespaces=namespaces))
@@ -1745,20 +1917,6 @@ class TagNode(NodeBase):
                     )
         assert isinstance(node, TagNode)
         return node
-
-    @property
-    def first_child(self) -> Optional[NodeBase]:
-        for node in self._child_nodes:
-            if all(f(node) for f in default_filters[-1]):
-                return node
-        else:
-            return None
-
-    @property
-    def full_text(self) -> str:
-        return "".join(
-            n.content for n in self._iterate_descendants() if isinstance(n, TextNode)
-        )
 
     def _get_normalize_space_directive(
         self, default: Literal["default", "preserve"] = "default"
@@ -1807,81 +1965,6 @@ class TagNode(NodeBase):
             case _:
                 raise TypeError("Value must be None or a string.")
 
-    def insert_children(
-        self, index: int, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Inserts one or more child nodes.
-
-        :param index: The index at which the first of the given nodes will be inserted,
-                      the remaining nodes are added afterwards in the given order.
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were inserted.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
-        children_size = len(self._child_nodes)
-        if not (children_size * -1 <= index <= children_size):
-            raise IndexError
-
-        result = []
-        for _node in reversed(node):
-            if clone and isinstance(_node, NodeBase):
-                _node = _node.clone(deep=True)
-            result.append(self._child_nodes.insert(index, _node))
-        return tuple(result)
-
-    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
-        all_filters = default_filters[-1] + filter
-        for node in self._child_nodes:
-            if all(f(node) for f in all_filters):
-                yield node
-
-    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
-        if not self._child_nodes:
-            return
-
-        all_filters = default_filters[-1] + filter
-        for node in self._iterate_descendants():
-            if all(f(node) for f in all_filters):
-                yield node
-
-    def _iterate_descendants(self) -> Iterator[NodeBase]:
-        stack = [(self._child_nodes, 0)]
-
-        while stack:
-            siblings, pointer = stack.pop()
-
-            for node in siblings[pointer:]:
-                pointer += 1
-                yield node
-
-                if isinstance(node, TagNode) and node._child_nodes:
-                    stack.extend(((siblings, pointer), (node._child_nodes, 0)))
-                    break
-
-    @property
-    def last_child(self) -> Optional[NodeBase]:
-        if self._child_nodes:
-            filters = default_filters[-1]
-            for node in self._child_nodes[::-1]:
-                if all(f(node) for f in filters):
-                    return node
-        return None
-
-    @property
-    def last_descendant(self) -> Optional[NodeBase]:
-        for node in self._iterate_reversed_descendants():
-            if node is not self and all(f(node) for f in default_filters[-1]):
-                return node
-        else:
-            return None
-
     @property
     def local_name(self) -> str:
         """
@@ -1904,7 +1987,7 @@ class TagNode(NodeBase):
 
         :meta category: Node properties
         """
-        if self._parent is None:
+        if not isinstance(self._parent, TagNode):
             return "/*"
 
         steps = list(self._iterate_ancestors())
@@ -1972,25 +2055,6 @@ class TagNode(NodeBase):
         raise InvalidOperation(
             "This method has been replaced by `delb.parse_tree`.",
         )
-
-    def prepend_children(
-        self, *node: NodeBase, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes as child nodes before any existing to the child nodes of
-        the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were prepended.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
-        return self.insert_children(0, *node, clone=clone)
 
     def _reduce_whitespace(
         self, normalize_space: Literal["default", "preserve"] = "default"

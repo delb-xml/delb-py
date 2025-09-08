@@ -46,10 +46,10 @@ class _DocumentNode:
     """
     This class mimics enough behaviour of a node to act as item in a node set for
     evaluation of absolute location paths.
+    It's solely used when trees that are not associated to a :class:`Document` instance
+    are queried.
     It represents what is defined as "root node" in `section 5.1`_ of the XPath 1.0
-    specs, which is not the same as :attr:`Document.root`. It's a structural equivalent
-    of the :class:`Document` class and used solely for the evaluation of XPath
-    expressions.
+    specs, which is not the same as :attr:`Document.root`.
 
     .. _section 5.1: https://www.w3.org/TR/1999/REC-xpath-19991116/#root-node
     """
@@ -188,13 +188,17 @@ class Axis(Node):
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
     def ancestor(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
-        yield from node._iterate_ancestors()
-        yield _DocumentNode(node)
+        ancestor = None
+        for ancestor in node._iterate_ancestors(  # noqa: SIM104
+            _include_document_node=True
+        ):
+            yield ancestor
+        if ancestor is None or not _is_node_of_type(ancestor, "_DocumentNode"):
+            yield _DocumentNode(node)
 
     def ancestor_or_self(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
         yield node
-        yield from node._iterate_ancestors()
-        yield _DocumentNode(node)
+        yield from self.ancestor(node)
 
     def evaluate(
         self, node: _DocumentNode | NodeBase, namespaces: Namespaces
@@ -259,7 +263,12 @@ class LocationPath(Node):
         else:
             node_set: Iterable[_DocumentNode | NodeBase]
             if self.absolute:
-                node_set = (_DocumentNode(node),)
+                while node._parent is not None:
+                    node = node._parent
+                if _is_node_of_type(node, "_DocumentNode"):
+                    node_set = (node,)
+                else:
+                    node_set = (_DocumentNode(node),)
             else:
                 node_set = (node,)
 
@@ -381,6 +390,7 @@ class XPathExpression(Node):
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):
                 assert not isinstance(result, _DocumentNode)
+                assert not _is_node_of_type(result, "_DocumentNode")
                 _id = id(result)
                 if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
@@ -471,7 +481,11 @@ class NodeTypeTest(NodeTestNode):
         self.type_name: Final = type_name
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        return _is_node_of_type(node, self.type_name) or isinstance(node, _DocumentNode)
+        return (
+            _is_node_of_type(node, self.type_name)
+            or isinstance(node, _DocumentNode)
+            or _is_node_of_type(node, "_DocumentNode")
+        )
 
 
 class ProcessingInstructionTest(NodeTypeTest):

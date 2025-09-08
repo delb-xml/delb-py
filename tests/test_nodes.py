@@ -1,6 +1,7 @@
 import pytest
 
 from delb import (
+    altered_default_filters,
     is_tag_node,
     is_text_node,
     parse_tree,
@@ -93,6 +94,31 @@ def test_comment_is_ignored():
     assert b.local_name == "b"
 
 
+def test_fetch_preceding():
+    root = parse_tree("<root><a/><b/></root>")
+    b = root[1]
+    assert b.local_name == "b"
+    a = b.fetch_preceding()
+    assert a.local_name == "a"
+    assert a.fetch_preceding() is root
+    assert a._fetch_preceding() is root
+    assert root.fetch_preceding() is None
+    assert root._fetch_preceding() is None
+
+
+def test_fetch_preceding_sibling():
+    root = parse_tree("<root><a/></root>")
+    assert root[0].fetch_preceding_sibling() is None
+    assert root[0]._fetch_preceding_sibling() is None
+
+    root = Document("<!----><root/>").root
+    with altered_default_filters():
+        comment = root.fetch_preceding_sibling()
+        assert comment == CommentNode("")
+        comment.detach()
+        assert root.fetch_preceding_sibling() is None
+
+
 def test_index():
     root = parse_tree("<root><zero/>is<my/>country</root>")
     assert root.index is None
@@ -140,7 +166,19 @@ def test_invalid_operations():
         new_node.add_preceding_siblings(root_2[0])
 
 
-def test_iter_following_nodes_over_long_stream(files_path):
+def test_iterate_following_siblings():
+    root = Document("<root/><!--a--><!--b-->").root
+    result = ""
+    with altered_default_filters():
+        for node in root.iterate_following():
+            result += node.content
+        for node in root.iterate_following_siblings():
+            result += node.content
+
+    assert result == "abab"
+
+
+def test_iterate_following_nodes_over_long_stream(files_path):
     root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
 
     assert root.fetch_following(lambda _: False) is None
@@ -160,6 +198,18 @@ def test_iter_following_nodes_over_long_stream(files_path):
     for node in root.iterate_following(is_text_node):
         collected_text += node.content
     assert collected_text == expected_text
+
+
+def test_iterate_preceding_siblings():
+    root = Document("<!--b--><!--a--><root/>").root
+    result = ""
+    with altered_default_filters():
+        for node in root.iterate_preceding():
+            result += node.content
+        for node in root.iterate_preceding_siblings():
+            result += node.content
+
+    assert result == "abab"
 
 
 def test_no_following_node():

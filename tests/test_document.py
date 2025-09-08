@@ -9,8 +9,10 @@ from delb import (
     ProcessingInstructionNode,
     TagNode,
     TextNode,
+    altered_default_filters,
     get_traverser,
     is_tag_node,
+    parse_tree,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
 from tests.plugins import PlaygroundDocumentExtension
@@ -61,12 +63,12 @@ def test_clone_integrity(files_path):
     </teiHeader>
     </TEI>"""
     )
-    clone = document.clone()
+    cloned_document = document.clone()
 
     for node in get_traverser(from_left=True, depth_first=True, from_top=True)(
         document.root, is_tag_node
     ):
-        cloned_node = clone.xpath(node.location_path).first
+        cloned_node = cloned_document.xpath(node.location_path).first
         assert node.universal_name == cloned_node.universal_name
         assert node.attributes == cloned_node.attributes
 
@@ -100,6 +102,30 @@ def test_css_select():
     results = document.css_select("a y|c", {"y": "y"})
     assert len(results) == 1
     assert results[0].universal_name == "{y}c"
+
+
+def test_epilogue():
+    document = Document("<root/><!--c-->")
+
+    c = document.epilogue[0]
+    assert document.epilogue.index(c) == 0
+
+    document.epilogue.insert(0, CommentNode("d"))
+    assert (
+        str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/><!--d--><!--c-->'
+    )
+
+    document.epilogue.clear()
+    assert document.epilogue.index(c) is None
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
+
+    with altered_default_filters():
+        d = parse_tree("<root><!--d--></root>")[0]
+    with pytest.raises(InvalidOperation, match=r"Only a detached .*"):
+        document.epilogue.append(d)
+
+    with pytest.raises(TypeError):
+        document.epilogue.append(TextNode("text"))
 
 
 def test_explicitly_passed_source_url():
@@ -137,6 +163,23 @@ def test_metaclass():
 def test_mixin_method():
     document = Document("<root/>", playground_property="foo")
     assert document.playground_method() == "f00"
+
+
+def test_prologue():
+    document = Document("<!--c--><root/>")
+
+    c = document.prologue[0]
+    assert document.prologue.index(c) == 0
+
+    document.prologue.prepend(CommentNode("b"))
+    document.prologue.remove(c)
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><!--b--><root/>'
+
+    document.prologue.clear()
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
+
+    with pytest.raises(IndexError):
+        document.prologue.insert(1, CommentNode("c"))
 
 
 def test_root_siblings():

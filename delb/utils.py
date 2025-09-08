@@ -72,10 +72,12 @@ class TreesComparisonResult:
 
     def __str_child(self) -> str:
         assert self.lhn is not None
-        if (parent := self.lhn._parent) is None:
+        if not isinstance(self.lhn._parent, TagNode):
             parent_msg_tail = ":"
         else:
-            parent_msg_tail = f", parent node has location_path {parent.location_path}:"
+            parent_msg_tail = (
+                f", parent node has location_path {self.lhn._parent.location_path}:"
+            )
 
         if self.difference_kind is TreeDifferenceKind.NodeContent:
             return f"Nodes' content differ{parent_msg_tail}\n{self.lhn!r}\n{self.rhn!r}"
