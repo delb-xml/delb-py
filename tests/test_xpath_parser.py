@@ -3,6 +3,7 @@ import operator
 import pytest
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
+from _delb.typing import TagNodeType
 from _delb.xpath import _css_to_xpath, parse
 from _delb.xpath.ast import (
     AnyNameTest,
@@ -90,7 +91,7 @@ def test_invalid_expressions(expression, string):
             XPathExpression(
                 [
                     LocationPath(
-                        [LocationStep(Axis("child"), NodeTypeTest("TagNode"))],
+                        [LocationStep(Axis("child"), NodeTypeTest(TagNodeType))],
                         absolute=False,
                     )
                 ]
@@ -148,7 +149,7 @@ def test_invalid_expressions(expression, string):
                         [
                             LocationStep(
                                 Axis("descendant-or-self"),
-                                NodeTypeTest("TagNode"),
+                                NodeTypeTest(TagNodeType),
                             ),
                             LocationStep(Axis("child"), NameMatchTest(None, "foo")),
                         ],
@@ -165,7 +166,7 @@ def test_invalid_expressions(expression, string):
                         [
                             LocationStep(
                                 Axis("descendant-or-self"),
-                                NodeTypeTest("TagNode"),
+                                NodeTypeTest(TagNodeType),
                             ),
                             LocationStep(Axis("child"), NameMatchTest(None, "foo")),
                         ],
@@ -198,7 +199,7 @@ def test_invalid_expressions(expression, string):
                     LocationPath(
                         [
                             LocationStep(
-                                Axis("descendant-or-self"), NodeTypeTest("TagNode")
+                                Axis("descendant-or-self"), NodeTypeTest(TagNodeType)
                             ),
                             LocationStep(
                                 Axis("child"),

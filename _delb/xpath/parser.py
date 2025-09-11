@@ -22,6 +22,12 @@ from typing import TYPE_CHECKING, Union, cast  # noqa: UNT001
 
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
+from _delb.typing import (
+    CommentNodeType,
+    ProcessingInstructionNodeType,
+    TagNodeType,
+    TextNodeType,
+)
 from _delb.xpath.ast import (
     AnyNameTest,
     AnyValue,
@@ -43,7 +49,7 @@ from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize
 
 if TYPE_CHECKING:
     from typing import Final
-    from _delb.typing import NodeTypeNameLiteral, TypeAlias
+    from _delb.typing import TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[TokenType | None]
@@ -51,11 +57,11 @@ TokenPattern: TypeAlias = Sequence[TokenType | None]
 TokenTree: TypeAlias = Sequence[Union[Token, "TokenTree"]]  # noqa: TC008
 
 
-NODE_TYPE_TEST_MAPPING: Final[dict[str, NodeTypeNameLiteral]] = {
-    "comment": "CommentNode",
-    "node": "TagNode",
-    "processing-instruction": "ProcessingInstructionNode",
-    "text": "TextNode",
+NODE_TYPE_TEST_MAPPING: Final[dict[str, type]] = {
+    "comment": CommentNodeType,
+    "node": TagNodeType,
+    "processing-instruction": ProcessingInstructionNodeType,
+    "text": TextNodeType,
 }
 OPERATORS: Final = {
     "<=": operator.le,

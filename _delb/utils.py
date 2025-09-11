@@ -23,10 +23,12 @@ from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING, cast, Any, Final, Optional
 
+from _delb.typing import DocumentNodeType, TagNodeType
+
 
 if TYPE_CHECKING:
     from _delb.nodes import NodeBase, TagNode
-    from _delb.typing import Filter, NodeTypeNameLiteral
+    from _delb.typing import Filter
 
 
 NODE_MODULE_FQN: Final = f"{__package__}.nodes"
@@ -41,7 +43,7 @@ class _NodesSorter:
         self.__items: Final = defaultdict(_NodesSorter)
 
     def add(self, path: Sequence[int], node: TagNode):
-        assert _is_node_of_type(node, "TagNode")
+        assert isinstance(node, TagNodeType)
         if path:
             self.__items[path[0]].add(path[1:], node)
         else:
@@ -306,16 +308,6 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
     return result
 
 
-def _is_node_of_type(
-    node: NodeBase,
-    type_name: NodeTypeNameLiteral,
-) -> bool:
-    return (
-        node.__class__.__module__ == NODE_MODULE_FQN
-        and node.__class__.__qualname__ == type_name
-    )
-
-
 def last(iterable: Iterable) -> Optional[Any]:
     """
     Returns the last item of the given :term:`iterable` or :obj:`None` if it's empty.
@@ -338,7 +330,7 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
     sorter = _NodesSorter()
 
     for node in nodes:  # pragma: no cover
-        if not _is_node_of_type(node, "TagNode"):
+        if not isinstance(node, TagNodeType):
             raise NotImplementedError(
                 "Support for sorting other node types than TagNodes isn't scheduled"
                 "yet."
@@ -348,9 +340,7 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
         ancestors_indexes: deque[int] = deque()
 
         for cursor in chain((node,), node._iterate_ancestors()):
-            if cursor._parent is None or _is_node_of_type(
-                cursor._parent, "_DocumentNode"
-            ):
+            if cursor._parent is None or isinstance(cursor._parent, DocumentNodeType):
                 break
 
             if (node_id := id(cursor)) in node_index_cache:
@@ -373,7 +363,7 @@ def traverse_bf_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
     queue = deque((root,))
     while queue:
         node = queue.popleft()
-        if _is_node_of_type(node, "TagNode"):
+        if isinstance(node, TagNodeType):
             queue.extend(node._child_nodes)
         if all(f(node) for f in filters):
             yield node
@@ -387,7 +377,7 @@ def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
 
         while remaining_children:
             child = remaining_children.popleft()
-            if _is_node_of_type(child, "TagNode") and child._child_nodes:
+            if isinstance(child, TagNodeType) and child._child_nodes:
                 stack.extend(
                     ((node, remaining_children), (child, deque(child._child_nodes)))
                 )

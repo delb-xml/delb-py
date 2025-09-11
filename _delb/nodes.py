@@ -54,6 +54,13 @@ from _delb.utils import (
     last,
     traverse_bf_ltr_ttb,
 )
+from _delb.typing import (
+    CommentNodeType,
+    DocumentNodeType,
+    ProcessingInstructionNodeType,
+    TagNodeType,
+    TextNodeType,
+)
 from _delb.xpath import QueryResults, _css_to_xpath
 from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
 from _delb.xpath.ast import NameMatchTest, XPathExpression
@@ -1331,7 +1338,7 @@ class _ParentNode(NodeBase):
         return self.insert_children(0, *node, clone=clone)
 
 
-class CommentNode(_ChildLessNode, NodeBase):
+class CommentNode(_ChildLessNode, CommentNodeType):
     """
     The instances of this class represent comment nodes of a tree.
 
@@ -1374,7 +1381,7 @@ class CommentNode(_ChildLessNode, NodeBase):
         self.__content = value
 
 
-class _DocumentNode(_ParentNode):
+class _DocumentNode(_ParentNode, DocumentNodeType):
     """
     This node type is only supposed to facilitate tree traversal beyond a root node via
     its :attr:`_DocumentNode._child_nodes` attribute. Therefore it shall be only
@@ -1427,7 +1434,7 @@ class _DocumentNode(_ParentNode):
         raise InvalidCodePath
 
 
-class ProcessingInstructionNode(_ChildLessNode, NodeBase):
+class ProcessingInstructionNode(_ChildLessNode, ProcessingInstructionNodeType):
     """
     The instances of this class represent processing instruction nodes of a tree.
 
@@ -1496,7 +1503,7 @@ class ProcessingInstructionNode(_ChildLessNode, NodeBase):
         self.__target = value
 
 
-class TagNode(_ParentNode):
+class TagNode(_ParentNode, TagNodeType):
     """
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
@@ -2105,7 +2112,7 @@ class TagNode(_ParentNode):
         return "{" + self.__namespace + "}" + self.__local_name
 
 
-class TextNode(_ChildLessNode, NodeBase, _StringMixin):  # type: ignore
+class TextNode(_ChildLessNode, _StringMixin, TextNodeType):  # type: ignore
     """
     TextNodes contain the textual data of a document. The class shall not be initialized
     by client code, just throw strings into the trees.

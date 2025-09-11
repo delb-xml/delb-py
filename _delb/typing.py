@@ -36,12 +36,45 @@ else:
     from typing import Literal, Self
 
 
+# node types
+
+
+class XMLNodeType:
+    pass
+
+
+class CommentNodeType(XMLNodeType):
+    pass
+
+
+class DocumentNodeType(XMLNodeType):
+    pass
+
+
+class ProcessingInstructionNodeType(XMLNodeType):
+    pass
+
+
+class TagNodeType(XMLNodeType):
+    pass
+
+
+class TextNodeType(XMLNodeType):
+    pass
+
+
+# protocols
+
+
 class BinaryReader(Protocol):
     def close(self):
         pass
 
     def read(self, n: int = -1) -> bytes:
         pass
+
+
+# aliases
 
 
 QualifiedName: TypeAlias = tuple[str, str]
@@ -61,28 +94,33 @@ LoaderResult: TypeAlias = "Sequence[NodeBase] | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 
-NodeTypeNameLiteral: TypeAlias = Literal[
-    "CommentNode", "_DocumentNode", "ProcessingInstructionNode", "TagNode", "TextNode"
-]
-
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
+
+
+#
 
 
 __all__ = (
     "AttributeAccessor",
     "_AttributesData",
     "BinaryReader",
+    "CommentNodeType",
+    "DocumentNodeType",
     "Filter",
     "GenericDecorated",
     "InputStream",
+    "Literal",
     "Loader",
     "LoaderConstraint",
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "ProcessingInstructionNodeType",
     "QualifiedName",
     "SecondOrderDecorator",
     "Self",
+    "TagNodeType",
+    "TextNodeType",
     "XPathFunction",
 )

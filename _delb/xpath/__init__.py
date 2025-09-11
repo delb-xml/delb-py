@@ -70,7 +70,8 @@ from typing import TYPE_CHECKING, cast, Final, Optional
 from cssselect import GenericTranslator
 
 from _delb.names import Namespaces
-from _delb.utils import _is_node_of_type, _sort_nodes_in_document_order
+from _delb.utils import _sort_nodes_in_document_order
+from _delb.typing import TagNodeType
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
@@ -169,7 +170,7 @@ def evaluate(
     # global namespaces are guaranteed by the Namespaces implementation
     match namespaces:
         case None:
-            if _is_node_of_type(node, "TagNode"):
+            if isinstance(node, TagNodeType):
                 _namespaces = Namespaces({"": cast("TagNode", node).namespace})
             else:
                 _namespaces = Namespaces({})

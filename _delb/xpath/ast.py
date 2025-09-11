@@ -26,14 +26,13 @@ from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.plugins import plugin_manager as _plugin_manager
-from _delb.utils import _is_node_of_type
+from _delb.typing import DocumentNodeType, ProcessingInstructionNodeType, TagNodeType
 
 
 if TYPE_CHECKING:
     from typing import Final
     from _delb.names import Namespaces
     from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
-    from _delb.typing import NodeTypeNameLiteral
 
 
 xpath_functions: Final = _plugin_manager.xpath_functions
@@ -42,7 +41,7 @@ xpath_functions: Final = _plugin_manager.xpath_functions
 # helper
 
 
-class _DocumentNode:
+class _DocumentNode(DocumentNodeType):
     """
     This class mimics enough behaviour of a node to act as item in a node set for
     evaluation of absolute location paths.
@@ -193,7 +192,7 @@ class Axis(Node):
             _include_document_node=True
         ):
             yield ancestor
-        if ancestor is None or not _is_node_of_type(ancestor, "_DocumentNode"):
+        if ancestor is None or not isinstance(ancestor, DocumentNodeType):
             yield _DocumentNode(node)
 
     def ancestor_or_self(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
@@ -265,7 +264,7 @@ class LocationPath(Node):
             if self.absolute:
                 while node._parent is not None:
                     node = node._parent
-                if _is_node_of_type(node, "_DocumentNode"):
+                if isinstance(node, DocumentNodeType):
                     node_set = (node,)
                 else:
                     node_set = (_DocumentNode(node),)
@@ -389,8 +388,7 @@ class XPathExpression(Node):
         yielded_nodes: set[int] = set()
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):
-                assert not isinstance(result, _DocumentNode)
-                assert not _is_node_of_type(result, "_DocumentNode")
+                assert not isinstance(result, DocumentNodeType)
                 _id = id(result)
                 if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
@@ -415,7 +413,7 @@ class AnyNameTest(NodeTestNode):
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        if not _is_node_of_type(node, "TagNode"):
+        if not isinstance(node, TagNodeType):
             return False
         node = cast("TagNode", node)
 
@@ -434,7 +432,7 @@ class NameMatchTest(NodeTestNode):
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        if not _is_node_of_type(node, "TagNode"):
+        if not isinstance(node, TagNodeType):
             return False
         node = cast("TagNode", node)
 
@@ -475,30 +473,25 @@ class NameMatchTest(NodeTestNode):
 
 
 class NodeTypeTest(NodeTestNode):
-    __slots__ = ("type_name",)
+    __slots__ = ("type",)
 
-    def __init__(self, type_name: NodeTypeNameLiteral):
-        self.type_name: Final = type_name
+    def __init__(self, type_: type):
+        self.type: Final = type_
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        return (
-            _is_node_of_type(node, self.type_name)
-            or isinstance(node, _DocumentNode)
-            or _is_node_of_type(node, "_DocumentNode")
-        )
+        return isinstance(node, (self.type, DocumentNodeType))
 
 
 class ProcessingInstructionTest(NodeTypeTest):
-    __slots__ = ("target", "type_name")
+    __slots__ = ("target", "type")
 
     def __init__(self, target: str):
-        super().__init__("ProcessingInstructionNode")
+        super().__init__(ProcessingInstructionNodeType)
         self.target: Final = target
 
     def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
         if not super().evaluate(node=node, namespaces=namespaces):
             return False
-        assert _is_node_of_type(node, "ProcessingInstructionNode")
         return cast("ProcessingInstructionNode", node).target == self.target
 
 
@@ -524,7 +517,7 @@ class AttributeValue(EvaluationNode):
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> Optional[str]:
-        if not _is_node_of_type(node, "TagNode"):
+        if not isinstance(node, TagNodeType):
             return None
 
         if (
@@ -639,7 +632,7 @@ class HasAttribute(EvaluationNode):
 
     @ensure_prefix
     def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:
-        if not _is_node_of_type(node, "TagNode"):
+        if not isinstance(node, TagNodeType):
             return False
         node = cast("TagNode", node)
         return (
