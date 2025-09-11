@@ -1131,7 +1131,7 @@ class NodeBase(ABC):
         return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
 
-class _ChildLessNode(NodeBase):
+class _LeafNode(NodeBase):
     """Node types using this mixin also can't be root nodes of a document."""
 
     __slots__ = ()
@@ -1338,7 +1338,7 @@ class _ParentNode(NodeBase):
         return self.insert_children(0, *node, clone=clone)
 
 
-class CommentNode(_ChildLessNode, CommentNodeType):
+class CommentNode(_LeafNode, CommentNodeType):
     """
     The instances of this class represent comment nodes of a tree.
 
@@ -1434,7 +1434,7 @@ class _DocumentNode(_ParentNode, DocumentNodeType):
         raise InvalidCodePath
 
 
-class ProcessingInstructionNode(_ChildLessNode, ProcessingInstructionNodeType):
+class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
     """
     The instances of this class represent processing instruction nodes of a tree.
 
@@ -2112,7 +2112,7 @@ class TagNode(_ParentNode, TagNodeType):
         return "{" + self.__namespace + "}" + self.__local_name
 
 
-class TextNode(_ChildLessNode, _StringMixin, TextNodeType):  # type: ignore
+class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
     """
     TextNodes contain the textual data of a document. The class shall not be initialized
     by client code, just throw strings into the trees.
