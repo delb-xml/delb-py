@@ -94,6 +94,12 @@ def test_comment_is_ignored():
     assert b.local_name == "b"
 
 
+def test_detach():
+    root = parse_tree("<root> <x/> </root>")
+    root[2].detach()
+    assert str(root) == "<root> <x/></root>"
+
+
 def test_fetch_preceding():
     root = parse_tree("<root><a/><b/></root>")
     b = root[1]

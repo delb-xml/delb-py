@@ -521,7 +521,7 @@ class Siblings:
 
     def remove(self, node: NodeBase):
         node._parent = None
-        self.__data.remove(node)
+        del self.__data[self.index(node)]
 
     def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
         if isinstance(self.__belongs_to, _DocumentNode):
