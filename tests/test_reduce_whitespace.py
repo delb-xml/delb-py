@@ -13,6 +13,21 @@ from tests.utils import assert_equal_trees
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
+@pytest.mark.parametrize("parser", ("expat", "lxml"))
+@pytest.mark.parametrize(
+    "sample",
+    ("<a><b/> <c/> </a>",),
+)
+def test_consistency(parser, sample, files_path):
+    while_parsing_application = parse_tree(
+        sample,
+        options=ParserOptions(preferred_parsers=parser, reduce_whitespace=True),
+    )
+    post_parsing_application = while_parsing_application.clone(deep=True)
+    post_parsing_application._reduce_whitespace()
+    assert_equal_trees(while_parsing_application, post_parsing_application)
+
+
 def test_contained_milestone_tags_each_followed_by_whitespace():
     root = parse_tree("<root><lb/>Hello <lb/> <lb/> <lb/> world!</root>")
     root._reduce_whitespace()

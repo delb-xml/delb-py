@@ -23,7 +23,6 @@ from collections.abc import (
     Iterator,
     Mapping,
     MutableMapping,
-    MutableSequence,
 )
 from contextlib import contextmanager
 from io import StringIO, TextIOWrapper
@@ -150,26 +149,36 @@ def new_tag_node(  # pragma: no cover
     )
 
 
-def _reduce_whitespace_between_siblings(nodes: MutableSequence[NodeBase] | Siblings):
-    if not (text_nodes := tuple(n for n in nodes if isinstance(n, TextNode))):
+def _reduce_whitespace_between_siblings(nodes: list[NodeBase] | Siblings):
+    if not (
+        text_nodes := tuple(
+            (i, n) for i, n in enumerate(nodes) if isinstance(n, TextNode)
+        )
+    ):
         return
 
     in_tree = isinstance(nodes, Siblings)
     first_node = nodes[0]
     last_node = nodes[-1]
+    empty_nodes = []
 
-    for node in text_nodes:
+    for i, text_node in text_nodes:
         if reduced_content := _reduce_whitespace_content(
-            node.content,
-            node is first_node,
-            node is last_node,
+            text_node.content,
+            text_node is first_node,
+            text_node is last_node,
         ):
-            node.content = reduced_content
+            text_node.content = reduced_content
         else:
             if in_tree:
-                node.detach()
+                text_node.detach()
             else:
-                nodes.remove(node)
+                empty_nodes.append(i)
+
+    if empty_nodes:
+        assert isinstance(nodes, list)
+        for i in reversed(empty_nodes):
+            del nodes[i]
 
 
 def _reduce_whitespace_content(content: str, is_first: bool, is_last: bool) -> str:
