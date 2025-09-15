@@ -1,6 +1,8 @@
 import pytest
 
-from delb import get_traverser, is_tag_node, parse_tree
+from delb import get_traverser, parse_tree
+from delb.filters import is_tag_node
+
 
 root = parse_tree(
     """\

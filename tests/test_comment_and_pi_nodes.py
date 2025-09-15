@@ -6,10 +6,9 @@ from delb import (
     CommentNode,
     Document,
     ProcessingInstructionNode,
-    altered_default_filters,
-    is_comment_node,
     parse_tree,
 )
+from delb.filters import altered_default_filters, is_comment_node
 
 
 def test_appended_text_node():

@@ -4,7 +4,8 @@ from itertools import pairwise, product
 
 import pytest
 
-from delb import altered_default_filters, compare_trees, NodeBase, TagNode
+from delb import compare_trees, NodeBase, TagNode
+from delb.filters import altered_default_filters
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10

@@ -1,9 +1,6 @@
 import pytest
 
 from delb import (
-    altered_default_filters,
-    is_tag_node,
-    is_text_node,
     parse_tree,
     tag,
     CommentNode,
@@ -12,6 +9,7 @@ from delb import (
     TextNode,
 )
 from delb.exceptions import InvalidOperation
+from delb.filters import altered_default_filters, is_tag_node, is_text_node
 
 
 def test_add_preceding_siblings():

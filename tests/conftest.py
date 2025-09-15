@@ -5,7 +5,7 @@ import pytest
 # keep this before imports from delb!
 from tests import plugins  # noqa: F401
 
-from _delb.nodes import default_filters
+from _delb.filters import default_filters
 from delb import DefaultStringOptions, Document
 
 

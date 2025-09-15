@@ -9,12 +9,11 @@ from delb import (
     ProcessingInstructionNode,
     TagNode,
     TextNode,
-    altered_default_filters,
     get_traverser,
-    is_tag_node,
     parse_tree,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
+from delb.filters import altered_default_filters, is_tag_node
 from tests.plugins import PlaygroundDocumentExtension
 
 

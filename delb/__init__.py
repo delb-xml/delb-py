@@ -36,14 +36,6 @@ from _delb.plugins import (
 from _delb.names import Namespaces
 from _delb.nodes import (
     _get_serializer,
-    altered_default_filters,
-    any_of,
-    is_comment_node,
-    is_processing_instruction_node,
-    is_root_node,
-    is_tag_node,
-    is_text_node,
-    not_,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
@@ -58,6 +50,16 @@ from _delb.nodes import (
     TagNode,
     _TextBufferWriter,
     TextNode,
+)
+from _delb.filters import (
+    altered_default_filters,
+    any_of,
+    is_comment_node,
+    is_processing_instruction_node,
+    is_root_node,
+    is_tag_node,
+    is_text_node,
+    not_,
 )
 from _delb.parser import ParserOptions
 from _delb.utils import first, get_traverser, last

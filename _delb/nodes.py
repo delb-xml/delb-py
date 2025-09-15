@@ -17,14 +17,12 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod, ABC
-from collections import deque
 from collections.abc import (
     Iterable,
     Iterator,
     Mapping,
     MutableMapping,
 )
-from contextlib import contextmanager
 from io import StringIO, TextIOWrapper
 from itertools import chain
 from typing import (
@@ -40,6 +38,7 @@ from typing import (
 )
 
 from _delb.exceptions import AmbiguousTreeError, InvalidCodePath, InvalidOperation
+from _delb.filters import altered_default_filters, default_filters, is_tag_node
 from _delb.grammar import _is_xml_char, _is_xml_name
 from _delb.names import (
     GLOBAL_PREFIXES,
@@ -230,52 +229,6 @@ class _TagDefinition(NamedTuple):
     local_name: str
     attributes: Optional[dict[AttributeAccessor, str]] = None
     children: tuple[NodeSource, ...] = ()
-
-
-# default filters
-
-
-def _is_tag_or_text_node(node: NodeBase) -> bool:
-    return isinstance(node, (TagNode, TextNode))
-
-
-default_filters: deque[tuple[Filter, ...]] = deque()
-default_filters.append((_is_tag_or_text_node,))
-
-
-@contextmanager
-def altered_default_filters(*filter: Filter, extend: bool = False):
-    """
-    This function can be either used as as :term:`context manager` or :term:`decorator`
-    to define a set of :obj:`default_filters` for the encapsuled code block or callable.
-
-    :param filter: The filters to set or append.
-    :param extend: Extends the currently active filters with the given ones instead of
-                   replacing them.
-
-    These are then applied in all operations that allow node filtering, like
-    :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
-    indexed access to child nodes.
-
-    >>> root = Document(
-    ...     '<root xmlns="foo"><a/><!--x--><b/><!--y--><c/></root>'
-    ... ).root
-    >>> with altered_default_filters(is_comment_node):
-    ...     print([x.content for x in root.iterate_children()])
-    ['x', 'y']
-
-    As the default filters shadow comments and processing instructions by default,
-    use no argument to unset this in order to access all type of nodes.
-    """
-    if extend:
-        default_filters.append(default_filters[-1] + filter)
-    else:
-        default_filters.append(filter)
-
-    try:
-        yield
-    finally:
-        default_filters.pop()
 
 
 # attributes
@@ -2203,68 +2156,6 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
         return self.content or ""
 
 
-# contributed node filters and filter wrappers
-
-
-def any_of(*filter: Filter) -> Filter:
-    """
-    A node filter wrapper that matches when any of the given filters is matching, like a
-    boolean ``or``.
-    """
-
-    def any_of_wrapper(node: NodeBase) -> bool:
-        return any(x(node) for x in filter)
-
-    return any_of_wrapper
-
-
-def is_comment_node(node: NodeBase) -> bool:
-    """
-    A node filter that matches :class:`CommentNode` instances.
-    """
-    return isinstance(node, CommentNode)
-
-
-def is_processing_instruction_node(node: NodeBase) -> bool:
-    """
-    A node filter that matches :class:`ProcessingInstructionNode` instances.
-    """
-    return isinstance(node, ProcessingInstructionNode)
-
-
-def is_root_node(node: NodeBase) -> bool:
-    """
-    A node filter that matches root nodes.
-    """
-    return node._parent is None
-
-
-def is_tag_node(node: NodeBase) -> bool:
-    """
-    A node filter that matches :class:`TagNode` instances.
-    """
-    return isinstance(node, TagNode)
-
-
-def is_text_node(node: NodeBase) -> bool:
-    """
-    A node filter that matches :class:`TextNode` instances.
-    """
-    return isinstance(node, TextNode)
-
-
-def not_(*filter: Filter) -> Filter:
-    """
-    A node filter wrapper that matches when the given filter is not matching,
-    like a boolean ``not``.
-    """
-
-    def not_wrapper(node: NodeBase) -> bool:
-        return not all(f(node) for f in filter)
-
-    return not_wrapper
-
-
 # serializer
 
 
@@ -3139,14 +3030,6 @@ __all__ = (
     TagAttributes.__name__,
     TagNode.__name__,
     TextNode.__name__,
-    altered_default_filters.__name__,
-    any_of.__name__,
-    is_comment_node.__name__,
-    is_processing_instruction_node.__name__,
-    is_root_node.__name__,
-    is_tag_node.__name__,
-    is_text_node.__name__,
-    not_.__name__,
     new_comment_node.__name__,
     new_processing_instruction_node.__name__,
     new_tag_node.__name__,

@@ -11,12 +11,11 @@ from delb import (
     ParserOptions,
     TagNode,
     TextNode,
-    altered_default_filters,
-    is_tag_node,
     parse_tree,
     tag,
 )
 from delb.exceptions import InvalidOperation
+from delb.filters import altered_default_filters, is_tag_node
 from tests.conftest import XML_FILES
 
 from tests.utils import (

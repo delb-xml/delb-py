@@ -4,13 +4,12 @@ from _delb.xpath import evaluate
 from _delb.xpath.ast import Axis
 from _delb.names import Namespaces
 from delb import (
-    altered_default_filters,
-    is_tag_node,
     parse_tree,
     Document,
     TagNode,
     TextNode,
 )
+from delb.filters import altered_default_filters, is_tag_node
 
 
 def test_any_name_test():
