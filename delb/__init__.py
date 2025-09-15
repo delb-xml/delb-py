@@ -35,20 +35,14 @@ from _delb.plugins import (
 )
 from _delb.names import Namespaces
 from _delb.nodes import (
-    _get_serializer,
     new_comment_node,
     new_processing_instruction_node,
     new_tag_node,
     CommentNode,
-    DefaultStringOptions,
     _DocumentNode,
-    FormatOptions,
     NodeBase,
-    PrettySerializer,
     ProcessingInstructionNode,
-    Serializer,
     TagNode,
-    _TextBufferWriter,
     TextNode,
 )
 from _delb.filters import (
@@ -62,6 +56,14 @@ from _delb.filters import (
     not_,
 )
 from _delb.parser import ParserOptions
+from _delb.serializer import (
+    DefaultStringOptions,
+    FormatOptions,
+    PrettySerializer,
+    Serializer,
+    _TextBufferWriter,
+    _get_serializer,
+)
 from _delb.utils import first, get_traverser, last
 from _delb.xpath import QueryResults
 from delb.utils import compare_trees

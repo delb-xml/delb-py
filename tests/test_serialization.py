@@ -15,7 +15,7 @@ from delb import (
     TextNode,
 )
 from _delb.parser import ParserOptions
-from _delb.nodes import Serializer
+from _delb.serializer import Serializer
 from tests.conftest import TEI_FILES
 
 from tests.utils import assert_equal_trees, skip_long_running_test

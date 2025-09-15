@@ -4,9 +4,9 @@ from typing import Final
 import pytest
 
 from _delb.names import XML_NAMESPACE
-from _delb.nodes import DefaultStringOptions
 from delb import (
     CommentNode,
+    DefaultStringOptions,
     Document,
     ParserOptions,
     TagNode,
