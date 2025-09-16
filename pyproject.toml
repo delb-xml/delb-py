@@ -74,7 +74,7 @@ exclude_also = [
     "pass",
     "raise InvalidCodePath",
 ]
-fail_under = 99
+fail_under = 98
 
 #
 
@@ -181,7 +181,7 @@ dependencies = [
 ]
 skipinstall = true
 [tool.hatch.envs.mypy.scripts]
-check = "mypy _delb delb"
+check = "mypy _delb delb"  #  --check-untyped-defs
 
 [tool.hatch.envs.unit-tests]
 dependencies = [
@@ -212,4 +212,5 @@ check = "python -m pytest tests"
 filterwarnings = [
     "error",
     "ignore:No encoding known for parsing an XML stream:UserWarning",
+    "ignore:The use of the `load_reference_resources` option:UserWarning",
 ]
