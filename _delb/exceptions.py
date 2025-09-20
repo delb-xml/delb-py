@@ -93,10 +93,10 @@ class XPathParsingError(DelbBaseException):
 
     def __str__(self):
         expression = self.expression
+        position = self.position
         assert expression is not None
         assert self.message is not None
-        position = self.position
-        assert self.position is not None
+        assert position is not None
 
         expression_length = len(expression)
         snippet_end = min(position + 16, expression_length)

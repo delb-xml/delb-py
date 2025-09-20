@@ -34,6 +34,7 @@ from _delb.names import GLOBAL_PREFIXES, Namespaces
 from _delb.typing import (
     CommentNodeType,
     NamespaceDeclarations,
+    ParentNodeType,
     ProcessingInstructionNodeType,
     TagNodeType,
     TextNodeType,
@@ -742,6 +743,7 @@ class TextWrappingSerializer(PrettySerializer):
         nodes = self._unwritten_text_nodes
         content = self._normalize_text("".join(n.content for n in nodes))
         last_node = nodes[-1]
+        assert isinstance(last_node._parent, ParentNodeType)
 
         if self._available_space == len(
             content.rstrip()

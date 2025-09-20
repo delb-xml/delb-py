@@ -74,7 +74,6 @@ if TYPE_CHECKING:
         CommentNodeType,
         _DocumentNodeType,
         Loader,
-        LoaderResult,
         NamespaceDeclarations,
         ProcessingInstructionNodeType,
         TagNodeType,
@@ -289,6 +288,7 @@ class Document(metaclass=DocumentMeta):
         if source_url is not None:
             config.source_url = source_url
         if DocumentMixinBase in cls.__mro__:
+            assert hasattr(cls, "_init_config")
             cls._init_config(config, config_options)
 
         config.parser_options = parser_options or ParserOptions()
@@ -346,7 +346,9 @@ class Document(metaclass=DocumentMeta):
         _plugin_manager.document_subclasses.insert(0, cls)
 
     @classmethod
-    def __load_source(cls, source: Any, config: SimpleNamespace) -> LoaderResult:
+    def __load_source(
+        cls, source: Any, config: SimpleNamespace
+    ) -> Sequence[XMLNodeType]:
         loader_excuses: dict[Loader, str | Exception] = {}
 
         for loader in cls._loaders:

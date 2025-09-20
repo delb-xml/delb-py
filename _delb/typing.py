@@ -762,6 +762,9 @@ class TagNodeType(ParentNodeType):
     @abstractmethod
     def namespace(self, value: str): ...
 
+    @abstractmethod
+    def _reduce_whitespace(self): ...
+
     @property
     @abstractmethod
     def universal_name(self) -> str:

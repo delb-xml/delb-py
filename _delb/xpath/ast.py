@@ -210,7 +210,7 @@ class EvaluationContext(NamedTuple):
 
 
 class Node(ABC):
-    __slots__ = ()
+    __slots__: tuple[str, ...] = ()
 
     def __eq__(self, other):
         return type(self) is type(other) and all(

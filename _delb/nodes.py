@@ -236,6 +236,9 @@ class Attribute(_StringMixin):
             f" [{hex(id(self))}]>"
         )
 
+    def __str__(self):
+        return self.__value
+
     def __set_new_key(self, namespace: str, name: str):
         assert self.__qualified_name != (namespace, name)
 
@@ -294,9 +297,6 @@ class Attribute(_StringMixin):
         if value and not _is_xml_char(value):
             raise ValueError("Invalid XML character data.")
         self.__value = value
-
-    # for utils._StringMixin:
-    _data = value
 
 
 class TagAttributes(MutableMapping):
@@ -1739,6 +1739,9 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
     def __repr__(self):
         return f'<{self.__class__.__name__}(text="{self.content}",  [{hex(id(self))}]>'
 
+    def __str__(self):
+        return self.__content
+
     def clone(self, deep: bool = False) -> TextNodeType:
         return TextNode(self.__content)
 
@@ -1751,9 +1754,6 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
         if not isinstance(text, str):
             raise TypeError
         self.__content = text
-
-    # for utils._StringMixin:
-    _data = content
 
     @property
     def full_text(self) -> str:

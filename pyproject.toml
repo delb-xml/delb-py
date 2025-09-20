@@ -181,7 +181,7 @@ dependencies = [
 ]
 skipinstall = true
 [tool.hatch.envs.mypy.scripts]
-check = "mypy _delb delb"  #  --check-untyped-defs
+check = "mypy --check-untyped-defs _delb delb"
 
 [tool.hatch.envs.unit-tests]
 dependencies = [
