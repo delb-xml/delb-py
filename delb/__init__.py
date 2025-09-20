@@ -40,7 +40,6 @@ from _delb.nodes import (
     new_tag_node,
     CommentNode,
     _DocumentNode,
-    NodeBase,
     ProcessingInstructionNode,
     TagNode,
     TextNode,
@@ -71,7 +70,16 @@ from delb.utils import compare_trees
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import Loader, LoaderResult, NamespaceDeclarations
+    from _delb.typing import (
+        CommentNodeType,
+        _DocumentNodeType,
+        Loader,
+        LoaderResult,
+        NamespaceDeclarations,
+        ProcessingInstructionNodeType,
+        TagNodeType,
+        XMLNodeType,
+    )
 
 # plugin loading
 
@@ -85,21 +93,21 @@ _plugin_manager.load_plugins()
 class _Logue(ABC):
     __slots__ = ("_siblings",)
 
-    def __init__(self, document: _DocumentNode):
+    def __init__(self, document: _DocumentNodeType):
         self._siblings: Final = document._child_nodes
 
     @overload
-    def __getitem__(self, index: int) -> NodeBase:
+    def __getitem__(self, index: int) -> XMLNodeType:
         pass
 
     @overload
-    def __getitem__(self, index: slice) -> list[NodeBase]:
+    def __getitem__(self, index: slice) -> list[XMLNodeType]:
         pass
 
-    def __getitem__(self, index: int | slice) -> NodeBase | list[NodeBase]:
+    def __getitem__(self, index: int | slice) -> XMLNodeType | list[XMLNodeType]:
         return self._siblings_slice[index]
 
-    def __iter__(self) -> Iterator[NodeBase]:
+    def __iter__(self) -> Iterator[XMLNodeType]:
         return iter(self._siblings_slice)
 
     def __len__(self) -> int:
@@ -107,8 +115,8 @@ class _Logue(ABC):
 
     @abstractmethod
     def append(
-        self, node: CommentNode | ProcessingInstructionNode
-    ) -> CommentNode | ProcessingInstructionNode:
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
         pass
 
     def clear(self):
@@ -116,20 +124,20 @@ class _Logue(ABC):
             self._siblings.remove(node)
 
     @abstractmethod
-    def index(self, node: NodeBase) -> int | None:
+    def index(self, node: XMLNodeType) -> int | None:
         pass
 
     @abstractmethod
-    def insert(self, index: int, node: NodeBase):
+    def insert(self, index: int, node: XMLNodeType):
         pass
 
     def prepend(
-        self, node: CommentNode | ProcessingInstructionNode
-    ) -> CommentNode | ProcessingInstructionNode:
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
         self.insert(0, node)
         return node
 
-    def remove(self, node: CommentNode | ProcessingInstructionNode):
+    def remove(self, node: CommentNodeType | ProcessingInstructionNodeType):
         self._siblings.remove(node)
 
     @property
@@ -140,61 +148,61 @@ class _Logue(ABC):
 
     @property
     @abstractmethod
-    def _siblings_slice(self) -> list[NodeBase]:
+    def _siblings_slice(self) -> list[XMLNodeType]:
         pass
 
-    def _validate_new_node(self, node: NodeBase):
+    def _validate_new_node(self, node: XMLNodeType):
         if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
             raise TypeError
         if node._parent is not None:
             raise InvalidOperation(
                 "Only a detached node can be added to the tree. Use "
-                ":meth:`NodeBase.clone` or :meth:`NodeBase.detach` to get one."
+                ":meth:`XMLNodeType.clone` or :meth:`XMLNodeType.detach` to get one."
             )
 
 
 class Epilogue(_Logue):
     def append(
-        self, node: CommentNode | ProcessingInstructionNode
-    ) -> CommentNode | ProcessingInstructionNode:
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
         self._validate_new_node(node)
         self._siblings.append(node)
         return node
 
-    def index(self, node: NodeBase) -> int | None:
+    def index(self, node: XMLNodeType) -> int | None:
         if node in self._siblings:
             return self._siblings.index(node) - self._root_index - 1
         else:
             return None
 
-    def insert(self, index: int, node: NodeBase):
+    def insert(self, index: int, node: XMLNodeType):
         self._validate_new_node(node)
         self._siblings.insert(self._root_index + index + 1, node)
 
     @property
-    def _siblings_slice(self) -> list[NodeBase]:
+    def _siblings_slice(self) -> list[XMLNodeType]:
         return self._siblings[self._root_index + 1 :]
 
 
 class Prologue(_Logue):
     def append(
-        self, node: CommentNode | ProcessingInstructionNode
-    ) -> CommentNode | ProcessingInstructionNode:
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
         self._validate_new_node(node)
         self._siblings.insert(self._root_index, node)
         return node
 
-    def index(self, node: NodeBase) -> int | None:
+    def index(self, node: XMLNodeType) -> int | None:
         return self._siblings.index(node)
 
-    def insert(self, index: int, node: NodeBase):
+    def insert(self, index: int, node: XMLNodeType):
         self._validate_new_node(node)
         if index > self._root_index:
             raise IndexError
         self._siblings.insert(index, node)
 
     @property
-    def _siblings_slice(self) -> list[NodeBase]:
+    def _siblings_slice(self) -> list[XMLNodeType]:
         return self._siblings[: self._root_index]
 
 
@@ -264,7 +272,7 @@ class Document(metaclass=DocumentMeta):
     """
 
     _loaders: tuple[Loader, ...]
-    __node: _DocumentNode
+    __node: _DocumentNodeType
 
     __slots__ = ("config", "epilogue", "__node", "prologue", "source_url")
 
@@ -359,7 +367,7 @@ class Document(metaclass=DocumentMeta):
         assert not isinstance(loader_result, str)
         return loader_result
 
-    def __contains__(self, node: NodeBase) -> bool:
+    def __contains__(self, node: XMLNodeType) -> bool:
         return node.document is self
 
     def __str__(self) -> str:
@@ -408,12 +416,12 @@ class Document(metaclass=DocumentMeta):
         self.root._reduce_whitespace()
 
     @property
-    def root(self) -> TagNode:
+    def root(self) -> TagNodeType:
         """The root node of a document's *content* tree."""
         return next(n for n in self.__node._child_nodes if isinstance(n, TagNode))
 
     @root.setter
-    def root(self, node: TagNode):
+    def root(self, node: TagNodeType):
         if not isinstance(node, TagNode):
             raise TypeError(
                 "The document root node must be a :class:`TagNode` instance."

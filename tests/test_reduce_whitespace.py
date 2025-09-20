@@ -6,6 +6,7 @@ from typing import Final
 import pytest
 
 from delb import parse_tree, Document, ParserOptions, TagNode
+from delb.typing import TagNodeType  # noqa: TC001
 
 from tests.utils import assert_equal_trees
 
@@ -154,7 +155,7 @@ def test_tei_recommendation_examples():
     # https://wiki.tei-c.org/index.php/XML_Whitespace
     # the contained errors are fixed w/o annotations
 
-    def parse_sample(s: str) -> TagNode:
+    def parse_sample(s: str) -> TagNodeType:
         d = parse_tree(s)
         assert isinstance(d, TagNode)
         d._reduce_whitespace()

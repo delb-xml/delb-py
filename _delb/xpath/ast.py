@@ -21,18 +21,20 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from functools import cached_property, wraps
 from textwrap import indent
-from typing import TYPE_CHECKING, cast, Any, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional
 
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
 from _delb.plugins import plugin_manager as _plugin_manager
-from _delb.typing import DocumentNodeType, ProcessingInstructionNodeType, TagNodeType
+from _delb.typing import _DocumentNodeType, ProcessingInstructionNodeType, TagNodeType
 
 
 if TYPE_CHECKING:
     from typing import Final
+
+    from delb import Document
     from _delb.names import Namespaces
-    from _delb.nodes import NodeBase, ProcessingInstructionNode, TagNode
+    from _delb.typing import ParentNodeType, XMLNodeType
 
 
 xpath_functions: Final = _plugin_manager.xpath_functions
@@ -41,7 +43,11 @@ xpath_functions: Final = _plugin_manager.xpath_functions
 # helper
 
 
-class _DocumentNode(DocumentNodeType):
+def _invalid_method(self, *_, **__):
+    raise InvalidCodePath
+
+
+class _DocumentNode(_DocumentNodeType):
     """
     This class mimics enough behaviour of a node to act as item in a node set for
     evaluation of absolute location paths.
@@ -55,21 +61,93 @@ class _DocumentNode(DocumentNodeType):
 
     __slots__ = ("__root_node",)
 
-    def __init__(self, node: NodeBase):
+    def __init__(self, node: XMLNodeType):
         while node._parent is not None:
             node = node._parent
         self.__root_node: Final = node
 
-    @property
-    def _child_nodes(self) -> Sequence[NodeBase]:
+    __copy__ = _invalid_method
+    __deepcopy__ = _invalid_method
+    __len__ = _invalid_method
+    __str__ = _invalid_method
+    add_following_siblings = _invalid_method
+    add_preceding_siblings = _invalid_method
+    append_children = _invalid_method
+    clone = _invalid_method
+    detach = _invalid_method
+    fetch_following = _invalid_method
+    _fetch_following = _invalid_method
+    fetch_following_sibling = _invalid_method
+    _fetch_following_sibling = _invalid_method
+    fetch_preceding = _invalid_method
+    _fetch_preceding = _invalid_method
+    fetch_preceding_sibling = _invalid_method
+    _fetch_preceding_sibling = _invalid_method
+    insert_children = _invalid_method
+    iterate_ancestors = _invalid_method
+    _iterate_ancestors = _invalid_method
+    iterate_descendants = _invalid_method
+    iterate_following = _invalid_method
+    _iterate_following = _invalid_method
+    iterate_following_siblings = _invalid_method
+    _iterate_following_siblings = _invalid_method
+    iterate_preceding = _invalid_method
+    _iterate_preceding = _invalid_method
+    iterate_preceding_siblings = _invalid_method
+    _iterate_preceding_siblings = _invalid_method
+    _iterate_reversed_descendants = _invalid_method
+    merge_text_nodes = _invalid_method
+    prepend_children = _invalid_method
+    replace_with = _invalid_method
+    serialize = _invalid_method
+    xpath = _invalid_method
+
+    @property  # type: ignore
+    def _child_nodes(self) -> Sequence[XMLNodeType]:
         return (self.__root_node,)
 
-    def _iterate_descendants(self) -> Iterator[NodeBase]:
+    @_child_nodes.setter
+    def _child_nodes(self, value: Any):
+        raise InvalidCodePath
+
+    @property
+    def depth(self) -> int:
+        raise InvalidCodePath
+
+    @property
+    def document(self) -> Optional[Document]:
+        raise InvalidCodePath
+
+    @property
+    def first_child(self) -> Optional[XMLNodeType]:
+        raise InvalidCodePath
+
+    @property
+    def full_text(self) -> str:
+        raise InvalidCodePath
+
+    @property
+    def index(self) -> Optional[int]:
+        raise InvalidCodePath
+
+    def _iterate_descendants(self) -> Iterator[XMLNodeType]:
         yield self.__root_node
         yield from self.__root_node._iterate_descendants()
 
-    def iterate_children(self, *args) -> Iterator[NodeBase]:
+    def iterate_children(self, *args) -> Iterator[XMLNodeType]:
         yield self.__root_node
+
+    @property
+    def last_child(self) -> Optional[XMLNodeType]:
+        raise InvalidCodePath
+
+    @property
+    def last_descendant(self) -> Optional[XMLNodeType]:
+        raise InvalidCodePath
+
+    @property
+    def parent(self) -> Optional[ParentNodeType]:
+        raise InvalidCodePath
 
 
 def ensure_prefix(func):
@@ -115,7 +193,7 @@ class EvaluationContext(NamedTuple):
     information.
     """
 
-    node: NodeBase
+    node: XMLNodeType
     """ The node that is evaluated. """
     position: int
     """
@@ -148,7 +226,7 @@ class Node(ABC):
 
 class EvaluationNode(Node):
     @abstractmethod
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> bool:
         pass
 
     @property
@@ -161,7 +239,7 @@ class EvaluationNode(Node):
 
 class NodeTestNode(Node):
     @abstractmethod
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
+    def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         pass
 
 
@@ -186,53 +264,53 @@ class Axis(Node):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
-    def ancestor(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
+    def ancestor(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         ancestor = None
         for ancestor in node._iterate_ancestors(  # noqa: SIM104
             _include_document_node=True
         ):
             yield ancestor
-        if ancestor is None or not isinstance(ancestor, DocumentNodeType):
+        if ancestor is None or not isinstance(ancestor, _DocumentNodeType):
             yield _DocumentNode(node)
 
-    def ancestor_or_self(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
+    def ancestor_or_self(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield node
         yield from self.ancestor(node)
 
     def evaluate(
-        self, node: _DocumentNode | NodeBase, namespaces: Namespaces
-    ) -> Iterator[NodeBase]:
+        self, node: XMLNodeType, namespaces: Namespaces
+    ) -> Iterator[XMLNodeType]:
         yield from self.generator(node)
 
-    def child(self, node: NodeBase) -> Iterator[NodeBase]:
+    def child(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._child_nodes
 
-    def descendant(self, node: NodeBase) -> Iterator[NodeBase]:
+    def descendant(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._iterate_descendants()
 
-    def descendant_or_self(self, node: NodeBase) -> Iterator[NodeBase]:
+    def descendant_or_self(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield node
         yield from node._iterate_descendants()
 
-    def following(self, node: NodeBase) -> Iterator[NodeBase]:
+    def following(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._iterate_following(include_descendants=False)
 
-    def following_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
+    def following_sibling(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._iterate_following_siblings()
 
-    def parent(self, node: NodeBase) -> Iterator[_DocumentNode | NodeBase]:
+    def parent(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         if node._parent is None:
             yield _DocumentNode(node)
         else:
             yield node._parent
 
-    def preceding(self, node: NodeBase) -> Iterator[NodeBase]:
+    def preceding(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._iterate_preceding(include_ancestors=False)
 
-    def preceding_sibling(self, node: NodeBase) -> Iterator[NodeBase]:
+    def preceding_sibling(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield from node._iterate_preceding_siblings()
 
-    def self(self, node: NodeBase) -> Iterator[NodeBase]:
+    def self(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
         yield node
 
 
@@ -252,7 +330,9 @@ class LocationPath(Node):
     def __repr__(self):
         return nested_repr(self)
 
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
+    def evaluate(
+        self, node: XMLNodeType, namespaces: Namespaces
+    ) -> Iterator[XMLNodeType]:
         if self.parent_path:
             yield from self.location_steps[-1].evaluate(
                 node_set=self.parent_path.evaluate(node=node, namespaces=namespaces),
@@ -260,11 +340,11 @@ class LocationPath(Node):
             )
 
         else:
-            node_set: Iterable[_DocumentNode | NodeBase]
+            node_set: tuple[XMLNodeType,]
             if self.absolute:
                 while node._parent is not None:
                     node = node._parent
-                if isinstance(node, DocumentNodeType):
+                if isinstance(node, _DocumentNodeType):
                     node_set = (node,)
                 else:
                     node_set = (_DocumentNode(node),)
@@ -312,8 +392,8 @@ class LocationStep(Node):
                 return self._anders_predicates._derived_attributes
 
     def evaluate(
-        self, node_set: Iterable[_DocumentNode | NodeBase], namespaces: Namespaces
-    ) -> Iterator[NodeBase]:
+        self, node_set: Iterable[XMLNodeType], namespaces: Namespaces
+    ) -> Iterator[XMLNodeType]:
         yielded_nodes = set()
         for node in node_set:
             for result_node in self._evaluate(node=node, namespaces=namespaces):
@@ -323,8 +403,8 @@ class LocationStep(Node):
                     yield result_node
 
     def _evaluate(
-        self, node: _DocumentNode | NodeBase, namespaces: Namespaces
-    ) -> Sequence[NodeBase]:
+        self, node: XMLNodeType, namespaces: Namespaces
+    ) -> Sequence[XMLNodeType]:
         node_test = self.node_test
         predicates = self.predicates
 
@@ -384,11 +464,13 @@ class XPathExpression(Node):
     def __repr__(self):
         return nested_repr(self)
 
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> Iterator[NodeBase]:
+    def evaluate(
+        self, node: XMLNodeType, namespaces: Namespaces
+    ) -> Iterator[XMLNodeType]:
         yielded_nodes: set[int] = set()
         for path in self.location_paths:
             for result in path.evaluate(node=node, namespaces=namespaces):
-                assert not isinstance(result, DocumentNodeType)
+                assert not isinstance(result, _DocumentNodeType)
                 _id = id(result)
                 if _id not in yielded_nodes:
                     yielded_nodes.add(_id)
@@ -412,10 +494,9 @@ class AnyNameTest(NodeTestNode):
         self.prefix: Final = prefix
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
+    def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         if not isinstance(node, TagNodeType):
             return False
-        node = cast("TagNode", node)
 
         if self.prefix:
             return node.namespace == namespaces[self.prefix]
@@ -431,10 +512,9 @@ class NameMatchTest(NodeTestNode):
         self.local_name: Final = local_name
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
+    def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         if not isinstance(node, TagNodeType):
             return False
-        node = cast("TagNode", node)
 
         # this intentionally deviates from the spec, which states that
         # "if the QName does not have a prefix, then the namespace URI is null".
@@ -478,8 +558,8 @@ class NodeTypeTest(NodeTestNode):
     def __init__(self, type_: type):
         self.type: Final = type_
 
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
-        return isinstance(node, (self.type, DocumentNodeType))
+    def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
+        return isinstance(node, (self.type, _DocumentNodeType))
 
 
 class ProcessingInstructionTest(NodeTypeTest):
@@ -489,10 +569,11 @@ class ProcessingInstructionTest(NodeTypeTest):
         super().__init__(ProcessingInstructionNodeType)
         self.target: Final = target
 
-    def evaluate(self, node: NodeBase, namespaces: Namespaces) -> bool:
+    def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         if not super().evaluate(node=node, namespaces=namespaces):
             return False
-        return cast("ProcessingInstructionNode", node).target == self.target
+        assert isinstance(node, ProcessingInstructionNodeType)
+        return node.target == self.target
 
 
 # predicate evaluation
@@ -504,7 +585,7 @@ class AnyValue(EvaluationNode):
     def __init__(self, value: Any):
         self.value: Final = value
 
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> Any:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Any:
         return self.value
 
 
@@ -516,12 +597,12 @@ class AttributeValue(EvaluationNode):
         self.local_name: Final = name
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> Optional[str]:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Optional[str]:
         if not isinstance(node, TagNodeType):
             return None
 
         if (
-            attribute := cast("TagNode", node).attributes.get(
+            attribute := node.attributes.get(
                 (context.namespaces.get(self.prefix or "", ""), self.local_name)
             )
         ) is None:
@@ -564,7 +645,7 @@ class BooleanOperator(EvaluationNode):
 
         raise InvalidCodePath
 
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> Any:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Any:
         return self.operator(
             self.left.evaluate(node=node, context=context),
             self.right.evaluate(node=node, context=context),
@@ -617,7 +698,7 @@ class Function(EvaluationNode):
             and self.arguments == other.arguments
         )
 
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> Any:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Any:
         return self.function(
             context, *(x.evaluate(node=node, context=context) for x in self.arguments)
         )
@@ -631,10 +712,9 @@ class HasAttribute(EvaluationNode):
         self.local_name: Final = local_name
 
     @ensure_prefix
-    def evaluate(self, node: NodeBase, context: EvaluationContext) -> bool:
+    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> bool:
         if not isinstance(node, TagNodeType):
             return False
-        node = cast("TagNode", node)
         return (
             node.attributes.get(
                 (context.namespaces.get(self.prefix, ""), self.local_name)

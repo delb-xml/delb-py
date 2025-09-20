@@ -28,19 +28,24 @@ from _delb.nodes import (
     _reduce_whitespace_between_siblings,
     Attribute,
     CommentNode,
-    NodeBase,
     ProcessingInstructionNode,
     _TagDefinition,
     TagNode,
     TextNode,
 )
 from _delb.parser import Event, EventType, ParserOptions, TagEventData, parse_events
+from _delb.typing import XMLNodeType
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.typing import AttributeAccessor, NodeSource, InputStream
+    from _delb.typing import (
+        AttributeAccessor,
+        NodeSource,
+        InputStream,
+        TagNodeType,
+    )
 
 
 # defining tag node templates
@@ -137,11 +142,11 @@ def tag(*args):  # noqa: C901
             return _TagDefinition(
                 local_name=args[0], attributes=prepare_attributes(second_arg)
             )
-        if isinstance(second_arg, (str, NodeBase, _TagDefinition)):
+        if isinstance(second_arg, (str, XMLNodeType, _TagDefinition)):
             return _TagDefinition(local_name=args[0], children=(second_arg,))
         if isinstance(second_arg, Sequence):
             if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in second_arg
+                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in second_arg
             ):
                 raise TypeError(
                     "Either node instances, strings or objects from :func:`delb.tag` "
@@ -151,7 +156,7 @@ def tag(*args):  # noqa: C901
 
     if len(args) == 3:
         third_arg = args[2]
-        if isinstance(third_arg, (str, NodeBase, _TagDefinition)):
+        if isinstance(third_arg, (str, XMLNodeType, _TagDefinition)):
             return _TagDefinition(
                 local_name=args[0],
                 attributes=prepare_attributes(args[1]),
@@ -159,7 +164,7 @@ def tag(*args):  # noqa: C901
             )
         if isinstance(third_arg, Sequence):
             if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in third_arg
+                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in third_arg
             ):
                 raise TypeError(
                     "Either node instances, strings or objects from :func:`delb.tag` "
@@ -190,25 +195,25 @@ class TreeBuilder:
     def __init__(
         self, data: InputStream, parse_options: ParserOptions, base_url: str | None
     ):
-        self.children: Final[list[list[NodeBase]]] = []
+        self.children: Final[list[list[XMLNodeType]]] = []
         self.event_feed: Final = parse_events(data, parse_options, base_url)
         self.options: Final = parse_options
         self.preserve_space: Final[list[bool]] = []
-        self.started_tags: Final[list[TagNode]] = []
+        self.started_tags: Final[list[TagNodeType]] = []
         self.xml_ids: Final[set[str]] = set()
 
     def __iter__(self):
         return self
 
-    def __next__(self) -> NodeBase:
+    def __next__(self) -> XMLNodeType:
         while True:
             event = next(self.event_feed)
             result = self.handle_event(event)
             if result is not None:
                 return result
 
-    def handle_event(self, event: Event) -> NodeBase | None:
-        result: NodeBase | None
+    def handle_event(self, event: Event) -> XMLNodeType | None:
+        result: XMLNodeType | None
         type_, data = event
 
         match type_:
@@ -236,13 +241,12 @@ class TreeBuilder:
                 assert not self.children
                 assert not self.started_tags
                 assert not self.preserve_space
-                assert isinstance(result, NodeBase)
                 self.xml_ids.clear()
                 return result
 
         return None
 
-    def handle_tag_end(self, data: TagEventData | None) -> TagNode:
+    def handle_tag_end(self, data: TagEventData | None) -> TagNodeType:
         result = self.started_tags.pop()
         if __debug__ and data:
             assert result.namespace == data.namespace
@@ -311,7 +315,7 @@ def parse_nodes(
     options: Optional[ParserOptions] = None,
     *,
     base_url: str | None = None,
-) -> Iterator[NodeBase]:
+) -> Iterator[XMLNodeType]:
     """Parses the provided input data to a sequence of nodes."""
     if options is None:
         options = ParserOptions()
@@ -323,7 +327,7 @@ def parse_tree(
     options: Optional[ParserOptions] = None,
     *,
     base_url: str | None = None,
-) -> NodeBase:
+) -> XMLNodeType:
     """Parses the provided input to a single node."""
     result = None
     for node in parse_nodes(data, options, base_url=base_url):

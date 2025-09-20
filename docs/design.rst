@@ -194,7 +194,7 @@ complicated function seen above would look like:
 .. code-block:: python
 
    @altered_default_filters()
-   def remove_nodes(*nodes: NodeBase, keep_children=False):
+   def remove_nodes(*nodes: XMLNodeType, keep_children=False):
        """ Removes the given nodes from its tree. Unless ``keep_children`` is
             passed as ``True``, its children vanish with it into void. """
        for node in nodes:

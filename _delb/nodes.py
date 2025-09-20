@@ -16,13 +16,7 @@
 from __future__ import annotations
 
 import warnings
-from abc import abstractmethod, ABC
-from collections.abc import (
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
-)
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -56,10 +50,12 @@ from _delb.utils import (
 )
 from _delb.typing import (
     CommentNodeType,
-    DocumentNodeType,
+    _DocumentNodeType,
+    ParentNodeType,
     ProcessingInstructionNodeType,
     TagNodeType,
     TextNodeType,
+    XMLNodeType,
 )
 from _delb.xpath import QueryResults, _css_to_xpath
 from _delb.xpath import evaluate as evaluate_xpath, parse as parse_xpath
@@ -135,7 +131,7 @@ def new_tag_node(  # pragma: no cover
     )
 
 
-def _reduce_whitespace_between_siblings(nodes: list[NodeBase] | Siblings):
+def _reduce_whitespace_between_siblings(nodes: list[XMLNodeType] | Siblings):
     if not (
         text_nodes := tuple(
             (i, n) for i, n in enumerate(nodes) if isinstance(n, TextNode)
@@ -316,7 +312,7 @@ class TagAttributes(MutableMapping):
     def __init__(
         self,
         data: _AttributesData | dict[AttributeAccessor, str] | TagAttributes,
-        node: TagNode,
+        node: TagNodeType,
     ):
         if not isinstance(data, Mapping):
             raise TypeError
@@ -415,33 +411,33 @@ class Siblings:
         belongs_to: None | _ParentNode,
         nodes: Optional[Iterable[NodeSource]],
     ):
-        self.__data: Final[list[NodeBase]] = []
+        self.__data: Final[list[XMLNodeType]] = []
         self.__belongs_to: Final = belongs_to
         if nodes is not None:
             for node in nodes:
                 self.__data.append(self._handle_new_sibling(node))
 
     @overload
-    def __getitem__(self, index: int) -> NodeBase:
+    def __getitem__(self, index: int) -> XMLNodeType:
         pass
 
     @overload
-    def __getitem__(self, index: slice) -> list[NodeBase]:
+    def __getitem__(self, index: slice) -> list[XMLNodeType]:
         pass
 
-    def __getitem__(self, index: int | slice) -> NodeBase | list[NodeBase]:
+    def __getitem__(self, index: int | slice) -> XMLNodeType | list[XMLNodeType]:
         if not isinstance(index, (int, slice)):
             raise TypeError
 
         return self.__data[index]
 
-    def __iter__(self) -> Iterator[NodeBase]:
+    def __iter__(self) -> Iterator[XMLNodeType]:
         return iter(self.__data)
 
     def __len__(self) -> int:
         return len(self.__data)
 
-    def append(self, node: NodeSource) -> NodeBase:
+    def append(self, node: NodeSource) -> XMLNodeType:
         result = self._handle_new_sibling(node)
         self.__data.append(result)
         return result
@@ -451,28 +447,28 @@ class Siblings:
             node._parent = None
         self.__data.clear()
 
-    def index(self, node: NodeBase) -> int:
+    def index(self, node: XMLNodeType) -> int:
         for result, n in enumerate(self.__data):
             if n is node:
                 return result
         else:
             raise IndexError
 
-    def insert(self, index: int, node: NodeSource) -> NodeBase:
+    def insert(self, index: int, node: NodeSource) -> XMLNodeType:
         result = self._handle_new_sibling(node)
         self.__data.insert(index, result)
         return result
 
-    def prepend(self, node: NodeSource) -> NodeBase:
+    def prepend(self, node: NodeSource) -> XMLNodeType:
         result = self._handle_new_sibling(node)
         self.__data.insert(0, result)
         return result
 
-    def remove(self, node: NodeBase):
+    def remove(self, node: XMLNodeType):
         node._parent = None
         del self.__data[self.index(node)]
 
-    def _handle_new_sibling(self, node: NodeSource) -> NodeBase:
+    def _handle_new_sibling(self, node: NodeSource) -> XMLNodeType:
         if isinstance(self.__belongs_to, _DocumentNode):
             if isinstance(node, (str, _TagDefinition)):
                 raise TypeError
@@ -487,11 +483,12 @@ class Siblings:
             case _TagDefinition():
                 assert isinstance(self.__belongs_to, TagNode)
                 node = self.__belongs_to._new_tag_node_from_definition(node)
-            case NodeBase():
+            case XMLNodeType():
                 if node._parent is not None:
                     raise InvalidOperation(
                         "Only a detached node can be added to the tree. Use "
-                        ":meth:`NodeBase.clone` or :meth:`NodeBase.detach` to get one."
+                        ":meth:`XMLNodeType.clone` or :meth:`XMLNodeType.detach` to "
+                        "get one."
                     )
             case _:
                 raise TypeError(
@@ -499,7 +496,6 @@ class Siblings:
                     "must be provided as child node."
                 )
 
-        assert isinstance(node, NodeBase)
         node._parent = self.__belongs_to
         return node
 
@@ -507,9 +503,7 @@ class Siblings:
 # nodes
 
 
-class NodeBase(ABC):
-    _child_nodes: Siblings
-    _parent: None | _ParentNode
+class _NodeCommons(XMLNodeType):
 
     __slots__ = ("_parent",)
 
@@ -518,10 +512,6 @@ class NodeBase(ABC):
 
     def __deepcopy__(self, memo):
         return self.clone(deep=True)
-
-    @abstractmethod
-    def __len__(self):
-        pass
 
     def __str__(self) -> str:
         return self.serialize(
@@ -532,20 +522,7 @@ class NodeBase(ABC):
 
     def add_following_siblings(
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes to the right of the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were added.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
+    ) -> tuple[XMLNodeType, ...]:
         if self._parent is None:
             raise InvalidOperation("Can't add sibling to a node without parent node.")
 
@@ -559,20 +536,7 @@ class NodeBase(ABC):
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes to the left of the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were added.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
+    ) -> tuple[XMLNodeType, ...]:
         if self._parent is None:
             raise InvalidOperation("Can't add sibling to a node without parent node.")
 
@@ -580,25 +544,10 @@ class NodeBase(ABC):
             self._parent._child_nodes.index(self), *reversed(node), clone=clone
         )
 
-    @abstractmethod
-    def clone(self, deep: bool = False) -> NodeBase:
-        """
-        Creates a new node of the same type with duplicated contents.
-
-        :param deep: Clones the whole subtree if :obj:`True`.
-        :return: A copy of the node.
-        """
-        pass
-
     @property
     def depth(self) -> int:
-        """
-        The depth (or level) of the node in its tree.
-
-        :meta category: Node properties
-        """
         result = 0
-        pointer: NodeBase | None = self
+        pointer: XMLNodeType | None = self
         assert pointer is not None
         while True:
             pointer = pointer._parent
@@ -607,39 +556,12 @@ class NodeBase(ABC):
             result += 1
         return result
 
-    def detach(self, retain_child_nodes: bool = False) -> NodeBase:
-        """
-        Removes the node from its tree.
-
-        :param retain_child_nodes: Keeps the node's descendants in the originating
-                                   tree if :obj:`True`.
-        :return: The removed node.
-        :meta category: Methods to remove a node
-        """
+    def detach(self, retain_child_nodes: bool = False) -> XMLNodeType:
         if (parent := self._parent) is not None:
             parent._child_nodes.remove(self)
         return self
 
-    @property
-    @abstractmethod
-    def document(self) -> Optional[Document]:
-        """
-        The :class:`Document` instance that the node is associated with or
-        :obj:`None`.
-
-        :meta category: Related document and nodes properties
-        """
-        pass
-
-    def fetch_following(self, *filter: Filter) -> Optional[NodeBase]:
-        """
-        Retrieves the next filter matching node on the following axis.
-
-        :param filter: Any number of :term:`filter` s.
-        :return: The next node in document order that matches all filters or
-                 :obj:`None`.
-        :meta category: Methods to fetch a relative node
-        """
+    def fetch_following(self, *filter: Filter) -> Optional[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_following():
             if all(f(node) for f in all_filters):
@@ -647,21 +569,13 @@ class NodeBase(ABC):
         else:
             return None
 
-    def _fetch_following(self) -> Optional[NodeBase]:
+    def _fetch_following(self) -> Optional[XMLNodeType]:
         for node in self._iterate_following():
             return node
         else:
             return None
 
-    def fetch_following_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        """
-        Retrieves the next filter matching node on the following-sibling axis.
-
-        :param filter: Any number of :term:`filter` s.
-        :return: The next sibling to the right that matches all filters or
-                 :obj:`None`.
-        :meta category: Methods to fetch a relative node
-        """
+    def fetch_following_sibling(self, *filter: Filter) -> Optional[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_following_siblings():
             if all(f(node) for f in all_filters):
@@ -669,22 +583,14 @@ class NodeBase(ABC):
         else:
             return None
 
-    def _fetch_following_sibling(self) -> Optional[NodeBase]:
+    def _fetch_following_sibling(self) -> Optional[XMLNodeType]:
         if self._parent is None:
             return None
         if (siblings := self._parent._child_nodes)[-1] is self:
             return None
         return siblings[siblings.index(self) + 1]
 
-    def fetch_preceding(self, *filter: Filter) -> Optional[NodeBase]:
-        """
-        Retrieves the next filter matching node on the preceding axis.
-
-        :param filter: Any number of :term:`filter` s.
-        :return: The previous node in document order that matches all filters or
-                 :obj:`None`.
-        :meta category: Methods to fetch a relative node
-        """
+    def fetch_preceding(self, *filter: Filter) -> Optional[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_preceding():
             if all(f(node) for f in all_filters):
@@ -692,21 +598,13 @@ class NodeBase(ABC):
         else:
             return None
 
-    def _fetch_preceding(self) -> Optional[NodeBase]:
+    def _fetch_preceding(self) -> Optional[XMLNodeType]:
         for node in self._iterate_preceding():
             return node
         else:
             return None
 
-    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[NodeBase]:
-        """
-        Retrieves the next filter matching node on the preceding-sibling axis.
-
-        :param filter: Any number of :term:`filter` s.
-        :return: The next sibling to the left that matches all filters or
-                 :obj:`None`.
-        :meta category: Methods to fetch a relative node
-        """
+    def fetch_preceding_sibling(self, *filter: Filter) -> Optional[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_preceding_siblings():
             if all(f(node) for f in all_filters):
@@ -714,7 +612,7 @@ class NodeBase(ABC):
         else:
             return None
 
-    def _fetch_preceding_sibling(self):
+    def _fetch_preceding_sibling(self) -> Optional[XMLNodeType]:
         if self._parent is None:
             return None
 
@@ -723,35 +621,7 @@ class NodeBase(ABC):
         return siblings[siblings.index(self) - 1]
 
     @property
-    @abstractmethod
-    def first_child(self) -> Optional[NodeBase]:
-        """
-        The node's first child node.
-
-        :meta category: Related document and nodes properties
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def full_text(self) -> str:
-        """
-        The concatenated contents of all text node descendants in document order.
-
-        :meta category: Node content properties
-        """
-        pass
-
-    @property
     def index(self) -> Optional[int]:
-        """
-        The node's index within the parent's collection of child nodes. When this
-        property is read the currently set default filters are applied.
-        The value :obj:`None` is returned for node without parents and when themself
-        are not matching the filters.
-
-        :meta category: Node properties
-        """
         if self._parent is not None:
             for result, node in enumerate(
                 n
@@ -763,16 +633,7 @@ class NodeBase(ABC):
 
         return None
 
-    def iterate_ancestors(self, *filter: Filter) -> Iterator[_ParentNode]:
-        """
-        Iterator over the filter matching nodes on the ancestor axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
-                 to top.
-        :meta category: Methods to iterate over related node
-        """
+    def iterate_ancestors(self, *filter: Filter) -> Iterator[ParentNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_ancestors():
             if all(f(node) for f in all_filters):
@@ -780,8 +641,8 @@ class NodeBase(ABC):
 
     def _iterate_ancestors(
         self, *, _include_document_node: bool = False
-    ) -> Iterator[_ParentNode]:
-        node: None | NodeBase = self
+    ) -> Iterator[ParentNodeType]:
+        node: None | XMLNodeType = self
         assert node is not None
         if _include_document_node:
             while (node := node._parent) is not None:
@@ -793,50 +654,9 @@ class NodeBase(ABC):
                     return
                 yield node
 
-    @abstractmethod
-    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the child axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-                       yielded.
-        :return: A :term:`generator iterator` that yields the child nodes of the node.
-        :meta category: Methods to iterate over related node
-        """
-        pass
-
-    @abstractmethod
-    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the ancestor axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-                       yielded.
-        :return: A :term:`generator iterator` that yields the descending nodes of the
-                 node.
-        :meta category: Methods to iterate over related node
-        """
-        pass
-
-    @abstractmethod
-    def _iterate_descendants(self) -> Iterator[NodeBase]:
-        pass
-
     def iterate_following(
         self, *filter: Filter, include_descendants: bool = True
-    ) -> Iterator[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the following axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :param include_descendants: Also yields descendants of the staring node. This
-                                    deviates from the XPath definition of the following
-                                    axes.
-        :return: A :term:`generator iterator` that yields the following nodes in
-                 document order.
-        :meta category: Methods to iterate over related node
-        """
+    ) -> Iterator[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_following(include_descendants=include_descendants):
             if all(f(node) for f in all_filters):
@@ -844,7 +664,7 @@ class NodeBase(ABC):
 
     def _iterate_following(
         self, *, include_descendants: bool = True
-    ) -> Iterator[NodeBase]:
+    ) -> Iterator[XMLNodeType]:
         if include_descendants:
             yield from self._iterate_descendants()
 
@@ -870,22 +690,13 @@ class NodeBase(ABC):
             include_descendants=True
         )
 
-    def iterate_following_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the following-sibling axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :return: A :term:`generator iterator` that yields the siblings to the node's
-                 right.
-        :meta category: Methods to iterate over related node
-        """
+    def iterate_following_siblings(self, *filter: Filter) -> Iterator[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_following_siblings():
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_following_siblings(self) -> Iterator[NodeBase]:
+    def _iterate_following_siblings(self) -> Iterator[XMLNodeType]:
         if self._parent is None:
             if self.document:
                 yield from self.document.epilogue
@@ -897,19 +708,7 @@ class NodeBase(ABC):
 
     def iterate_preceding(
         self, *filter: Filter, include_ancestors: bool = True
-    ) -> (Iterator)[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the preceding axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :param include_ancestors: Also yields ancestor nodes / tag nodes that were
-                                  started earlier in the stream. This deviates from the
-                                  XPath definition of the preceding axis.
-        :return: A :term:`generator iterator` that yields the previous nodes in document
-                 order.
-        :meta category: Methods to iterate over related node
-        """
+    ) -> Iterator[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_preceding(include_ancestors=include_ancestors):
             if all(f(node) for f in all_filters):
@@ -917,7 +716,7 @@ class NodeBase(ABC):
 
     def _iterate_preceding(
         self, *, include_ancestors: bool = True
-    ) -> Iterator[NodeBase]:
+    ) -> Iterator[XMLNodeType]:
         if (parent := self._parent) is None:
             return
 
@@ -931,22 +730,13 @@ class NodeBase(ABC):
             yield parent
         yield from parent._iterate_preceding(include_ancestors=include_ancestors)
 
-    def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[NodeBase]:
-        """
-        Iterator over the filter matching nodes on the preceding-sibling axis.
-
-        :param filter: Any number of :term:`filter` s that a node must match to be
-               yielded.
-        :return: A :term:`generator iterator` that yields the siblings to the node's
-                 left.
-        :meta category: Methods to iterate over related node
-        """
+    def iterate_preceding_siblings(self, *filter: Filter) -> Iterator[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._iterate_preceding_siblings():
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_preceding_siblings(self) -> Iterator[NodeBase]:
+    def _iterate_preceding_siblings(self) -> Iterator[XMLNodeType]:
         if self._parent is None:
             if self.document is not None:
                 yield from reversed(self.document.prologue)
@@ -956,7 +746,7 @@ class NodeBase(ABC):
         for index in range(siblings.index(self) - 1, -1, -1):
             yield siblings[index]
 
-    def _iterate_reversed_descendants(self) -> Iterator[NodeBase]:
+    def _iterate_reversed_descendants(self) -> Iterator[XMLNodeType]:
         if not isinstance(self, TagNode) or not self._child_nodes:
             yield self
             return
@@ -977,55 +767,17 @@ class NodeBase(ABC):
                 yield parent
 
     @property
-    @abstractmethod
-    def last_child(self) -> Optional[NodeBase]:
-        """
-        The node's last child node.
-
-        :meta category: Related document and nodes properties
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def last_descendant(self) -> Optional[NodeBase]:
-        """
-        The node's last descendant.
-
-        :meta category: Related document and nodes properties
-        """
-        pass
-
-    @property
-    def parent(self) -> None | _ParentNode:
-        """
-        The node's parent or :obj:`None`.
-
-        :meta category: Related document and nodes properties
-        """
+    def parent(self) -> Optional[ParentNodeType]:
         return None if isinstance(self._parent, _DocumentNode) else self._parent
 
-    def replace_with(self, node: NodeSource, clone: bool = False) -> NodeBase:
-        """
-        Removes the node and places the given one in its tree location.
-
-        The node can be a concrete instance of any node type or a rather abstract
-        description in the form of a string or an object returned from the :func:`tag`
-        function that is used to derive a :class:`TextNode` respectively
-        :class:`TagNode` instance from.
-
-        :param node: The replacing node.
-        :param clone: A concrete, replacing node is cloned if :obj:`True`.
-        :return: The removed node.
-        :meta category: Methods to remove a node
-        """
+    def replace_with(self, node: NodeSource, clone: bool = False) -> XMLNodeType:
         if (parent := self._parent) is None:
             raise InvalidOperation(
                 "Cannot replace a root node of a tree. Maybe you want to set the "
                 "`root` property of a Document instance?"
             )
 
-        if clone and isinstance(node, NodeBase):
+        if clone and isinstance(node, _NodeCommons):
             node = node.clone(deep=True)
         parent._child_nodes.insert(parent._child_nodes.index(self), node)
         return self.detach(retain_child_nodes=False)
@@ -1036,20 +788,7 @@ class NodeBase(ABC):
         format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-    ):
-        """
-        Returns a string that contains the serialization of the node. See
-        :doc:`/api/serialization` for details.
-
-        :param format_options: An instance of :class:`FormatOptions` can be provided to
-                               configure formatting.
-        :param namespaces: A mapping of prefixes to namespaces.  If not provided the
-                           node's namespace will serve as default namespace.  Prefixes
-                           for undeclared namespaces are enumerated with the prefix
-                           ``ns``.
-        :param newline: See :class:`io.TextIOWrapper` for a detailed explanation of the
-                        parameter with the same name.
-        """
+    ) -> str:
         serializer = _get_serializer(
             _StringWriter(newline=newline),
             format_options=format_options,
@@ -1063,24 +802,10 @@ class NodeBase(ABC):
         expression: str,
         namespaces: Optional[NamespaceDeclarations] = None,
     ) -> QueryResults:
-        """
-        Queries the tree with an XPath expression with this node as initial context
-        node.
-
-        :param expression: A supported XPath 1.0 expression that contains one or more
-                           location paths.
-        :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces. If not provided the node's namespace will serve
-                           as default, mapped to an empty prefix.
-        :return: All nodes that match the evaluation of the provided XPath expression.
-        :meta category: Methods to query the tree
-
-        See :doc:`/api/querying` for details on the extent of the XPath implementation.
-        """
         return evaluate_xpath(node=self, expression=expression, namespaces=namespaces)
 
 
-class _LeafNode(NodeBase):
+class _LeafNode(_NodeCommons):
     """Node types using this mixin also can't be root nodes of a document."""
 
     __slots__ = ()
@@ -1108,7 +833,7 @@ class _LeafNode(NodeBase):
 
     # the following yield statements are there to trick mypy
 
-    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_children(self, *filter: Filter) -> Iterator[XMLNodeType]:
         """
         A :term:`generator iterator` that yields nothing.
 
@@ -1117,7 +842,7 @@ class _LeafNode(NodeBase):
         return
         yield from ()
 
-    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_descendants(self, *filter: Filter) -> Iterator[XMLNodeType]:
         """
         A :term:`generator iterator` that yields nothing.
 
@@ -1126,12 +851,12 @@ class _LeafNode(NodeBase):
         return
         yield from ()
 
-    def _iterate_descendants(self) -> Iterator[NodeBase]:
+    def _iterate_descendants(self) -> Iterator[XMLNodeType]:
         return
         yield from ()
 
 
-class _ParentNode(NodeBase):
+class _ParentNode(_NodeCommons, ParentNodeType):
 
     __slots__ = ("_child_nodes",)
 
@@ -1151,35 +876,21 @@ class _ParentNode(NodeBase):
 
     def append_children(
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes as child nodes after any existing to the child nodes of
-        the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were appended.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
+    ) -> tuple[XMLNodeType, ...]:
         if not node:
             return ()
 
-        result: list[NodeBase] = []
+        result: list[XMLNodeType] = []
 
         for _node in node:
-            if clone and isinstance(_node, NodeBase):
+            if clone and isinstance(_node, _NodeCommons):
                 _node = _node.clone(deep=True)
             result.append(self._child_nodes.append(_node))
 
         return tuple(result)
 
     @property
-    def first_child(self) -> Optional[NodeBase]:
+    def first_child(self) -> Optional[XMLNodeType]:
         for node in self._child_nodes:
             if all(f(node) for f in default_filters[-1]):
                 return node
@@ -1194,40 +905,25 @@ class _ParentNode(NodeBase):
 
     def insert_children(
         self, index: int, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Inserts one or more child nodes.
-
-        :param index: The index at which the first of the given nodes will be inserted,
-                      the remaining nodes are added afterwards in the given order.
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were inserted.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
+    ) -> tuple[XMLNodeType, ...]:
         children_size = len(self._child_nodes)
         if not (children_size * -1 <= index <= children_size):
             raise IndexError
 
         result = []
         for _node in reversed(node):
-            if clone and isinstance(_node, NodeBase):
+            if clone and isinstance(_node, _NodeCommons):
                 _node = _node.clone(deep=True)
             result.append(self._child_nodes.insert(index, _node))
         return tuple(result)
 
-    def iterate_children(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_children(self, *filter: Filter) -> Iterator[XMLNodeType]:
         all_filters = default_filters[-1] + filter
         for node in self._child_nodes:
             if all(f(node) for f in all_filters):
                 yield node
 
-    def iterate_descendants(self, *filter: Filter) -> Iterator[NodeBase]:
+    def iterate_descendants(self, *filter: Filter) -> Iterator[XMLNodeType]:
         if not self._child_nodes:
             return
 
@@ -1236,7 +932,7 @@ class _ParentNode(NodeBase):
             if all(f(node) for f in all_filters):
                 yield node
 
-    def _iterate_descendants(self) -> Iterator[NodeBase]:
+    def _iterate_descendants(self) -> Iterator[XMLNodeType]:
         stack = [(self._child_nodes, 0)]
 
         while stack:
@@ -1251,7 +947,7 @@ class _ParentNode(NodeBase):
                     break
 
     @property
-    def last_child(self) -> Optional[NodeBase]:
+    def last_child(self) -> Optional[XMLNodeType]:
         if self._child_nodes:
             filters = default_filters[-1]
             for node in self._child_nodes[::-1]:
@@ -1260,36 +956,47 @@ class _ParentNode(NodeBase):
         return None
 
     @property
-    def last_descendant(self) -> Optional[NodeBase]:
+    def last_descendant(self) -> Optional[XMLNodeType]:
         for node in self._iterate_reversed_descendants():
             if node is not self and all(f(node) for f in default_filters[-1]):
                 return node
         else:
             return None
 
+    def merge_text_nodes(self, deep: bool = False):
+        empty_nodes: list[TextNodeType] = []
+
+        for index in range(len(self._child_nodes) - 1, -1, -1):
+            node = self._child_nodes[index]
+            if isinstance(node, TextNode):
+                if not node.content:
+                    empty_nodes.append(node)
+
+                elif index and isinstance(
+                    (preceding_node := self._child_nodes[index - 1]), TextNode
+                ):
+                    preceding_node.content += node.content
+                    empty_nodes.append(node)
+
+        for node in empty_nodes:
+            node.content = ""
+            node.detach()
+
+        if deep:
+            for node in (n for n in self._child_nodes if isinstance(n, TagNode)):
+                node.merge_text_nodes(deep=True)
+
     def prepend_children(
-        self, *node: NodeBase, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
-        """
-        Adds one or more nodes as child nodes before any existing to the child nodes of
-        the node this method is called on.
-
-        :param node: The node(s) to be added.
-        :param clone: Clones the concrete nodes before adding if :obj:`True`.
-        :return: The concrete nodes that were prepended.
-        :meta category: Methods to add nodes to a tree
-
-        The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
-        """
+        self, *node: XMLNodeType, clone: bool = False
+    ) -> tuple[XMLNodeType, ...]:
         return self.insert_children(0, *node, clone=clone)
 
 
 class CommentNode(_LeafNode, CommentNodeType):
     """
     The instances of this class represent comment nodes of a tree.
+
+    This class implements :class:`delb.typing.CommentNodeType`.
 
     :param content: The comment's content a.k.a. text.
     """
@@ -1314,11 +1021,6 @@ class CommentNode(_LeafNode, CommentNodeType):
 
     @property
     def content(self) -> str:
-        """
-        The comment's text.
-
-        :meta category: Node content properties
-        """
         return self.__content
 
     @content.setter
@@ -1330,12 +1032,12 @@ class CommentNode(_LeafNode, CommentNodeType):
         self.__content = value
 
 
-class _DocumentNode(_ParentNode, DocumentNodeType):
+class _DocumentNode(_ParentNode, _DocumentNodeType):
     """
     This node type is only supposed to facilitate tree traversal beyond a root node via
     its :attr:`_DocumentNode._child_nodes` attribute. Therefore it shall be only
-    accessible by :attr:`NodeBase._parent` and yielded by
-    :meth:`NodeBase._iterate_ancestors` if requested with an argument.
+    accessible by :attr:`XMLNodeType._parent` and yielded by
+    :meth:`XMLNodeType._iterate_ancestors` if requested with an argument.
     It also holds information to the related :class:`Document` instance of a tree.
     In the context of XPath evaluations it acts like :class:`xpath.ast._DocumentNode`
     that is used as shim for queries that target trees that are not associated to a
@@ -1344,11 +1046,11 @@ class _DocumentNode(_ParentNode, DocumentNodeType):
 
     __slots__ = ("__document",)
 
-    def __init__(self, document: Document | None, children: Iterable[NodeBase]):
+    def __init__(self, document: Document | None, children: Iterable[XMLNodeType]):
         self.__document: Final = document
         super().__init__(children)
 
-    def clone(self, deep: bool = False) -> NodeBase:  # pragma: no cover
+    def clone(self, deep: bool = False) -> XMLNodeType:  # pragma: no cover
         raise InvalidCodePath
 
     @property
@@ -1358,15 +1060,17 @@ class _DocumentNode(_ParentNode, DocumentNodeType):
 
     def add_following_siblings(  # pragma: no cover
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
+    ) -> tuple[XMLNodeType, ...]:
         raise InvalidCodePath
 
     def add_preceding_siblings(  # pragma: no cover
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
+    ) -> tuple[XMLNodeType, ...]:
         raise InvalidCodePath
 
-    def detach(self, retain_child_nodes: bool = False) -> NodeBase:  # pragma: no cover
+    def detach(
+        self, retain_child_nodes: bool = False
+    ) -> XMLNodeType:  # pragma: no cover
         raise InvalidCodePath
 
     @property
@@ -1379,13 +1083,15 @@ class _DocumentNode(_ParentNode, DocumentNodeType):
 
     def replace_with(  # pragma: no cover
         self, node: NodeSource, clone: bool = False
-    ) -> NodeBase:
+    ) -> XMLNodeType:
         raise InvalidCodePath
 
 
 class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
     """
     The instances of this class represent processing instruction nodes of a tree.
+
+    This class implements :class:`delb.typing.ProcessingInstructionNodeType`.
 
     :param target: The processing instruction's target name.
     :param content: The processing instruction's text.
@@ -1419,11 +1125,6 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
 
     @property
     def content(self) -> str:
-        """
-        The processing instruction's text.
-
-        :meta category: Node content properties
-        """
         return self.__content
 
     @content.setter
@@ -1456,6 +1157,8 @@ class TagNode(_ParentNode, TagNodeType):
     """
     The instances of this class represent :term:`tag node` s of a tree, the equivalent
     of DOM's elements.
+
+    This class implements :class:`delb.typing.TagNodeType`.
 
     :param local_name: The tag name.
     :param attributes: Optional attributes that are assigned to the new node.
@@ -1531,11 +1234,11 @@ class TagNode(_ParentNode, TagNodeType):
         self.__attributes = TagAttributes(data=attributes or {}, node=self)
         super().__init__(children)
 
-    def __contains__(self, item: AttributeAccessor | NodeBase) -> bool:
+    def __contains__(self, item: AttributeAccessor | XMLNodeType) -> bool:
         match item:
             case str() | tuple():
                 return item in self.attributes
-            case NodeBase():
+            case XMLNodeType():
                 return item in self._child_nodes
             case _:
                 raise TypeError(
@@ -1549,22 +1252,22 @@ class TagNode(_ParentNode, TagNodeType):
                 del self.attributes[item]
             case int():
                 self[item].detach(retain_child_nodes=False)
-            case slice() if all(
-                (isinstance(x, int) or x is None)
-                for x in (cast("slice", item).start, cast("slice", item).stop)
-            ):
-                for node in self[item]:
-                    node.detach(retain_child_nodes=False)
             case slice():
-                del self.attributes[(item.start, item.stop)]
+                if all(
+                    isinstance(x, int) or x is None for x in (item.start, item.stop)
+                ):
+                    for node in self[item]:
+                        node.detach(retain_child_nodes=False)
+                else:
+                    del self.attributes[(item.start, item.stop)]
             case _:
-                raise TypeError(
+                raise TypeError(  # TODO or a slice
                     "Argument must be an integer or an attribute name. "
                     + ATTRIBUTE_ACCESSOR_MSG
                 )
 
     @overload
-    def __getitem__(self, item: int) -> NodeBase: ...
+    def __getitem__(self, item: int) -> XMLNodeType: ...
 
     @overload
     def __getitem__(self, item: AttributeAccessor) -> Attribute | None: ...
@@ -1629,7 +1332,7 @@ class TagNode(_ParentNode, TagNodeType):
 
     def add_following_siblings(
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
+    ) -> tuple[XMLNodeType, ...]:
         if self._parent is None:
             raise InvalidOperation("Can't add sibling to a node without parent node.")
 
@@ -1637,7 +1340,7 @@ class TagNode(_ParentNode, TagNodeType):
 
     def add_preceding_siblings(
         self, *node: NodeSource, clone: bool = False
-    ) -> tuple[NodeBase, ...]:
+    ) -> tuple[XMLNodeType, ...]:
         if self._parent is None:
             raise InvalidOperation("Can't add sibling to a node without parent node.")
 
@@ -1699,7 +1402,7 @@ class TagNode(_ParentNode, TagNodeType):
         """
         return self.__attributes
 
-    def clone(self, deep: bool = False) -> TagNode:
+    def clone(self, deep: bool = False) -> TagNodeType:
         result = TagNode(
             local_name=self.__local_name,
             namespace=self.__namespace,
@@ -1733,7 +1436,7 @@ class TagNode(_ParentNode, TagNodeType):
         """
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
-    def detach(self, retain_child_nodes: bool = False) -> TagNode:
+    def detach(self, retain_child_nodes: bool = False) -> TagNodeType:
         if isinstance(self._parent, _DocumentNode):
             raise InvalidOperation("The root node of a document cannot be detached.")
 
@@ -1766,41 +1469,7 @@ class TagNode(_ParentNode, TagNodeType):
         self,
         expression: str,
         namespaces: Optional[NamespaceDeclarations] = None,
-    ) -> TagNode:
-        """
-        Fetches a single node that is locatable by the provided XPath expression. If
-        the node doesn't exist, the non-existing branch will be created.
-
-        :param expression: An XPath expression that can unambiguously locate a
-                           descending node in a tree that has any state.
-        :param namespaces: A mapping of prefixes that are used in the expression to
-                           namespaces.  If not provided the node's namespace will serve
-                           as default, mapped to an empty prefix.
-        :return: The existing or freshly created node descibed with ``expression``.
-        :meta category: Methods to query the tree
-
-        These rules are imperative in your endeavour:
-
-        - All location steps must use the child axis.
-        - Each step needs to provide a name test.
-        - Attribute comparisons against literals are the only allowed predicates.
-        - Multiple attribute comparisons must be joined with the `and` operator and / or
-          contained in more than one predicate expression.
-        - The logical validity of multiple attribute comparisons isn't checked. E.g.
-          one could provide ``foo[@p="her"][@p="him"]``, but expect an undefined
-          behaviour.
-
-        >>> root = Document("<root/>").root
-        >>> grandchild = root.fetch_or_create_by_xpath(
-        ...     "child[@a='b']/grandchild"
-        ... )
-        >>> grandchild is root.fetch_or_create_by_xpath(
-        ...     "child[@a='b']/grandchild"
-        ... )
-        True
-        >>> str(root)
-        '<root><child a="b"><grandchild/></child></root>'
-        """
+    ) -> TagNodeType:
         ast = parse_xpath(expression)
         if not ast._is_unambiguously_locatable:
             raise ValueError(
@@ -1892,12 +1561,6 @@ class TagNode(_ParentNode, TagNodeType):
 
     @property
     def id(self) -> Optional[str]:
-        """
-        This is a shortcut to retrieve and set the ``id``  attribute in the XML
-        namespace. The client code is responsible to pass properly formed id names.
-
-        :meta category: Node content properties
-        """
         return self.attributes.get((XML_NAMESPACE, "id"))
 
     @id.setter
@@ -1923,11 +1586,7 @@ class TagNode(_ParentNode, TagNodeType):
 
     @property
     def local_name(self) -> str:
-        """
-        The node's name.
 
-        :meta category: Node properties
-        """
         return self.__local_name
 
     @local_name.setter
@@ -1938,47 +1597,15 @@ class TagNode(_ParentNode, TagNodeType):
 
     @property
     def location_path(self) -> str:
-        """
-        An unambiguous XPath location path that points to this node from its tree root.
-
-        :meta category: Node properties
-        """
         if not isinstance(self._parent, TagNode):
             return "/*"
 
-        steps = list(self._iterate_ancestors())
+        steps: list[XMLNodeType] = list(self._iterate_ancestors())
         steps.pop()  # root
         steps.reverse()
         steps.append(self)
         with altered_default_filters(is_tag_node):  # to affect the .index value
             return "/*" + "".join(f"/*[{cast('int', n.index)+1}]" for n in steps)
-
-    def merge_text_nodes(self, deep: bool = False):
-        """
-        Merges all consecutive text nodes in the subtree into one.
-        Text nodes without content are dropped.
-        """
-        empty_nodes: list[TextNode] = []
-
-        for index in range(len(self._child_nodes) - 1, -1, -1):
-            node = self._child_nodes[index]
-            if isinstance(node, TextNode):
-                if not node.content:
-                    empty_nodes.append(node)
-
-                elif index and isinstance(
-                    (preceding_node := self._child_nodes[index - 1]), TextNode
-                ):
-                    preceding_node.content += node.content
-                    empty_nodes.append(node)
-
-        for node in empty_nodes:
-            node.content = ""
-            node.detach()
-
-        if deep:
-            for node in (n for n in self._child_nodes if isinstance(n, TagNode)):
-                node.merge_text_nodes(deep=True)
 
     @property
     def namespace(self) -> str:
@@ -2040,7 +1667,7 @@ class TagNode(_ParentNode, TagNodeType):
         format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: Optional[str] = None,
-    ):
+    ) -> str:
         serializer = _get_serializer(
             _StringWriter(newline=newline),
             format_options=format_options,
@@ -2051,13 +1678,6 @@ class TagNode(_ParentNode, TagNodeType):
 
     @property
     def universal_name(self) -> str:
-        """
-        The node's qualified name in `Clark notation`_.
-
-        :meta category: Node properties
-
-        .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
-        """
         return "{" + self.__namespace + "}" + self.__local_name
 
 
@@ -2065,6 +1685,8 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
     """
     TextNodes contain the textual data of a document. The class shall not be initialized
     by client code, just throw strings into the trees.
+
+    This class implements :class:`delb.typing.TextNodeType`.
 
     Instances expose all methods of :class:`str` except :meth:`str.index`:
 
@@ -2117,16 +1739,11 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
     def __repr__(self):
         return f'<{self.__class__.__name__}(text="{self.content}",  [{hex(id(self))}]>'
 
-    def clone(self, deep: bool = False) -> TextNode:
+    def clone(self, deep: bool = False) -> TextNodeType:
         return TextNode(self.__content)
 
     @property
     def content(self) -> str:
-        """
-        The node's text content.
-
-        :meta category: Node content properties
-        """
         return self.__content
 
     @content.setter
@@ -2149,7 +1766,6 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
 __all__ = (
     Attribute.__name__,
     CommentNode.__name__,
-    NodeBase.__name__,
     ProcessingInstructionNode.__name__,
     QueryResults.__name__,
     Siblings.__name__,

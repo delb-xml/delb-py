@@ -27,8 +27,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from _delb.builder import parse_nodes
-from _delb.nodes import _DocumentNode, TagNode
 from _delb.plugins import plugin_manager
+from _delb.typing import _DocumentNodeType, TagNodeType
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -43,10 +43,10 @@ def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     that has no :class:`Document` context or clones those with such and any
     non-root node.
     """
-    if isinstance(data, _DocumentNode):
+    if isinstance(data, _DocumentNodeType):
         return tuple(n.clone(deep=True) for n in data._child_nodes)
-    if isinstance(data, TagNode):
-        if isinstance(data._parent, _DocumentNode):
+    if isinstance(data, TagNodeType):
+        if isinstance(data._parent, _DocumentNodeType):
             data = data.clone(deep=True)
         elif data._parent is not None:
             return "Node has a parent node."

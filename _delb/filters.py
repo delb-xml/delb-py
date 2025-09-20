@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Final
 
 from _delb.typing import (
     CommentNodeType,
-    DocumentNodeType,
+    _DocumentNodeType,
     Filter,
     ProcessingInstructionNodeType,
     TagNodeType,
@@ -28,13 +28,13 @@ from _delb.typing import (
 )
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase
+    from _delb.typing import XMLNodeType
 
 
 # default filters
 
 
-def _is_tag_or_text_node(node: NodeBase) -> bool:
+def _is_tag_or_text_node(node: XMLNodeType) -> bool:
     return isinstance(node, (TagNodeType, TextNodeType))
 
 
@@ -85,41 +85,41 @@ def any_of(*filter: Filter) -> Filter:
     boolean ``or``.
     """
 
-    def any_of_wrapper(node: NodeBase) -> bool:
+    def any_of_wrapper(node: XMLNodeType) -> bool:
         return any(x(node) for x in filter)
 
     return any_of_wrapper
 
 
-def is_comment_node(node: NodeBase) -> bool:
+def is_comment_node(node: XMLNodeType) -> bool:
     """
     A node filter that matches :class:`CommentNode` instances.
     """
     return isinstance(node, CommentNodeType)
 
 
-def is_processing_instruction_node(node: NodeBase) -> bool:
+def is_processing_instruction_node(node: XMLNodeType) -> bool:
     """
     A node filter that matches :class:`ProcessingInstructionNode` instances.
     """
     return isinstance(node, ProcessingInstructionNodeType)
 
 
-def is_root_node(node: NodeBase) -> bool:
+def is_root_node(node: XMLNodeType) -> bool:
     """
     A node filter that matches root nodes.
     """
-    return node._parent is None or isinstance(node._parent, DocumentNodeType)
+    return node._parent is None or isinstance(node._parent, _DocumentNodeType)
 
 
-def is_tag_node(node: NodeBase) -> bool:
+def is_tag_node(node: XMLNodeType) -> bool:
     """
     A node filter that matches :class:`TagNode` instances.
     """
     return isinstance(node, TagNodeType)
 
 
-def is_text_node(node: NodeBase) -> bool:
+def is_text_node(node: XMLNodeType) -> bool:
     """
     A node filter that matches :class:`TextNode` instances.
     """
@@ -132,7 +132,7 @@ def not_(*filter: Filter) -> Filter:
     like a boolean ``not``.
     """
 
-    def not_wrapper(node: NodeBase) -> bool:
+    def not_wrapper(node: XMLNodeType) -> bool:
         return not all(f(node) for f in filter)
 
     return not_wrapper

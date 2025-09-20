@@ -112,7 +112,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Final, NamedTuple, Optional
 
-from delb import Document, TagNode
+from delb import Document  # noqa: TC001
+
+# TODO figure out why mypy determines these don't exist
+from delb.nodes import TagNode  # type: ignore
+from delb.typing import TagNodeType  # type: ignore  # noqa: TC001
 
 
 #
@@ -123,8 +127,8 @@ class TransformationBase(ABC):
 
     @abstractmethod
     def __call__(
-        self, root: TagNode, origin_document: Optional[Document] = None
-    ) -> TagNode:
+        self, root: TagNodeType, origin_document: Optional[Document] = None
+    ) -> TagNodeType:
         pass
 
 
@@ -134,15 +138,15 @@ class Transformation(TransformationBase):
     options_class: Optional[type] = None
 
     def __init__(self, options: Optional[NamedTuple] = None):
-        self.root: TagNode
+        self.root: TagNodeType
         if options is None and self.options_class is not None:
             options = self.options_class()
         self.options: Final = options
         self.__set_placeholder()
 
     def __call__(
-        self, root: TagNode, origin_document: Optional[Document] = None
-    ) -> TagNode:
+        self, root: TagNodeType, origin_document: Optional[Document] = None
+    ) -> TagNodeType:
         self.root = root
         self.origin_document = origin_document
         self.transform()
@@ -192,8 +196,8 @@ class TransformationSequence(TransformationBase):
         self.transformations: Final = tuple(_transformations)
 
     def __call__(
-        self, root: TagNode, origin_document: Optional[Document] = None
-    ) -> TagNode:
+        self, root: TagNodeType, origin_document: Optional[Document] = None
+    ) -> TagNodeType:
         for transformation in self.transformations:
             root = transformation(root, origin_document=origin_document)
         return root

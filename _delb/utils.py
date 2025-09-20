@@ -21,17 +21,13 @@ from collections import defaultdict, deque
 from collections.abc import Iterable, Iterator, Sequence
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, cast, Any, Final, Optional
+from typing import TYPE_CHECKING, Any, Final, Optional
 
-from _delb.typing import DocumentNodeType, TagNodeType
+from _delb.typing import _DocumentNodeType, TagNodeType
 
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase, TagNode
-    from _delb.typing import Filter
-
-
-NODE_MODULE_FQN: Final = f"{__package__}.nodes"
+    from _delb.typing import Filter, XMLNodeType
 
 
 _crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
@@ -42,14 +38,14 @@ class _NodesSorter:
         self.__node = None
         self.__items: Final = defaultdict(_NodesSorter)
 
-    def add(self, path: Sequence[int], node: TagNode):
+    def add(self, path: Sequence[int], node: TagNodeType):
         assert isinstance(node, TagNodeType)
         if path:
             self.__items[path[0]].add(path[1:], node)
         else:
             self.__node = node
 
-    def emit(self) -> Iterator[NodeBase]:
+    def emit(self) -> Iterator[XMLNodeType]:
         if self.__node is not None:
             yield self.__node
         for index in sorted(self.__items):
@@ -300,7 +296,7 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
 
     .. code-block:: python
 
-        def traverser(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+        def traverser(root: XMLNodeType, *filters: Filter) -> Iterator[XMLNodeType]:
             ...
     """
     if (result := TRAVERSERS.get((from_left, depth_first, from_top))) is None:
@@ -325,7 +321,9 @@ def last(iterable: Iterable) -> Optional[Any]:
             raise TypeError
 
 
-def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBase]:
+def _sort_nodes_in_document_order(
+    nodes: Iterable[XMLNodeType],
+) -> Iterator[XMLNodeType]:
     node_index_cache: dict[int, int] = {}
     sorter = _NodesSorter()
 
@@ -336,11 +334,10 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
                 "yet."
             )
 
-        node = cast("TagNode", node)
         ancestors_indexes: deque[int] = deque()
 
         for cursor in chain((node,), node._iterate_ancestors()):
-            if cursor._parent is None or isinstance(cursor._parent, DocumentNodeType):
+            if cursor._parent is None or isinstance(cursor._parent, _DocumentNodeType):
                 break
 
             if (node_id := id(cursor)) in node_index_cache:
@@ -359,7 +356,7 @@ def _sort_nodes_in_document_order(nodes: Iterable[NodeBase]) -> Iterator[NodeBas
 # tree traversers
 
 
-def traverse_bf_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+def traverse_bf_ltr_ttb(root: XMLNodeType, *filters: Filter) -> Iterator[XMLNodeType]:
     queue = deque((root,))
     while queue:
         node = queue.popleft()
@@ -369,7 +366,7 @@ def traverse_bf_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
             yield node
 
 
-def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+def traverse_df_ltr_btt(root: XMLNodeType, *filters: Filter) -> Iterator[XMLNodeType]:
     stack = [(root, deque(root._child_nodes))]
 
     while stack:
@@ -391,13 +388,13 @@ def traverse_df_ltr_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
                 yield node
 
 
-def traverse_df_ltr_ttb(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+def traverse_df_ltr_ttb(root: XMLNodeType, *filters: Filter) -> Iterator[XMLNodeType]:
     for node in chain((root,), root._iterate_descendants()):
         if all(f(node) for f in filters):
             yield node
 
 
-def traverse_df_rtl_btt(root: NodeBase, *filters: Filter) -> Iterator[NodeBase]:
+def traverse_df_rtl_btt(root: XMLNodeType, *filters: Filter) -> Iterator[XMLNodeType]:
     for node in root._iterate_reversed_descendants():
         if all(f(node) for f in filters):
             yield node

@@ -6,21 +6,21 @@ Nodes & Filters
 Comment
 -------
 
-.. autoclass:: delb.CommentNode
+.. autoclass:: delb.nodes.CommentNode
    :autosummary:
    :autosummary-nosignatures:
 
 Processing instruction
 ----------------------
 
-.. autoclass:: delb.ProcessingInstructionNode
+.. autoclass:: delb.nodes.ProcessingInstructionNode
    :autosummary:
    :autosummary-nosignatures:
 
 Tag
 ---
 
-.. autoclass:: delb.TagNode
+.. autoclass:: delb.nodes.TagNode
    :autosummary:
    :autosummary-nosignatures:
 
@@ -33,18 +33,9 @@ Tag attribute
 Text
 ----
 
-.. autoclass:: delb.TextNode
+.. autoclass:: delb.nodes.TextNode
    :autosummary:
    :autosummary-nosignatures:
-
-Node constructors
------------------
-
-.. autofunction:: delb.new_comment_node
-
-.. autofunction:: delb.new_processing_instruction_node
-
-.. autofunction:: delb.new_tag_node
 
 
 Parsing
@@ -61,7 +52,7 @@ Filters
 -------
 
 The following implementations are shipped with the library. Also see
-:class:`delb.typing.Filter`
+:class:`delb.typing.Filter`.
 
 Default filters
 ~~~~~~~~~~~~~~~

@@ -65,41 +65,49 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from functools import lru_cache
-from typing import TYPE_CHECKING, cast, Final, Optional
+from typing import TYPE_CHECKING, Final, Optional, overload
 
 from cssselect import GenericTranslator
 
 from _delb.names import Namespaces
 from _delb.utils import _sort_nodes_in_document_order
-from _delb.typing import TagNodeType
+from _delb.typing import TagNodeType, XMLNodeType
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
 
 
 if TYPE_CHECKING:
-    from _delb.nodes import NodeBase, TagNode
+    from typing import Any
+
     from _delb.typing import Filter, NamespaceDeclarations
 
-_css_translator = GenericTranslator()
+
+_css_translator: Final = GenericTranslator()
 
 
-class QueryResults(Sequence["NodeBase"]):
+class QueryResults(Sequence[XMLNodeType]):
     """
     A container with the the results of a CSS selector or XPath query with some helpers
     for better readable Python expressions.
     """
 
-    def __init__(self, results: Iterable[NodeBase]):
+    def __init__(self, results: Iterable[XMLNodeType]):
         self.__items: Final = tuple(results)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         if not isinstance(other, Collection):
             raise TypeError
 
         return len(self.__items) == len(other) and all(x in other for x in self.__items)
 
-    def __getitem__(self, item):
+    @overload
+    def __getitem__(self, item: int) -> XMLNodeType: ...
+
+    @overload
+    def __getitem__(self, item: slice) -> Sequence[XMLNodeType]: ...
+
+    def __getitem__(self, item: int | slice) -> XMLNodeType | Sequence[XMLNodeType]:
         return self.__items[item]
 
     def __len__(self) -> int:
@@ -108,12 +116,12 @@ class QueryResults(Sequence["NodeBase"]):
     def __repr__(self):
         return str([repr(x) for x in self.__items])
 
-    def as_list(self) -> list[NodeBase]:
+    def as_list(self) -> list[XMLNodeType]:
         """The contained nodes as a new :class:`list`."""
         return list(self.__items)
 
     @property
-    def as_tuple(self) -> tuple[NodeBase, ...]:
+    def as_tuple(self) -> tuple[XMLNodeType, ...]:
         """The contained nodes in a :class:`tuple`."""
         return self.__items
 
@@ -122,13 +130,13 @@ class QueryResults(Sequence["NodeBase"]):
         Returns another :class:`QueryResults` instance that contains all nodes filtered
         by the provided :term:`filter` s.
         """
-        items: Sequence[NodeBase] = self.__items
+        items: Sequence[XMLNodeType] = self.__items
         for filter in filters:
             items = [x for x in items if filter(x)]
         return self.__class__(items)
 
     @property
-    def first(self) -> Optional[NodeBase]:
+    def first(self) -> Optional[XMLNodeType]:
         """The first node from the results or :obj:`None` if there are none."""
         if len(self.__items):
             return self.__items[0]
@@ -143,7 +151,7 @@ class QueryResults(Sequence["NodeBase"]):
         return QueryResults(_sort_nodes_in_document_order(self))
 
     @property
-    def last(self) -> Optional[NodeBase]:
+    def last(self) -> Optional[XMLNodeType]:
         """The last node from the results or :obj:`None` if there are none."""
         if len(self.__items):
             return self.__items[-1]
@@ -163,7 +171,7 @@ def _css_to_xpath(expression: str) -> str:
 
 
 def evaluate(
-    node: NodeBase,
+    node: XMLNodeType,
     expression: str,
     namespaces: Optional[NamespaceDeclarations] = None,
 ) -> QueryResults:
@@ -171,7 +179,7 @@ def evaluate(
     match namespaces:
         case None:
             if isinstance(node, TagNodeType):
-                _namespaces = Namespaces({"": cast("TagNode", node).namespace})
+                _namespaces = Namespaces({"": node.namespace})
             else:
                 _namespaces = Namespaces({})
         case Namespaces():

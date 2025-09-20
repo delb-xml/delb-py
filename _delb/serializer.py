@@ -20,7 +20,6 @@ from io import StringIO, TextIOWrapper
 
 from typing import (
     TYPE_CHECKING,
-    cast,
     ClassVar as ClassWar,
     Final,
     Literal,
@@ -44,7 +43,8 @@ from _delb.utils import _crunch_whitespace, traverse_bf_ltr_ttb
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.nodes import NodeBase, Siblings, TagNode, TextNode
+    from _delb.nodes import Siblings
+    from _delb.typing import XMLNodeType
 
 
 # constants
@@ -110,15 +110,14 @@ class DefaultStringOptions:
 
         Use this once to define behaviour on *application level*. For thread-safe
         serializations of nodes with diverging parameters use
-        :meth:`NodeBase.serialize`! Think thrice whether you want to use this facility
-        in a library.
+        :meth:`XMLNodeType.serialize`! Think thrice whether you want to use this
+        facility in a library.
     """
 
     namespaces: ClassWar[None | NamespaceDeclarations] = None
     """
-    A mapping of prefixes to namespaces. These are overriding possible declarations from
-    a parsed serialisat that the document instance stems from. Any other prefixes for
-    undeclared namespaces are enumerated with the prefix ``ns``.
+    A mapping of prefixes to namespaces. Any other prefixes for undeclared namespaces
+    are enumerated with the prefix ``ns``.
     """
     newline: ClassWar[None | str] = None
     """
@@ -196,13 +195,12 @@ class Serializer:
         self._prefixes: dict[str, str] = {}
         self.writer = writer
 
-    def _collect_prefixes(self, root: TagNode):
+    def _collect_prefixes(self, root: TagNodeType):
         if root.namespace not in self._namespaces.values():
             self._prefixes[root.namespace] = ""
 
         for node in traverse_bf_ltr_ttb(root, is_tag_node):
             assert isinstance(node, TagNodeType)
-            node = cast("TagNode", node)
             for namespace in {node.namespace} | {
                 a.namespace for a in node.attributes.values()
             }:
@@ -249,7 +247,7 @@ class Serializer:
                 self._new_namespace_declaration(other_namespace)
                 break
 
-    def _generate_attributes_data(self, node: TagNode) -> dict[str, str]:
+    def _generate_attributes_data(self, node: TagNodeType) -> dict[str, str]:
         data = {}
         for attribute in (node.attributes[a] for a in sorted(node.attributes)):
             data[self._prefixes[attribute.namespace] + attribute.local_name] = (
@@ -274,22 +272,20 @@ class Serializer:
         for key, value in attributes_data.items():
             self.writer(f" {key}={value}")
 
-    def serialize_node(self, node: NodeBase):
+    def serialize_node(self, node: XMLNodeType):
         match node:
             case CommentNodeType() | ProcessingInstructionNodeType():
                 self.writer(str(node))
             case TagNodeType():
-                node = cast("TagNode", node)
                 self._serialize_tag(
                     node,
                     attributes_data=self._generate_attributes_data(node),
                 )
             case TextNodeType():
-                node = cast("TextNode", node)
                 if node.content:
                     self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
 
-    def serialize_root(self, root: TagNode):
+    def serialize_root(self, root: TagNodeType):
         self._collect_prefixes(root)
         attributes_data = {}
         declarations = {p: "" if n is None else n for n, p in self._prefixes.items()}
@@ -307,7 +303,7 @@ class Serializer:
 
     def _serialize_tag(
         self,
-        node: TagNode,
+        node: TagNodeType,
         attributes_data: dict[str, str],
     ):
         prefixed_name = self._prefixes[node.namespace] + node.local_name
@@ -337,9 +333,8 @@ class _LineFittingSerializer(Serializer):
         super().__init__(writer, namespaces=namespaces)
         self.space: Literal["default", "preserve"] = "default"
 
-    def serialize_node(self, node: NodeBase):
+    def serialize_node(self, node: XMLNodeType):
         if isinstance(node, TextNodeType):
-            node = cast("TextNode", node)
             if node.content:
                 if self.space == "default":
                     content = _crunch_whitespace(node.content).translate(
@@ -352,7 +347,7 @@ class _LineFittingSerializer(Serializer):
 
         elif isinstance(node, TagNodeType):
             space_state = self.space
-            space = cast("TagNode", node)._get_normalize_space_directive(self.space)
+            space = node._get_normalize_space_directive(self.space)
             if space != space_state:
                 self.space = space
                 self.writer.preserve_space = space == "default"
@@ -392,7 +387,7 @@ class PrettySerializer(Serializer):
         )
         self._unwritten_text_nodes: Final[list[TextNodeType]] = []
 
-    def _collect_prefixes(self, root: TagNode):
+    def _collect_prefixes(self, root: TagNodeType):
         super()._collect_prefixes(root)
         self._space_preserving_serializer._prefixes = self._prefixes
 
@@ -431,7 +426,6 @@ class PrettySerializer(Serializer):
     def _serialize_child_nodes(self, child_nodes: Siblings):
         for node in child_nodes:
             if isinstance(node, TextNodeType):
-                node = cast("TextNode", node)
                 if node.content:
                     self._unwritten_text_nodes.append(node)
             else:
@@ -440,7 +434,7 @@ class PrettySerializer(Serializer):
         if self._unwritten_text_nodes:
             self._serialize_text()
 
-    def serialize_node(self, node: NodeBase):
+    def serialize_node(self, node: XMLNodeType):
         if self._unwritten_text_nodes:
             self._serialize_text()
 
@@ -452,14 +446,14 @@ class PrettySerializer(Serializer):
         if self._whitespace_is_legit_after_node(node):
             self.writer("\n")
 
-    def serialize_root(self, root: TagNode):
+    def serialize_root(self, root: TagNodeType):
         self._serialization_root = root
         super().serialize_root(root)
         self._serialization_root = None
 
     def _serialize_tag(
         self,
-        node: TagNode,
+        node: TagNodeType,
         attributes_data: dict[str, str],
     ):
         if node._get_normalize_space_directive() == "preserve":
@@ -494,7 +488,7 @@ class PrettySerializer(Serializer):
 
         nodes.clear()
 
-    def _whitespace_is_legit_after_node(self, node: NodeBase) -> bool:
+    def _whitespace_is_legit_after_node(self, node: XMLNodeType) -> bool:
         if self._serialization_root is None or node is self._serialization_root:
             # end of stream
             return False
@@ -504,7 +498,7 @@ class PrettySerializer(Serializer):
             return True
 
         if isinstance(node, TextNodeType):
-            return cast("TextNode", node).content[-1].isspace()
+            return node.content[-1].isspace()
 
         following_sibling = node._fetch_following_sibling()
         assert following_sibling is not None
@@ -513,7 +507,7 @@ class PrettySerializer(Serializer):
         else:
             return False
 
-    def _whitespace_is_legit_before_node(self, node: NodeBase) -> bool:
+    def _whitespace_is_legit_before_node(self, node: XMLNodeType) -> bool:
         if self._serialization_root is None or node is self._serialization_root:
             # begin of stream
             return False
@@ -563,7 +557,7 @@ class TextWrappingSerializer(PrettySerializer):
     def _available_space(self):
         return max(0, self._width - self._line_offset)
 
-    def _collect_prefixes(self, root: TagNode):
+    def _collect_prefixes(self, root: TagNodeType):
         super()._collect_prefixes(root)
         self._line_fitting_serializer._prefixes = self._prefixes
 
@@ -574,21 +568,20 @@ class TextWrappingSerializer(PrettySerializer):
         else:
             return 0
 
-    def _node_fits_remaining_line(self, node: NodeBase) -> bool:
+    def _node_fits_remaining_line(self, node: XMLNodeType) -> bool:
         return self._required_space(node, self._available_space) is not None
 
-    def _required_space(self, node: NodeBase, up_to: int) -> None | int:
+    def _required_space(self, node: XMLNodeType, up_to: int) -> None | int:
         # counts required space for the serialisation of a node
         # a returned None signals that the limit up_to was hit
 
         if isinstance(node, TextNodeType):
-            return self._required_space_for_text(cast("TextNode", node), up_to)
+            return self._required_space_for_text(node, up_to)
         if isinstance(node, (CommentNodeType, ProcessingInstructionNodeType)):
             length = len(str(node))
             return length if length <= up_to else None
 
         assert isinstance(node, TagNodeType)
-        node = cast("TagNode", node)
 
         name_length = len(node.local_name) + len(self._prefixes[node.namespace])
         if len(node) == 0:
@@ -624,7 +617,9 @@ class TextWrappingSerializer(PrettySerializer):
 
         return used_space
 
-    def _required_space_for_attributes(self, node: TagNode, up_to: int) -> None | int:
+    def _required_space_for_attributes(
+        self, node: TagNodeType, up_to: int
+    ) -> None | int:
         result = 0
 
         attribute_names = tuple(node.attributes)
@@ -641,7 +636,9 @@ class TextWrappingSerializer(PrettySerializer):
 
         return result
 
-    def _required_space_for_following(self, node: TagNode, up_to: int) -> None | int:
+    def _required_space_for_following(
+        self, node: TagNodeType, up_to: int
+    ) -> None | int:
         if self._whitespace_is_legit_after_node(node):
             return 0
 
@@ -654,13 +651,13 @@ class TextWrappingSerializer(PrettySerializer):
         # indeed this doesn't consider the case where a first
         # whitespace would appear in one of possible subsequent text
         # nodes
-        content = cast("TextNode", following).content.translate(CCE_TABLE_FOR_TEXT)
+        content = following.content.translate(CCE_TABLE_FOR_TEXT)
         if (length := content.find(" ")) == -1:
             length = len(content)
 
         return length if length <= up_to else None
 
-    def _required_space_for_text(self, node: TextNode, up_to: int) -> None | int:
+    def _required_space_for_text(self, node: TextNodeType, up_to: int) -> None | int:
         content = self._normalize_text(node.content)
         if content.startswith(" ") and self._whitespace_is_legit_before_node(node):
             content = content.lstrip()
@@ -669,7 +666,7 @@ class TextWrappingSerializer(PrettySerializer):
         length = len(content)
         return length if length <= up_to else None
 
-    def _serialize_appendable_node(self, node: NodeBase):
+    def _serialize_appendable_node(self, node: XMLNodeType):
         assert not isinstance(node, TextNodeType)
 
         if self.writer.offset == 0 and self.indentation:
@@ -677,7 +674,7 @@ class TextWrappingSerializer(PrettySerializer):
 
         match node:
             case TagNodeType():
-                if cast("TagNode", node)._get_normalize_space_directive() == "preserve":
+                if node._get_normalize_space_directive() == "preserve":
                     serializer = self._space_preserving_serializer
                     self.writer.preserve_space = True
                 else:
@@ -687,7 +684,7 @@ class TextWrappingSerializer(PrettySerializer):
             case CommentNodeType() | ProcessingInstructionNodeType():
                 self.writer(str(node))
 
-    def serialize_node(self, node: NodeBase):
+    def serialize_node(self, node: XMLNodeType):
         if self._unwritten_text_nodes:
             self._serialize_text()
 
@@ -715,7 +712,7 @@ class TextWrappingSerializer(PrettySerializer):
 
             if (
                 isinstance(node, TagNodeType)
-                and cast("TagNode", node)._get_normalize_space_directive() == "preserve"
+                and node._get_normalize_space_directive() == "preserve"
             ):
                 self.writer.preserve_space = True
             super(PrettySerializer, self).serialize_node(node)
@@ -731,7 +728,7 @@ class TextWrappingSerializer(PrettySerializer):
 
     def _serialize_tag(
         self,
-        node: TagNode,
+        node: TagNodeType,
         attributes_data: dict[str, str],
     ):
         if node is not self._serialization_root and self._node_fits_remaining_line(
@@ -797,7 +794,7 @@ class TextWrappingSerializer(PrettySerializer):
             # (i.e. this prefers: "the <hi>A</hi> letter…" over the "A" on a
             # separate line which the next branch produces)
 
-            if self._whitespace_is_legit_before_node(cast("NodeBase", nodes[0])):
+            if self._whitespace_is_legit_before_node(nodes[0]):
                 lines.append("")
             lines.extend(self._wrap_text(content.lstrip(), self._width))
 
@@ -811,7 +808,7 @@ class TextWrappingSerializer(PrettySerializer):
 
             if not (
                 len(filling) > self._available_space
-                and self._whitespace_is_legit_before_node(cast("NodeBase", nodes[0]))
+                and self._whitespace_is_legit_before_node(nodes[0])
             ):
                 self.writer(filling)
                 content = content[len(filling) + 1 :]
@@ -823,13 +820,8 @@ class TextWrappingSerializer(PrettySerializer):
 
         if (
             lines[-1].endswith(" ")
-            and self._whitespace_is_legit_after_node(cast("NodeBase", nodes[-1]))
-            and (
-                following_sibling := cast(
-                    "NodeBase", nodes[-1]
-                )._fetch_following_sibling()
-            )
-            is not None
+            and self._whitespace_is_legit_after_node(nodes[-1])
+            and (following_sibling := nodes[-1]._fetch_following_sibling()) is not None
             and not self._required_space(
                 following_sibling, self._width - len(lines[-1])
             )
@@ -848,7 +840,7 @@ class TextWrappingSerializer(PrettySerializer):
             self.writer(f"{prefix}{lines[-1]}")
 
     def _consolidate_text_lines(self, lines: list[str]):
-        last_node = cast("TagNode", self._unwritten_text_nodes[-1])
+        last_node = self._unwritten_text_nodes[-1]
         assert last_node._parent is not None
         if (
             lines[0] == ""
