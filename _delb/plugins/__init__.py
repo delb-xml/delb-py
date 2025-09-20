@@ -121,11 +121,8 @@ class PluginManager:
         for name in preferences:
             if (parser := self.parsers.get(name)) is not None:
                 return parser
-
-        for parser in self.parsers.values():
-            return parser
-
-        raise RuntimeError("No available parsers.")
+        else:
+            raise ValueError(f"No matching parser for {preferences} available.")
 
     @staticmethod
     def load_plugins():
