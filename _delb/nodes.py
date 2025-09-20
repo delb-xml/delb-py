@@ -459,11 +459,6 @@ class Siblings:
         self.__data.insert(index, result)
         return result
 
-    def prepend(self, node: NodeSource) -> XMLNodeType:
-        result = self._handle_new_sibling(node)
-        self.__data.insert(0, result)
-        return result
-
     def remove(self, node: XMLNodeType):
         node._parent = None
         del self.__data[self.index(node)]
@@ -669,8 +664,6 @@ class _NodeCommons(XMLNodeType):
             yield from self._iterate_descendants()
 
         if self._parent is None:
-            if (document := self.document) is not None:
-                yield from document.epilogue
             return
 
         for following_sibling in self._iterate_following_siblings():
@@ -698,8 +691,6 @@ class _NodeCommons(XMLNodeType):
 
     def _iterate_following_siblings(self) -> Iterator[XMLNodeType]:
         if self._parent is None:
-            if self.document:
-                yield from self.document.epilogue
             return
 
         siblings = self._parent._child_nodes
@@ -738,8 +729,6 @@ class _NodeCommons(XMLNodeType):
 
     def _iterate_preceding_siblings(self) -> Iterator[XMLNodeType]:
         if self._parent is None:
-            if self.document is not None:
-                yield from reversed(self.document.prologue)
             return
 
         siblings = self._parent._child_nodes
@@ -1757,7 +1746,7 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
 
     @property
     def full_text(self) -> str:
-        return self.content or ""
+        return self.__content
 
 
 #

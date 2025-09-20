@@ -1,6 +1,6 @@
 import pytest
 
-from delb import compare_trees, first, parse_tree
+from delb import compare_trees, first, last, parse_tree
 from delb.filters import altered_default_filters, is_tag_node
 
 
@@ -45,6 +45,13 @@ def test_first():
 
     with pytest.raises(TypeError):
         first({})
+
+
+def test_last():
+    assert last([]) is None
+    assert last([0, 1, 2, 3]) == 3
+    with pytest.raises(TypeError):
+        last(0)
 
 
 def test_string_methods_on_classes_with_text_capabilities():

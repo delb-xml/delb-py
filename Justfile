@@ -16,10 +16,6 @@ benchmarks:
 black:
     pipx run black benchmarks _delb delb tests
 
-# runs tests and reports coverage
-coverage-report:
-    pipx run hatch run unit-tests:coverage-report
-
 # generate Sphinx HTML documentation, including API docs
 docs:
     pipx run hatch run docs:clean

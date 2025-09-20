@@ -62,21 +62,6 @@ def test_add_following_siblings():
     )
 
 
-def test_iterate_ancestors():
-    root = parse_tree(
-        "<root><left/>abc<middle><node>0</node></middle><right>xyz<xyz"
-        "/></right></root>"
-    )
-    zero = root[2][0][0]
-    assert isinstance(zero, TextNode)
-    assert zero == "0"
-    assert tuple(x.local_name for x in zero.iterate_ancestors()) == (
-        "node",
-        "middle",
-        "root",
-    )
-
-
 def test_ancestors_of_detached_node():
     node = TextNode("x")
     assert tuple(node.iterate_ancestors()) == ()
@@ -112,6 +97,7 @@ def test_fetch_preceding():
 
 def test_fetch_preceding_sibling():
     root = parse_tree("<root><a/></root>")
+    assert root._fetch_preceding_sibling() is None
     assert root[0].fetch_preceding_sibling() is None
     assert root[0]._fetch_preceding_sibling() is None
 
@@ -168,6 +154,26 @@ def test_invalid_operations():
 
     with pytest.raises(InvalidOperation):
         new_node.add_preceding_siblings(root_2[0])
+
+
+def test_iterate_ancestors():
+    root = parse_tree(
+        "<root><left/>abc<middle><node>0</node></middle><right>xyz<xyz"
+        "/></right></root>"
+    )
+    zero = root[2][0][0]
+    assert isinstance(zero, TextNode)
+    assert zero == "0"
+    assert tuple(x.local_name for x in zero.iterate_ancestors()) == (
+        "node",
+        "middle",
+        "root",
+    )
+
+
+def test_iterate_following():
+    for _ in TagNode("a")._iterate_following():
+        raise AssertionError
 
 
 def test_iterate_following_siblings():

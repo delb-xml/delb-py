@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 from pytest_httpx import IteratorStream
 
-from delb import Document, TagNode
+from delb import Document, TagNode, parse_tree
+from delb.exceptions import FailedDocumentLoading
 
 from tests.utils import chdir
 
@@ -60,6 +61,9 @@ def test_tag_node_loader():
     assert node is not document_clone.root
 
     assert str(document) == str(document_clone)
+
+    with pytest.raises(FailedDocumentLoading):
+        Document(parse_tree("<a><b/></a>")[0])
 
 
 def test_text_loader():

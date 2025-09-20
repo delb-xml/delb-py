@@ -1,7 +1,6 @@
 import pytest
 
-from delb import TextNode
-from _delb.nodes import Siblings
+from delb.nodes import Siblings, TextNode
 
 
 def test_index():

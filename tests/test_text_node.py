@@ -290,7 +290,7 @@ def test_equality():
     assert TextNode("1") != 1
 
 
-def full_text():
+def test_full_text():
     assert TextNode("foo").full_text == "foo"
 
 
