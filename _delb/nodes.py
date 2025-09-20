@@ -502,6 +502,9 @@ class _NodeCommons(XMLNodeType):
 
     __slots__ = ("_parent",)
 
+    def __init__(self):
+        self._parent = None
+
     def __copy__(self):
         return self.clone(deep=False)
 
@@ -853,6 +856,7 @@ class _ParentNode(_NodeCommons, ParentNodeType):
         self,
         children: Iterable[NodeSource] = (),
     ):
+        super().__init__()
         self._child_nodes = Siblings(nodes=children, belongs_to=self)
 
     def __len__(self) -> int:
@@ -993,8 +997,8 @@ class CommentNode(_LeafNode, CommentNodeType):
     __slots__ = ("__content",)
 
     def __init__(self, content: str):
+        super().__init__()
         self.content = content
-        self._parent = None
 
     def __eq__(self, other) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
@@ -1036,8 +1040,8 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
     __slots__ = ("__document",)
 
     def __init__(self, document: Document | None, children: Iterable[XMLNodeType]):
-        self.__document: Final = document
         super().__init__(children)
+        self.__document: Final = document
 
     def clone(self, deep: bool = False) -> XMLNodeType:  # pragma: no cover
         raise InvalidCodePath
@@ -1068,7 +1072,8 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
 
     @_parent.setter
     def _parent(self, value):  # pragma: no cover
-        raise InvalidCodePath
+        if value is not None:
+            raise InvalidCodePath
 
     def replace_with(  # pragma: no cover
         self, node: NodeSource, clone: bool = False
@@ -1089,8 +1094,8 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
     __slots__ = ("__content", "__target")
 
     def __init__(self, target: str, content: str):
+        super().__init__()
         self.content = content
-        self._parent = None
         self.target = target
 
     def __eq__(self, other) -> bool:
@@ -1217,7 +1222,6 @@ class TagNode(_ParentNode, TagNodeType):
         namespace: Optional[str] = None,
         children: Iterable[NodeSource] = (),
     ):
-        self._parent = None
         self.namespace = namespace or ""
         self.local_name = local_name
         self.__attributes = TagAttributes(data=attributes or {}, node=self)
@@ -1704,7 +1708,7 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
         self,
         text: str | TextNode,
     ):
-        self._parent = None
+        super().__init__()
         match text:
             case str():
                 self.content = text
