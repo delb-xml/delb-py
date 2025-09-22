@@ -1,15 +1,9 @@
 import pytest
 
-from delb import (
-    parse_tree,
-    tag,
-    CommentNode,
-    Document,
-    TagNode,
-    TextNode,
-)
+from delb import parse_tree, tag, Document
 from delb.exceptions import InvalidOperation
 from delb.filters import altered_default_filters, is_tag_node, is_text_node
+from delb.nodes import CommentNode, TagNode, TextNode
 
 
 def test_add_preceding_siblings():

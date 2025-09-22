@@ -1765,7 +1765,4 @@ __all__ = (
     TagAttributes.__name__,
     TagNode.__name__,
     TextNode.__name__,
-    new_comment_node.__name__,
-    new_processing_instruction_node.__name__,
-    new_tag_node.__name__,
 )

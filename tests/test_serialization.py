@@ -3,21 +3,12 @@ from typing import Final
 
 import pytest
 
-from delb import (
-    parse_tree,
-    tag,
-    CommentNode,
-    DefaultStringOptions,
-    Document,
-    FormatOptions,
-    ProcessingInstructionNode,
-    TagNode,
-    TextNode,
-)
-from _delb.parser import ParserOptions
 from _delb.serializer import Serializer
-from tests.conftest import TEI_FILES
+from delb import DefaultStringOptions, Document, FormatOptions, parse_tree, tag
+from delb.nodes import CommentNode, ProcessingInstructionNode, TagNode, TextNode
+from delb.parser import ParserOptions
 
+from tests.conftest import TEI_FILES
 from tests.utils import assert_equal_trees, skip_long_running_test
 
 

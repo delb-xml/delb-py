@@ -33,26 +33,11 @@ from _delb.plugins import (
     plugin_manager as _plugin_manager,
     DocumentMixinBase,
 )
-from _delb.names import Namespaces
 from _delb.nodes import (
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     CommentNode,
     _DocumentNode,
     ProcessingInstructionNode,
     TagNode,
-    TextNode,
-)
-from _delb.filters import (
-    altered_default_filters,
-    any_of,
-    is_comment_node,
-    is_processing_instruction_node,
-    is_root_node,
-    is_tag_node,
-    is_text_node,
-    not_,
 )
 from _delb.parser import ParserOptions
 from _delb.serializer import (
@@ -63,9 +48,7 @@ from _delb.serializer import (
     _TextBufferWriter,
     _get_serializer,
 )
-from _delb.utils import first, get_traverser, last
 from _delb.xpath import QueryResults
-from delb.utils import compare_trees
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -79,6 +62,7 @@ if TYPE_CHECKING:
         TagNodeType,
         XMLNodeType,
     )
+
 
 # plugin loading
 
@@ -543,31 +527,11 @@ class Document(metaclass=DocumentMeta):
 
 
 __all__ = (
-    CommentNode.__name__,
     DefaultStringOptions.__name__,
     Document.__name__,
     FormatOptions.__name__,
-    Namespaces.__name__,
     ParserOptions.__name__,
-    ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    TagNode.__name__,
-    TextNode.__name__,
-    altered_default_filters.__name__,
-    any_of.__name__,
-    compare_trees.__name__,
-    first.__name__,
-    get_traverser.__name__,
-    is_comment_node.__name__,
-    is_processing_instruction_node.__name__,
-    is_root_node.__name__,
-    is_tag_node.__name__,
-    is_text_node.__name__,
-    last.__name__,
-    not_.__name__,
-    new_comment_node.__name__,
-    new_tag_node.__name__,
-    new_processing_instruction_node.__name__,
     parse_nodes.__name__,
     parse_tree.__name__,
     tag.__name__,

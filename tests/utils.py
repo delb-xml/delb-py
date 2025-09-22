@@ -4,9 +4,10 @@ from itertools import pairwise, product
 
 import pytest
 
-from delb import compare_trees, TagNode
 from delb.filters import altered_default_filters
+from delb.nodes import TagNode
 from delb.typing import XMLNodeType  # noqa: TC001
+from delb.utils import compare_trees
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10

@@ -4,25 +4,18 @@ from typing import Final
 import pytest
 
 from _delb.names import XML_NAMESPACE
-from delb import (
-    CommentNode,
-    DefaultStringOptions,
-    Document,
-    ParserOptions,
-    TagNode,
-    TextNode,
-    parse_tree,
-    tag,
-)
+from delb import DefaultStringOptions, Document, ParserOptions, parse_tree, tag
 from delb.exceptions import InvalidOperation
 from delb.filters import altered_default_filters, is_tag_node
-from tests.conftest import XML_FILES
+from delb.nodes import CommentNode, TagNode, TextNode
 
+from tests.conftest import XML_FILES
 from tests.utils import (
     assert_nodes_are_in_document_order,
     skip_long_running_test,
     variety_forest,
 )
+
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 

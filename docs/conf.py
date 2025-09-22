@@ -283,4 +283,7 @@ doctest_global_setup = """
 import types
 from typing import Any
 from delb import *
+from delb.filters import *
+from delb.nodes import *
+from delb.utils import *
 """
