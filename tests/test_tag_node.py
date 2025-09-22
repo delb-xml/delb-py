@@ -4,21 +4,25 @@ from typing import Final
 import pytest
 
 from _delb.names import XML_NAMESPACE
-from _delb.nodes import DefaultStringOptions, altered_default_filters
 from delb import (
+    CommentNode,
+    DefaultStringOptions,
     Document,
     ParserOptions,
     TagNode,
     TextNode,
-    is_tag_node,
-    new_tag_node,
     parse_tree,
     tag,
 )
 from delb.exceptions import InvalidOperation
+from delb.filters import altered_default_filters, is_tag_node
 from tests.conftest import XML_FILES
 
-from tests.utils import assert_nodes_are_in_document_order, skip_long_running_test
+from tests.utils import (
+    assert_nodes_are_in_document_order,
+    skip_long_running_test,
+    variety_forest,
+)
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
@@ -67,6 +71,11 @@ def test_append_children():
     assert isinstance(result[1], TextNode)
     assert str(root) == "<root><a/>b</root>"
 
+    c = TagNode("c")
+    c_clone = root.append_children(c, clone=True)[0]
+    assert root.last_child.local_name == "c"
+    assert c_clone is not c
+
 
 def test_append_no_child():
     root = parse_tree("<root/>")
@@ -92,13 +101,13 @@ def test_contains():
 
 
 def test_copy():
-    node = parse_tree("<x/>")
+    node = parse_tree("<x><y/></x>")
     clone = copy(node)
 
     assert clone is not node
-    assert clone._etree_obj is not node._etree_obj
     assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
+    assert len(clone._child_nodes) == 0
 
 
 def test_deepcopy():
@@ -106,7 +115,6 @@ def test_deepcopy():
     clone = deepcopy(node)
 
     assert clone is not node
-    assert clone._etree_obj is not node._etree_obj
     assert clone.universal_name == clone.universal_name
     assert clone.attributes == clone.attributes
     assert clone[0] is not node[0]
@@ -124,6 +132,21 @@ def test_delitem():
         del root[0]
     with pytest.raises(KeyError):
         del root["A"]
+
+    root = parse_tree("<root><a/><b/><c/><d/><e/><f/><g/></root>")
+    del root[1:3]
+    assert str(root) == "<root><a/><d/><e/><f/><g/></root>"
+    del root[:1]
+    assert str(root) == "<root><d/><e/><f/><g/></root>"
+    del root[-1:]
+    assert str(root) == "<root><d/><e/><f/></root>"
+    del root[1:]
+    assert str(root) == "<root><d/></root>"
+    del root[:]
+    assert str(root) == "<root/>"
+
+    with pytest.raises(TypeError):
+        del root[0.0]
 
 
 def test_depth():
@@ -192,13 +215,11 @@ def test_detach_node_retain_child_nodes():
     node.detach(retain_child_nodes=True)
 
     assert len(node) == 0
-    with altered_default_filters():
-        assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
+    assert str(root) == "<root><child/>childish<!-- [~.ö] --></root>"
 
     child = root.first_child
     child.detach(retain_child_nodes=True)
-    with altered_default_filters():
-        assert str(root) == "<root>childish<!-- [~.ö] --></root>"
+    assert str(root) == "<root>childish<!-- [~.ö] --></root>"
 
     with pytest.raises(InvalidOperation):
         root.detach(retain_child_nodes=True)
@@ -219,13 +240,13 @@ def test_detach_node_retains_namespace_prefixes():
 
 
 def test_detach_node_without_a_document():
-    root = new_tag_node("root", children=[tag("node")])
+    root = TagNode("root", children=[tag("node")])
     root.first_child.detach()
     assert str(root) == "<root/>"
 
 
 def test_detach_root():
-    unbound_node = new_tag_node("unbound")
+    unbound_node = TagNode("unbound")
     assert unbound_node.detach() is unbound_node
 
     document = Document("<root/>")
@@ -276,6 +297,9 @@ def test_getitem():
     with pytest.raises(IndexError):
         root[4]
 
+    with pytest.raises(TypeError):
+        root[0.0]
+
 
 def test_id_property(files_path):
     document = Document(files_path / "marx_manifestws_1848.TEI-P5.xml")
@@ -291,6 +315,9 @@ def test_id_property(files_path):
 
     with pytest.raises(TypeError):
         publisher.id = 1234
+
+    with pytest.raises(ValueError, match=r"Value is not a valid xml name\."):
+        publisher.id = " a"
 
     with pytest.raises(ValueError, match="already assigned"):
         publisher.parent.id = "foo"
@@ -321,7 +348,7 @@ def test_insert_children():
     a.insert_children(1, "-")
     assert str(root) == "<root><a>|aa|-|aaa|<b/>c</a></root>"
 
-    a.insert_children(3, new_tag_node("aaaa"))
+    a.insert_children(3, TagNode("aaaa"))
     assert str(root) == "<root><a>|aa|-|aaa|<aaaa/><b/>c</a></root>"
 
 
@@ -333,9 +360,6 @@ def test_insert_first_child():
 
 def test_insert_at_invalid_index():
     root = parse_tree("<root><a/><b/></root>")
-
-    with pytest.raises(ValueError, match="positive"):
-        root.insert_children(-1, "x")
 
     with pytest.raises(IndexError):
         root.insert_children(3, "x")
@@ -356,35 +380,62 @@ def test_iterate_preceding_siblings():
     root = parse_tree("<root><a/><b><x/></b><c/>d<e>spam</e><f/></root>")
     expected = "abcde"[::-1]
 
-    for i, node in enumerate(root[5].iterate_preceding_siblings()):
+    start_node = root[5]
+    assert start_node.local_name == "f"
+
+    for i, node in enumerate(start_node.iterate_preceding_siblings()):
         if isinstance(node, TagNode):
             assert node.local_name == expected[i]
         else:
             assert node.content == expected[i]
 
 
-def test_iterate_preceding():
-    root = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
-    k = root[1][1][0][1]
-    assert k.local_name == "k"
-    expected = "abcdefghij"[::-1]
-    for i, node in enumerate(k.iterate_preceding()):
-        assert node.local_name == expected[i]
+@skip_long_running_test
+@pytest.mark.parametrize("tree", variety_forest())
+@pytest.mark.parametrize("start_position", range(1, 10))
+def test_iterate_following(start_position, tree):
+    assert isinstance(start_position, int)
+
+    for i, start_node in enumerate(tree._iterate_descendants()):
+        if i == start_position:
+            break
+
+    for i, node in enumerate(start_node._iterate_following(), start=start_position):
+        if node.local_name == "end":
+            break
+        assert node.local_name == chr(ord("a") + i)
+
+    assert node.local_name == "end"
+    assert i == 9
 
 
-def test_iterate_following():
-    a = parse_tree("<a><b><c/></b><d><e><f/><g/></e><h><i><j/><k/></i></h></d></a>")
-    expected = "bcdefghijk"
-    for i, node in enumerate(a.iterate_following()):
-        assert node.local_name == expected[i]
+@skip_long_running_test
+@pytest.mark.parametrize("tree", variety_forest())
+@pytest.mark.parametrize("start_position", range(1, 10))
+def test_iterate_preceding(start_position, tree):
+    for i, start_node in enumerate(tree._iterate_descendants()):
+        if i == start_position:
+            break
+
+    pointer = start_position
+    for i, node in enumerate(start_node._iterate_preceding()):
+        pointer -= 1
+        if node.local_name == "begin":
+            break
+        assert node.local_name == chr(ord("a") + pointer - 1)
+
+    assert node.local_name == "begin"
+    assert pointer == 0
+    assert i + 1 == start_position
 
 
 def test_last_descendant():
     root = parse_tree(
         "<root>"
-        "<a><aa><aaa/><aab/></aa><ab><aba/><abb/></ab></a>"
-        "<b><ba>baa</ba></b>"
+        "<a><aa><aaa/><aab/></aa><ab><aba/><abb/><!--comment--></ab></a>"
+        "<b><ba>baa</ba><!--comment--></b>"
         "<c/>"
+        "<!--comment-->"
         "</root>"
     )
     a, b, c = tuple(root.iterate_children())
@@ -401,6 +452,9 @@ def test_last_descendant():
     assert b_ld.last_descendant is None
 
     assert c.last_descendant is None
+
+    with altered_default_filters():
+        assert isinstance(root.last_descendant, CommentNode)
 
 
 @skip_long_running_test
@@ -419,28 +473,28 @@ def test_location_path_and_xpath_concordance(file):
 
 
 def test_make_node_with_children():
-    result = new_tag_node("infocard", children=[tag("label")])
+    result = TagNode("infocard", children=[tag("label")])
     assert str(result) == "<infocard><label/></infocard>"
 
-    result = new_tag_node("infocard", children=[tag("label", {"updated": "never"})])
+    result = TagNode("infocard", children=[tag("label", {"updated": "never"})])
     assert str(result) == '<infocard><label updated="never"/></infocard>'
 
-    result = new_tag_node("infocard", children=[tag("label", "Monty Python")])
+    result = TagNode("infocard", children=[tag("label", "Monty Python")])
     assert str(result) == "<infocard><label>Monty Python</label></infocard>"
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", ("Monty Python", tag("fullstop")))]
     )
     assert str(result) == "<infocard><label>Monty Python<fullstop/></label></infocard>"
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", {"updated": "never"}, "Monty Python")]
     )
     assert str(result) == (
         '<infocard><label updated="never">Monty Python</label></infocard>'
     )
 
-    result = new_tag_node(
+    result = TagNode(
         "infocard", children=[tag("label", {"updated": "never"}, ("Monty ", "Python"))]
     )
     assert str(result) == (
@@ -448,21 +502,21 @@ def test_make_node_with_children():
     )
 
     DefaultStringOptions.namespaces = {"foo": "https://foo.org"}
-    result = new_tag_node("root", namespace="https://foo.org", children=[tag("node")])
+    result = TagNode("root", namespace="https://foo.org", children=[tag("node")])
     assert str(result) == '<foo:root xmlns:foo="https://foo.org"><foo:node/></foo:root>'
 
 
 def test_make_node_outside_context():
     root = parse_tree('<root xmlns="ham" />')
-    root.append_children(new_tag_node("a", namespace="https://spam"))
+    root.append_children(TagNode("a", namespace="https://spam"))
     DefaultStringOptions.namespaces = {"spam": "https://spam"}
     assert str(root) == '<root xmlns="ham" xmlns:spam="https://spam"><spam:a/></root>'
 
 
 def test_make_node_with_namespace():
-    node = new_tag_node("foo", namespace="https://name.space")
+    node = TagNode("foo", namespace="https://name.space")
     assert node.namespace == "https://name.space"
-    assert node._etree_obj.tag == "{https://name.space}foo"
+    assert node.universal_name == "{https://name.space}foo"
 
 
 @pytest.mark.parametrize(
@@ -470,7 +524,7 @@ def test_make_node_with_namespace():
     (([""], 0), ([" "], 1), ([" ", " "], 1), (["", "", tag("child"), "", ""], 1)),
 )
 def test_merge_text_nodes(child_nodes, expected_count):
-    node = new_tag_node("node", children=child_nodes)
+    node = TagNode("node", children=child_nodes)
     node.merge_text_nodes()
     assert len(node) == expected_count
 
@@ -482,8 +536,7 @@ def test_names(sample_document):
     assert root.local_name == "doc"
     assert root.universal_name == "{https://name.space}doc"
 
-    first_level_children = tuple(x for x in root.iterate_children())
-    header, text = first_level_children[0], first_level_children[1]
+    header, text = root[:]
 
     assert header.namespace == "https://name.space"
     assert header.local_name == "header"
@@ -494,16 +547,22 @@ def test_names(sample_document):
     text.namespace = "https://space.name"
     assert text.universal_name == "{https://space.name}text"
 
+    with pytest.raises(ValueError, match=r"Value is not a valid xml name\."):
+        root.local_name = " a"
+
+    with pytest.raises(ValueError, match=r"Invalid XML character data\."):
+        root.namespace = "\x00"
+
 
 def test_new_tag_node_with_tag_attributes_input():
-    attributes = new_tag_node("node_1", {"a": "b", "{http://}c": "d"}).attributes
-    assert new_tag_node("node_2", attributes).attributes == {
+    attributes = TagNode("node_1", {"a": "b", "{http://}c": "d"}).attributes
+    assert TagNode("node_2", attributes).attributes == {
         "a": "b",
         ("http://", "c"): "d",
     }
 
-    attributes = new_tag_node("node_1", {"a": "b"}, namespace="http://").attributes
-    assert new_tag_node("node_2", attributes).attributes == {
+    attributes = TagNode("node_1", {"a": "b"}, namespace="http://").attributes
+    assert TagNode("node_2", attributes).attributes == {
         ("http://", "a"): "b",
     }
 
@@ -523,14 +582,14 @@ def test_fetch_following(files_path):
     assert_nodes_are_in_document_order(*result)
 
 
-def test_no_siblings_on_root():
+def test_no_siblings_on_root_without_document():
     root = parse_tree("<root/>")
 
-    with pytest.raises(TypeError):
-        root.add_following_siblings("sibling")
+    with pytest.raises(InvalidOperation):
+        root.add_following_siblings(CommentNode("sibling"))
 
-    with pytest.raises(TypeError):
-        root.add_preceding_siblings("sibling")
+    with pytest.raises(InvalidOperation):
+        root.add_preceding_siblings(CommentNode("sibling"))
 
 
 def test_prepend_children():
@@ -545,14 +604,16 @@ def test_prepend_children():
 def test_fetch_preceding(files_path):
     root = Document(files_path / "marx_manifestws_1848.TEI-P5.xml").root
 
-    result = []
-    for node in root.iterate_descendants(is_pagebreak):
+    for i, node in enumerate(root.iterate_descendants(is_pagebreak)):
         if isinstance(node, TagNode) and node.local_name == "pb":
             pass
 
-    while node is not None:
+    assert i == 22
+    assert node.local_name == "pb"
+
+    result = [node]
+    while (node := node.fetch_preceding(is_pagebreak)) is not None:
         result.append(node)
-        node = node.fetch_preceding(is_pagebreak)
 
     assert len(result) == 23
     assert_nodes_are_in_document_order(*reversed(result))
@@ -630,17 +691,32 @@ def test_set_tag_components():
 
 
 def test_set_item():
-    namespace = "http://foo"
     root = parse_tree("<root/>")
-    root[0] = tag("b")
     root[0] = tag("a")
     root["A"] = "1"
-    root[(namespace, "B")] = "2"
-    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"/>'
-    with pytest.raises(IndexError):
-        root[-1] = "text"
-    with pytest.raises(IndexError):
-        root[1] = "text"
+    root[("http://foo", "B")] = "2"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><a/></root>'
+
+    root[0] = tag("b")
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/></root>'
+
+    root[1] = "foo"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/>foo</root>'
+
+    root[-1] = "bar"
+    assert str(root) == '<root xmlns:ns0="http://foo" A="1" ns0:B="2"><b/>bar</root>'
+
+    for index in (-3, 3):
+        with pytest.raises(IndexError):
+            root[index] = "nah"
+
+    with pytest.raises(TypeError):
+        root[0.0] = "1"
+
+
+def test_tag_facility():
+    with pytest.raises(TypeError):
+        tag("a", {"foo": 1.0})
 
 
 def test_tag_definition_copies_attributes():

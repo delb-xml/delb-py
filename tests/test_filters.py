@@ -1,4 +1,16 @@
-from delb import TagNode, any_of, not_, parse_tree
+from delb import (
+    Document,
+    TagNode,
+    parse_tree,
+)
+from _delb.filters import (
+    altered_default_filters,
+    any_of,
+    default_filters,
+    is_processing_instruction_node,
+    is_root_node,
+    not_,
+)
 
 
 def test_anyof_filter():
@@ -14,6 +26,33 @@ def test_anyof_filter():
 
     assert len(results) == 2
     assert all("c" not in x.attributes for x in results)
+
+
+def test_extended_default_filters():
+    assert len(default_filters) == 1
+    assert len(default_filters[-1]) == 1
+    with altered_default_filters(lambda n: True, extend=True):
+        assert len(default_filters) == 2
+        assert len(default_filters[-1]) == 2
+    assert len(default_filters) == 1
+    assert len(default_filters[-1]) == 1
+
+
+def test_is_pi_node():
+    document = Document("<root/><?a b?><!--c--><?d e?>")
+    with altered_default_filters():
+        for i, _ in enumerate(
+            document.root.iterate_following(is_processing_instruction_node)
+        ):
+            pass
+        assert i == 1
+
+
+def test_is_root_node():
+    root = parse_tree("<root><a><b/></a></root>")
+    b = root.last_descendant
+    assert b.local_name == "b"
+    assert next(b.iterate_ancestors(is_root_node)) is root
 
 
 def test_not_filter():

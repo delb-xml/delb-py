@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class PlaygroundDocumentExtension(DocumentMixinBase):
+    """This describes PlaygroundDocumentExtension."""
+
     @classmethod
     def _init_config(cls, config, kwargs):
         config.playground = SimpleNamespace(

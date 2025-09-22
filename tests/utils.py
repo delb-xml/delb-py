@@ -1,14 +1,12 @@
 import os
 import sys
-from itertools import pairwise
+from itertools import pairwise, product
 
 import pytest
 
-from delb import (
-    altered_default_filters,
-    compare_trees,
-    NodeBase,
-)
+from delb import compare_trees, TagNode
+from delb.filters import altered_default_filters
+from delb.typing import XMLNodeType  # noqa: TC001
 
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
@@ -27,13 +25,13 @@ else:
 
 
 @altered_default_filters()
-def assert_equal_trees(a: NodeBase, b: NodeBase):
+def assert_equal_trees(a: XMLNodeType, b: XMLNodeType):
     result = compare_trees(a, b)
     if not result:
         raise AssertionError(str(result))
 
 
-def assert_nodes_are_in_document_order(*nodes: NodeBase):
+def assert_nodes_are_in_document_order(*nodes: XMLNodeType):
     # this test avoids usage of .location_path and .xpath
     # it also can test all node types
     if len(nodes) <= 1:
@@ -55,13 +53,33 @@ def assert_nodes_are_in_document_order(*nodes: NodeBase):
 
 
 @altered_default_filters()
-def index_path(node: NodeBase):
+def index_path(node: XMLNodeType):
     result = []
     while node.parent is not None:
         result.append(node.index)
         node = node.parent
     result.reverse()
     return result
+
+
+def variety_forest():
+    for assembly_axes in product(("child", "following"), repeat=9):
+        root = TagNode("root")
+
+        node = root.prepend_children(TagNode("begin"))[0]
+
+        for i, direction in enumerate(assembly_axes):
+            new_node = TagNode(chr(ord("a") + i))
+            match direction:
+                case "child":
+                    node.append_children(new_node)
+                case "following":
+                    node.add_following_siblings(new_node)
+            node = new_node
+
+        root.append_children(TagNode("end"))
+
+        yield root
 
 
 skip_long_running_test = pytest.mark.skipif(

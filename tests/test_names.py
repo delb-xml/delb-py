@@ -5,16 +5,14 @@ from delb.names import XML_NAMESPACE, deconstruct_clark_notation
 
 
 @pytest.mark.parametrize(
-    ("null", "in_", "out"),
+    ("in_", "out"),
     (
-        (None, "a", (None, "a")),
-        ("", "a", ("", "a")),
-        (None, "{http://clark}a", ("http://clark", "a")),
-        ("", "{http://clark}a", ("http://clark", "a")),
+        ("a", (None, "a")),
+        ("{http://clark}a", ("http://clark", "a")),
     ),
 )
-def test_deconstruct_clark_notation(null, in_, out):
-    assert deconstruct_clark_notation(in_, null) == out
+def test_deconstruct_clark_notation(in_, out):
+    assert deconstruct_clark_notation(in_) == out
 
 
 @pytest.mark.parametrize(
@@ -29,6 +27,26 @@ def test_deconstruct_clark_notation(null, in_, out):
 def test_invalid_namespace_declarations(data):
     with pytest.raises(ValueError):  # noqa: PT011
         Namespaces(data)
+
+
+def test_invalid_namespace_type():
+    with pytest.raises(TypeError):
+        Namespaces(("foo", "http://foo"))
+
+
+def test_namespaces():
+    # low expectations here, this aims to cover all lines
+    # more specific test shall have their own test function
+
+    namespaces = Namespaces({"a": "http://a.org/"})
+
+    assert len(namespaces) == 18  # includes common and global declarations
+
+    assert str(namespaces)
+
+    # to hit the cache eviction in Namespaces.__init_data
+    for i in range(17):
+        Namespaces({chr(97 + i): "http://foo.org"})
 
 
 def test_prefix_lookup():

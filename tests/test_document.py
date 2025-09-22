@@ -3,15 +3,17 @@ from typing import Final
 
 import pytest
 from delb import (
+    CommentNode,
     Document,
     DocumentMixinBase,
+    ProcessingInstructionNode,
     TagNode,
+    TextNode,
     get_traverser,
-    is_tag_node,
-    new_comment_node,
-    new_processing_instruction_node,
+    parse_tree,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
+from delb.filters import altered_default_filters, is_tag_node
 from tests.plugins import PlaygroundDocumentExtension
 
 
@@ -60,12 +62,12 @@ def test_clone_integrity(files_path):
     </teiHeader>
     </TEI>"""
     )
-    clone = document.clone()
+    cloned_document = document.clone()
 
     for node in get_traverser(from_left=True, depth_first=True, from_top=True)(
         document.root, is_tag_node
     ):
-        cloned_node = clone.xpath(node.location_path).first
+        cloned_node = cloned_document.xpath(node.location_path).first
         assert node.universal_name == cloned_node.universal_name
         assert node.attributes == cloned_node.attributes
 
@@ -101,17 +103,41 @@ def test_css_select():
     assert results[0].universal_name == "{y}c"
 
 
+def test_epilogue():
+    document = Document("<root/><!--c-->")
+
+    c = document.epilogue[0]
+    assert document.epilogue.index(c) == 0
+
+    document.epilogue.insert(0, CommentNode("d"))
+    assert (
+        str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/><!--d--><!--c-->'
+    )
+
+    document.epilogue.clear()
+    assert document.epilogue.index(c) is None
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
+
+    with altered_default_filters():
+        d = parse_tree("<root><!--d--></root>")[0]
+    with pytest.raises(InvalidOperation, match=r"Only a detached .*"):
+        document.epilogue.append(d)
+
+    with pytest.raises(TypeError):
+        document.epilogue.append(TextNode("text"))
+
+
+def test_explicitly_passed_source_url():
+    document = Document("<root/>", source_url="https://root.io/")
+    assert document.source_url == "https://root.io/"
+
+
 def test_invalid_document():
     with pytest.raises(FailedDocumentLoading):
         Document(0)
 
 
-def test_mixin_method():
-    document = Document("<root/>", playground_property="foo")
-    assert document.playground_method() == "f00"
-
-
-def test_mro():
+def test_metaclass():
     class DocumentSubclass(Document):
         pass
 
@@ -122,6 +148,7 @@ def test_mro():
         DocumentMixinBase,
         object,
     )
+    assert "describes PlaygroundDocumentExtension." in Document.__doc__
 
     assert DocumentSubclass.__mro__ == (
         DocumentSubclass,
@@ -132,16 +159,38 @@ def test_mro():
     )
 
 
+def test_mixin_method():
+    document = Document("<root/>", playground_property="foo")
+    assert document.playground_method() == "f00"
+
+
+def test_prologue():
+    document = Document("<!--c--><root/>")
+
+    c = document.prologue[0]
+    assert document.prologue.index(c) == 0
+
+    document.prologue.prepend(CommentNode("b"))
+    document.prologue.remove(c)
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><!--b--><root/>'
+
+    document.prologue.clear()
+    assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><root/>'
+
+    with pytest.raises(IndexError):
+        document.prologue.insert(1, CommentNode("c"))
+
+
 def test_root_siblings():
     document = Document("<root/>")
     prologue = document.prologue
     epilogue = document.epilogue
 
-    prologue.append(new_comment_node(" I Roy "))
-    prologue.insert(0, new_processing_instruction_node("Blood", "Fire"))
+    prologue.append(CommentNode(" I Roy "))
+    prologue.insert(0, ProcessingInstructionNode("Blood", "Fire"))
 
-    epilogue.prepend(new_comment_node(" Prince Jazzbo "))
-    epilogue.append(new_processing_instruction_node("over", "out"))
+    epilogue.prepend(CommentNode(" Prince Jazzbo "))
+    epilogue.append(ProcessingInstructionNode("over", "out"))
 
     assert len(prologue) == len(epilogue) == 2
 
@@ -153,9 +202,7 @@ def test_root_siblings():
     assert prologue[0].target == "Blood"
     assert prologue[-1].content == " I Roy "
 
-    epilogue += [new_comment_node("")]
-
-    with pytest.raises(InvalidOperation):
+    with pytest.raises(TypeError):
         epilogue.append("nah")
 
 
@@ -163,6 +210,9 @@ def test_set_root():
     document = Document("<root><node/></root>")
     document.root = document.root[0].detach()
     assert str(document) == '<?xml version="1.0" encoding="UTF-8"?><node/>'
+
+    with pytest.raises(TypeError):
+        document.root = TextNode("")
 
     document_2 = Document("<root><replacement/>parts</root>")
     with pytest.raises(InvalidOperation, match="detached node"):

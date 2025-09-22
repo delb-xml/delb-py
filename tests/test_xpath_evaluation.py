@@ -1,14 +1,15 @@
 import pytest
 
+from _delb.xpath import evaluate
 from _delb.xpath.ast import Axis
+from _delb.names import Namespaces
 from delb import (
-    altered_default_filters,
-    is_tag_node,
     parse_tree,
     Document,
     TagNode,
     TextNode,
 )
+from delb.filters import altered_default_filters, is_tag_node
 
 
 def test_any_name_test():
@@ -34,12 +35,13 @@ def test_any_name_test():
         ("child", "b", "cde"),
         ("descendant", "a", "bcdefghi"),
         ("descendant-or-self", "a", "abcdefghi"),
-        ("following", "b", "cdefghi"),
+        ("following", "b", "fghi"),
+        ("following", "f", ""),
         ("following-sibling", "b", "f"),
         ("following-sibling", "c", "de"),
         ("parent", "a", ""),
         ("parent", "d", "b"),
-        ("preceding", "i", "hgfedcba"),
+        ("preceding", "i", "hgedcb"),
         ("preceding-sibling", "f", "b"),
         ("preceding-sibling", "i", "hg"),
         ("self", "a", "a"),
@@ -85,6 +87,25 @@ def test_attribute_value_test(namespaces):
     root = parse_tree("<root xmlns='http://'><a b='c'/></root>")
     assert root.xpath("//a[@b='c']", namespaces=namespaces).size == 1
 
+    start = parse_tree("<root>a</root>")
+    start.xpath("self::text()[@foo='bar']")
+
+
+def test_contributed_function_concat():
+    root = parse_tree("<root><a foo='bar'/></root>")
+    assert root.xpath("*[@foo=concat('b','a', 'r')]").size == 1
+
+
+def test_contributed_function_bool():
+    root = parse_tree("<root><a/></root>")
+    assert root.xpath("*[boolean(0)]").size == 0
+    assert root.xpath("*[boolean(1)]").size == 1
+
+
+def test_contributed_functions_position_and_last():
+    root = parse_tree("<root><a/><b/></root>")
+    assert root.xpath("*[position()=last()]").size == 1
+
 
 def test_contributed_function_text():
     document = Document("<root><a>foo</a><b>bar</b><c>f<x/>oo</c></root>")
@@ -111,6 +132,12 @@ def test_evaluation_from_text_node():
     result = node.xpath("ancestor::p")
     assert result.size == 1
     assert result.first is p
+
+
+@pytest.mark.parametrize("namespaces", (0, Namespaces({})))
+def test_invalid_namespace(namespaces):
+    with pytest.raises(TypeError):
+        evaluate(TagNode("root"), "//*", namespaces)
 
 
 def test_multiple_identical_location_paths():

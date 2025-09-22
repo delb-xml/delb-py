@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 from lxml import etree
@@ -40,11 +41,20 @@ class LxmlParser(XMLEventParserInterface):
         if encoding.endswith(("-be", "-le")):
             encoding = encoding[:-3]
 
+        if options.load_referenced_resources:  # pragma: no cover
+            warnings.warn(
+                "The use of the `load_reference_resources` option may leave "
+                "the lxml parser in an idle, non-terminating state when working with "
+                "large files. The expat parser is preferable for such.",
+                category=UserWarning,
+            )
+
         self.parser = etree.XMLPullParser(
             base_url=base_url,
             dtd_validation=False,
             encoding=encoding,
             events=("comment", "end", "pi", "start"),
+            huge_tree=True,
             load_dtd=options.load_referenced_resources,
             no_network=options.unplugged,
             remove_blank_text=False,

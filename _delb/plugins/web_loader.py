@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 try:
     import h2  # type: ignore
-except ImportError:
+except ImportError:  # pragma: no cover
     http2 = False
 else:
     http2 = True
@@ -55,7 +55,7 @@ class HttpsStreamWrapper(IOBase):
 
     def __init__(self, response: httpx.Response):
         self._generator: Optional[Iterator[bytes]] = None
-        self._response = response
+        self._response: Final = response
 
     def read(self, size: int = 4096) -> bytes:
         if self._generator is None:

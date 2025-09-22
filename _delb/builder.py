@@ -19,65 +19,58 @@
 from __future__ import annotations
 
 import warnings
-from collections import deque
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, overload, Optional
+from typing import TYPE_CHECKING, overload, Final, Optional
 
-from _delb.exceptions import ParsingEmptyStream, ParsingValidityError
+from _delb.exceptions import ParsingValidityError
 from _delb.names import XML_NAMESPACE
 from _delb.nodes import (
-    DETACHED,
-    altered_default_filters,
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     _reduce_whitespace_between_siblings,
-    _wrapper_cache,
     Attribute,
-    NodeBase,
+    CommentNode,
+    ProcessingInstructionNode,
     _TagDefinition,
     TagNode,
     TextNode,
 )
 from _delb.parser import Event, EventType, ParserOptions, TagEventData, parse_events
+from _delb.typing import XMLNodeType
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from _delb.typing import AttributeAccessor, NodeSource, InputStream
+    from _delb.typing import (
+        AttributeAccessor,
+        NodeSource,
+        InputStream,
+        TagNodeType,
+    )
 
 
 # defining tag node templates
 
 
 @overload
-def tag(local_name: str):  # pragma: no cover
-    ...
+def tag(local_name: str): ...
 
 
 @overload
-def tag(
-    local_name: str, attributes: Mapping[AttributeAccessor, str]
-):  # pragma: no cover
-    ...
+def tag(local_name: str, attributes: Mapping[AttributeAccessor, str]): ...
 
 
 @overload
-def tag(local_name: str, child: NodeSource):  # pragma: no cover
-    ...
+def tag(local_name: str, child: NodeSource): ...
 
 
 @overload
-def tag(local_name: str, children: Sequence[NodeSource]):  # pragma: no cover
-    ...
+def tag(local_name: str, children: Sequence[NodeSource]): ...
 
 
 @overload
 def tag(
     local_name: str, attributes: Mapping[AttributeAccessor, str], child: NodeSource
-):  # pragma: no cover
-    ...
+): ...
 
 
 @overload
@@ -85,8 +78,7 @@ def tag(
     local_name: str,
     attributes: Mapping[AttributeAccessor, str],
     children: Sequence[NodeSource],
-):  # pragma: no cover
-    ...
+): ...
 
 
 def tag(*args):  # noqa: C901
@@ -120,7 +112,7 @@ def tag(*args):  # noqa: C901
     >>> str(root)
     '<root><head lvl="1">Hello!</head><items><item1/><item2/></items></root>'
     >>> root.append_children(tag("addendum"))  # doctest: +ELLIPSIS
-    (<TagNode("addendum", {}, /*/*[3]) [0x...]>,)
+    (<TagNode("{}addendum", {}, /*/*[3]) [0x...]>,)
     >>> str(root)[-26:]
     '</items><addendum/></root>'
     """
@@ -133,7 +125,7 @@ def tag(*args):  # noqa: C901
         for key, value in attributes.items():
             match value:
                 case Attribute():
-                    result[value._qualified_name] = value.value
+                    result[(value.namespace, value.local_name)] = value.value
                 case str() | tuple():
                     result[key] = value
                 case _:
@@ -150,11 +142,11 @@ def tag(*args):  # noqa: C901
             return _TagDefinition(
                 local_name=args[0], attributes=prepare_attributes(second_arg)
             )
-        if isinstance(second_arg, (str, NodeBase, _TagDefinition)):
+        if isinstance(second_arg, (str, XMLNodeType, _TagDefinition)):
             return _TagDefinition(local_name=args[0], children=(second_arg,))
         if isinstance(second_arg, Sequence):
             if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in second_arg
+                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in second_arg
             ):
                 raise TypeError(
                     "Either node instances, strings or objects from :func:`delb.tag` "
@@ -164,7 +156,7 @@ def tag(*args):  # noqa: C901
 
     if len(args) == 3:
         third_arg = args[2]
-        if isinstance(third_arg, (str, NodeBase, _TagDefinition)):
+        if isinstance(third_arg, (str, XMLNodeType, _TagDefinition)):
             return _TagDefinition(
                 local_name=args[0],
                 attributes=prepare_attributes(args[1]),
@@ -172,7 +164,7 @@ def tag(*args):  # noqa: C901
             )
         if isinstance(third_arg, Sequence):
             if not all(
-                isinstance(x, (str, NodeBase, _TagDefinition)) for x in third_arg
+                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in third_arg
             ):
                 raise TypeError(
                     "Either node instances, strings or objects from :func:`delb.tag` "
@@ -184,7 +176,7 @@ def tag(*args):  # noqa: C901
                 children=tuple(third_arg),
             )
 
-    raise ValueError
+    raise ValueError("Unrecognized arguments.")
 
 
 # deserializing streams
@@ -203,35 +195,34 @@ class TreeBuilder:
     def __init__(
         self, data: InputStream, parse_options: ParserOptions, base_url: str | None
     ):
-        self.children: deque[list[NodeBase]] = deque()
-        self.event_feed = parse_events(data, parse_options, base_url)
-        self.options = parse_options
-        self.preserve_space: deque[bool] = deque()
-        self.started_tags: deque[TagNode] = deque()
-        self.xml_ids: set[str] = set()
+        self.children: Final[list[list[XMLNodeType]]] = []
+        self.event_feed: Final = parse_events(data, parse_options, base_url)
+        self.options: Final = parse_options
+        self.preserve_space: Final[list[bool]] = []
+        self.started_tags: Final[list[TagNodeType]] = []
+        self.xml_ids: Final[set[str]] = set()
 
     def __iter__(self):
         return self
 
-    def __next__(self) -> NodeBase:
+    def __next__(self) -> XMLNodeType:
         while True:
             event = next(self.event_feed)
             result = self.handle_event(event)
             if result is not None:
                 return result
 
-    def handle_event(self, event: Event) -> NodeBase | None:
-        # TODO instantiate objects directly with the native data model
-        result: NodeBase | None
+    def handle_event(self, event: Event) -> XMLNodeType | None:
+        result: XMLNodeType | None
         type_, data = event
 
         match type_:
             case EventType.Comment:
                 assert isinstance(data, str)
-                result = new_comment_node(data)
+                result = CommentNode(data)
             case EventType.ProcessingInstruction:
                 assert isinstance(data, tuple)
-                result = new_processing_instruction_node(data[0], data[1])
+                result = ProcessingInstructionNode(data[0], data[1])
             case EventType.TagStart:
                 assert isinstance(data, TagEventData)
                 self.handle_tag_start(data)
@@ -241,7 +232,7 @@ class TreeBuilder:
                 result = self.handle_tag_end(data)
             case EventType.Text:
                 assert isinstance(data, str)
-                result = TextNode(data, DETACHED)
+                result = TextNode(data)
 
         if result is not None:
             if self.started_tags:
@@ -250,13 +241,12 @@ class TreeBuilder:
                 assert not self.children
                 assert not self.started_tags
                 assert not self.preserve_space
-                assert isinstance(result, NodeBase)
                 self.xml_ids.clear()
                 return result
 
         return None
 
-    def handle_tag_end(self, data: TagEventData | None) -> TagNode:
+    def handle_tag_end(self, data: TagEventData | None) -> TagNodeType:
         result = self.started_tags.pop()
         if __debug__ and data:
             assert result.namespace == data.namespace
@@ -266,11 +256,10 @@ class TreeBuilder:
 
         children = self.children.pop()
         if (not self.preserve_space.pop()) and children:
-            _reduce_whitespace_between_siblings(children, False)
+            _reduce_whitespace_between_siblings(children)
 
-        # TODO optimize with the native data model
         for node in children:
-            result.append_children(node)
+            result._child_nodes.append(node)
 
         return result
 
@@ -286,7 +275,7 @@ class TreeBuilder:
         self.children.append([])
 
         self.started_tags.append(
-            new_tag_node(
+            TagNode(
                 local_name=data.local_name,
                 attributes=data.attributes,
                 namespace=data.namespace,
@@ -326,13 +315,11 @@ def parse_nodes(
     options: Optional[ParserOptions] = None,
     *,
     base_url: str | None = None,
-) -> Iterator[NodeBase]:
+) -> Iterator[XMLNodeType]:
     """Parses the provided input data to a sequence of nodes."""
     if options is None:
         options = ParserOptions()
-    # TODO remove contexts with optimized TreeBuilder
-    with altered_default_filters(), _wrapper_cache:
-        yield from TreeBuilder(data, options, base_url)
+    yield from TreeBuilder(data, options, base_url)
 
 
 def parse_tree(
@@ -340,7 +327,7 @@ def parse_tree(
     options: Optional[ParserOptions] = None,
     *,
     base_url: str | None = None,
-) -> NodeBase:
+) -> XMLNodeType:
     """Parses the provided input to a single node."""
     result = None
     for node in parse_nodes(data, options, base_url=base_url):
@@ -348,10 +335,8 @@ def parse_tree(
             raise ParsingValidityError("The stream contained extra contents.", node)
         result = node
 
-    if result is None:
-        raise ParsingEmptyStream()
-
-    return node
+    assert result is not None
+    return result
 
 
 __all__ = (parse_nodes.__name__, parse_tree.__name__, tag.__name__)

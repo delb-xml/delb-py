@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Sequence
 from importlib.metadata import entry_points
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Final, overload
 
 
 if TYPE_CHECKING:
@@ -106,11 +106,11 @@ class PluginManager:
     )
 
     def __init__(self):
-        self.document_mixins: list[type[DocumentMixinBase]] = []
-        self.document_subclasses: list[type[Document]] = []
-        self.loaders: list[Loader] = []
-        self.parsers: dict[str, type[XMLEventParserInterface]] = {}
-        self.xpath_functions: dict[str, XPathFunction] = {}
+        self.document_mixins: Final[list[type[DocumentMixinBase]]] = []
+        self.document_subclasses: Final[list[type[Document]]] = []
+        self.loaders: Final[list[Loader]] = []
+        self.parsers: Final[dict[str, type[XMLEventParserInterface]]] = {}
+        self.xpath_functions: Final[dict[str, XPathFunction]] = {}
 
     def get_parser(
         self, preferences: str | Sequence[str]
@@ -121,11 +121,8 @@ class PluginManager:
         for name in preferences:
             if (parser := self.parsers.get(name)) is not None:
                 return parser
-
-        for parser in self.parsers.values():
-            return parser
-
-        raise RuntimeError("No available parsers.")
+        else:
+            raise ValueError(f"No matching parser for {preferences} available.")
 
     @staticmethod
     def load_plugins():

@@ -3,7 +3,8 @@ from typing import NamedTuple
 import pytest
 
 from benchmarks.conftest import TEI_FILES
-from delb import is_text_node, Document, TagNode
+from delb import Document, TagNode
+from delb.filters import is_text_node
 from delb.transform import Transformation
 
 TEI_NAME_TAG_TYPE_MAP = {"persName": "person", "placeName": "place"}

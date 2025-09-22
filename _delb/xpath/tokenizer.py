@@ -21,6 +21,8 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple
 
 from _delb.exceptions import XPathParsingError
+from _delb.grammar import name_pattern
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -53,7 +55,7 @@ class Token(NamedTuple):
 
 
 def alternatives(*choices: str) -> str:
-    return "(" + "|".join(choices) + ")"
+    return "|".join(choices)
 
 
 def named_group(name: str, content: str) -> str:
@@ -66,29 +68,18 @@ def named_group_reference(name: str) -> str:
 
 string_pattern: Final = (
     named_group("stringDelimiter", """["']""")  # opening string delimiter
+    + "("
     + alternatives(
         r"\\.",  # either a backslash followed by any character
         r"[^\\]",  # or any one character except a backslash
     )
+    + ")"
     + "*?"  # non-greedy until the reoccurring opening delimiter as:
     + named_group_reference("stringDelimiter")  # closing string delimiter
 )
 
-# https://www.w3.org/TR/REC-xml-names/#NT-NCName
-# https://www.w3.org/TR/REC-xml/#NT-Name
-name_start_characters: Final = (
-    "A-Z_a-z"
-    r"\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u037d\u037f-\u1fff"
-    r"\u200c-\u200d\u2070-\u218f\u2c00-\u2fef"
-    r"\u3001-\ud7ff"
-    r"\uf900-\ufdcf\ufdf0-\ufffd"
-    r"\U00010000-\U000effff"
-)
-name_characters = name_start_characters + r"\.0-9\u00b7\u0300-\u036f\u203f-\u2040-"
-name_pattern = f"[{name_start_characters}][{name_characters}]*"
 
-
-grab_token: Final = re.compile(
+iterate_tokens: Final = re.compile(
     alternatives(
         named_group("STRING", string_pattern),
         named_group("NUMBER", r"\d+"),
@@ -108,14 +99,14 @@ grab_token: Final = re.compile(
         named_group("COMMA", ","),
         named_group("PASEQ", r"\|"),
         named_group(
-            "OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">", "=")
+            "OTHER_OPS", alternatives(r"\+", "-", "!=", "<=", ">=", "<", ">", "==", "=")
         ),
         # https://www.w3.org/TR/REC-xml/#NT-S
         named_group("WHITESPACE", "[ \n\t]+"),
-        named_group("ERROR", ".*"),
+        named_group("ERROR", ".+"),
     ),
     re.UNICODE,
-).search
+).finditer
 
 
 # interface
@@ -124,31 +115,25 @@ grab_token: Final = re.compile(
 @lru_cache(64)  # TODO? configurable
 def tokenize(expression: str) -> Sequence[Token]:
     result = []
-    index = 0
-    end = len(expression)
 
-    while index < end:
-        match = grab_token(expression, pos=index)
+    for match in iterate_tokens(expression):
         assert match is not None
-
-        if match.groupdict().get("ERROR") is not None:
-            raise XPathParsingError(position=index, message="Unrecognized token.")
-
-        for token_type, value in match.groupdict().items():
-            if value is not None:
-                break
-        else:  # pragma: no cover
-            raise RuntimeError
-
-        token = match[token_type]
-        assert isinstance(token, str)
-
-        if token_type != "WHITESPACE":
-            result.append(
-                Token(position=index, string=token, type=getattr(TokenType, token_type))
-            )
-
-        index += len(token)
+        match token_type := match.lastgroup:
+            case "ERROR":
+                raise XPathParsingError(
+                    position=match.start(), message="Unrecognized token."
+                )
+            case "WHITESPACE":
+                pass
+            case _:
+                assert token_type is not None
+                result.append(
+                    Token(
+                        position=match.start(),
+                        string=match.group(),
+                        type=TokenType[token_type],
+                    )
+                )
 
     return result
 

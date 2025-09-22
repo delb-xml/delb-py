@@ -16,17 +16,17 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Sequence
+from abc import abstractmethod, ABC
+from collections.abc import Iterator, Sequence
 from copy import deepcopy
 from io import TextIOWrapper
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, BinaryIO, Optional
+from typing import TYPE_CHECKING, overload, Any, BinaryIO, Final, Optional
 
 from _delb.builder import parse_nodes, parse_tree, tag
 from _delb.exceptions import (
     FailedDocumentLoading,
     InvalidOperation,
-    ParsingEmptyStream,
 )
 from _delb.plugins import (
     core_loaders,
@@ -35,8 +35,16 @@ from _delb.plugins import (
 )
 from _delb.names import Namespaces
 from _delb.nodes import (
-    _get_serializer,
-    _wrapper_cache,
+    new_comment_node,
+    new_processing_instruction_node,
+    new_tag_node,
+    CommentNode,
+    _DocumentNode,
+    ProcessingInstructionNode,
+    TagNode,
+    TextNode,
+)
+from _delb.filters import (
     altered_default_filters,
     any_of,
     is_comment_node,
@@ -45,22 +53,16 @@ from _delb.nodes import (
     is_tag_node,
     is_text_node,
     not_,
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
-    CommentNode,
-    DefaultStringOptions,
-    FormatOptions,
-    NodeBase,
-    PrettySerializer,
-    ProcessingInstructionNode,
-    Serializer,
-    Siblings,
-    TagNode,
-    _TextBufferWriter,
-    TextNode,
 )
 from _delb.parser import ParserOptions
+from _delb.serializer import (
+    DefaultStringOptions,
+    FormatOptions,
+    PrettySerializer,
+    Serializer,
+    _TextBufferWriter,
+    _get_serializer,
+)
 from _delb.utils import first, get_traverser, last
 from _delb.xpath import QueryResults
 from delb.utils import compare_trees
@@ -68,7 +70,15 @@ from delb.utils import compare_trees
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from _delb.typing import Loader, NamespaceDeclarations, NodeSource
+    from _delb.typing import (
+        CommentNodeType,
+        _DocumentNodeType,
+        Loader,
+        NamespaceDeclarations,
+        ProcessingInstructionNodeType,
+        TagNodeType,
+        XMLNodeType,
+    )
 
 # plugin loading
 
@@ -79,12 +89,120 @@ _plugin_manager.load_plugins()
 # api
 
 
-class _Logue(Siblings):
-    @classmethod
-    def _handle_new_sibling(cls, node: NodeSource) -> NodeBase:
+class _Logue(ABC):
+    __slots__ = ("_siblings",)
+
+    def __init__(self, document: _DocumentNodeType):
+        self._siblings: Final = document._child_nodes
+
+    @overload
+    def __getitem__(self, index: int) -> XMLNodeType:
+        pass
+
+    @overload
+    def __getitem__(self, index: slice) -> list[XMLNodeType]:
+        pass
+
+    def __getitem__(self, index: int | slice) -> XMLNodeType | list[XMLNodeType]:
+        return self._siblings_slice[index]
+
+    def __iter__(self) -> Iterator[XMLNodeType]:
+        return iter(self._siblings_slice)
+
+    def __len__(self) -> int:
+        return len(self._siblings_slice)
+
+    @abstractmethod
+    def append(
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
+        pass
+
+    def clear(self):
+        for node in self._siblings_slice:
+            self._siblings.remove(node)
+
+    @abstractmethod
+    def index(self, node: XMLNodeType) -> int | None:
+        pass
+
+    @abstractmethod
+    def insert(self, index: int, node: XMLNodeType):
+        pass
+
+    def prepend(
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
+        self.insert(0, node)
+        return node
+
+    def remove(self, node: CommentNodeType | ProcessingInstructionNodeType):
+        self._siblings.remove(node)
+
+    @property
+    def _root_index(self) -> int:
+        return self._siblings.index(
+            next(n for n in self._siblings if isinstance(n, TagNode))
+        )
+
+    @property
+    @abstractmethod
+    def _siblings_slice(self) -> list[XMLNodeType]:
+        pass
+
+    def _validate_new_node(self, node: XMLNodeType):
         if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
-            raise InvalidOperation
-        return super()._handle_new_sibling(node)
+            raise TypeError
+        if node._parent is not None:
+            raise InvalidOperation(
+                "Only a detached node can be added to the tree. Use "
+                ":meth:`XMLNodeType.clone` or :meth:`XMLNodeType.detach` to get one."
+            )
+
+
+class Epilogue(_Logue):
+    def append(
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
+        self._validate_new_node(node)
+        self._siblings.append(node)
+        return node
+
+    def index(self, node: XMLNodeType) -> int | None:
+        if node in self._siblings:
+            return self._siblings.index(node) - self._root_index - 1
+        else:
+            return None
+
+    def insert(self, index: int, node: XMLNodeType):
+        self._validate_new_node(node)
+        self._siblings.insert(self._root_index + index + 1, node)
+
+    @property
+    def _siblings_slice(self) -> list[XMLNodeType]:
+        return self._siblings[self._root_index + 1 :]
+
+
+class Prologue(_Logue):
+    def append(
+        self, node: CommentNodeType | ProcessingInstructionNodeType
+    ) -> CommentNodeType | ProcessingInstructionNodeType:
+        self._validate_new_node(node)
+        self._siblings.insert(self._root_index, node)
+        return node
+
+    def index(self, node: XMLNodeType) -> int | None:
+        return self._siblings.index(node)
+
+    def insert(self, index: int, node: XMLNodeType):
+        self._validate_new_node(node)
+        if index > self._root_index:
+            raise IndexError
+        self._siblings.insert(index, node)
+
+    @property
+    def _siblings_slice(self) -> list[XMLNodeType]:
+        return self._siblings[: self._root_index]
 
 
 class DocumentMeta(type):
@@ -153,7 +271,9 @@ class Document(metaclass=DocumentMeta):
     """
 
     _loaders: tuple[Loader, ...]
-    __slots__ = ("__root_node__", "config", "epilogue", "prologue", "source_url")
+    __node: _DocumentNodeType
+
+    __slots__ = ("config", "epilogue", "__node", "prologue", "source_url")
 
     def __new__(
         cls,
@@ -168,12 +288,14 @@ class Document(metaclass=DocumentMeta):
         if source_url is not None:
             config.source_url = source_url
         if DocumentMixinBase in cls.__mro__:
+            assert hasattr(cls, "_init_config")
             cls._init_config(config, config_options)
 
         config.parser_options = parser_options or ParserOptions()
-        prologue, root, epilogue = cls.__load_source(source, config)
+        loader_result = cls.__load_source(source, config)
 
         if klass is None:
+            root = next(n for n in loader_result if isinstance(n, TagNode))
             for subclass in _plugin_manager.document_subclasses:
                 if hasattr(subclass, "__class_test__") and subclass.__class_test__(
                     root, config
@@ -186,9 +308,9 @@ class Document(metaclass=DocumentMeta):
         assert issubclass(klass, Document)
         instance = super().__new__(klass)
         instance.config = config
-        instance.root = root
-        instance.prologue = prologue
-        instance.epilogue = epilogue
+        instance.__node = _DocumentNode(instance, loader_result)
+        instance.prologue = Prologue(instance.__node)
+        instance.epilogue = Epilogue(instance.__node)
         return instance
 
     def __init__(
@@ -205,20 +327,18 @@ class Document(metaclass=DocumentMeta):
         Beside the ``parser_options``, this property contains the namespaced data that
         extension classes and loaders may have stored.
         """
-        self.source_url: Optional[str] = vars(self.config).pop("source_url", None)
+        self.source_url: Optional[str] = self.config.__dict__.pop("source_url", None)
         """
         The source URL where a loader obtained the document's contents or
         :obj:`None`.
         """
-        self.prologue: Siblings
+        self.prologue: Prologue
         """
         A list-like accessor to the nodes that precede the document's root node.
-        Note that nodes can't be removed or replaced.
         """
-        self.epilogue: Siblings
+        self.epilogue: Epilogue
         """
         A list-like accessor to the nodes that follow the document's root node.
-        Note that nodes can't be removed or replaced.
         """
 
     def __init_subclass__(cls):
@@ -228,7 +348,7 @@ class Document(metaclass=DocumentMeta):
     @classmethod
     def __load_source(
         cls, source: Any, config: SimpleNamespace
-    ) -> tuple[_Logue, TagNode, _Logue]:
+    ) -> Sequence[XMLNodeType]:
         loader_excuses: dict[Loader, str | Exception] = {}
 
         for loader in cls._loaders:
@@ -247,22 +367,9 @@ class Document(metaclass=DocumentMeta):
 
         assert isinstance(loader_result, Sequence)
         assert not isinstance(loader_result, str)
+        return loader_result
 
-        if len(loader_result) == 0:
-            raise ParsingEmptyStream()
-
-        prologue = _Logue()
-        for i, node in enumerate(loader_result):
-            if isinstance(node, TagNode):
-                root = loader_result[i]
-                assert isinstance(root, TagNode)
-                return prologue, root, _Logue(loader_result[i + 1 :])
-            else:
-                prologue.append(node)
-        else:
-            raise ParsingEmptyStream()
-
-    def __contains__(self, node: NodeBase) -> bool:
+    def __contains__(self, node: XMLNodeType) -> bool:
         return node.document is self
 
     def __str__(self) -> str:
@@ -276,7 +383,7 @@ class Document(metaclass=DocumentMeta):
 
         :return: A new document instance.
         """
-        result = Document(self.root, klass=self.__class__)
+        result = Document(self.__node, klass=self.__class__)
         result.config = deepcopy(self.config)
         return result
 
@@ -289,12 +396,12 @@ class Document(metaclass=DocumentMeta):
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
-    def merge_text_nodes(self):
+    def merge_text_nodes(self, deep: bool = True):
         """
         This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
         document's :attr:`root <Document.root>` node.
         """
-        self.root.merge_text_nodes()
+        self.root.merge_text_nodes(deep=deep)
 
     def reduce_whitespace(self):
         """
@@ -311,30 +418,27 @@ class Document(metaclass=DocumentMeta):
         self.root._reduce_whitespace()
 
     @property
-    def root(self) -> TagNode:
+    def root(self) -> TagNodeType:
         """The root node of a document's *content* tree."""
-        return self.__root_node__
+        return next(n for n in self.__node._child_nodes if isinstance(n, TagNode))
 
     @root.setter
-    def root(self, node: TagNode):
-        _node = Siblings._handle_new_sibling(node)
-
-        if not isinstance(_node, TagNode):
+    def root(self, node: TagNodeType):
+        if not isinstance(node, TagNode):
             raise TypeError(
                 "The document root node must be a :class:`TagNode` instance."
             )
 
-        if node.document is not None:
+        if node._parent is not None or node.document is not None:
             raise InvalidOperation(
                 "Only a detached node can be set as root. Use :meth:`TagNode.clone` "
                 "or :meth:`TagNode.detach` on the designated root node."
             )
 
-        if (current_root := getattr(self, "__root_node__", None)) is not None:
-            current_root.__document__ = None
-
-        self.__root_node__ = _node
-        _node.__document__ = self
+        current_root = self.root
+        node_index = self.__node._child_nodes.index(current_root)
+        self.__node._child_nodes.remove(current_root)
+        self.__node.insert_children(node_index, node)
 
     def save(
         self,
@@ -369,7 +473,6 @@ class Document(metaclass=DocumentMeta):
                 newline=newline,
             )
 
-    @altered_default_filters()
     def __serialize(
         self,
         serializer: Serializer,
@@ -380,16 +483,14 @@ class Document(metaclass=DocumentMeta):
         serializer.writer(
             f'<?xml version="1.0" encoding="{encoding.upper()}"?>{possible_newline}'
         )
-        with _wrapper_cache:
-            for node in self.prologue:
+        for node in self.prologue:
+            serializer.writer(str(node) + possible_newline)
+        serializer.serialize_root(self.root)
+        if self.epilogue:
+            serializer.writer(possible_newline)
+            for node in self.epilogue[:-1]:
                 serializer.writer(str(node) + possible_newline)
-            with altered_default_filters():
-                serializer.serialize_root(self.root)
-            if self.epilogue:
-                serializer.writer(possible_newline)
-                for node in self.epilogue[:-1]:
-                    serializer.writer(str(node) + possible_newline)
-                serializer.writer(str(self.epilogue[-1]))
+            serializer.writer(str(self.epilogue[-1]))
         serializer.writer.buffer.flush()
 
     def write(
@@ -437,7 +538,6 @@ class Document(metaclass=DocumentMeta):
         This method proxies to the :meth:`TagNode.xpath` method of the document's
         :attr:`root <Document.root>` node.
         """
-
         return self.root.xpath(expression=expression, namespaces=namespaces)
 
 

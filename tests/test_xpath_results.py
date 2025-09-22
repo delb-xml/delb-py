@@ -1,5 +1,6 @@
 from typing import Final
 
+import pytest
 
 from delb import Document
 
@@ -43,6 +44,9 @@ def test_equality():
     assert word_nodes == word_nodes.as_list()
     assert word_nodes == tuple(reversed(word_nodes.as_list()))
     assert word_nodes != 2 * word_nodes.as_list()
+
+    with pytest.raises(TypeError):
+        word_nodes == 0
 
 
 def test_filtered_by(queries_sample):

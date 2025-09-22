@@ -3,14 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from delb import Document, NodeBase, TagNode
+from delb import Document, TagNode
+from delb.typing import TagNodeType, XMLNodeType  # noqa: TC001
 from _delb.utils import _crunch_whitespace
 
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
-def is_pagebreak(node: NodeBase) -> bool:
+def is_pagebreak(node: XMLNodeType) -> bool:
     return (
         isinstance(node, TagNode)
         and node.local_name == "pb"
@@ -18,7 +19,7 @@ def is_pagebreak(node: NodeBase) -> bool:
     )
 
 
-def is_section(node: NodeBase) -> bool:
+def is_section(node: XMLNodeType) -> bool:
     return (
         isinstance(node, TagNode)
         and node.local_name == "div"
@@ -87,7 +88,7 @@ class TableOfContents:
                 result.extend(get_children(section))
         return tuple(result)
 
-    def _parse_sections(self, node: TagNode, level: int) -> tuple[TOCSection, ...]:
+    def _parse_sections(self, node: TagNodeType, level: int) -> tuple[TOCSection, ...]:
         result = []
         for index, section_node in enumerate(node.xpath("div")):
             pages_range = (
@@ -109,7 +110,7 @@ class TableOfContents:
         return tuple(result)
 
     @staticmethod
-    def _find_sections_title(node: TagNode) -> Optional[str]:
+    def _find_sections_title(node: TagNodeType) -> Optional[str]:
         for xpath in ("head", "table/head"):
             if head_elements := node.xpath(xpath):
                 return _crunch_whitespace(head_elements[0].full_text).strip()

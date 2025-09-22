@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-from delb import Document, TagNode
+from delb import Document
 
 if TYPE_CHECKING:
     import types
+
+    from delb.typing import TagNodeType
 
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
@@ -21,7 +23,7 @@ class TEIDocument(Document):
         self.text_characters = len(self.root.full_text)
 
     @staticmethod
-    def __class_test__(root: TagNode, config: types.SimpleNamespace) -> bool:
+    def __class_test__(root: TagNodeType, config: types.SimpleNamespace) -> bool:
         return root.universal_name == "{http://www.tei-c.org/ns/1.0}TEI"
 
     @property

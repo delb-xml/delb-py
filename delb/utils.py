@@ -17,14 +17,16 @@ from __future__ import annotations
 
 import enum
 from itertools import zip_longest
+from typing import TYPE_CHECKING, Final
 
 from _delb.exceptions import InvalidCodePath
-from _delb.nodes import NodeBase, TagNode
+from _delb.typing import TagNodeType
 from _delb.utils import *  # noqa
 from _delb.utils import __all__
 
 
-# TODO increase test coverage
+if TYPE_CHECKING:
+    from _delb.typing import XMLNodeType
 
 
 class TreeDifferenceKind(enum.Enum):
@@ -48,12 +50,12 @@ class TreesComparisonResult:
     def __init__(
         self,
         difference_kind: TreeDifferenceKind,
-        lhn: NodeBase | None,
-        rhn: NodeBase | None,
+        lhn: XMLNodeType | None,
+        rhn: XMLNodeType | None,
     ):
-        self.difference_kind = difference_kind
-        self.lhn: NodeBase | None = lhn
-        self.rhn: NodeBase | None = rhn
+        self.difference_kind: Final = difference_kind
+        self.lhn: Final[XMLNodeType | None] = lhn
+        self.rhn: Final[XMLNodeType | None] = rhn
 
     def __bool__(self):
         return self.difference_kind is TreeDifferenceKind.None_
@@ -71,11 +73,12 @@ class TreesComparisonResult:
 
     def __str_child(self) -> str:
         assert self.lhn is not None
-        parent = self.lhn.parent
-        if parent is None:
+        if not isinstance(self.lhn._parent, TagNodeType):
             parent_msg_tail = ":"
         else:
-            parent_msg_tail = f", parent node has location_path {parent.location_path}:"
+            parent_msg_tail = (
+                f", parent node has location_path {self.lhn._parent.location_path}:"
+            )
 
         if self.difference_kind is TreeDifferenceKind.NodeContent:
             return f"Nodes' content differ{parent_msg_tail}\n{self.lhn!r}\n{self.rhn!r}"
@@ -87,8 +90,8 @@ class TreesComparisonResult:
 
     def __str_tag(self) -> str:
 
-        assert isinstance(self.lhn, TagNode)
-        assert isinstance(self.rhn, TagNode)
+        assert isinstance(self.lhn, TagNodeType)
+        assert isinstance(self.rhn, TagNodeType)
 
         if self.difference_kind is TreeDifferenceKind.TagAttributes:
             return (
@@ -118,7 +121,7 @@ class TreesComparisonResult:
         raise InvalidCodePath()
 
 
-def compare_trees(lhr: NodeBase, rhr: NodeBase) -> TreesComparisonResult:
+def compare_trees(lhr: XMLNodeType, rhr: XMLNodeType) -> TreesComparisonResult:
     """
     Compares two node trees for equality. Upon the first detection of a difference of
     nodes that are located at the same position within the compared (sub-)trees a
@@ -136,8 +139,8 @@ def compare_trees(lhr: NodeBase, rhr: NodeBase) -> TreesComparisonResult:
     if not isinstance(rhr, lhr.__class__):
         return TreesComparisonResult(TreeDifferenceKind.NodeType, lhr, rhr)
 
-    if isinstance(lhr, TagNode):
-        assert isinstance(rhr, TagNode)
+    if isinstance(lhr, TagNodeType):
+        assert isinstance(rhr, TagNodeType)
         if lhr.namespace != rhr.namespace:
             return TreesComparisonResult(TreeDifferenceKind.TagNamespace, lhr, rhr)
         if lhr.local_name != rhr.local_name:

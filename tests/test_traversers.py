@@ -1,10 +1,34 @@
 import pytest
 
-from delb import get_traverser, is_tag_node, parse_tree
+from delb import get_traverser, parse_tree
+from delb.filters import is_tag_node
+
+
+root = parse_tree(
+    """\
+        <root>
+            <a>
+                <aa/>
+                <ab>
+                    <aba/>
+                </ab>
+                <ac/>
+            </a>
+            <b/>
+            <c>
+                <ca>
+                    <caa/>
+                    <cab/>
+                </ca>
+                <cb/>
+            </c>
+        </root>
+    """
+)
 
 
 @pytest.mark.parametrize(
-    ("from_left", "depth_first", "from_top", "result"),
+    ("from_left", "depth_first", "from_top", "expected"),
     (
         (
             True,
@@ -24,33 +48,18 @@ from delb import get_traverser, is_tag_node, parse_tree
             True,
             ["root", "a", "b", "c", "aa", "ab", "ac", "ca", "cb", "aba", "caa", "cab"],
         ),
+        (
+            False,
+            True,
+            False,
+            ["cb", "cab", "caa", "ca", "c", "b", "ac", "aba", "ab", "aa", "a", "root"],
+        ),
     ),
 )
-def test_traverser(from_left, depth_first, from_top, result):
-    root = parse_tree(
-        """\
-            <root>
-                <a>
-                    <aa/>
-                    <ab>
-                        <aba/>
-                    </ab>
-                    <ac/>
-                </a>
-                <b/>
-                <c>
-                    <ca>
-                        <caa/>
-                        <cab/>
-                    </ca>
-                    <cb/>
-                </c>
-            </root>
-        """
-    )
+def test_traverser(from_left, depth_first, from_top, expected):
     assert [
         x.local_name
         for x in get_traverser(
             from_left=from_left, depth_first=depth_first, from_top=from_top
         )(root, is_tag_node)
-    ] == result
+    ] == expected

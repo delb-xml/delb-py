@@ -4,18 +4,18 @@ from typing import Final
 import pytest
 
 from delb import (
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     parse_tree,
     tag,
+    CommentNode,
     DefaultStringOptions,
     Document,
     FormatOptions,
+    ProcessingInstructionNode,
+    TagNode,
     TextNode,
 )
 from _delb.parser import ParserOptions
-from _delb.nodes import DETACHED, Serializer
+from _delb.serializer import Serializer
 from tests.conftest import TEI_FILES
 
 from tests.utils import assert_equal_trees, skip_long_running_test
@@ -50,14 +50,14 @@ def test_align_attributes(indentation, out):
     DefaultStringOptions.format_options = FormatOptions(
         align_attributes=True, indentation=indentation, width=0
     )
-    node = new_tag_node(
+    node = TagNode(
         "chimeney",
         {"super": "0", "califragi": "1", "listic": "2", "expialidocious": "3"},
     )
 
     assert str(node) == out
 
-    assert str(new_tag_node("foo", {"bar": "baz"})) == '<foo bar="baz"/>'
+    assert str(TagNode("foo", {"bar": "baz"})) == '<foo bar="baz"/>'
 
 
 @pytest.mark.parametrize("with_newline", (True, False))
@@ -74,10 +74,18 @@ def test_empty_below_default_namespace():
     # as there's a default namespace and a namespace can't be empty, a prefix must be
     # supplied for all other namespaces, including one declared as default
     root = parse_tree("<root xmlns='http://fo.org/'/>")
-    root.append_children(new_tag_node(local_name="node", namespace=None))
+    root.append_children(TagNode(local_name="node", namespace=None))
     # just to be explicit here:
     DefaultStringOptions.namespace = {"": "http://fo.org/"}
     assert str(root) == '<ns0:root xmlns:ns0="http://fo.org/"><node/></ns0:root>'
+
+
+def test_format_options():
+    with pytest.raises(ValueError, match=r"Invalid indentation characters\."):
+        TextNode("a").serialize(format_options=FormatOptions(indentation="X0X0"))
+
+    with pytest.raises(ValueError, match=r"Invalid width option value\."):
+        TextNode("a").serialize(format_options=FormatOptions(width=-1))
 
 
 @pytest.mark.parametrize(
@@ -217,50 +225,43 @@ def test_significant_whitespace_is_saved(result_file, format_options, out):
     ),
 )
 @pytest.mark.parametrize(
-    ("namespaces", "node_constructor", "args", "out"),
+    ("namespaces", "node", "out"),
     (
-        ({}, new_comment_node, ("foo",), "<!--foo-->"),
-        ({}, new_processing_instruction_node, ("foo", 'bar="0"'), '<?foo bar="0"?>'),
-        ({}, new_tag_node, ("foo",), "<foo/>"),
-        ({}, new_tag_node, ("foo", {"bar": "0"}), '<foo bar="0"/>'),
-        ({}, TextNode, ("foo", DETACHED), "foo"),
+        ({}, CommentNode("foo"), "<!--foo-->"),
+        ({}, ProcessingInstructionNode("foo", 'bar="0"'), '<?foo bar="0"?>'),
+        ({}, TagNode("foo"), "<foo/>"),
+        ({}, TagNode("foo", {"bar": "0"}), '<foo bar="0"/>'),
+        ({}, TextNode("foo"), "foo"),
         (
             {None: "ftp://foo.bar"},
-            new_tag_node,
-            ("n", {}, "ftp://foo.bar"),
+            TagNode("n", {}, "ftp://foo.bar"),
             '<n xmlns="ftp://foo.bar"/>',
         ),
         (
             {"": "ftp://foo.bar"},
-            new_tag_node,
-            ("n", {}, "ftp://foo.bar"),
+            TagNode("n", {}, "ftp://foo.bar"),
             '<n xmlns="ftp://foo.bar"/>',
         ),
         (
             {"p": "ftp://foo.bar"},
-            new_tag_node,
-            ("n", {}, "ftp://foo.bar"),
+            TagNode("n", {}, "ftp://foo.bar"),
             '<p:n xmlns:p="ftp://foo.bar"/>',
         ),
-        ({}, new_tag_node, ("n", {"x": "'"}), """<n x="'"/>"""),
-        ({}, new_tag_node, ("n", {"x": "&"}), """<n x="&amp;"/>"""),
-        ({}, new_tag_node, ("n", {"x": ">"}), """<n x="&gt;"/>"""),
-        ({}, new_tag_node, ("n", {"x": "<"}), """<n x="&lt;"/>"""),
-        ({}, new_tag_node, ("n", {"x": '"'}), """<n x="&quot;"/>"""),
-        ({}, new_tag_node, ("n", {"x": '"&"'}), r"""<n x="&quot;&amp;&quot;"/>"""),
+        ({}, TagNode("n", {"x": "'"}), """<n x="'"/>"""),
+        ({}, TagNode("n", {"x": "&"}), """<n x="&amp;"/>"""),
+        ({}, TagNode("n", {"x": ">"}), """<n x="&gt;"/>"""),
+        ({}, TagNode("n", {"x": "<"}), """<n x="&lt;"/>"""),
+        ({}, TagNode("n", {"x": '"'}), """<n x="&quot;"/>"""),
+        ({}, TagNode("n", {"x": '"&"'}), r"""<n x="&quot;&amp;&quot;"/>"""),
         (
             {"": "http://namespace"},
-            new_tag_node,
-            ("node", {("http://namespace", "bar"): "x"}),
+            TagNode("node", {("http://namespace", "bar"): "x"}),
             """<node xmlns:ns0="http://namespace" ns0:bar="x"/>""",
         ),
     ),
 )
-# TODO create node objects in parametrization when the etree element wrapper cache has
-#      been shed off
-def test_single_nodes(format_options, namespaces, node_constructor, args, out):
+def test_single_nodes(format_options, namespaces, node, out):
     DefaultStringOptions.namespaces = namespaces
-    node = node_constructor(*args)
     assert (
         node.serialize(namespaces=DefaultStringOptions.namespaces) == str(node) == out
     )
@@ -611,6 +612,7 @@ def test_that_root_siblings_are_preserved(files_path, result_file):
         FormatOptions(align_attributes=False, indentation="", width=0),
         FormatOptions(align_attributes=False, indentation="  ", width=0),
         FormatOptions(align_attributes=True, indentation="\t", width=0),
+        FormatOptions(align_attributes=False, indentation="", width=1),
         FormatOptions(align_attributes=False, indentation="", width=77),
         FormatOptions(align_attributes=False, indentation="  ", width=77),
         FormatOptions(align_attributes=True, indentation="  ", width=77),

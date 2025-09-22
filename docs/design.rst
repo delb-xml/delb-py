@@ -1,6 +1,8 @@
 About the design
 ================
 
+UPDATE??
+
 tl;dr
 -----
 
@@ -18,13 +20,6 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
   with an XML declaration.
 - Comment and processing instruction nodes are shadowed by default, see
   :func:`delb.altered_default_filters` on how to make them accessible.
-- CDATA nodes are not accessible at all, but are retained and appear in
-  serializations; unless you **[DANGER ZONE]** manipulate the tree. Depending on
-  your actions you might encounter no alterations or a complete loss of these
-  nodes within the root node. **[/DANGER ZONE]**
-
-If you need to apply bad practices anyway, you can fall back to tinker with the
-lxml objects that are bound to :attr:`TagNode._etree_obj`.
 
 
 .. _pythonic: https://zen-of-python.info/there-should-be-one-and-preferably-only-one-obvious-way-to-do-it.html#13
@@ -199,7 +194,7 @@ complicated function seen above would look like:
 .. code-block:: python
 
    @altered_default_filters()
-   def remove_nodes(*nodes: NodeBase, keep_children=False):
+   def remove_nodes(*nodes: XMLNodeType, keep_children=False):
        """ Removes the given nodes from its tree. Unless ``keep_children`` is
             passed as ``True``, its children vanish with it into void. """
        for node in nodes:

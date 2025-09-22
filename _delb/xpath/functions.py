@@ -18,10 +18,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from _delb.plugins import plugin_manager
-from _delb.utils import _is_node_of_type
+from _delb.typing import TagNodeType, TextNodeType
 
 if TYPE_CHECKING:
-    from _delb.nodes import TextNode
     from _delb.xpath.ast import EvaluationContext
 
 
@@ -62,11 +61,10 @@ def starts_with(_: EvaluationContext, string: str, prefix: str) -> bool:
 
 @plugin_manager.register_xpath_function
 def text(context: EvaluationContext) -> str:
-    for node in context.node.iterate_children():
-        if _is_node_of_type(node, "TextNode"):
+    assert isinstance(context.node, TagNodeType)
+    for node in context.node._child_nodes:
+        if isinstance(node, TextNodeType):
             break
     else:
         return ""
-    if TYPE_CHECKING:
-        assert isinstance(node, TextNode)
     return node.content

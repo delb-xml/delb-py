@@ -57,11 +57,7 @@ GLOBAL_NAMESPACES: Final = MappingProxyType(
 GLOBAL_PREFIXES: Final = tuple(GLOBAL_NAMESPACES)
 
 
-# a generic won't work here because of the required default
-Null: TypeAlias = "None | Literal['']"
-
-
-def deconstruct_clark_notation(name: str, null: Null = None) -> tuple[str | Null, str]:
+def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
     """
     Deconstructs a name in Clark notation, that may or may not include a namespace.
 
@@ -78,7 +74,7 @@ def deconstruct_clark_notation(name: str, null: Null = None) -> tuple[str | Null
         a, b = name.split("}", maxsplit=1)
         return a[1:], b
     else:
-        return null, name
+        return None, name
 
 
 class Namespaces(Mapping):

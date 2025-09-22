@@ -5,11 +5,14 @@ from delb import (
     ParserOptions,
     TagNode,
     TextNode,
-    is_text_node,
     parse_tree,
     tag,
 )
-from _delb.nodes import TAIL, APPENDED
+from delb.filters import is_text_node
+
+
+# there are plenty tests here that consider how text content would be accessed with
+# lxml's API.  the necessity for that is vanished.
 
 
 def test_add_tag_before_tail():
@@ -33,17 +36,11 @@ def test_add_tag_after_tail():
 
 def test_add_text_after_tag():
     tag = parse_tree("<root><tag/></root>")[0]
-
     tag.add_following_siblings(TextNode("foo"))
-
-    assert tag._etree_obj.text is None
-    assert tag._etree_obj.tail == "foo"
 
     foo = tag.fetch_following_sibling()
     assert isinstance(foo, TextNode)
-    assert foo._position == TAIL
     assert foo.content == "foo"
-    assert foo._appended_text_node is None
 
 
 def test_add_text_after_tail():
@@ -57,17 +54,13 @@ def test_add_text_after_tail():
     assert foo.fetch_following_sibling() is bar
     assert len(root) == 3
 
-    assert foo._appended_text_node is bar
-    assert bar._bound_to is foo
-
     assert isinstance(bar, TextNode)
-    assert bar._position == APPENDED
     assert bar.content == "bar"
-    assert bar._appended_text_node is None
 
     document.merge_text_nodes()
     assert len(root) == 2
-    assert root[0]._etree_obj.tail == "foobar"
+
+    assert root.last_child == "foobar"
 
 
 def test_add_text_after_appended():
@@ -81,22 +74,10 @@ def test_add_text_after_appended():
 
     assert len(root) == 4
 
-    assert foo._appended_text_node is bar
-    assert foo._position == TAIL
-    assert bar._bound_to is foo
-
-    assert bar._appended_text_node is peng
-    assert bar._position == APPENDED
-    assert peng._bound_to is bar
-
-    assert peng._appended_text_node is None
-    assert peng._position == APPENDED
-    assert peng._bound_to is bar
-
     root.merge_text_nodes()
 
     assert len(root) == 2
-    assert root[0]._etree_obj.tail == "foobarpeng"
+    assert root.last_child == "foobarpeng"
 
 
 def test_add_tag_between_text_nodes_at_tail_position():
@@ -224,7 +205,7 @@ def test_construction():
     )
 
 
-def test_content_is_coerced():
+def test_content_is_validated():
     node = TextNode("")
     with pytest.raises(TypeError):
         node.content = 0
@@ -309,8 +290,26 @@ def test_equality():
     assert TextNode("1") != 1
 
 
+def test_full_text():
+    assert TextNode("foo").full_text == "foo"
+
+
 def test_index():
     assert parse_tree("<root>test</root>").first_child.index == 0
+
+
+def test_instantiation():
+    a = TextNode("foo")
+    b = TextNode(a)
+    assert a is not b
+    assert a == b
+
+    with pytest.raises(TypeError):
+        TextNode(0)
+
+
+def test_len():
+    assert len(TextNode("foo")) == 3
 
 
 def test_none_content_wrapping():

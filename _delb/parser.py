@@ -49,12 +49,12 @@ class _EncodingDetectingReader:
     __slots__ = ("buffer", "first_bytes", "reading")
 
     def __init__(self, buffer: BinaryReader):
-        self.buffer = buffer
+        self.buffer: Final = buffer
         self.first_bytes = b""
         self.reading = False
 
     def get_encoding(self) -> str | None:
-        if self.reading:
+        if self.reading:  # pragma: no cover
             raise RuntimeError("Get the encoding before reading from the buffer!")
 
         self.first_bytes = self.buffer.read(64)
@@ -105,7 +105,9 @@ class ParserOptions(NamedTuple):
     The ``lxml`` based parser requires the *lxml* package to be present in the
     interpreter environment.  This parser is prone to crashing when processing invalid
     DTDs, it also fails with uncommon, but still valid by spec, DTD contents.  It
-    should not be used with other encodings than Unicode to avoid crashes.
+    should not be used with other encodings than Unicode to avoid crashes. Neither
+    should it be used in conjunction with the `load_referenced_resources` when
+    processing larger files / trees.
     """  # noqa: RST304
 
     encoding: Optional[str] = None

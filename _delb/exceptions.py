@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Any
+from typing import Optional, TYPE_CHECKING, Any, Final
 
 if TYPE_CHECKING:
     from _delb.typing import Loader
@@ -39,10 +39,10 @@ class AmbiguousTreeError(DelbBaseException):
 
 class FailedDocumentLoading(DelbBaseException):
     def __init__(self, source: Any, excuses: dict[Loader, str | Exception]):
-        self.source = source
-        self.excuses = excuses
+        self.source: Final = source
+        self.excuses: Final = excuses
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
 
 
@@ -73,11 +73,6 @@ class ParsingValidityError(ParsingError):
     pass
 
 
-class ParsingEmptyStream(ParsingProcessingError):
-    def __init__(self):
-        super().__init__("The input stream is empty.")
-
-
 class XPathEvaluationError(DelbBaseException):
     def __init__(self, message: str):
         super().__init__(message)
@@ -94,14 +89,14 @@ class XPathParsingError(DelbBaseException):
     ):
         self.expression = expression
         self.position = position
-        self.message = message
+        self.message: Final = message
 
     def __str__(self):
         expression = self.expression
+        position = self.position
         assert expression is not None
         assert self.message is not None
-        position = self.position
-        assert self.position is not None
+        assert position is not None
 
         expression_length = len(expression)
         snippet_end = min(position + 16, expression_length)
@@ -137,7 +132,6 @@ __all__ = (
     FailedDocumentLoading.__name__,
     InvalidCodePath.__name__,
     InvalidOperation.__name__,
-    ParsingEmptyStream.__name__,
     ParsingError.__name__,
     ParsingProcessingError.__name__,
     ParsingValidityError.__name__,

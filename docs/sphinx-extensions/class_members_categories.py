@@ -24,9 +24,9 @@ def assign_member_category(app, what, name, obj, section, parent):
         for base_class in parent.__mro__[1:]:
             if base_class in (ABC, object):
                 return None
-            if (obj := getattr(base_class, name)) is None:
+            if not hasattr(obj, name):
                 continue
-            if (docstring := obj.__doc__) is not None:
+            if (docstring := getattr(base_class, name).__doc__) is not None:
                 break
 
     for line in docstring.splitlines():

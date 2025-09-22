@@ -3,12 +3,30 @@
 from textwrap import dedent
 from typing import Final
 
-from delb import new_tag_node, parse_tree, Document, TagNode
+import pytest
+
+from delb import parse_tree, Document, ParserOptions, TagNode
+from delb.typing import TagNodeType  # noqa: TC001
 
 from tests.utils import assert_equal_trees
 
 
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
+
+
+@pytest.mark.parametrize("parser", ("expat", "lxml"))
+@pytest.mark.parametrize(
+    "sample",
+    ("<a><b/> <c/> </a>",),
+)
+def test_consistency(parser, sample, files_path):
+    while_parsing_application = parse_tree(
+        sample,
+        options=ParserOptions(preferred_parsers=parser, reduce_whitespace=True),
+    )
+    post_parsing_application = while_parsing_application.clone(deep=True)
+    post_parsing_application._reduce_whitespace()
+    assert_equal_trees(while_parsing_application, post_parsing_application)
 
 
 def test_contained_milestone_tags_each_followed_by_whitespace():
@@ -18,7 +36,7 @@ def test_contained_milestone_tags_each_followed_by_whitespace():
 
 
 def test_empty_text_node():
-    node = new_tag_node("node", children=[""])
+    node = TagNode("node", children=[""])
     assert len(node) == 1
     node._reduce_whitespace()
     assert len(node) == 0
@@ -40,6 +58,51 @@ def test_milestone_tag_with_altering_whitespace_neighbour():
     root = parse_tree("<p><hi>then</hi> give <lb/>the</p>")
     root._reduce_whitespace()
     assert " give " in root.full_text
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_nested_declarations():
+    stream = """\
+        <root>
+            <a>
+                <aa>\t</aa>
+                <ab xml:space="default">\t</ab>
+                <ac xml:space="preserve">\t</ac>
+                <ad xml:space="brian">\t</ad>
+            </a>
+            <b xml:space="default">
+                <ba>\t</ba>
+                <bb xml:space="default">\t</bb>
+                <bc xml:space="preserve">\t</bc>
+                <bd xml:space="brian">\t</bd>
+            </b>
+            <c xml:space="preserve">
+                <ca>\t</ca>
+                <cb xml:space="default">\t</cb>
+                <cc xml:space="preserve">\t</cc>
+                <cd xml:space="brian">\t</cd>
+            </c>
+            <d xml:space="brian">
+                <da>\t</da>
+                <db xml:space="default">\t</db>
+                <dc xml:space="preserve">\t</dc>
+                <dd xml:space="brian">\t</dd>
+            </d>
+        </root>
+        """
+    root = parse_tree(
+        stream,
+        options=ParserOptions(reduce_whitespace=True),
+    )
+
+    for counter, node in enumerate(
+        root.iterate_descendants(lambda n: isinstance(n, TagNode) and n.depth == 2)
+    ):
+        if node.full_text == "\t":
+            assert node.local_name in ("ac", "bc", "ca", "cc", "cd", "dc")
+        else:
+            assert node.full_text == " "
+    assert counter == 15
 
 
 def test_nodes_in_between():
@@ -92,7 +155,7 @@ def test_tei_recommendation_examples():
     # https://wiki.tei-c.org/index.php/XML_Whitespace
     # the contained errors are fixed w/o annotations
 
-    def parse_sample(s: str) -> TagNode:
+    def parse_sample(s: str) -> TagNodeType:
         d = parse_tree(s)
         assert isinstance(d, TagNode)
         d._reduce_whitespace()

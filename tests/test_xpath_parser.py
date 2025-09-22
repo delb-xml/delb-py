@@ -3,6 +3,7 @@ import operator
 import pytest
 
 from _delb.exceptions import XPathParsingError, XPathUnsupportedStandardFeature
+from _delb.typing import TagNodeType
 from _delb.xpath import _css_to_xpath, parse
 from _delb.xpath.ast import (
     AnyNameTest,
@@ -73,6 +74,8 @@ def test_css_selectors(selector):
         (":*", r" 0 \(`:\*`\): Unrecognized node test\."),
         ("*.", r" 1 \(`\.`\): Unrecognized expression\."),
         ("*[~lang]", r" 2 \(`~lang\]`\): Unrecognized token\."),
+        ("*[ahoy()]", r" 0 \(`\*\[ahoy\(\)\]`\): Unknown function: `ahoy`"),
+        ("*[last()==1]", r" 8 \(`==1]`\): Unrecognized operator: `==`"),
     ),
 )
 def test_invalid_expressions(expression, string):
@@ -88,7 +91,7 @@ def test_invalid_expressions(expression, string):
             XPathExpression(
                 [
                     LocationPath(
-                        [LocationStep(Axis("child"), NodeTypeTest("TagNode"))],
+                        [LocationStep(Axis("child"), NodeTypeTest(TagNodeType))],
                         absolute=False,
                     )
                 ]
@@ -146,7 +149,7 @@ def test_invalid_expressions(expression, string):
                         [
                             LocationStep(
                                 Axis("descendant-or-self"),
-                                NodeTypeTest("TagNode"),
+                                NodeTypeTest(TagNodeType),
                             ),
                             LocationStep(Axis("child"), NameMatchTest(None, "foo")),
                         ],
@@ -163,7 +166,7 @@ def test_invalid_expressions(expression, string):
                         [
                             LocationStep(
                                 Axis("descendant-or-self"),
-                                NodeTypeTest("TagNode"),
+                                NodeTypeTest(TagNodeType),
                             ),
                             LocationStep(Axis("child"), NameMatchTest(None, "foo")),
                         ],
@@ -196,7 +199,7 @@ def test_invalid_expressions(expression, string):
                     LocationPath(
                         [
                             LocationStep(
-                                Axis("descendant-or-self"), NodeTypeTest("TagNode")
+                                Axis("descendant-or-self"), NodeTypeTest(TagNodeType)
                             ),
                             LocationStep(
                                 Axis("child"),

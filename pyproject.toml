@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "delb"
-version = "0.6-a0"
+version = "0.6-dev1"
 description = "A library that provides an ergonomic model for XML encoded text documents (e.g. with TEI-XML)."
 authors = [
     { name = "Frank Sachsenheim", email = "delb-project@posteo.net" }
@@ -20,7 +20,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -30,7 +29,6 @@ classifiers = [
 keywords = ["xml", "markup", "tei", "text processing", "xhtml"]
 dependencies = [
     "cssselect",
-    "lxml",
     # DROPWITH Python3.10
     "typing-extensions; python_version < '3.11'"
 ]
@@ -76,10 +74,8 @@ exclude_also = [
     "pass",
     "raise InvalidCodePath",
     "raise NotImplementedError",
-    "raise TypeError",
-    "raise ValueError"
 ]
-fail_under = 96
+fail_under = 99.5
 
 #
 
@@ -186,19 +182,20 @@ dependencies = [
 ]
 skipinstall = true
 [tool.hatch.envs.mypy.scripts]
-check = "mypy _delb delb"
+check = "mypy --check-untyped-defs _delb delb"
 
 [tool.hatch.envs.unit-tests]
 dependencies = [
     "pytest-cov",
     "pytest-httpx",
+    "pytest-xdist[psutil]",
 ]
 [tool.hatch.envs.unit-tests.scripts]
-check = "python -m pytest --cov=_delb --cov=delb tests"
-coverage-report = """
+check = """
     python -m pytest \
         --cov-report term-missing:skip-covered \
         --cov=_delb --cov=delb \
+        -n logical \
         tests
 """
 
@@ -215,4 +212,5 @@ check = "python -m pytest tests"
 filterwarnings = [
     "error",
     "ignore:No encoding known for parsing an XML stream:UserWarning",
+    "ignore:The use of the `load_reference_resources` option:UserWarning",
 ]

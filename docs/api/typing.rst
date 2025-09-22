@@ -1,10 +1,53 @@
 :tocdepth: 2
 
-Type aliases & semi-public classes
-==================================
+Typing & semi-public classes
+============================
 
-There are internally used classes and type aliases that can be of interest for
-re-use in applications and extensions.
+The :mod:`delb.typing` module contains abstract classes that define the
+interfaces for XML node types, internally used classes and type aliases that
+can be of interest for re-use in applications and extensions.
+
+
+Node types
+----------
+
+These classes should be used in type annotations and can be used for type tests
+with :func:`isinstance`.
+
+.. py:class:: delb.typing.XMLNodeType
+   :abstract:
+
+   Defines the interfaces that all node type representations share. All node
+   type implementations are a subclass of this one.
+
+.. py:class:: delb.typing.ParentNodeType
+   :abstract:
+
+   Defines the interfaces for nodes that can contain further nodes.
+
+.. py:class:: delb.typing.CommentNodeType
+   :abstract:
+
+   Defines the interfaces for :class:`delb.nodes.CommentNode`.
+
+.. py:class:: delb.typing.ProcessingInstructionNodeType
+   :abstract:
+
+   Defines the interfaces for :class:`delb.nodes.ProcessingInstructionNode`.
+
+.. py:class:: delb.typing.TagNodeType
+   :abstract:
+
+   Defines the interfaces for :class:`delb.nodes.TagNode`.
+
+.. py:class:: delb.typing.TextNodeType
+   :abstract:
+
+   Defines the interfaces for :class:`delb.nodes.TextNode`.
+
+
+Type aliases
+------------
 
 Internally attributes data is handled strictly as:
 
@@ -12,12 +55,6 @@ Internally attributes data is handled strictly as:
 
 The dictionary's key type is actually defined as
 :class:`delb.typing.QualifiedName`.
-
-XML parser adapters must be able to process that they fetch from a binary
-stream reader's ``parse`` method:
-
-.. autoclass:: delb.typing.BinaryReader
-   :undoc-members:
 
 Filter functions are defined as:
 
@@ -31,8 +68,7 @@ Loaders are defined as:
 
 .. autoclass:: delb.typing.Loader
 
-The order of loaders is defined with help of (read:
-``Loader | Iterable[Loader] | None``):
+The order of loaders is defined with help of:
 
 .. autoclass:: delb.typing.LoaderConstraint
 
@@ -41,13 +77,23 @@ the given input to the user:
 
 .. autoclass:: delb.typing.LoaderResult
 
+
+Protocols
+---------
+
+XML parser adapters must be able to process that they fetch from a binary
+stream reader's ``read`` method:
+
+.. autoclass:: delb.typing.BinaryReader
+   :undoc-members:
+
+
+Semi-public classes
+-------------------
+
 Namespace to prefix mappings are formalized as:
 
 .. autoclass:: delb.typing.NamespaceDeclarations
-
-All node classes inherit from a common class:
-
-.. class:: delb.NodeBase
 
 Methods that add nodes to a tree take a variety of input data:
 

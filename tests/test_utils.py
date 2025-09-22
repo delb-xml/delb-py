@@ -1,6 +1,7 @@
 import pytest
 
-from delb import altered_default_filters, compare_trees, first, is_tag_node, parse_tree
+from delb import compare_trees, first, last, parse_tree
+from delb.filters import altered_default_filters, is_tag_node
 
 
 @pytest.mark.parametrize(
@@ -12,13 +13,16 @@ from delb import altered_default_filters, compare_trees, first, is_tag_node, par
         ("<node a=''/>", "<node xmlns:p='http://foo.ls' p:a=''/>"),
         ("<node><!--a--></node>", "<node><!-- a --></node>"),
         ("<node>foo</node>", "<node>bar</node>"),
+        ("<node>foo</node>", "<node><foo/></node>"),
         ("<node><a/></node>", "<node><a/><a/></node>"),
         ("<node><a/><b/></node>", "<node><a/><a/></node>"),
     ),
 )
 def test_compare_unequal_trees(a, b):
     with altered_default_filters():
-        assert not compare_trees(parse_tree(a), parse_tree(b))
+        result = compare_trees(parse_tree(a), parse_tree(b))
+        assert not result
+        str(result)
 
 
 def test_first():
@@ -41,6 +45,13 @@ def test_first():
 
     with pytest.raises(TypeError):
         first({})
+
+
+def test_last():
+    assert last([]) is None
+    assert last([0, 1, 2, 3]) == 3
+    with pytest.raises(TypeError):
+        last(0)
 
 
 def test_string_methods_on_classes_with_text_capabilities():
