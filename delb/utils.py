@@ -132,9 +132,9 @@ def compare_trees(lhr: XMLNodeType, rhr: XMLNodeType) -> TreesComparisonResult:
     :return: An object that contains information about the first or no difference.
 
     While node types that can't have descendants are comparable with a comparison
-    expression, the :class:`TagNode` type deliberately doesn't implement the ``==``
-    operator, because it isn't clear whether a comparison should also consider the
-    node's descendants as this function does.
+    expression, the :class:`delb.nodes.TagNode` type deliberately doesn't implement the
+    ``==`` operator, because it isn't clear whether a comparison should also consider
+    the node's descendants as this function does.
     """
     if not isinstance(rhr, lhr.__class__):
         return TreesComparisonResult(TreeDifferenceKind.NodeType, lhr, rhr)

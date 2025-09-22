@@ -82,9 +82,9 @@ class XMLNodeType(ABC):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`TextNode` respectively
+        :class:`TagNode` instances from.
         """
 
     @abstractmethod
@@ -100,9 +100,9 @@ class XMLNodeType(ABC):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`TextNode` respectively
+        :class:`TagNode` instances from.
         """
 
     @abstractmethod
@@ -138,7 +138,7 @@ class XMLNodeType(ABC):
     @abstractmethod
     def document(self) -> Optional[Document]:
         """
-        The :class:`Document` instance that the node is associated with or
+        The :class:`delb.Document` instance that the node is associated with or
         :obj:`None`.
 
         :meta category: Related document and nodes properties
@@ -356,9 +356,9 @@ class XMLNodeType(ABC):
         Removes the node and places the given one in its tree location.
 
         The node can be a concrete instance of any node type or a rather abstract
-        description in the form of a string or an object returned from the :func:`tag`
-        function that is used to derive a :class:`TextNode` respectively
-        :class:`TagNode` instance from.
+        description in the form of a string or an object returned from the
+        :func:`delb.tag` function that is used to derive a :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instance from.
 
         :param node: The replacing node.
         :param clone: A concrete, replacing node is cloned if :obj:`True`.
@@ -378,8 +378,8 @@ class XMLNodeType(ABC):
         Returns a string that contains the serialization of the node. See
         :doc:`/api/serialization` for details.
 
-        :param format_options: An instance of :class:`FormatOptions` can be provided to
-                               configure formatting.
+        :param format_options: An instance of :class:`delb.FormatOptions` can be
+                               provided to configure formatting.
         :param namespaces: A mapping of prefixes to namespaces.  If not provided the
                            node's namespace will serve as default namespace.  Prefixes
                            for undeclared namespaces are enumerated with the prefix
@@ -430,9 +430,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
     @property
@@ -459,9 +459,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
     @property
@@ -503,9 +503,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
 

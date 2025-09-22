@@ -44,7 +44,7 @@ shall then allow customizations. Ideas can be contributed and discussed in `this
 thread`_.
 
 .. [1] For example with :meth:`Document.reduce_whitespace`.
-.. [2] With enabled :attr:`ParserOptions.reduce_whitespace`.
+.. [2] With enabled :attr:`delb.parser.ParserOptions.reduce_whitespace`.
 
 .. _references: https://www.w3.org/TR/REC-xml/#sec-references
 .. _TEI recommendation: https://wiki.tei-c.org/index.php/XML_Whitespace

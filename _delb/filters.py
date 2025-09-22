@@ -52,8 +52,9 @@ def altered_default_filters(*filter: Filter, extend: bool = False):
                    replacing them.
 
     These are then applied in all operations that allow node filtering, like
-    :meth:`TagNode.next_node`. Mind that they also affect a node's index property and
-    indexed access to child nodes.
+    :meth:`delb.nodes.TagNode.iterate_children`. Mind that they also affect a node's
+    index property as well as indexed access to child nodes and properties like
+    :attr:`nodes.delb.TagNode.first_child`.
 
     >>> root = Document(
     ...     '<root xmlns="foo"><a/><!--x--><b/><!--y--><c/></root>'
@@ -93,14 +94,15 @@ def any_of(*filter: Filter) -> Filter:
 
 def is_comment_node(node: XMLNodeType) -> bool:
     """
-    A node filter that matches :class:`CommentNode` instances.
+    A node filter that matches :class:`delb.typing.CommentNodeType` instances.
     """
     return isinstance(node, CommentNodeType)
 
 
 def is_processing_instruction_node(node: XMLNodeType) -> bool:
     """
-    A node filter that matches :class:`ProcessingInstructionNode` instances.
+    A node filter that matches :class:`delb.typing.ProcessingInstructionNodeType`
+    instances.
     """
     return isinstance(node, ProcessingInstructionNodeType)
 
@@ -114,14 +116,14 @@ def is_root_node(node: XMLNodeType) -> bool:
 
 def is_tag_node(node: XMLNodeType) -> bool:
     """
-    A node filter that matches :class:`TagNode` instances.
+    A node filter that matches :class:`delb.typing.TagNodeType` instances.
     """
     return isinstance(node, TagNodeType)
 
 
 def is_text_node(node: XMLNodeType) -> bool:
     """
-    A node filter that matches :class:`TextNode` instances.
+    A node filter that matches :class:`delb.typing.TextNodeType` instances.
     """
     return isinstance(node, TextNodeType)
 

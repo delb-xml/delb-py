@@ -220,7 +220,7 @@ class _TagDefinition(NamedTuple):
 class Attribute(_StringMixin):
     """
     Attribute objects represent :term:`tag node`'s attributes. See the
-    :meth:`delb.TagNode.attributes` documentation for capabilities.
+    :meth:`TagNode.attributes` documentation for capabilities.
     """
 
     __slots__ = ("_attributes", "__qualified_name", "__value")
@@ -1346,7 +1346,7 @@ class TagNode(_ParentNode, TagNodeType):
 
         :meta category: Node content properties
 
-        >>> node = new_tag_node("node", attributes={"foo": "0", "bar": "0"})
+        >>> node = TagNode("node", attributes={"foo": "0", "bar": "0"})
         >>> node.attributes
         {'foo': '0', 'bar': '0'}
         >>> node.attributes.pop("bar")  # doctest: +ELLIPSIS
@@ -1367,7 +1367,7 @@ class TagNode(_ParentNode, TagNodeType):
         .. _Clark notation: http://www.jclark.com/xml/xmlns.htm
 
         >>> DefaultStringOptions.namespaces = {"": "http://namespace"}
-        >>> node = new_tag_node(
+        >>> node = TagNode(
         ...     "node",
         ...     namespace="http://namespace",
         ... )
@@ -1383,7 +1383,7 @@ class TagNode(_ParentNode, TagNodeType):
         Attributes behave like strings, but also expose namespace, local name and
         value for manipulation.
 
-        >>> node = new_tag_node("node")
+        >>> node = TagNode("node")
         >>> node.attributes["foo"] = "0"
         >>> node.attributes["foo"].local_name = "bar"
         >>> node.attributes["bar"].namespace = "http://namespace"

@@ -39,8 +39,8 @@ if TYPE_CHECKING:
 # TODO rename to node_loader
 def tag_node_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
-    This loader loads either uses a root node (of type :class:`delb.TagNode)
-    that has no :class:`Document` context or clones those with such and any
+    This loader loads either uses a root node (of type :class:`delb.typing.TagNodeType)
+    that has no :class:`delb.Document` context or clones those with such and any
     non-root node.
     """
     if isinstance(data, _DocumentNodeType):
@@ -59,7 +59,7 @@ def path_loader(data: Any, config: SimpleNamespace) -> LoaderResult:
     """
     This loader loads from a file that is pointed at with a :class:`pathlib.Path`
     instance. That instance will be bound to ``source_path`` on the document's
-    :attr:`Document.config` attribute.
+    :attr:`delb.Document.config` attribute.
     """
     if isinstance(data, Path):
         if not hasattr(config, "source_url"):

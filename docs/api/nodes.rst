@@ -57,19 +57,19 @@ The following implementations are shipped with the library. Also see
 Default filters
 ~~~~~~~~~~~~~~~
 
-.. autofunction:: delb.altered_default_filters
+.. autofunction:: delb.filters.altered_default_filters
 
 Contributed filters
 ~~~~~~~~~~~~~~~~~~~
 
-.. autofunction:: delb.any_of
+.. autofunction:: delb.filters.any_of
 
-.. autofunction:: delb.is_comment_node
+.. autofunction:: delb.filters.is_comment_node
 
-.. autofunction:: delb.is_processing_instruction_node
+.. autofunction:: delb.filters.is_processing_instruction_node
 
-.. autofunction:: delb.is_tag_node
+.. autofunction:: delb.filters.is_tag_node
 
-.. autofunction:: delb.is_text_node
+.. autofunction:: delb.filters.is_text_node
 
-.. autofunction:: delb.not_
+.. autofunction:: delb.filters.not_

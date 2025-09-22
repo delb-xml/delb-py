@@ -238,8 +238,8 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
-    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
-                           parser.
+    :param parser_options: A :class:`delb.parser.ParserOptions` instance to configure
+                           the used parser.
     :param klass: Explicitly define the initialized class. This can be useful for
                   applications that have :ref:`default document subclasses
                   <document-subclasses>` in use.
@@ -391,15 +391,15 @@ class Document(metaclass=DocumentMeta):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        This method proxies to the :meth:`TagNode.css_select` method of the document's
-        :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.css_select` method of the
+        document's :attr:`root <Document.root>` node.
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
     def merge_text_nodes(self, deep: bool = True):
         """
-        This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
-        document's :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.merge_text_nodes` method of
+        the document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes(deep=deep)
 
@@ -426,13 +426,14 @@ class Document(metaclass=DocumentMeta):
     def root(self, node: TagNodeType):
         if not isinstance(node, TagNode):
             raise TypeError(
-                "The document root node must be a :class:`TagNode` instance."
+                "The document root node must be a :class:`delb.nodes.TagNode` instance."
             )
 
         if node._parent is not None or node.document is not None:
             raise InvalidOperation(
-                "Only a detached node can be set as root. Use :meth:`TagNode.clone` "
-                "or :meth:`TagNode.detach` on the designated root node."
+                "Only a detached node can be set as root. Use "
+                ":meth:`delb.nodes.TagNode.clone` or "
+                ":meth:`delb.nodes.TagNode.detach` on the designated root node."
             )
 
         current_root = self.root
@@ -535,8 +536,8 @@ class Document(metaclass=DocumentMeta):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        This method proxies to the :meth:`TagNode.xpath` method of the document's
-        :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.xpath` method of the
+        document's :attr:`root <Document.root>` node.
         """
         return self.root.xpath(expression=expression, namespaces=namespaces)
 

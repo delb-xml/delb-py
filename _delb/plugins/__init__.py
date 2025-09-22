@@ -79,7 +79,7 @@ class DocumentMixinBase:
     def _init_config(cls, config: SimpleNamespace, kwargs: dict[str, Any]):
         """
         The ``kwargs`` argument contains the additional keyword arguments that a
-        :class:`Document` instance is called with. Extension classes that expect
+        :class:`delb.Document` instance is called with. Extension classes that expect
         configuration data *must* process their specific arguments by clearing them
         from the ``kwargs`` dictionary, e.g. with :meth:`dict.pop`, and preferably
         storing the final configuration data in a :class:`types.SimpleNamespace` and
@@ -177,8 +177,8 @@ class PluginManager:
                 return "The input value is not an URL with the ipfs scheme."
 
 
-        The ``source`` argument is what a :class:`Document` instance is initialized with
-        as input data.
+        The ``source`` argument is what a :class:`delb.Document` instance is initialized
+        with as input data.
 
         Note that the ``config`` argument that is passed to a loader function contains
         configuration data, it's the :attr:`delb.Document.config` property after
@@ -302,7 +302,7 @@ class XMLEventParserInterface(ABC):
     name: str
     """
     The parser can be selected by this class attribute's value as (member of) a
-    :attr:`ParserOptions.preferred_parsers` setting.
+    :attr:`delb.parser.ParserOptions.preferred_parsers` setting.
     """
 
     def __init_subclass__(cls):

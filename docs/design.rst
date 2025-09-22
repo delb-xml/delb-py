@@ -19,7 +19,7 @@ pythonic_. Therefore its behaviour deviates from lxml and ignores stuff:
 - Serializations of documents are UTF-8 encoded by default and always start
   with an XML declaration.
 - Comment and processing instruction nodes are shadowed by default, see
-  :func:`delb.altered_default_filters` on how to make them accessible.
+  :func:`delb.filters.altered_default_filters` on how to make them accessible.
 
 
 .. _pythonic: https://zen-of-python.info/there-should-be-one-and-preferably-only-one-obvious-way-to-do-it.html#13

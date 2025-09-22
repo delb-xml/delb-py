@@ -3,14 +3,14 @@
 Utilities
 =========
 
-.. autofunction:: delb.compare_trees
+.. autofunction:: delb.utils.compare_trees
 
 .. autoclass:: delb.utils.TreesComparisonResult
 
-.. autofunction:: delb.first
+.. autofunction:: delb.utils.first
 
-.. autofunction:: delb.get_traverser
+.. autofunction:: delb.utils.get_traverser
 
-.. autofunction:: delb.last
+.. autofunction:: delb.utils.last
 
 .. autofunction:: delb.tag
