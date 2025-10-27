@@ -1,11 +1,5 @@
 # Roadmap for delb-py
 
-## 0.6
-
-- drop support for Python 3.9
-- a native implementation of the data model
-- declare the API as mostly stable
-
 ## 0.7
 
 - provide means to build a wheel with *mypyc*
@@ -14,7 +8,6 @@
 
 ## 0.8
 
-- drop any remaining checks against lxml equivalents
 - remove all remaining deprecated features
 - performance optimizations
 
@@ -22,3 +15,14 @@
 
 - a proper serialization implementation with focus on performance and possibly
   extendability
+
+## unscheduled
+
+- a general query interface
+  - with some simple/performant queries (find[_following|preceding] based on names
+    and/or attributes)
+  - translation of XPathExpressions to such when applicable
+- an independent parser implementation
+  - without any DTD support
+- inclusion of a RelaxNG validator
+  - grown in an extra package
