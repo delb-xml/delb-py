@@ -14,4 +14,7 @@ python:
     - path: .
     - requirements: docs/rtd-dependencies.txt
 
+sphinx:
+  configuration: docs/conf.py
+
 ...
