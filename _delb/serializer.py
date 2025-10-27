@@ -127,7 +127,7 @@ class DefaultStringOptions:
     """
     format_options: ClassWar[None | FormatOptions] = None
     """
-    An instance of :class:`FormatOptions` can be provided to configure formatting.
+    An instance of :class:`delb.FormatOptions` can be provided to configure formatting.
     """
 
     @classmethod

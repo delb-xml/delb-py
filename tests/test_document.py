@@ -2,18 +2,19 @@ import gc
 from typing import Final
 
 import pytest
+
 from delb import (
     CommentNode,
     Document,
     DocumentMixinBase,
     ProcessingInstructionNode,
-    TagNode,
-    TextNode,
-    get_traverser,
     parse_tree,
 )
 from delb.exceptions import FailedDocumentLoading, InvalidOperation
 from delb.filters import altered_default_filters, is_tag_node
+from delb.nodes import TagNode, TextNode
+from delb.utils import get_traverser
+
 from tests.plugins import PlaygroundDocumentExtension
 
 

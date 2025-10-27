@@ -33,26 +33,11 @@ from _delb.plugins import (
     plugin_manager as _plugin_manager,
     DocumentMixinBase,
 )
-from _delb.names import Namespaces
 from _delb.nodes import (
-    new_comment_node,
-    new_processing_instruction_node,
-    new_tag_node,
     CommentNode,
     _DocumentNode,
     ProcessingInstructionNode,
     TagNode,
-    TextNode,
-)
-from _delb.filters import (
-    altered_default_filters,
-    any_of,
-    is_comment_node,
-    is_processing_instruction_node,
-    is_root_node,
-    is_tag_node,
-    is_text_node,
-    not_,
 )
 from _delb.parser import ParserOptions
 from _delb.serializer import (
@@ -63,9 +48,7 @@ from _delb.serializer import (
     _TextBufferWriter,
     _get_serializer,
 )
-from _delb.utils import first, get_traverser, last
 from _delb.xpath import QueryResults
-from delb.utils import compare_trees
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -79,6 +62,7 @@ if TYPE_CHECKING:
         TagNodeType,
         XMLNodeType,
     )
+
 
 # plugin loading
 
@@ -238,8 +222,8 @@ class Document(metaclass=DocumentMeta):
 
     :param source: Anything that the configured loaders can make sense of to return a
                    parsed document tree.
-    :param parser_options: A :class:`delb.ParserOptions` instance to configure the used
-                           parser.
+    :param parser_options: A :class:`delb.parser.ParserOptions` instance to configure
+                           the used parser.
     :param klass: Explicitly define the initialized class. This can be useful for
                   applications that have :ref:`default document subclasses
                   <document-subclasses>` in use.
@@ -391,15 +375,15 @@ class Document(metaclass=DocumentMeta):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        This method proxies to the :meth:`TagNode.css_select` method of the document's
-        :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.css_select` method of the
+        document's :attr:`root <Document.root>` node.
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
     def merge_text_nodes(self, deep: bool = True):
         """
-        This method proxies to the :meth:`TagNode.merge_text_nodes` method of the
-        document's :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.merge_text_nodes` method of
+        the document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes(deep=deep)
 
@@ -426,13 +410,14 @@ class Document(metaclass=DocumentMeta):
     def root(self, node: TagNodeType):
         if not isinstance(node, TagNode):
             raise TypeError(
-                "The document root node must be a :class:`TagNode` instance."
+                "The document root node must be a :class:`delb.nodes.TagNode` instance."
             )
 
         if node._parent is not None or node.document is not None:
             raise InvalidOperation(
-                "Only a detached node can be set as root. Use :meth:`TagNode.clone` "
-                "or :meth:`TagNode.detach` on the designated root node."
+                "Only a detached node can be set as root. Use "
+                ":meth:`delb.nodes.TagNode.clone` or "
+                ":meth:`delb.nodes.TagNode.detach` on the designated root node."
             )
 
         current_root = self.root
@@ -535,38 +520,18 @@ class Document(metaclass=DocumentMeta):
         self, expression: str, namespaces: Optional[NamespaceDeclarations] = None
     ) -> QueryResults:
         """
-        This method proxies to the :meth:`TagNode.xpath` method of the document's
-        :attr:`root <Document.root>` node.
+        This method proxies to the :meth:`delb.nodes.TagNode.xpath` method of the
+        document's :attr:`root <Document.root>` node.
         """
         return self.root.xpath(expression=expression, namespaces=namespaces)
 
 
 __all__ = (
-    CommentNode.__name__,
     DefaultStringOptions.__name__,
     Document.__name__,
     FormatOptions.__name__,
-    Namespaces.__name__,
     ParserOptions.__name__,
-    ProcessingInstructionNode.__name__,
     QueryResults.__name__,
-    TagNode.__name__,
-    TextNode.__name__,
-    altered_default_filters.__name__,
-    any_of.__name__,
-    compare_trees.__name__,
-    first.__name__,
-    get_traverser.__name__,
-    is_comment_node.__name__,
-    is_processing_instruction_node.__name__,
-    is_root_node.__name__,
-    is_tag_node.__name__,
-    is_text_node.__name__,
-    last.__name__,
-    not_.__name__,
-    new_comment_node.__name__,
-    new_tag_node.__name__,
-    new_processing_instruction_node.__name__,
     parse_nodes.__name__,
     parse_tree.__name__,
     tag.__name__,

@@ -75,7 +75,7 @@ def web_loader(
     This loader loads a document from a URL with the ``http`` and ``https`` scheme.
     The default httpx_-client follows redirects and can partially be configured with
     `environment variables`_. The URL will be bound to the name ``source_url`` on
-    the document's :attr:`Document.config` attribute.
+    the document's :attr:`delb.Document.config` attribute.
 
     Loaders with specifically configured httpx-clients can build on this loader
     like so:

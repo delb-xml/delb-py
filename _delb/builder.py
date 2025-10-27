@@ -84,24 +84,24 @@ def tag(
 def tag(*args):  # noqa: C901
     """
     This function can be used for in-place creation (or call it templating if you
-    want to) of :class:`TagNode` instances as:
+    want to) of :class:`delb.nodes.TagNode` instances as:
 
     - ``node`` argument to methods that add nodes to a tree
-    - items in the ``children`` argument of :func:`new_tag_node`
+    - items in the ``children`` argument of :class:`delb.nodes.TagNode`
 
     The first argument to the function is always the local name of the tag node.
     Optionally, the second argument can be a :term:`mapping` that specifies attributes
     for that node.
     The optional last argument is either a single object that will be appended as child
     node or a sequence of such, these objects can be node instances of any type, strings
-    (for derived :class:`TextNode` instances) or other definitions from this function
-    (for derived :class:`TagNode` instances).
+    (for derived :class:`delb.nodes.TextNode` instances) or other definitions from this
+    function (for derived :class:`delb.nodes.TagNode` instances).
 
     The actual nodes that are constructed always inherit the namespace of the context
     node they are created in. That also applies to attribute names that are given as
     single string.
 
-    >>> root = new_tag_node('root', children=[
+    >>> root = TagNode('root', children=[
     ...     tag("head", {"lvl": "1"}, "Hello!"),
     ...     tag("items", (
     ...         tag("item1"),

@@ -1,7 +1,6 @@
 import pytest
 
-from delb import Namespaces
-from delb.names import XML_NAMESPACE, deconstruct_clark_notation
+from delb.names import XML_NAMESPACE, Namespaces, deconstruct_clark_notation
 
 
 @pytest.mark.parametrize(

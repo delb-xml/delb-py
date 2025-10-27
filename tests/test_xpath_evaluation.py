@@ -2,14 +2,10 @@ import pytest
 
 from _delb.xpath import evaluate
 from _delb.xpath.ast import Axis
-from _delb.names import Namespaces
-from delb import (
-    parse_tree,
-    Document,
-    TagNode,
-    TextNode,
-)
+from delb import parse_tree, Document
 from delb.filters import altered_default_filters, is_tag_node
+from delb.names import Namespaces
+from delb.nodes import TagNode, TextNode
 
 
 def test_any_name_test():

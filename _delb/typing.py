@@ -82,9 +82,9 @@ class XMLNodeType(ABC):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`TextNode` respectively
+        :class:`TagNode` instances from.
         """
 
     @abstractmethod
@@ -100,9 +100,9 @@ class XMLNodeType(ABC):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`TextNode` respectively
+        :class:`TagNode` instances from.
         """
 
     @abstractmethod
@@ -138,7 +138,7 @@ class XMLNodeType(ABC):
     @abstractmethod
     def document(self) -> Optional[Document]:
         """
-        The :class:`Document` instance that the node is associated with or
+        The :class:`delb.Document` instance that the node is associated with or
         :obj:`None`.
 
         :meta category: Related document and nodes properties
@@ -149,7 +149,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the following axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next node in document order that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -163,7 +163,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the following-sibling axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next sibling to the right that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -177,7 +177,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the preceding axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The previous node in document order that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -191,7 +191,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the preceding-sibling axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next sibling to the left that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -226,7 +226,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the ancestor axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
                  to top.
@@ -243,7 +243,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the child axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
         :meta category: Methods to iterate over related node
@@ -254,7 +254,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the ancestor axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the descending nodes of the
                  node.
@@ -271,7 +271,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the following axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :param include_descendants: Also yields descendants of the staring node. This
                                     deviates from the XPath definition of the following
@@ -291,7 +291,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the following-sibling axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  right.
@@ -308,7 +308,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the preceding axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :param include_ancestors: Also yields ancestor nodes / tag nodes that were
                                   started earlier in the stream. This deviates from the
@@ -328,7 +328,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the preceding-sibling axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  left.
@@ -356,9 +356,9 @@ class XMLNodeType(ABC):
         Removes the node and places the given one in its tree location.
 
         The node can be a concrete instance of any node type or a rather abstract
-        description in the form of a string or an object returned from the :func:`tag`
-        function that is used to derive a :class:`TextNode` respectively
-        :class:`TagNode` instance from.
+        description in the form of a string or an object returned from the
+        :func:`delb.tag` function that is used to derive a :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instance from.
 
         :param node: The replacing node.
         :param clone: A concrete, replacing node is cloned if :obj:`True`.
@@ -378,8 +378,8 @@ class XMLNodeType(ABC):
         Returns a string that contains the serialization of the node. See
         :doc:`/api/serialization` for details.
 
-        :param format_options: An instance of :class:`FormatOptions` can be provided to
-                               configure formatting.
+        :param format_options: An instance of :class:`delb.FormatOptions` can be
+                               provided to configure formatting.
         :param namespaces: A mapping of prefixes to namespaces.  If not provided the
                            node's namespace will serve as default namespace.  Prefixes
                            for undeclared namespaces are enumerated with the prefix
@@ -430,9 +430,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
     @property
@@ -459,9 +459,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
     @property
@@ -503,9 +503,9 @@ class ParentNodeType(XMLNodeType):
         :meta category: Methods to add nodes to a tree
 
         The nodes can be concrete instances of any node type or rather abstract
-        descriptions in the form of strings or objects returned from the :func:`tag`
-        function that are used to derive :class:`TextNode` respectively :class:`TagNode`
-        instances from.
+        descriptions in the form of strings or objects returned from the
+        :func:`delb.tag` function that are used to derive :class:`delb.nodes.TextNode`
+        respectively :class:`delb.nodes.TagNode` instances from.
         """
 
 

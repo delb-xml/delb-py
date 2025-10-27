@@ -128,7 +128,7 @@ class QueryResults(Sequence[XMLNodeType]):
     def filtered_by(self, *filters: Filter) -> QueryResults:
         """
         Returns another :class:`QueryResults` instance that contains all nodes filtered
-        by the provided :term:`filter` s.
+        by the provided :class:`delb.typing.Filter` s.
         """
         items: Sequence[XMLNodeType] = self.__items
         for filter in filters:

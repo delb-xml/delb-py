@@ -1,7 +1,8 @@
 import pytest
 
-from delb import compare_trees, first, last, parse_tree
+from delb import parse_tree
 from delb.filters import altered_default_filters, is_tag_node
+from delb.utils import compare_trees, first, last
 
 
 @pytest.mark.parametrize(
