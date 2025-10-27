@@ -149,7 +149,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the following axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next node in document order that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -163,7 +163,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the following-sibling axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next sibling to the right that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -177,7 +177,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the preceding axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The previous node in document order that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -191,7 +191,7 @@ class XMLNodeType(ABC):
         """
         Retrieves the next filter matching node on the preceding-sibling axis.
 
-        :param filter: Any number of :term:`filter` s.
+        :param filter: Any number of :class:`Filter` s.
         :return: The next sibling to the left that matches all filters or
                  :obj:`None`.
         :meta category: Methods to fetch a relative node
@@ -226,7 +226,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the ancestor axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the ancestor nodes from bottom
                  to top.
@@ -243,7 +243,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the child axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the child nodes of the node.
         :meta category: Methods to iterate over related node
@@ -254,7 +254,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the ancestor axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                        yielded.
         :return: A :term:`generator iterator` that yields the descending nodes of the
                  node.
@@ -271,7 +271,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the following axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :param include_descendants: Also yields descendants of the staring node. This
                                     deviates from the XPath definition of the following
@@ -291,7 +291,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the following-sibling axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  right.
@@ -308,7 +308,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the preceding axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :param include_ancestors: Also yields ancestor nodes / tag nodes that were
                                   started earlier in the stream. This deviates from the
@@ -328,7 +328,7 @@ class XMLNodeType(ABC):
         """
         Iterator over the filter matching nodes on the preceding-sibling axis.
 
-        :param filter: Any number of :term:`filter` s that a node must match to be
+        :param filter: Any number of :class:`Filter` s that a node must match to be
                yielded.
         :return: A :term:`generator iterator` that yields the siblings to the node's
                  left.

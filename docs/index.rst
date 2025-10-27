@@ -3,10 +3,10 @@
 .. toctree::
    :hidden:
 
-   design
    installation
    Getting Started <https://mybinder.org/v2/gh/delb-xml/demo-notebooks/main?labpath=getting_started.ipynb>
    api/index
+   design
    changes
    license
    genindex

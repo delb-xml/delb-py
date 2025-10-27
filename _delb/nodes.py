@@ -219,7 +219,7 @@ class _TagDefinition(NamedTuple):
 
 class Attribute(_StringMixin):
     """
-    Attribute objects represent :term:`tag node`'s attributes. See the
+    Attribute objects represent a tag node's attributes. See the
     :meth:`TagNode.attributes` documentation for capabilities.
     """
 
@@ -301,7 +301,7 @@ class Attribute(_StringMixin):
 
 class TagAttributes(MutableMapping):
     """
-    A data type to access a :term:`tag node`'s attributes.
+    A data type to access a tag node's attributes.
     """
 
     __slots__ = (
@@ -1149,8 +1149,8 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
 
 class TagNode(_ParentNode, TagNodeType):
     """
-    The instances of this class represent :term:`tag node` s of a tree, the equivalent
-    of DOM's elements.
+    The instances of this class represent tag nodes of a tree, the equivalent of DOM's
+    elements.
 
     This class implements :class:`delb.typing.TagNodeType`.
 
