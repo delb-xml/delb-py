@@ -135,6 +135,7 @@ run = """
 """
 
 [tool.hatch.envs.docs]
+# keep this in sync w/ docs/rtd-dependencies.txt !
 dependencies = [
     "autodocsumm",
     "enum_tools",

@@ -1,5 +1,8 @@
+# keep this in sync w/ pyproject.toml:tool.hatch.envs.docs.dependencies !
 autodocsumm
+enum_tools
 furo
 httpx[http2]
 sphinx-copybutton
 sphinx-design
+sphinx-toolbox
