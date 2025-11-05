@@ -13,20 +13,56 @@ Intentionally.
 
 .. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
 
-0.6-a0 (2025-05-11)
--------------------
+0.6-rc0 (2026-11-05)
+--------------------
 
-This release includes the future parsing interfaces. The performance with the
-lxml-wrapping data model however is not satisfactory and shows occasional quirks
-so that the integration tests can't be fully checked.
+This release brings significant changes that evolve *delb* to a mature level,
+namely:
+
+- 🎇 All data keeping is now implemented natively without *lxml*, leading to
+  remarkable performance improvements.
+- 🎉 There's a new parser interface for extensiblity.
+- 🪩 The API can be considered stable.
+
+At least 99.5% of all code is guaranteed to be covered by tests.
+The accompanying integration test corpora have been updated and extended.
 
 News
 ~~~~
 
+- ⚠️ For more clarity the symbols that are re-exported in the top-level module
+  ``delb`` are greatly reduced. Instead they're to be imported from their
+  domain specific modules :mod:`delb.filters`, :mod:`delb.names`,
+  :mod:`delb.nodes` and :mod:`delb.utils` Some generally applicable ones will
+  stay available for convenice though.
+- There are new abstract base classes for each node type rooting from
+  :class:`delb.typing.XMLNodeType` that should be used for type annotations.
+- ⚠️ Functions to construct new node instances such as
+  :func:`delb.nodes.new_tag_node` are deprecated. The corresponding, concrete
+  node classes are now to be instantiated directly.
 - A new parser interface allows the use of arbitrary parsing backends. Support
   for the standard library's ``expat`` interface and ``lxml`` are contributed.
-  For details see :doc:`installation` and :class:`ParserOptions`.
+  For details see :doc:`installation` and :class:`delb.parser.ParserOptions`.
+- When a used parser backend supports DTDs, it can be instructed with the
+  :attr:`delb.parser.ParserOptions.load_referenced_resources` option to consider
+  these.
+- New parsing related exceptions have been added:
+  :exc:`delb.exceptions.ParsingError` bases
+  :exc:`delb.exceptions.ParsingProcessingError` and
+  :exc:`delb.exceptions.ParsingValidityError`.
+- ⚠️ The :attr:`delb.parser.ParserOptions.resolve_entities` option has been
+  removed entirely as delb's data model doesn't include any entities.
+- The W3C's parser conformance test suite is included in delb's.
+- ⚠️ :func:`delb.parse_tree` replaces :meth:`delb.TagNode.parse` to produce tag
+  nodes from a serialized tree. The new :func:`delb.parse_nodes` produces an
+  iterator over (sub-)trees (possibly an XML document fragment).
 - ⚠️ The installation extra ``https-loader`` is renamed to ``web-loader``
+- ⚠️ The ``parser_options`` must now be passed as keyword argument to a
+  :class:`delb.Document`.
+- A ``source_url`` can now be passed explicitly when instantiating a
+  :class:`delb.Document`.
+- ⚠️ The :attr:`delb.nodes.TagNode.prefix` attribute is gone.
+- ⚠️ Support for Python 3.9 was removed and for Python 3.14 it's added.
 
 
 0.5.1 (2025-01-08)
