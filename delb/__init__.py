@@ -48,7 +48,6 @@ from _delb.serializer import (
     _TextBufferWriter,
     _get_serializer,
 )
-from _delb.xpath import QueryResults
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -62,6 +61,7 @@ if TYPE_CHECKING:
         TagNodeType,
         XMLNodeType,
     )
+    from _delb.xpath import QueryResults
 
 
 # plugin loading
@@ -531,7 +531,6 @@ __all__ = (
     Document.__name__,
     FormatOptions.__name__,
     ParserOptions.__name__,
-    QueryResults.__name__,
     parse_nodes.__name__,
     parse_tree.__name__,
     tag.__name__,
