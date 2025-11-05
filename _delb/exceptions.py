@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 
 
 class DelbBaseException(Exception):
+    """Base class for all of delb's exceptions."""
+
     pass
 
 
@@ -62,18 +64,26 @@ class InvalidOperation(DelbBaseException):
 
 
 class ParsingError(DelbBaseException):
+    """Base class for parsing related exceptions."""
+
     pass
 
 
 class ParsingProcessingError(ParsingError):
+    """Raised when a parsing operation cannot proceed in the actual context."""
+
     pass
 
 
 class ParsingValidityError(ParsingError):
+    """Raised non-well-formed phenomena are encountered."""
+
     pass
 
 
 class XPathEvaluationError(DelbBaseException):
+    """Raised when an XPath expression can't be properly evaluated."""
+
     def __init__(self, message: str):
         super().__init__(message)
 
