@@ -132,9 +132,9 @@ class PluginManager:
         """
         if find_spec("httpx"):
             import _delb.plugins.web_loader
-        if find_spec("lxml.etree"):
+        if find_spec("lxml"):
             import _delb.plugins.lxml_parser
-        if find_spec("xml.sax"):
+        if find_spec("pyexpat"):
             import _delb.plugins.expat_parser  # noqa: F401
 
         for entrypoint in entry_points().select(group="delb"):
