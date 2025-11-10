@@ -251,7 +251,7 @@ class TreeBuilder:
         if __debug__ and data:
             assert result.namespace == data.namespace
             assert result.local_name == data.local_name
-            if data.attributes is not None:
+            if data.attributes:
                 assert result.attributes == data.attributes
 
         children = self.children.pop()

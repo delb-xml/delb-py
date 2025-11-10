@@ -49,9 +49,7 @@ class ContentHandler(sax.handler.ContentHandler):
     def endElementNS(  # noqa: N802
         self, name: tuple[None | str, str], qname: str | None
     ):
-        self.events.append(
-            (EventType.TagEnd, TagEventData(name[0] or "", name[1], None))
-        )
+        self.events.append((EventType.TagEnd, TagEventData(name[0] or "", name[1], {})))
 
     def ignorableWhitespace(self, whitespace: str):  # noqa: N802
         raise InvalidCodePath
