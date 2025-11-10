@@ -228,7 +228,7 @@ class TreeBuilder:
                 self.handle_tag_start(data)
                 result = None
             case EventType.TagEnd:
-                assert isinstance(data, TagEventData)
+                assert data is None or isinstance(data, TagEventData)
                 result = self.handle_tag_end(data)
             case EventType.Text:
                 assert isinstance(data, str)

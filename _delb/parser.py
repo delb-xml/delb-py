@@ -141,14 +141,14 @@ class ParserOptions(NamedTuple):
 class TagEventData(NamedTuple):
     namespace: str
     local_name: str
-    attributes: _AttributesData | None
+    attributes: _AttributesData
     """
     The attributes data must not contain XML namespace declarations.
     It is optional in case of a :py:enum:`EventType.TagEnd`.
     """
 
 
-Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData]
+Event: TypeAlias = tuple[EventType, str | tuple[str, str] | TagEventData | None]
 """
 An XML stream event tuple consists of two values.  The first is a member of
 :class:`EventType` that signals the type of event, the second carries the relevant data.
