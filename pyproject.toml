@@ -34,9 +34,6 @@ dependencies = [
     "typing-extensions; python_version < '3.11'"
 ]
 
-[project.entry-points.delb]
-web-loader = "_delb.plugins.web_loader"
-
 [project.optional-dependencies]
 lxml-parser = ["lxml"]
 web-loader = ["httpx[http2]"]
