@@ -46,6 +46,29 @@ def test_namespace():
     assert results.first.index == 1
 
 
+@pytest.mark.parametrize(
+    ("prefix", "expression"),
+    (
+        ("tei", "tei|*[tei|copyOf]"),
+        ("", "*[copyOf]"),
+        (None, "*[copyOf]"),
+        ("tei", "tei|*[tei|copyOf='#test']"),
+        ("", "*[copyOf='#test']"),
+        (None, "*[copyOf='#test']"),
+    ),
+)
+def test_namespaced_attributes(prefix, expression):
+    document = Document(
+        """
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+        <p xml:id="test"><lb/>Doppelganger</p>
+        <p copyOf="#test"/>
+        </body></text></TEI>
+        """
+    )
+    assert document.css_select(expression, namespaces={prefix: TEI_NAMESPACE}).size == 1
+
+
 def test_quotes_in_css_selector():
     document = Document('<root><a href="https://super.test/123"/></root>')
     assert document.css_select('a[href^="https://super.test/"]').size == 1

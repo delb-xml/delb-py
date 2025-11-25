@@ -717,7 +717,7 @@ class HasAttribute(EvaluationNode):
             return False
         return (
             node.attributes.get(
-                (context.namespaces.get(self.prefix, ""), self.local_name)
+                (context.namespaces.get(self.prefix or "", ""), self.local_name)
             )
             is not None
         )
