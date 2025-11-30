@@ -13,7 +13,7 @@ Intentionally.
 
 .. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
 
-0.6-rc0 (2026-11-05)
+0.6-rc1 (2026-11-30)
 --------------------
 
 This release brings significant changes that evolve *delb* to a mature level,
@@ -33,7 +33,7 @@ News
 - ⚠️ For more clarity the symbols that are re-exported in the top-level module
   ``delb`` are greatly reduced. Instead they're to be imported from their
   domain specific modules :mod:`delb.filters`, :mod:`delb.names`,
-  :mod:`delb.nodes` and :mod:`delb.utils` Some generally applicable ones will
+  :mod:`delb.nodes` and :mod:`delb.utils`. Some generally applicable ones will
   stay available for convenice though.
 - There are new abstract base classes for each node type rooting from
   :class:`delb.typing.XMLNodeType` that should be used for type annotations.
