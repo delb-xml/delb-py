@@ -124,7 +124,7 @@ class XMLNodeType(ABC):
         """
 
     @abstractmethod
-    def detach(self, retain_child_nodes: bool = False) -> XMLNodeType:
+    def detach(self, retain_child_nodes: bool = False) -> Self:
         """
         Removes the node from its tree.
 
@@ -351,7 +351,7 @@ class XMLNodeType(ABC):
         """
 
     @abstractmethod
-    def replace_with(self, node: NodeSource, clone: bool = False) -> XMLNodeType:
+    def replace_with(self, node: NodeSource, clone: bool = False) -> Self:
         """
         Removes the node and places the given one in its tree location.
 

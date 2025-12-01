@@ -53,6 +53,7 @@ from _delb.typing import (
     _DocumentNodeType,
     ParentNodeType,
     ProcessingInstructionNodeType,
+    Self,
     TagNodeType,
     TextNodeType,
     XMLNodeType,
@@ -554,7 +555,7 @@ class _NodeCommons(XMLNodeType):
             result += 1
         return result
 
-    def detach(self, retain_child_nodes: bool = False) -> XMLNodeType:
+    def detach(self, retain_child_nodes: bool = False) -> Self:
         if (parent := self._parent) is not None:
             parent._child_nodes.remove(self)
         return self
@@ -762,7 +763,7 @@ class _NodeCommons(XMLNodeType):
     def parent(self) -> Optional[ParentNodeType]:
         return None if isinstance(self._parent, _DocumentNode) else self._parent
 
-    def replace_with(self, node: NodeSource, clone: bool = False) -> XMLNodeType:
+    def replace_with(self, node: NodeSource, clone: bool = False) -> Self:
         if (parent := self._parent) is None:
             raise InvalidOperation(
                 "Cannot replace a root node of a tree. Maybe you want to set the "
@@ -1061,9 +1062,7 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
     ) -> tuple[XMLNodeType, ...]:
         raise InvalidCodePath
 
-    def detach(
-        self, retain_child_nodes: bool = False
-    ) -> XMLNodeType:  # pragma: no cover
+    def detach(self, retain_child_nodes: bool = False) -> Self:  # pragma: no cover
         raise InvalidCodePath
 
     @property
@@ -1077,7 +1076,7 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
 
     def replace_with(  # pragma: no cover
         self, node: NodeSource, clone: bool = False
-    ) -> XMLNodeType:
+    ) -> Self:
         raise InvalidCodePath
 
 
@@ -1429,7 +1428,7 @@ class TagNode(_ParentNode, TagNodeType):
         """
         return self.xpath(expression=_css_to_xpath(expression), namespaces=namespaces)
 
-    def detach(self, retain_child_nodes: bool = False) -> TagNodeType:
+    def detach(self, retain_child_nodes: bool = False) -> Self:
         if isinstance(self._parent, _DocumentNode):
             raise InvalidOperation("The root node of a document cannot be detached.")
 
