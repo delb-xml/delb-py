@@ -29,7 +29,7 @@ jobs:
         ${{ steps.baipp.outputs.supported_python_classifiers_json_array }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: hynek/build-and-inspect-python-package@v2
@@ -58,7 +58,7 @@ jobs:
       matrix:
         python-version: ${{ fromJson(needs.build.outputs.python-versions) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v6
@@ -84,7 +84,7 @@ jobs:
           - lint
           - mypy
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v6
