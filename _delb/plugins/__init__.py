@@ -21,7 +21,6 @@ from importlib.metadata import entry_points
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Final, overload
 
-
 if TYPE_CHECKING:
     from types import SimpleNamespace
     from delb import Document

@@ -153,9 +153,7 @@ def test_attribute_object():
 
 
 def test_comparison():
-    document = Document(
-        dedent(
-            """\
+    document = Document(dedent("""\
     <root>
         <a xml:id="x"/>
         <b id="x"/>
@@ -163,9 +161,7 @@ def test_comparison():
         <d id="x" od="y"/>
         <p:e xmlns:p="https://u.rl" p:id="x" p:od="y"/>
     </root>
-    """
-        )
-    )
+    """))
     a = document.css_select("a").first
     b = document.css_select("b").first
     c = document.css_select("c").first

@@ -16,7 +16,6 @@ from tests.utils import (
     variety_forest,
 )
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
@@ -221,13 +220,11 @@ def test_detach_node_retain_child_nodes():
 def test_detach_node_retains_namespace_prefixes():
     # libxml2 loses the notion if a default prefix for nodes that have been
     # removed from a parent node
-    root = parse_tree(
-        """\
+    root = parse_tree("""\
         <root xmlns="schema://default/">
             <child><grandchild/></child>
         </root>
-        """
-    )
+        """)
     child = root.css_select("child").first.detach()
     assert child.css_select("grandchild").size == 1
 

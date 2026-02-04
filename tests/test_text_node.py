@@ -4,7 +4,6 @@ from delb import Document, ParserOptions, parse_tree, tag
 from delb.filters import is_text_node
 from delb.nodes import TagNode, TextNode
 
-
 # there are plenty tests here that consider how text content would be accessed with
 # lxml's API.  the necessity for that is vanished.
 

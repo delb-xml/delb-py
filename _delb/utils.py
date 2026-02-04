@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING, Any, Final, Optional
 
 from _delb.typing import _DocumentNodeType, TagNodeType
 
-
 if TYPE_CHECKING:
     from _delb.typing import Filter, XMLNodeType
 

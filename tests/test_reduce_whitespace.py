@@ -10,7 +10,6 @@ from delb.typing import TagNodeType  # noqa: TC001
 
 from tests.utils import assert_equal_trees
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
@@ -130,8 +129,7 @@ def test_samples_from_Manifest_der_kommunistischen_Partei(files_path):  # noqa: 
 
 
 def test_space_preserve():
-    root = parse_tree(
-        """
+    root = parse_tree("""
     <root>
         <title>
             I Roy -
@@ -140,8 +138,7 @@ def test_space_preserve():
         <matrix xml:space="preserve">HB 243 A  Re</matrix>
         <matrix xml:space="preserve">HB 243 B\tRe</matrix>
     </root>
-    """
-    )
+    """)
 
     root._reduce_whitespace()
 
@@ -182,18 +179,14 @@ def test_tei_recommendation_examples():
 
     # ## "Default Whitespace Processing"
 
-    sample = parse_sample(
-        dedent(
-            """\
+    sample = parse_sample(dedent("""\
         <persName>
           <forename>Edward</forename>
           <forename>George</forename>
           <surname type="linked">Bulwer-Lytton</surname>, <roleName>Baron Lytton of
           <placeName>Knebworth</placeName>
           </roleName>
-        </persName>"""
-        )
-    )
+        </persName>"""))
     assert sample.full_text == "Edward George Bulwer-Lytton, Baron Lytton of Knebworth"
     assert (
         sample.full_text != " Edward George Bulwer-Lytton, Baron Lytton of Knebworth "
@@ -216,35 +209,25 @@ def test_tei_recommendation_examples():
 
     sample_1 = parse_sample("<name>Ralph Waldo Emerson</name>")
     sample_2 = parse_sample("<name>   Ralph Waldo  Emerson   </name>")
-    sample_3 = parse_sample(
-        dedent(
-            """\
+    sample_3 = parse_sample(dedent("""\
         <name>
                 Ralph    
                 Waldo    
                Emerson   
-        </name>"""  # noqa: W291
-        )
-    )  # noqa: E124
+        </name>"""))  # noqa: W291  # noqa: E124
     assert sample_1.full_text == sample_2.full_text == sample_3.full_text
 
     # #### "Mixed-Content Elements"
 
-    sample_1 = parse_sample(
-        dedent(
-            """\
+    sample_1 = parse_sample(dedent("""\
         <p>  The <emph> cat </emph> ate  the <foreign>grande croissant</foreign>. I didn't!
-          </p>"""  # noqa: E501
-        )
-    )
-    sample_2 = parse_sample(
-        """\
+          </p>"""))  # noqa: E501
+    sample_2 = parse_sample("""\
         <p>The 
         <emph>cat</emph>
         ate the 
         <foreign>grande croissant</foreign>. 
-        I didn't!</p>"""  # noqa: W291
-    )
+        I didn't!</p>""")  # noqa: W291
     sample_3 = parse_sample(
         "<p>The <emph>cat</emph> ate the <foreign>grande croissant</foreign>. "
         "I didn't!</p>"

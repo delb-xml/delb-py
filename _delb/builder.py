@@ -36,7 +36,6 @@ from _delb.nodes import (
 from _delb.parser import Event, EventType, ParserOptions, TagEventData, parse_events
 from _delb.typing import XMLNodeType
 
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 

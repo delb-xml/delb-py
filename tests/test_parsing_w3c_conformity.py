@@ -15,7 +15,6 @@ from _delb.plugins.core_loaders import path_loader
 
 from tests.utils import skip_long_running_test
 
-
 pytestmark = skip_long_running_test
 
 

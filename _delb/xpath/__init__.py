@@ -76,7 +76,6 @@ from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
 from _delb.xpath.parser import parse
 
-
 if TYPE_CHECKING:
     from typing import Any
 
@@ -194,7 +193,7 @@ def evaluate(
 
 
 __all__ = (
-    _css_to_xpath.__name__,  # type:ignore
+    _css_to_xpath.__name__,  # type: ignore
     evaluate.__name__,
     parse.__name__,  # type: ignore
     EvaluationContext.__name__,

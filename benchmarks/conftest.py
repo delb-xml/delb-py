@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 
-
 FAILED_RESULT = "failed_result_of_"
 FILES_PATH = Path(__file__).parent.parent / "tests/files"
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))

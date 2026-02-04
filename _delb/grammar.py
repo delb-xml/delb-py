@@ -18,7 +18,6 @@ from __future__ import annotations
 import re
 from typing import Final
 
-
 # constants
 
 # https://www.w3.org/TR/REC-xml/#NT-Char

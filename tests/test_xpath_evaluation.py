@@ -9,14 +9,12 @@ from delb.nodes import TagNode, TextNode
 
 
 def test_any_name_test():
-    root = parse_tree(
-        """\
+    root = parse_tree("""\
         <root>
             <node/>
             <node xmlns='http://foo.bar'/>
             <node xmlns='http://baz.zap'/>
-            </root>"""
-    )
+        </root>""")
 
     assert root.xpath("*").size == 3
     assert root.xpath("*", namespaces={"p": "http://foo.bar"}).size == 3
@@ -44,8 +42,7 @@ def test_any_name_test():
     ),
 )
 def test_axes_order(name, start_name, expected_order):
-    root = parse_tree(
-        """\
+    root = parse_tree("""\
         <a>
             <b>
                 <c/>
@@ -58,8 +55,7 @@ def test_axes_order(name, start_name, expected_order):
                 <i/>
             </f>
         </a>
-    """
-    )
+    """)
 
     with altered_default_filters(is_tag_node):
         axis = Axis(name)
@@ -151,8 +147,7 @@ def test_multiple_predicates():
 
 
 def test_processing_instruction():
-    document = Document(
-        """\
+    document = Document("""\
         <root>
           <header>
             <?delb yes?>
@@ -160,8 +155,7 @@ def test_processing_instruction():
             <?delb yes?>
           </header>
         </root>
-    """
-    )
+    """)
 
     result = document.xpath("//processing-instruction()")
     assert result.size == 3
@@ -175,16 +169,11 @@ def test_processing_instruction():
 
 def test_scope_on_descendant_or_self_axis():
     # this test is here to remind us how abbreviated XPath syntax is not intuitive
-    first_record = (
-        Document(
-            """<root>
-               <record id="a"><metadata id="1"/></record>
-               <record id="b"><metadata id="2"/></record>
-               </root>"""
-        )
-        .xpath("//record")
-        .first
-    )
+    first_record = Document("""\
+    <root>
+        <record id="a"><metadata id="1"/></record>
+        <record id="b"><metadata id="2"/></record>
+    </root>""").xpath("//record").first
     assert first_record["id"] == "a"
 
     result = first_record.xpath(".//metadata")

@@ -24,7 +24,6 @@ from _delb.names import deconstruct_clark_notation
 from _delb.parser import EventType, TagEventData
 from _delb.plugins import XMLEventParserInterface
 
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 

@@ -4,7 +4,6 @@ from typing import Final
 from delb import Document
 from _delb.xpath import _css_to_xpath
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
@@ -58,14 +57,12 @@ def test_namespace():
     ),
 )
 def test_namespaced_attributes(prefix, expression):
-    document = Document(
-        """
+    document = Document("""
         <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
         <p xml:id="test"><lb/>Doppelganger</p>
         <p copyOf="#test"/>
         </body></text></TEI>
-        """
-    )
+        """)
     assert document.css_select(expression, namespaces={prefix: TEI_NAMESPACE}).size == 1
 
 

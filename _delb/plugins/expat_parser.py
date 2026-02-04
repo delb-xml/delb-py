@@ -25,7 +25,6 @@ from _delb.exceptions import InvalidCodePath, ParsingProcessingError
 from _delb.parser import EventType, TagEventData
 from _delb.plugins import XMLEventParserInterface
 
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 

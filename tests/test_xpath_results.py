@@ -29,16 +29,14 @@ def test_document_order(files_path):
 
 
 def test_equality():
-    document = Document(
-        """\
+    document = Document("""\
         <root>
             <s corresp="src:tlaIBUBd4DTggLNoE2MvPgWWka2UdY">
                 <w corresp="src:tlaIBUBdzQ3wWIW60TVhNy3cRxYmgg"><unclear/></w>
                 <w corresp="src:tlaIBUBd7n0fy1OPU1DjVU66j2B4Qc"><unclear/></w>
             </s>
         </root>
-        """
-    )
+    """)
     word_nodes = document.css_select("s w")
     assert word_nodes == word_nodes.filtered_by(lambda n: True)
     assert word_nodes == word_nodes.as_list()

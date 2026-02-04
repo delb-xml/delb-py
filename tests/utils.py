@@ -9,7 +9,6 @@ from delb.nodes import TagNode
 from delb.typing import XMLNodeType  # noqa: TC001
 from delb.utils import compare_trees
 
-
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
     from contextlib import contextmanager
     from pathlib import Path

@@ -19,7 +19,6 @@ If ``delb`` is installed with ``web-loader`` as extra, the required
 dependencies for this loader are installed as well. See :doc:`/installation`.
 """
 
-
 from __future__ import annotations
 
 from io import IOBase

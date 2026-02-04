@@ -11,7 +11,6 @@ from delb.parser import ParserOptions
 from tests.conftest import TEI_FILES
 from tests.utils import assert_equal_trees, skip_long_running_test
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
@@ -673,12 +672,10 @@ def test_xml_space(width, out):
     if width == 0:
         root = parse_tree('<root xml:space="illegal"><t/></root>')
         with pytest.warns(UserWarning, match=".*illegal.*"):
-            assert str(root) == dedent(
-                """\
+            assert str(root) == dedent("""\
                 <root xml:space="illegal">
                   <t/>
-                </root>"""
-            )
+                </root>""")
 
     # and the application's default behaviour is determined by formatting options
     DefaultStringOptions.format_options = None

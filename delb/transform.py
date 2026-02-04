@@ -118,7 +118,6 @@ from delb import Document  # noqa: TC001
 from delb.nodes import TagNode  # type: ignore
 from delb.typing import TagNodeType  # type: ignore  # noqa: TC001
 
-
 #
 
 

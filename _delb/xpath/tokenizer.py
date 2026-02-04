@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, NamedTuple
 from _delb.exceptions import XPathParsingError
 from _delb.grammar import name_pattern
 
-
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Final

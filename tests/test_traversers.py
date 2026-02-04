@@ -4,9 +4,7 @@ from delb import parse_tree
 from delb.filters import is_tag_node
 from delb.utils import get_traverser
 
-
-root = parse_tree(
-    """\
+root = parse_tree("""\
         <root>
             <a>
                 <aa/>
@@ -24,8 +22,7 @@ root = parse_tree(
                 <cb/>
             </c>
         </root>
-    """
-)
+    """)
 
 
 @pytest.mark.parametrize(

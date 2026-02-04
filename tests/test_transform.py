@@ -77,16 +77,14 @@ class ResolveItems(Transformation):
 
 def test_simple_transformation():
     root = parse_tree('<root><node copyOf="#foo"/><node copyOf="#bar"/></root>')
-    document = Document(
-        """<radix>
+    document = Document("""<radix>
              <a>
                <b xml:id="foo"><c>hi</c></b>
                <b xml:id="baz"/>
              </a>
              <a xml:id="bar">na?</a>
           </radix>
-        """
-    )
+        """)
     resolve_copy_of = ResolveCopyOf()
     tree = resolve_copy_of(root, document)
     assert str(tree) == "<root><b><c>hi</c></b><a>na?</a></root>"

@@ -21,7 +21,6 @@ from _delb.plugins.core_loaders import path_loader
 from tests.conftest import FILES_PATH, XML_FILES
 from tests.utils import assert_equal_trees
 
-
 assert len(AVAILABLE_PARSERS := tuple(plugin_manager.parsers)) == 2
 
 pytestmark = pytest.mark.parametrize("parser", AVAILABLE_PARSERS)

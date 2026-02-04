@@ -24,7 +24,6 @@ from _delb.typing import TagNodeType
 from _delb.utils import *  # noqa
 from _delb.utils import __all__
 
-
 if TYPE_CHECKING:
     from _delb.typing import XMLNodeType
 

@@ -17,7 +17,6 @@ from delb.utils import get_traverser
 
 from tests.plugins import PlaygroundDocumentExtension
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 
@@ -48,8 +47,7 @@ def test_clone_integrity(files_path):
     # now as the solution is to move away from the lxml API it will be very a good
     # question what to do with this test in the future.
 
-    document = Document(
-        """\
+    document = Document("""\
     <TEI xmlns="http://www.tei-c.org/ns/1.0">
     <teiHeader>
     <profileDesc xmlns:e="http://distantreading.net/eltec/ns">
@@ -61,8 +59,7 @@ def test_clone_integrity(files_path):
       </textDesc>
     </profileDesc>
     </teiHeader>
-    </TEI>"""
-    )
+    </TEI>""")
     cloned_document = document.clone()
 
     for node in get_traverser(from_left=True, depth_first=True, from_top=True)(

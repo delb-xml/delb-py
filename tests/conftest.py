@@ -8,7 +8,6 @@ from tests import plugins  # noqa: F401
 from _delb.filters import default_filters
 from delb import DefaultStringOptions, Document
 
-
 FAILED_RESULT = "failed_result_of_"
 FILES_PATH = Path(__file__).parent / "files"
 TEI_FILES = tuple(FILES_PATH.glob("tei_*.xml"))
@@ -63,16 +62,14 @@ def result_file(request, tmp_path):
 
 @pytest.fixture
 def queries_sample():
-    return Document(
-        """\
-            <root>
-                <node n="1"/>
-                <node n="2"/>
-                <node/>
-                <node n="3"/>
-            </root>
-        """
-    )
+    return Document("""\
+        <root>
+            <node n="1"/>
+            <node n="2"/>
+            <node/>
+            <node n="3"/>
+        </root>
+        """)
 
 
 @pytest.fixture(autouse=True)

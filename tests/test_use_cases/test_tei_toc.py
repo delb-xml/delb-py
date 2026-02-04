@@ -7,7 +7,6 @@ from delb import Document, TagNode
 from delb.typing import TagNodeType, XMLNodeType  # noqa: TC001
 from _delb.utils import _crunch_whitespace
 
-
 TEI_NAMESPACE: Final = "http://www.tei-c.org/ns/1.0"
 
 

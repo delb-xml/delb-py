@@ -28,7 +28,6 @@ from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsing
 from _delb.plugins import plugin_manager as _plugin_manager
 from _delb.typing import _DocumentNodeType, ProcessingInstructionNodeType, TagNodeType
 
-
 if TYPE_CHECKING:
     from typing import Final
 
