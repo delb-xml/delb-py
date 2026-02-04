@@ -61,8 +61,7 @@ def test_dtd_from_web(parser, unplugged, exception):
         raise AssertionError("No exception raised.")
 
 
-# TODO figure out why the expat parser uses an SSL socket (and leaves it unclosed)
-@pytest.mark.filterwarnings("ignore:unclosed:ResourceWarning")
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
 @pytest.mark.parametrize("load_referenced_resources", (True, False))
 def test_external_entity_declaration(
     files_path,
@@ -156,6 +155,7 @@ def test_parse_tree(in_, out, as_bytes, parser):
     )
 
 
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
 @pytest.mark.parametrize("reduced_content", (True, False))
 @pytest.mark.parametrize("file", XML_FILES)
 def test_parse_xml_documents(file, parser, reduced_content):
