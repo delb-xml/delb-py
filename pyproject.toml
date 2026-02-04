@@ -152,7 +152,8 @@ serve = "sphinx-autobuild --open-browser --delay 2 --watch _delb --watch delb do
 [tool.hatch.envs.linting]
 dependencies = [
     "flake8-absolute-import",
-    "flake8-annotations-complexity",
+    # TODO this should be taken care of in order to support current interpreters
+    # "flake8-annotations-complexity",
     "flake8-black",
     "flake8-comprehensions",
     "flake8-eradicate",
