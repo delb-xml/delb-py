@@ -13,8 +13,8 @@ Intentionally.
 
 .. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
 
-0.6-rc1 (2026-11-30)
---------------------
+0.6 (2026-02-15)
+----------------
 
 This release brings significant changes that evolve *delb* to a mature level,
 namely:
@@ -51,7 +51,8 @@ News
   :exc:`delb.exceptions.ParsingProcessingError` and
   :exc:`delb.exceptions.ParsingValidityError`.
 - ⚠️ The :attr:`delb.parser.ParserOptions.resolve_entities` option has been
-  removed entirely as delb's data model doesn't include any entities.
+  removed entirely as delb's data model doesn't include any entities (that could
+  stay unresolved in a document model).
 - The W3C's parser conformance test suite is included in delb's.
 - ⚠️ :func:`delb.parse_tree` replaces :meth:`delb.TagNode.parse` to produce tag
   nodes from a serialized tree. The new :func:`delb.parse_nodes` produces an
@@ -62,7 +63,7 @@ News
 - A ``source_url`` can now be passed explicitly when instantiating a
   :class:`delb.Document`.
 - ⚠️ The :attr:`delb.nodes.TagNode.prefix` attribute is gone.
-- ⚠️ Support for Python 3.9 was removed and for Python 3.14 it's added.
+- ⚠️ Support for Python 3.8 & 3.9 was removed, for Python 3.14 it's added.
 
 
 0.5.1 (2025-01-08)
