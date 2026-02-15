@@ -77,7 +77,7 @@ with that name.
 There's a repository that outlines the mechanics as developer reference:
 https://github.com/delb-xml/delb-py-reference-plugins
 
-There's also the snakesist_ project that implements the loader and document
+There's also the delb-existdb_ project that implements the loader and document
 mixin plugin types to interact with eXist-db_ as storage.
 
 
@@ -187,6 +187,6 @@ Custom XPath functions are registered with this decorator:
 .. autofunction:: _delb.plugins.PluginManager.register_xpath_function
 
 
+.. _delb-existdb:: https://github.com/delb-xml/delb-existdb
 .. _eXist-db: https://exist-db.org/
 .. _provide entrypoint metadata: https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata
-.. _snakesist: https://github.com/delb-xml/snakesist

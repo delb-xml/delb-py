@@ -50,13 +50,13 @@ improvements are welcome as well.
 Related Projects
 ----------------
 
-- snakesist_ is an eXist-db client that uses ``delb`` to expose database
+- delb-existdb_ is an eXist-db client that uses ``delb`` to expose database
   resources.
 - There's a repository with `integration tests`_ to test *delb* usage against a
   large, diverse set of TEI corpora.
 
+.. _delb-existdb:: https://pypi.org/project/delb-existdb/
 .. _integration tests: https://github.com/delb-xml/delb-py-integration-tests
-.. _snakesist: https://pypi.org/project/snakesist/
 
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square
