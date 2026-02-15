@@ -55,7 +55,7 @@ Related Projects
 - There's a repository with `integration tests`_ to test *delb* usage against a
   large, diverse set of TEI corpora.
 
-.. _delb-existdb:: https://pypi.org/project/delb-existdb/
+.. _delb-existdb: https://pypi.org/project/delb-existdb/
 .. _integration tests: https://github.com/delb-xml/delb-py-integration-tests
 
 
