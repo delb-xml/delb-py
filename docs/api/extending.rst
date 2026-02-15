@@ -187,6 +187,6 @@ Custom XPath functions are registered with this decorator:
 .. autofunction:: _delb.plugins.PluginManager.register_xpath_function
 
 
-.. _delb-existdb:: https://github.com/delb-xml/delb-existdb
+.. _delb-existdb: https://github.com/delb-xml/delb-existdb
 .. _eXist-db: https://exist-db.org/
 .. _provide entrypoint metadata: https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata
