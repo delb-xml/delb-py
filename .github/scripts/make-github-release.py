@@ -45,7 +45,7 @@ def make_github_release(notes: str, version: str):
     options.extend(["--notes-file", "-"])
     options.extend(["--title", f"delb {version}"])
     options.append("--verify-tag")
-    if "rc" in version:
+    if "rc" in version:  # TODO also cover other pre-releases
         options.append("--prerelease")
 
     result = subprocess.run(
@@ -60,10 +60,9 @@ def make_github_release(notes: str, version: str):
         encoding="utf-8",
         input=notes,
     )
-    print(result.stdout)
     if result.returncode != 0:
         print(result.stdout)
-    result.check_returncode()
+        raise RuntimeError
 
 
 def make_release_notes(version: str) -> str:
