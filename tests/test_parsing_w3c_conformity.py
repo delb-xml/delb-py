@@ -150,7 +150,10 @@ def collect_w3c_conformance_tests() -> Collection[W3CConformanceTest]:
     result = []
 
     for event, element in etree.iterparse(
-        suite_path / "xmlconf-20020606.xml", events=("start", "end"), load_dtd=True
+        suite_path / "xmlconf-20020606.xml",
+        events=("start", "end"),
+        load_dtd=True,
+        resolve_entities=True,
     ):
 
         if event == "start":
