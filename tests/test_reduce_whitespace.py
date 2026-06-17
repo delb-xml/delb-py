@@ -214,7 +214,7 @@ def test_tei_recommendation_examples():
                 Ralph    
                 Waldo    
                Emerson   
-        </name>"""))  # noqa: W291  # noqa: E124
+        </name>"""))  # noqa: W291
     assert sample_1.full_text == sample_2.full_text == sample_3.full_text
 
     # #### "Mixed-Content Elements"
