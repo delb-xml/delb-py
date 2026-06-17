@@ -135,8 +135,11 @@ run = """
 # keep this in sync w/ docs/rtd-dependencies.txt !
 dependencies = [
     "autodocsumm",
-    "enum_tools",
+    "enum-tools",
     "furo",
+    # FIXME this is dur to the incomatibility of enum-tools w/ Sphinx 9
+    # https://github.com/domdfcoding/enum_tools/issues/118
+    "sphinx<9",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
