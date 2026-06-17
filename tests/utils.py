@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
 import sys
 from itertools import pairwise, product
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -8,6 +11,9 @@ from delb.filters import altered_default_filters
 from delb.nodes import TagNode
 from delb.typing import XMLNodeType  # noqa: TC001
 from delb.utils import compare_trees
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 if sys.version_info < (3, 11):  # DROPWITH Python 3.10
     from contextlib import contextmanager
@@ -62,9 +68,11 @@ def index_path(node: XMLNodeType):
     return result
 
 
-def variety_forest():
+def variety_forest() -> Collection[TagNode]:
+    result = []
     for assembly_axes in product(("child", "following"), repeat=9):
         root = TagNode("root")
+        result.append(root)
 
         node = root.prepend_children(TagNode("begin"))[0]
 
@@ -78,8 +86,7 @@ def variety_forest():
             node = new_node
 
         root.append_children(TagNode("end"))
-
-        yield root
+    return result
 
 
 skip_long_running_test = pytest.mark.skipif(

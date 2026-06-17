@@ -3,7 +3,7 @@ from __future__ import annotations
 from fnmatch import fnmatch
 from multiprocessing import Process
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import pytest
 from lxml import etree
@@ -14,6 +14,10 @@ from _delb.plugins import plugin_manager
 from _delb.plugins.core_loaders import path_loader
 
 from tests.utils import skip_long_running_test
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
+
 
 pytestmark = skip_long_running_test
 
@@ -140,9 +144,10 @@ class W3CTestProcess(Process):
             assert self.case.type.endswith("valid")
 
 
-def collect_w3c_conformance_tests():
+def collect_w3c_conformance_tests() -> Collection[W3CConformanceTest]:
     suite_path = Path(__file__).parent / "w3c_conformance_test_suite_20020606"
     cases_path: Path | None = None
+    result = []
 
     for event, element in etree.iterparse(
         suite_path / "xmlconf-20020606.xml", events=("start", "end"), load_dtd=True
@@ -180,14 +185,22 @@ def collect_w3c_conformance_tests():
                 if any(fnmatch(id_, p) for p in IGNORED_TESTS[parser]):
                     continue
 
-                yield W3CConformanceTest(
-                    parser=parser,
-                    path=cases_path / attributes["URI"],
-                    entities=attributes["ENTITIES"],
-                    id=id_,
-                    sections=sections,
-                    type="valid" if id_ in ACTUALLY_VALID_CASES else attributes["TYPE"],
+                result.append(
+                    W3CConformanceTest(
+                        parser=parser,
+                        path=cases_path / attributes["URI"],
+                        entities=attributes["ENTITIES"],
+                        id=id_,
+                        sections=sections,
+                        type=(
+                            "valid"
+                            if id_ in ACTUALLY_VALID_CASES
+                            else attributes["TYPE"]
+                        ),
+                    )
                 )
+
+    return result
 
 
 @pytest.mark.parametrize("case", collect_w3c_conformance_tests())
