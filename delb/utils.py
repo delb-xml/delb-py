@@ -21,8 +21,7 @@ from typing import TYPE_CHECKING, Final
 
 from _delb.exceptions import InvalidCodePath
 from _delb.typing import TagNodeType
-from _delb.utils import *  # noqa
-from _delb.utils import __all__
+from _delb.utils import first, get_traverser, last
 
 if TYPE_CHECKING:
     from _delb.typing import XMLNodeType
@@ -160,4 +159,9 @@ def compare_trees(lhr: XMLNodeType, rhr: XMLNodeType) -> TreesComparisonResult:
     return TreesComparisonResult(TreeDifferenceKind.None_, None, None)
 
 
-__all__ = __all__ + (compare_trees.__name__,)
+__all__ = (
+    compare_trees.__name__,
+    first.__name__,
+    get_traverser.__name__,
+    last.__name__,
+)

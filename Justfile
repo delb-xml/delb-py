@@ -5,7 +5,7 @@ black := which(["black"]) || "pipx run black"
 hatch := which(["hatch"]) || "pipx run hatch"
 version := f'{{hatch}} version'
 
-default: tests
+default: check
 
 _assert_no_dev_version:
     #!/usr/bin/env python3
@@ -18,7 +18,10 @@ benchmarks:
 
 # normalize Python code
 black:
-    {{ black }} benchmarks _delb delb tests
+    {{ black }} benchmarks _delb delb tests update-reexports.py
+
+# runs tests on normalized code
+check: update-reexports black tests
 
 # generate Sphinx HTML documentation, including API docs
 docs:
@@ -30,10 +33,20 @@ doctest:
     {{ hatch }} run docs:clean
     {{ hatch }} run docs:doctest
 
-# code & data & document linting with doc8 & flake8 & yamllint
-lint:
-    pipx run doc8 --ignore-path docs/build --max-line-length=80 docs
+# various linters
+[parallel]
+lint: lint-code lint-rst lint-yaml
+
+# code linting with flake8
+lint-code:
     {{ hatch }} run linting:check
+
+# .rst linting with doc8
+lint-rst:
+    pipx run doc8 --ignore-path docs/build --max-line-length=80 docs
+
+# yaml linting with yamllint
+lint-yaml:
     pipx run yamllint $(find . -name "*.yaml" -or -name "*.yml")
 
 # run static type checks with mypy
@@ -45,7 +58,7 @@ pytest:
     {{ hatch }} run unit-tests:check
 
 # release the current version on github & (transitively) the PyPI
-release: _assert_no_dev_version tests
+release: _assert_no_dev_version check
     {{ just_executable() }} -f {{ justfile() }} update-citation-file
     git add CITATION.cff
     git commit -m "Updates CITATION.cff"
@@ -63,12 +76,17 @@ show-docs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-tests: black lint mypy pytest doctest
+[parallel]
+tests: lint mypy pytest doctest
 
 # run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
 test-wheel $WHEEL_PATH:
     {{ hatch }} run test-wheel:check
 
-# Generates and validates CITATION.cff
+# generates and validates CITATION.cff
 update-citation-file:
     pipx run cff-from-621
+
+# updates re-exports in the delb package
+update-reexports:
+    python {{ justfile_directory() }}/update-reexports.py

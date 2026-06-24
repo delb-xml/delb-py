@@ -176,7 +176,7 @@ dependencies = [
 ]
 detached = true
 [tool.hatch.envs.linting.scripts]
-check = "flake8 benchmarks _delb delb tests"
+check = "flake8 benchmarks _delb delb tests update-reexports.py"
 
 [tool.hatch.envs.mypy]
 dependencies = [
@@ -185,7 +185,7 @@ dependencies = [
 ]
 skipinstall = true
 [tool.hatch.envs.mypy.scripts]
-check = "mypy --check-untyped-defs _delb delb"
+check = "mypy --check-untyped-defs _delb delb update-reexports.py"
 
 [tool.hatch.envs.unit-tests]
 dependencies = [
