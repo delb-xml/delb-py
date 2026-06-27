@@ -11,7 +11,7 @@ from _delb.parser import (
 __all__ = (
     "Event",
     "EventType",
-    ParserOptions.__name__,
+    "ParserOptions",
     TagEventData.__name__,
     detect_encoding.__name__,
 )

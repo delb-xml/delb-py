@@ -28,6 +28,8 @@ from _delb.typing import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from _delb.typing import XMLNodeType
 
 
@@ -42,7 +44,7 @@ default_filters: Final[list[tuple[Filter, ...]]] = [(_is_tag_or_text_node,)]
 
 
 @contextmanager
-def altered_default_filters(*filter: Filter, extend: bool = False):
+def altered_default_filters(*filter: Filter, extend: bool = False) -> Generator[None]:
     """
     This function can be either used as as :term:`context manager` or :term:`decorator`
     to define a set of :obj:`default_filters` for the encapsuled code block or callable.

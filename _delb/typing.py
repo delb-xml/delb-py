@@ -18,13 +18,13 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence  # noqa: TC003
+from io import IOBase  # noqa: TC003
 from typing import (
     TYPE_CHECKING,
     overload,
     Any,
-    AnyStr,
-    BinaryIO,
+    NamedTuple,
     Optional,
     Protocol,
     TypeAlias,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from types import SimpleNamespace
 
-    from _delb.nodes import Attribute, Siblings, TagAttributes, _TagDefinition
+    from _delb.nodes import Attribute, Siblings, TagAttributes  # , _TagDefinition
     from _delb.serializer import FormatOptions
     from _delb.xpath import QueryResults
     from _delb.xpath.ast import EvaluationContext
@@ -48,7 +48,7 @@ else:
     from typing import Literal, Self
 
 
-# node types
+# node related types
 
 
 class XMLNodeType(ABC):
@@ -61,10 +61,10 @@ class XMLNodeType(ABC):
     _parent: None | ParentNodeType
 
     @abstractmethod
-    def __copy__(self): ...
+    def __copy__(self) -> Self: ...
 
     @abstractmethod
-    def __deepcopy__(self, memo): ...
+    def __deepcopy__(self, memo: dict[Any, Any]) -> Self: ...
 
     @abstractmethod
     def __str__(self) -> str: ...
@@ -198,7 +198,7 @@ class XMLNodeType(ABC):
         """
 
     @abstractmethod
-    def _fetch_preceding_sibling(self): ...
+    def _fetch_preceding_sibling(self) -> Optional[XMLNodeType]: ...
 
     @property
     @abstractmethod
@@ -483,7 +483,7 @@ class ParentNodeType(XMLNodeType):
         """
 
     @abstractmethod
-    def merge_text_nodes(self, deep: bool = False):
+    def merge_text_nodes(self, deep: bool = False) -> None:
         """
         Merges all consecutive text nodes in the subtree into one.
         Text nodes without content are dropped.
@@ -526,7 +526,7 @@ class CommentNodeType(XMLNodeType):
 
     @content.setter
     @abstractmethod
-    def content(self, value: str): ...
+    def content(self, value: str) -> None: ...
 
 
 class _DocumentNodeType(ParentNodeType): ...  # noqa: E701
@@ -549,7 +549,7 @@ class ProcessingInstructionNodeType(XMLNodeType):
 
     @content.setter
     @abstractmethod
-    def content(self, value: str): ...
+    def content(self, value: str) -> None: ...
 
     @property
     @abstractmethod
@@ -562,7 +562,20 @@ class ProcessingInstructionNodeType(XMLNodeType):
 
     @target.setter
     @abstractmethod
-    def target(self, value: str): ...
+    def target(self, value: str) -> None: ...
+
+
+class _TagDefinition(NamedTuple):
+    """
+    Instances of this class describe tag nodes that are constructed from the context
+    they are used in (commonly additions to a tree) and the properties that this
+    description holds. For the sake of slick code they are not instantiated directly,
+    but with the :func:`delb.tag` function.
+    """
+
+    local_name: str
+    attributes: Optional[_UnqualifiedAttributesData] = None
+    children: tuple[NodeSource, ...] = ()
 
 
 class TagNodeType(ParentNodeType):
@@ -581,11 +594,11 @@ class TagNodeType(ParentNodeType):
 
     @overload
     @abstractmethod
-    def __setitem__(self, item: int, value: NodeSource): ...
+    def __setitem__(self, item: int, value: NodeSource) -> None: ...
 
     @overload
     @abstractmethod
-    def __setitem__(self, item: AttributeAccessor, value: str | Attribute): ...
+    def __setitem__(self, item: AttributeAccessor, value: str | Attribute) -> None: ...
 
     @property
     @abstractmethod
@@ -725,7 +738,7 @@ class TagNodeType(ParentNodeType):
 
     @id.setter
     @abstractmethod
-    def id(self, value: str | None): ...
+    def id(self, value: str | None) -> None: ...
 
     @property
     @abstractmethod
@@ -747,7 +760,7 @@ class TagNodeType(ParentNodeType):
 
     @local_name.setter
     @abstractmethod
-    def local_name(self, value: str): ...
+    def local_name(self, value: str) -> None: ...
 
     @property
     @abstractmethod
@@ -760,10 +773,10 @@ class TagNodeType(ParentNodeType):
 
     @namespace.setter
     @abstractmethod
-    def namespace(self, value: str): ...
+    def namespace(self, value: str) -> None: ...
 
     @abstractmethod
-    def _reduce_whitespace(self): ...
+    def _reduce_whitespace(self) -> None: ...
 
     @property
     @abstractmethod
@@ -794,38 +807,54 @@ class TextNodeType(XMLNodeType):
 
     @content.setter
     @abstractmethod
-    def content(self, value: str): ...
+    def content(self, value: str) -> None: ...
 
 
 # protocols
 
 
 class BinaryReader(Protocol):
-    def close(self): ...
+    def close(self) -> None: ...
 
     def read(self, n: int = -1) -> bytes: ...
 
 
-# aliases
+class _TranslateTable(Protocol):
+    def __getitem__(self, key: int, /) -> str | int | None: ...
+
+
+class Traverser(Protocol):
+    def __call__(
+        self, root: XMLNodeType, *filters: Filter
+    ) -> Iterator[XMLNodeType]: ...
+
+
+# aliases & generics
 
 
 QualifiedName: TypeAlias = tuple[str, str]
 AttributeAccessor: TypeAlias = QualifiedName | str
 _AttributesData: TypeAlias = dict[QualifiedName, str]
-
-GenericDecorated = TypeVar("GenericDecorated", bound=Callable[..., Any])
-SecondOrderDecorator: TypeAlias = "Callable[[GenericDecorated], GenericDecorated]"
+_UnqualifiedAttributesData: TypeAlias = dict[QualifiedName | str, str]
+AttributesInput: TypeAlias = Optional[
+    "_AttributesData | _UnqualifiedAttributesData | TagAttributes"
+]
 
 Filter: TypeAlias = "Callable[[XMLNodeType], bool]"
+
 NamespaceDeclarations: TypeAlias = "Mapping[str | None, str]"
 _NamespaceDeclarations: TypeAlias = "Mapping[str, str]"
-NodeSource: TypeAlias = "str | XMLNodeType | _TagDefinition"
 
-InputStream: TypeAlias = AnyStr | BinaryIO
+NodeSource: TypeAlias = str | XMLNodeType | _TagDefinition
+node_source_types = (str, XMLNodeType, _TagDefinition)
+
+InputStream: TypeAlias = bytes | IOBase | str
+
 LoaderResult: TypeAlias = "Sequence[XMLNodeType] | str"
 Loader: TypeAlias = "Callable[[Any, SimpleNamespace], LoaderResult]"
 LoaderConstraint: TypeAlias = "Loader | Iterable[Loader] | None"
 
+T = TypeVar("T")
 
 XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 
@@ -836,11 +865,11 @@ XPathFunction: TypeAlias = "Callable[[EvaluationContext, *Any], Any]"
 __all__ = (
     "AttributeAccessor",
     "_AttributesData",
+    "AttributesInput",
     "BinaryReader",
     CommentNodeType.__name__,
     _DocumentNodeType.__name__,
     "Filter",
-    "GenericDecorated",
     "InputStream",
     "Literal",
     "Loader",
@@ -848,13 +877,15 @@ __all__ = (
     "LoaderResult",
     "NamespaceDeclarations",
     "NodeSource",
+    "node_source_types",
     ParentNodeType.__name__,
     ProcessingInstructionNodeType.__name__,
     "QualifiedName",
-    "SecondOrderDecorator",
     "Self",
     TagNodeType.__name__,
     TextNodeType.__name__,
+    _TranslateTable.__name__,
+    "_UnqualifiedAttributesData",
     XMLNodeType.__name__,
     "XPathFunction",
 )

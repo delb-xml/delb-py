@@ -16,7 +16,12 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+from collections.abc import (
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+)
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
@@ -25,7 +30,7 @@ from typing import (
     Any,
     Final,
     Literal,
-    NamedTuple,
+    Never,
     Optional,
 )
 
@@ -49,11 +54,15 @@ from _delb.utils import (
     last,
 )
 from _delb.typing import (
+    AttributeAccessor,
     CommentNodeType,
     _DocumentNodeType,
+    NodeSource,
+    node_source_types,
     ParentNodeType,
     ProcessingInstructionNodeType,
     Self,
+    _TagDefinition,
     TagNodeType,
     TextNodeType,
     XMLNodeType,
@@ -64,12 +73,11 @@ from _delb.xpath.ast import NameMatchTest, XPathExpression
 
 if TYPE_CHECKING:
     from delb import Document
-    from _delb.typing import (
-        AttributeAccessor,
-        _AttributesData,
+    from delb.parser import ParserOptions
+    from delb.typing import (
+        AttributesInput,
         Filter,
         NamespaceDeclarations,
-        NodeSource,
         QualifiedName,
     )
 
@@ -110,9 +118,7 @@ def new_processing_instruction_node(  # pragma: no cover
 
 def new_tag_node(  # pragma: no cover
     local_name: str,
-    attributes: Optional[
-        _AttributesData | dict[AttributeAccessor, str] | TagAttributes
-    ] = None,
+    attributes: AttributesInput = None,
     namespace: Optional[str] = None,
     children: Iterable[NodeSource] = (),
 ) -> TagNode:
@@ -132,7 +138,7 @@ def new_tag_node(  # pragma: no cover
     )
 
 
-def _reduce_whitespace_between_siblings(nodes: list[XMLNodeType] | Siblings):
+def _reduce_whitespace_between_siblings(nodes: list[XMLNodeType] | Siblings) -> None:
     if not (
         text_nodes := tuple(
             (i, n) for i, n in enumerate(nodes) if isinstance(n, TextNode)
@@ -199,22 +205,6 @@ def _reduce_whitespace_content(content: str, is_first: bool, is_last: bool) -> s
     return result
 
 
-# abstract tag definitions
-
-
-class _TagDefinition(NamedTuple):
-    """
-    Instances of this class describe tag nodes that are constructed from the context
-    they are used in (commonly additions to a tree) and the properties that this
-    description holds. For the sake of slick code they are not instantiated directly,
-    but with the :func:`delb.tag` function.
-    """
-
-    local_name: str
-    attributes: Optional[dict[AttributeAccessor, str]] = None
-    children: tuple[NodeSource, ...] = ()
-
-
 # attributes
 
 
@@ -226,21 +216,29 @@ class Attribute(_StringMixin):
 
     __slots__ = ("_attributes", "__qualified_name", "__value")
 
-    def __init__(self, qualified_name: QualifiedName, value: str):
+    def __init__(self, qualified_name: QualifiedName, value: str) -> None:
         self._attributes: TagAttributes | None = None
         self.__qualified_name = qualified_name
         self.value = value
 
-    def __repr__(self):
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Attribute):
+            return self.value == other.value
+        elif isinstance(other, str):
+            return self.value == other
+        else:
+            return False
+
+    def __repr__(self) -> str:
         return (
             f'<{self.__class__.__name__}({self.universal_name}="{self.value}")'
             f" [{hex(id(self))}]>"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__value
 
-    def __set_new_key(self, namespace: str, name: str):
+    def __set_new_key(self, namespace: str, name: str) -> None:
         assert self.__qualified_name != (namespace, name)
 
         if (attributes := self._attributes) is not None:
@@ -257,7 +255,7 @@ class Attribute(_StringMixin):
         return self.__qualified_name[1]
 
     @local_name.setter
-    def local_name(self, name: str):
+    def local_name(self, name: str) -> None:
         if not _is_xml_name(name):
             raise ValueError(f"`{name}` is not a valid xml name.")
         self.__set_new_key(self.namespace, name)
@@ -268,7 +266,7 @@ class Attribute(_StringMixin):
         return self.__qualified_name[0]
 
     @namespace.setter
-    def namespace(self, namespace: str):
+    def namespace(self, namespace: str) -> None:
         # TODO see https://github.com/delb-xml/delb-py/issues/69
         if namespace and not _is_xml_char(namespace):
             raise ValueError("Invalid XML character data.")
@@ -292,7 +290,7 @@ class Attribute(_StringMixin):
         return self.__value
 
     @value.setter
-    def value(self, value: str):
+    def value(self, value: str) -> None:
         if not isinstance(value, str):
             raise TypeError
         if value and not _is_xml_char(value):
@@ -300,7 +298,7 @@ class Attribute(_StringMixin):
         self.__value = value
 
 
-class TagAttributes(MutableMapping):
+class TagAttributes(MutableMapping[AttributeAccessor, Attribute]):
     """
     A data type to access a tag node's attributes.
     """
@@ -310,22 +308,31 @@ class TagAttributes(MutableMapping):
         "__node",
     )
 
-    def __init__(
-        self,
-        data: _AttributesData | dict[AttributeAccessor, str] | TagAttributes,
-        node: TagNodeType,
-    ):
-        if not isinstance(data, Mapping):
+    def __init__(self, data: AttributesInput, node: TagNodeType) -> None:
+        if (data is not None) and (not isinstance(data, Mapping)):
             raise TypeError
 
         self.__data: dict[QualifiedName, Attribute] = {}
         self.__node = node
-        self.update(data)
+        if isinstance(data, TagAttributes):
+            self.__data.update(
+                {
+                    name: Attribute(name, value)
+                    for name, value in (
+                        ((x.namespace, x.local_name), x.value) for x in data.values()
+                    )
+                }
+            )
+        elif isinstance(data, Mapping):
+            assert not isinstance(data, TagAttributes)
+            for key, value in data.items():
+                name = self.__resolve_accessor(key)
+                self.__data[name] = Attribute(name, value)
 
     def __contains__(self, item: Any) -> bool:
         return self.__resolve_accessor(item) in self.__data
 
-    def __delitem__(self, item: AttributeAccessor):
+    def __delitem__(self, item: AttributeAccessor) -> None:
         name = self.__resolve_accessor(item)
         self.__data[name]._attributes = None
         del self.__data[name]
@@ -351,7 +358,7 @@ class TagAttributes(MutableMapping):
     def __len__(self) -> int:
         return len(self.__data)
 
-    def __setitem__(self, item: AttributeAccessor, value: str | Attribute):
+    def __setitem__(self, item: AttributeAccessor, value: str | Attribute) -> None:
         name = self.__resolve_accessor(item)
 
         match value:
@@ -365,11 +372,10 @@ class TagAttributes(MutableMapping):
             case _:
                 raise TypeError
 
-        assert attribute._attributes in (self, None)
         attribute._attributes = self
         self.__data[name] = attribute
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.as_dict_with_strings())
 
     __repr__ = __str__
@@ -411,7 +417,7 @@ class Siblings:
         self,
         belongs_to: None | _ParentNode,
         nodes: Optional[Iterable[NodeSource]],
-    ):
+    ) -> None:
         self.__data: Final[list[XMLNodeType]] = []
         self.__belongs_to: Final = belongs_to
         if nodes is not None:
@@ -443,7 +449,7 @@ class Siblings:
         self.__data.append(result)
         return result
 
-    def clear(self):
+    def clear(self) -> None:
         for node in self.__data:
             node._parent = None
         self.__data.clear()
@@ -460,7 +466,7 @@ class Siblings:
         self.__data.insert(index, result)
         return result
 
-    def remove(self, node: XMLNodeType):
+    def remove(self, node: XMLNodeType) -> None:
         node._parent = None
         del self.__data[self.index(node)]
 
@@ -503,14 +509,17 @@ class _NodeCommons(XMLNodeType):
 
     __slots__ = ("_parent",)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._parent = None
 
-    def __copy__(self):
-        return self.clone(deep=False)
+    # TODO if valid, like __deepcopy__
+    def __copy__(self) -> Self:
+        result = self.clone(deep=False)
+        assert isinstance(result, self.__class__)
+        return result
 
-    def __deepcopy__(self, memo):
-        return self.clone(deep=True)
+    def __deepcopy__(self, memo: dict[Any, Any]) -> Self:
+        return cast("Self", self.clone(deep=True))
 
     def __str__(self) -> str:
         return self.serialize(
@@ -810,7 +819,7 @@ class _LeafNode(_NodeCommons):
     last_descendant = None
     """ The node's last descendant. """
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 0
 
     @property
@@ -833,7 +842,7 @@ class _LeafNode(_NodeCommons):
         :meta category: Methods to iterate over related node
         """
         return
-        yield from ()
+        yield from ()  # type: ignore
 
     def iterate_descendants(self, *filter: Filter) -> Iterator[XMLNodeType]:
         """
@@ -842,11 +851,11 @@ class _LeafNode(_NodeCommons):
         :meta category: Methods to iterate over related node
         """
         return
-        yield from ()
+        yield from ()  # type: ignore
 
     def _iterate_descendants(self) -> Iterator[XMLNodeType]:
         return
-        yield from ()
+        yield from ()  # type: ignore
 
 
 class _ParentNode(_NodeCommons, ParentNodeType):
@@ -856,7 +865,7 @@ class _ParentNode(_NodeCommons, ParentNodeType):
     def __init__(
         self,
         children: Iterable[NodeSource] = (),
-    ):
+    ) -> None:
         super().__init__()
         self._child_nodes = Siblings(nodes=children, belongs_to=self)
 
@@ -957,7 +966,7 @@ class _ParentNode(_NodeCommons, ParentNodeType):
         else:
             return None
 
-    def merge_text_nodes(self, deep: bool = False):
+    def merge_text_nodes(self, deep: bool = False) -> None:
         empty_nodes: list[TextNodeType] = []
 
         for index in range(len(self._child_nodes) - 1, -1, -1):
@@ -997,11 +1006,11 @@ class CommentNode(_LeafNode, CommentNodeType):
 
     __slots__ = ("__content",)
 
-    def __init__(self, content: str):
+    def __init__(self, content: str) -> None:
         super().__init__()
         self.content = content
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, CommentNode) and self.content == other.content
 
     def __repr__(self) -> str:
@@ -1018,7 +1027,7 @@ class CommentNode(_LeafNode, CommentNodeType):
         return self.__content
 
     @content.setter
-    def content(self, value: str):
+    def content(self, value: str) -> None:
         if value and not _is_xml_char(value):
             raise ValueError("Invalid XML character data.")
         if "--" in value or value.endswith("-"):
@@ -1040,7 +1049,9 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
 
     __slots__ = ("__document",)
 
-    def __init__(self, document: Document | None, children: Iterable[XMLNodeType]):
+    def __init__(
+        self, document: Document | None, children: Iterable[XMLNodeType]
+    ) -> None:
         super().__init__(children)
         self.__document: Final = document
 
@@ -1070,7 +1081,7 @@ class _DocumentNode(_ParentNode, _DocumentNodeType):
         return None
 
     @_parent.setter
-    def _parent(self, value):  # pragma: no cover
+    def _parent(self, value: None) -> None:  # pragma: no cover
         if value is not None:
             raise InvalidCodePath
 
@@ -1092,12 +1103,12 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
 
     __slots__ = ("__content", "__target")
 
-    def __init__(self, target: str, content: str):
+    def __init__(self, target: str, content: str) -> None:
         super().__init__()
         self.content = content
         self.target = target
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, ProcessingInstructionNode)
             and self.target == other.target
@@ -1121,7 +1132,7 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
         return self.__content
 
     @content.setter
-    def content(self, value: str):
+    def content(self, value: str) -> None:
         if value and not _is_xml_char(value):
             raise ValueError("Invalid XML character data.")
         if "?>" in value:
@@ -1138,7 +1149,7 @@ class ProcessingInstructionNode(_LeafNode, ProcessingInstructionNodeType):
         return self.__target
 
     @target.setter
-    def target(self, value: str):
+    def target(self, value: str) -> None:
         if not _is_xml_name(value):
             raise ValueError("Invalid target name.")
         if value.lower() == "xml":
@@ -1154,7 +1165,11 @@ class TagNode(_ParentNode, TagNodeType):
     This class implements :class:`delb.typing.TagNodeType`.
 
     :param local_name: The tag name.
-    :param attributes: Optional attributes that are assigned to the new node.
+    :param attributes: Optional attributes that are assigned to the new node. Namespaced
+                       names can be passed either as Clark notation or two-value tuples
+                       (namespace, localname). Attributes that are not explicitly
+                       passed with an empty namespace will be assigned to the node's
+                       namespace.
     :param namespace: An optional tag namespace.
     :param children: An optional iterable of objects that will be appended as child
                      nodes. This can be existing nodes, strings that will be inserted
@@ -1215,15 +1230,13 @@ class TagNode(_ParentNode, TagNodeType):
     def __init__(
         self,
         local_name: str,
-        attributes: Optional[
-            _AttributesData | dict[AttributeAccessor, str] | TagAttributes
-        ] = None,
+        attributes: AttributesInput = None,
         namespace: Optional[str] = None,
         children: Iterable[NodeSource] = (),
-    ):
+    ) -> None:
         self.namespace = namespace or ""
         self.local_name = local_name
-        self.__attributes = TagAttributes(data=attributes or {}, node=self)
+        self.__attributes = TagAttributes(data=attributes, node=self)
         super().__init__(children)
 
     def __contains__(self, item: AttributeAccessor | XMLNodeType) -> bool:
@@ -1238,7 +1251,7 @@ class TagNode(_ParentNode, TagNodeType):
                     + ATTRIBUTE_ACCESSOR_MSG
                 )
 
-    def __delitem__(self, item: AttributeAccessor | int):
+    def __delitem__(self, item: AttributeAccessor | int | slice) -> None:
         match item:
             case str() | tuple():
                 del self.attributes[item]
@@ -1248,7 +1261,7 @@ class TagNode(_ParentNode, TagNodeType):
                 if all(
                     isinstance(x, int) or x is None for x in (item.start, item.stop)
                 ):
-                    for node in self[item]:
+                    for node in tuple(self.iterate_children())[item]:
                         node.detach(retain_child_nodes=False)
                 else:
                     del self.attributes[(item.start, item.stop)]
@@ -1259,12 +1272,14 @@ class TagNode(_ParentNode, TagNodeType):
                 )
 
     @overload
-    def __getitem__(self, item: int) -> XMLNodeType: ...
+    def __getitem__(self, item: int | slice) -> XMLNodeType: ...
 
     @overload
     def __getitem__(self, item: AttributeAccessor) -> Attribute | None: ...
 
-    def __getitem__(self, item):
+    def __getitem__(
+        self, item: AttributeAccessor | int | slice
+    ) -> Attribute | None | XMLNodeType | list[XMLNodeType]:
         match item:
             case str() | tuple():
                 return self.attributes[item]
@@ -1297,16 +1312,22 @@ class TagNode(_ParentNode, TagNodeType):
         )
 
     @overload
-    def __setitem__(self, item: int, value: NodeSource): ...
+    def __setitem__(self, item: int, value: NodeSource) -> None: ...
 
     @overload
-    def __setitem__(self, item: AttributeAccessor, value: str | Attribute): ...
+    def __setitem__(self, item: AttributeAccessor, value: Attribute | str) -> None: ...
 
-    def __setitem__(self, item, value):
+    def __setitem__(
+        self, item: AttributeAccessor | int, value: Attribute | NodeSource | str
+    ) -> None:
         match item:
             case str() | tuple():
+                if not isinstance(value, (Attribute, str)):
+                    raise TypeError
                 self.attributes[item] = value
             case int():
+                if not isinstance(value, node_source_types):
+                    raise TypeError
                 children_size = len(self._child_nodes)
                 if children_size == item:
                     self._child_nodes.append(value)
@@ -1318,7 +1339,7 @@ class TagNode(_ParentNode, TagNodeType):
                     raise IndexError
             case _:
                 raise TypeError(
-                    "Argument must be an integer or an attribute name. "
+                    "item argument must be an integer or an attribute name. "
                     + ATTRIBUTE_ACCESSOR_MSG
                 )
 
@@ -1514,7 +1535,7 @@ class TagNode(_ParentNode, TagNodeType):
                     new_node = TagNode(
                         local_name=node_test.local_name,
                         attributes=None,
-                        namespace=namespaces.get(node_test.prefix),
+                        namespace=namespaces.get(node_test.prefix or ""),
                     )
 
                     for prefix, local_name, value in step._derived_attributes:
@@ -1541,8 +1562,8 @@ class TagNode(_ParentNode, TagNodeType):
         if (attribute := self.attributes.get((XML_NAMESPACE, "space"))) is None:
             return default
 
-        if attribute in ("default", "preserve"):
-            return attribute
+        if attribute.value in ("default", "preserve"):
+            return cast('Literal["default", "preserve"]', attribute.value)
 
         warnings.warn(
             "Encountered and ignoring an invalid `xml:space` attribute: "
@@ -1553,10 +1574,12 @@ class TagNode(_ParentNode, TagNodeType):
 
     @property
     def id(self) -> Optional[str]:
-        return self.attributes.get((XML_NAMESPACE, "id"))
+        if (attribute := self.attributes.get((XML_NAMESPACE, "id"))) is None:
+            return None
+        return attribute.value
 
     @id.setter
-    def id(self, value: Optional[str]):
+    def id(self, value: Optional[str]) -> None:
         match value:
             case None:
                 del self.attributes[(XML_NAMESPACE, "id")]
@@ -1582,7 +1605,7 @@ class TagNode(_ParentNode, TagNodeType):
         return self.__local_name
 
     @local_name.setter
-    def local_name(self, value: str):
+    def local_name(self, value: str) -> None:
         if not _is_xml_name(value):
             raise ValueError("Value is not a valid xml name.")
         self.__local_name = value
@@ -1609,7 +1632,7 @@ class TagNode(_ParentNode, TagNodeType):
         return self.__namespace
 
     @namespace.setter
-    def namespace(self, value: str):
+    def namespace(self, value: str) -> None:
         # TODO see https://github.com/delb-xml/delb-py/issues/69
         if value and not _is_xml_char(value):
             raise ValueError("Invalid XML character data.")
@@ -1624,7 +1647,7 @@ class TagNode(_ParentNode, TagNodeType):
         )
 
     @staticmethod
-    def parse(text, parser_options):  # pragma: no cover
+    def parse(text: str, parser_options: ParserOptions) -> Never:  # pragma: no cover
         # REMOVE with version 0.7
         """This method has been replaced by :func:`delb.parse_tree`."""
         raise InvalidOperation(
@@ -1633,12 +1656,12 @@ class TagNode(_ParentNode, TagNodeType):
 
     def _reduce_whitespace(
         self, normalize_space: Literal["default", "preserve"] = "default"
-    ):
+    ) -> None:
         self._reduce_whitespace_of_descendants(normalize_space)
 
     def _reduce_whitespace_of_descendants(
         self, normalize_space: Literal["default", "preserve"]
-    ):
+    ) -> None:
         if not (child_nodes := self._child_nodes):
             return
 
@@ -1706,7 +1729,7 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
     def __init__(
         self,
         text: str | TextNode,
-    ):
+    ) -> None:
         super().__init__()
         match text:
             case str():
@@ -1716,22 +1739,22 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
             case _:
                 raise TypeError
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, TextNode):
             return self.__content == other.content
         else:
-            return super().__eq__(other)
+            return bool(self.__content == other)  # noqa: SIM901
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int | slice) -> str:
         return self.content[item]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__content)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.__class__.__name__}(text="{self.content}",  [{hex(id(self))}]>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__content
 
     def clone(self, deep: bool = False) -> TextNodeType:
@@ -1742,7 +1765,7 @@ class TextNode(_LeafNode, _StringMixin, TextNodeType):  # type: ignore
         return self.__content
 
     @content.setter
-    def content(self, text: str):
+    def content(self, text: str) -> None:
         if not isinstance(text, str):
             raise TypeError
         self.__content = text
@@ -1759,7 +1782,6 @@ __all__ = (
     Attribute.__name__,
     CommentNode.__name__,
     ProcessingInstructionNode.__name__,
-    QueryResults.__name__,
     Siblings.__name__,
     TagAttributes.__name__,
     TagNode.__name__,

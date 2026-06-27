@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import codecs
 from collections import deque
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Never
 from urllib.parse import urljoin, urlparse
 from xml import sax
 
@@ -38,22 +38,22 @@ NAMESPACE_SEPARATOR: Final = " "
 class ContentHandler(sax.handler.ContentHandler):
     __slots__ = ("events", "options")
 
-    def __init__(self, events: deque[Event], options: ParserOptions):
+    def __init__(self, events: deque[Event], options: ParserOptions) -> None:
         self.events = events
         self.options = options
 
-    def characters(self, content: str):
+    def characters(self, content: str) -> None:
         self.events.append((EventType.Text, content))
 
     def endElementNS(  # noqa: N802
         self, name: tuple[None | str, str], qname: str | None
-    ):
+    ) -> None:
         self.events.append((EventType.TagEnd, TagEventData(name[0] or "", name[1], {})))
 
-    def ignorableWhitespace(self, whitespace: str):  # noqa: N802
+    def ignorableWhitespace(self, whitespace: str) -> Never:  # noqa: N802
         raise InvalidCodePath
 
-    def skippedEntity(self, name: str):  # noqa: N802
+    def skippedEntity(self, name: str) -> Never:  # noqa: N802
         raise NotImplementedError
 
     def startElementNS(  # noqa: N802
@@ -61,7 +61,7 @@ class ContentHandler(sax.handler.ContentHandler):
         name: tuple[None | str, str],
         qname: str | None,
         attrs: sax.xmlreader.AttributesNSImpl,
-    ):
+    ) -> None:
         namespace = name[0] or ""
         assert hasattr(attrs, "_attrs")
         self.events.append(
@@ -77,7 +77,7 @@ class ContentHandler(sax.handler.ContentHandler):
 
 
 class ContentHandlerWithPIs(ContentHandler):
-    def processingInstruction(self, target: str, data: str):  # noqa: N802
+    def processingInstruction(self, target: str, data: str) -> None:  # noqa: N802
         assert isinstance(target, str)
         assert isinstance(data, str)
         self.events.append((EventType.ProcessingInstruction, (target, data)))
@@ -86,13 +86,13 @@ class ContentHandlerWithPIs(ContentHandler):
 class EntityResolver(sax.handler.EntityResolver):
     __slots__ = ("base_url", "options")
 
-    def __init__(self, options: ParserOptions, base_url: str | None):
+    def __init__(self, options: ParserOptions, base_url: str | None) -> None:
         self.base_url = base_url
         self.options = options
 
     def resolveEntity(  # noqa: N802
         self, publicId: str | None, systemId: str | None  # noqa: N803
-    ):
+    ) -> str:
         if not self.options.load_referenced_resources:
             raise ParsingProcessingError(
                 "The document includes character entities that are declared in "
@@ -112,27 +112,27 @@ class EntityResolver(sax.handler.EntityResolver):
 class LexcialHandler(sax.handler.LexicalHandler):
     __slots__ = ("events", "options")
 
-    def __init__(self, events: deque[Event], options: ParserOptions):
+    def __init__(self, events: deque[Event], options: ParserOptions) -> None:
         self.events = events
         self.options = options
 
-    def endCDATA(self):  # noqa: N802
+    def endCDATA(self) -> None:  # noqa: N802
         pass
 
-    def endDTD(self):  # noqa: N802
+    def endDTD(self) -> None:  # noqa: N802
         pass
 
-    def startCDATA(self):  # noqa: N802
+    def startCDATA(self) -> None:  # noqa: N802
         pass
 
     def startDTD(  # noqa: N802
         self, name: str, public_id: None | str, system_id: None | str
-    ):
+    ) -> None:
         pass
 
 
 class LexicalHandlerWithComments(LexcialHandler):
-    def comment(self, content: str):
+    def comment(self, content: str) -> None:
         assert isinstance(content, str)
         self.events.append((EventType.Comment, content))
 
@@ -142,7 +142,9 @@ class ExpatParser(XMLEventParserInterface):
 
     name = "expat"
 
-    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+    def __init__(
+        self, options: ParserOptions, base_url: str | None, encoding: str
+    ) -> None:
         self.encoding = encoding
         self.events: deque[Event] = deque()
         self.options = options

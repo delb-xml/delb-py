@@ -22,12 +22,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from typing import Final
 
-    from _delb.typing import (  # noqa: F401
-        Literal,
-        NamespaceDeclarations,
-        _NamespaceDeclarations,
-        TypeAlias,
-    )
+    from _delb.typing import NamespaceDeclarations, _NamespaceDeclarations
 
 XML_NAMESPACE: Final = "http://www.w3.org/XML/1998/namespace"
 XMLNS_NAMESPACE: Final = "http://www.w3.org/2000/xmlns/"
@@ -77,7 +72,7 @@ def deconstruct_clark_notation(name: str) -> tuple[str | None, str]:
         return None, name
 
 
-class Namespaces(Mapping):
+class Namespaces(Mapping[str, str]):
     """
     A :term:`mapping` of prefixes to namespaces that ensures globally defined prefixes
     are available and unchanged.
@@ -92,7 +87,7 @@ class Namespaces(Mapping):
         "__inverse_data",
     )
 
-    def __init__(self, namespaces: NamespaceDeclarations):
+    def __init__(self, namespaces: Namespaces | NamespaceDeclarations) -> None:
         self.__data: _NamespaceDeclarations
         self.__inverse_data: _NamespaceDeclarations
 
@@ -101,11 +96,12 @@ class Namespaces(Mapping):
                 self.__data = namespaces.__data
                 self.__inverse_data = namespaces.__inverse_data
             case Mapping():
+                assert not isinstance(namespaces, Namespaces)
                 self.__data, self.__inverse_data = self.__init_data(namespaces)
             case _:
                 raise TypeError
 
-    def __contains__(self, item: object):
+    def __contains__(self, item: object) -> bool:
         return item in self.__data
 
     def __getitem__(self, item: str) -> str:

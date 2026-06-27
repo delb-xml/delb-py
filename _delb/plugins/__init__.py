@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from importlib.metadata import entry_points
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Final, overload
@@ -27,10 +27,8 @@ if TYPE_CHECKING:
     from _delb.parser import Event, ParserOptions
     from _delb.typing import (
         BinaryReader,
-        GenericDecorated,
         Loader,
         LoaderConstraint,
-        SecondOrderDecorator,
         XPathFunction,
     )
 
@@ -69,13 +67,13 @@ class DocumentMixinBase:
                 play_disco(self.config.my_extension.tonality)
     """
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         # ensure it is a direct subclass
         if cls.__mro__[1] is DocumentMixinBase:
             plugin_manager.document_mixins.append(cls)
 
     @classmethod
-    def _init_config(cls, config: SimpleNamespace, kwargs: dict[str, Any]):
+    def _init_config(cls, config: SimpleNamespace, kwargs: dict[str, Any]) -> None:
         """
         The ``kwargs`` argument contains the additional keyword arguments that a
         :class:`delb.Document` instance is called with. Extension classes that expect
@@ -104,7 +102,7 @@ class PluginManager:
         "xpath_functions",
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.document_mixins: Final[list[type[DocumentMixinBase]]] = []
         self.document_subclasses: Final[list[type[Document]]] = []
         self.loaders: Final[list[Loader]] = []
@@ -124,7 +122,7 @@ class PluginManager:
             raise ValueError(f"No matching parser for {preferences} available.")
 
     @staticmethod
-    def load_plugins():
+    def load_plugins() -> None:
         """
         Loads all modules that are registered as entrypoint in the ``delb`` group and
         imports contributed extensions whose dependencies are available.
@@ -141,7 +139,7 @@ class PluginManager:
 
     def register_loader(
         self, before: LoaderConstraint = None, after: LoaderConstraint = None
-    ) -> SecondOrderDecorator:
+    ) -> Callable[[Loader], Loader]:
         """
         Registers a document loader.
 
@@ -234,14 +232,16 @@ class PluginManager:
         return registrar
 
     @overload
-    def register_xpath_function(self, arg: str) -> SecondOrderDecorator: ...
+    def register_xpath_function(
+        self, arg: str
+    ) -> Callable[[XPathFunction], XPathFunction]: ...
 
     @overload
-    def register_xpath_function(self, arg: GenericDecorated) -> GenericDecorated: ...
+    def register_xpath_function(self, arg: XPathFunction) -> XPathFunction: ...
 
     def register_xpath_function(
-        self, arg: str | GenericDecorated
-    ) -> SecondOrderDecorator | GenericDecorated:
+        self, arg: str | XPathFunction
+    ) -> Callable[[XPathFunction], XPathFunction] | XPathFunction:
         """
         Custom XPath functions can be defined as shown in the following example. The
         first argument to a function is always an instance of
@@ -304,11 +304,13 @@ class XMLEventParserInterface(ABC):
     :attr:`delb.parser.ParserOptions.preferred_parsers` setting.
     """
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         plugin_manager.parsers[cls.name] = cls
 
     @abstractmethod
-    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+    def __init__(
+        self, options: ParserOptions, base_url: str | None, encoding: str
+    ) -> None:
         pass
 
     @abstractmethod

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, overload, Final, Optional
+from typing import TYPE_CHECKING, cast, overload, Final, Optional
 
 from _delb.exceptions import ParsingValidityError
 from _delb.names import XML_NAMESPACE
@@ -29,58 +29,72 @@ from _delb.nodes import (
     Attribute,
     CommentNode,
     ProcessingInstructionNode,
-    _TagDefinition,
     TagNode,
     TextNode,
 )
 from _delb.parser import Event, EventType, ParserOptions, TagEventData, parse_events
-from _delb.typing import XMLNodeType
+from _delb.typing import (
+    AttributeAccessor,
+    InputStream,
+    NodeSource,
+    node_source_types,
+    Self,
+    _TagDefinition,
+    TagNodeType,
+    _UnqualifiedAttributesData,
+    XMLNodeType,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from _delb.typing import (
-        AttributeAccessor,
-        NodeSource,
-        InputStream,
-        TagNodeType,
-    )
 
 
 # defining tag node templates
 
 
 @overload
-def tag(local_name: str): ...
-
-
-@overload
-def tag(local_name: str, attributes: Mapping[AttributeAccessor, str]): ...
-
-
-@overload
-def tag(local_name: str, child: NodeSource): ...
-
-
-@overload
-def tag(local_name: str, children: Sequence[NodeSource]): ...
+def tag(local_name: str) -> _TagDefinition: ...
 
 
 @overload
 def tag(
-    local_name: str, attributes: Mapping[AttributeAccessor, str], child: NodeSource
-): ...
+    local_name: str, attributes_or_child_nodes: Mapping[AttributeAccessor, str]
+) -> _TagDefinition: ...
+
+
+@overload
+def tag(local_name: str, attributes_or_child_nodes: NodeSource) -> _TagDefinition: ...
+
+
+@overload
+def tag(
+    local_name: str, attributes_or_child_nodes: Sequence[NodeSource]
+) -> _TagDefinition: ...
 
 
 @overload
 def tag(
     local_name: str,
-    attributes: Mapping[AttributeAccessor, str],
-    children: Sequence[NodeSource],
-): ...
+    attributes_or_child_nodes: Mapping[AttributeAccessor, str],
+    child_nodes: NodeSource,
+) -> _TagDefinition: ...
 
 
-def tag(*args):  # noqa: C901
+@overload
+def tag(
+    local_name: str,
+    attributes_or_child_nodes: Mapping[AttributeAccessor, str],
+    child_nodes: Sequence[NodeSource],
+) -> _TagDefinition: ...
+
+
+def tag(  # noqa: C901
+    local_name: str,
+    attributes_or_child_nodes: (
+        Mapping[AttributeAccessor, str] | NodeSource | Sequence[NodeSource] | None
+    ) = None,
+    child_nodes: NodeSource | Sequence[NodeSource] | None = None,
+) -> _TagDefinition:
     """
     This function can be used for in-place creation (or call it templating if you
     want to) of :class:`delb.nodes.TagNode` instances as:
@@ -98,7 +112,7 @@ def tag(*args):  # noqa: C901
 
     The actual nodes that are constructed always inherit the namespace of the context
     node they are created in. That also applies to attribute names that are given as
-    single string.
+    single string if they are not given in Clark notation.
 
     >>> root = TagNode('root', children=[
     ...     tag("head", {"lvl": "1"}, "Hello!"),
@@ -117,65 +131,66 @@ def tag(*args):  # noqa: C901
     """
 
     def prepare_attributes(
-        attributes: Mapping[AttributeAccessor, str],
-    ) -> dict[AttributeAccessor, str]:
-        result: dict[AttributeAccessor, str] = {}
+        attributes: Mapping[AttributeAccessor, str | Attribute],
+    ) -> _UnqualifiedAttributesData:
+        result: _UnqualifiedAttributesData = {}
 
         for key, value in attributes.items():
             match value:
                 case Attribute():
                     result[(value.namespace, value.local_name)] = value.value
-                case str() | tuple():
+                case str():
                     result[key] = value
                 case _:
                     raise TypeError
 
         return result
 
-    if len(args) == 1:
-        return _TagDefinition(local_name=args[0])
+    if attributes_or_child_nodes is None:
+        return _TagDefinition(local_name=local_name)
 
-    if len(args) == 2:
-        second_arg = args[1]
-        if isinstance(second_arg, Mapping):
+    if child_nodes is None:
+        if isinstance(attributes_or_child_nodes, Mapping):
             return _TagDefinition(
-                local_name=args[0], attributes=prepare_attributes(second_arg)
+                local_name=local_name,
+                attributes=prepare_attributes(attributes_or_child_nodes),
             )
-        if isinstance(second_arg, (str, XMLNodeType, _TagDefinition)):
-            return _TagDefinition(local_name=args[0], children=(second_arg,))
-        if isinstance(second_arg, Sequence):
-            if not all(
-                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in second_arg
-            ):
-                raise TypeError(
-                    "Either node instances, strings or objects from :func:`delb.tag` "
-                    "must be provided as children argument."
-                )
-            return _TagDefinition(local_name=args[0], children=tuple(second_arg))
-
-    if len(args) == 3:
-        third_arg = args[2]
-        if isinstance(third_arg, (str, XMLNodeType, _TagDefinition)):
+        if isinstance(attributes_or_child_nodes, node_source_types):
             return _TagDefinition(
-                local_name=args[0],
-                attributes=prepare_attributes(args[1]),
-                children=(third_arg,),
+                local_name=local_name, children=(attributes_or_child_nodes,)
             )
-        if isinstance(third_arg, Sequence):
+        if isinstance(attributes_or_child_nodes, Sequence):
             if not all(
-                isinstance(x, (str, XMLNodeType, _TagDefinition)) for x in third_arg
+                isinstance(x, node_source_types) for x in attributes_or_child_nodes
             ):
                 raise TypeError(
                     "Either node instances, strings or objects from :func:`delb.tag` "
                     "must be provided as children argument."
                 )
             return _TagDefinition(
-                local_name=args[0],
-                attributes=prepare_attributes(args[1]),
-                children=tuple(third_arg),
+                local_name=local_name,
+                children=tuple(cast("Sequence[NodeSource]", attributes_or_child_nodes)),
             )
 
-    raise ValueError("Unrecognized arguments.")
+    assert isinstance(attributes_or_child_nodes, Mapping)
+    attributes = prepare_attributes(attributes_or_child_nodes)
+    if isinstance(child_nodes, node_source_types):
+        return _TagDefinition(
+            local_name=local_name,
+            attributes=attributes,
+            children=(child_nodes,),
+        )
+    if isinstance(child_nodes, Sequence):
+        if not all(isinstance(x, node_source_types) for x in child_nodes):
+            raise TypeError(
+                "Either node instances, strings or objects from :func:`delb.tag` "
+                "must be provided as children argument."
+            )
+        return _TagDefinition(
+            local_name=local_name,
+            attributes=attributes,
+            children=tuple(cast("Sequence[NodeSource]", child_nodes)),
+        )
 
 
 # deserializing streams
@@ -192,8 +207,11 @@ class TreeBuilder:
     )
 
     def __init__(
-        self, data: InputStream, parse_options: ParserOptions, base_url: str | None
-    ):
+        self,
+        data: InputStream,
+        parse_options: ParserOptions,
+        base_url: str | None,
+    ) -> None:
         self.children: Final[list[list[XMLNodeType]]] = []
         self.event_feed: Final = parse_events(data, parse_options, base_url)
         self.options: Final = parse_options
@@ -201,7 +219,7 @@ class TreeBuilder:
         self.started_tags: Final[list[TagNodeType]] = []
         self.xml_ids: Final[set[str]] = set()
 
-    def __iter__(self):
+    def __iter__(self) -> Self:
         return self
 
     def __next__(self) -> XMLNodeType:
@@ -262,7 +280,7 @@ class TreeBuilder:
 
         return result
 
-    def handle_tag_start(self, data):
+    def handle_tag_start(self, data: TagEventData) -> None:
         assert isinstance(data.namespace, str)
 
         if (id_ := data.attributes.get((XML_NAMESPACE, "id"))) is not None:
@@ -288,6 +306,7 @@ class TreeBuilder:
         xml_space = data.attributes.get((XML_NAMESPACE, "space"))
 
         if xml_space not in (None, "default", "preserve"):
+            assert xml_space is not None
             warnings.warn(
                 "Encountered and ignoring an invalid `xml:space` attribute: "
                 + xml_space,

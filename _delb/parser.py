@@ -19,7 +19,7 @@ import codecs
 import re
 import warnings
 from enum import IntEnum, auto
-from io import BytesIO
+from io import BytesIO, IOBase
 from typing import Final, TYPE_CHECKING, NamedTuple, Optional, TypeAlias, cast
 
 from _delb.plugins import plugin_manager
@@ -45,10 +45,10 @@ _match_encoding: Final = re.compile(
 ).match
 
 
-class _EncodingDetectingReader:
+class _EncodingDetectingReader(IOBase):
     __slots__ = ("buffer", "first_bytes", "reading")
 
-    def __init__(self, buffer: BinaryReader):
+    def __init__(self, buffer: BinaryReader) -> None:
         self.buffer: Final = buffer
         self.first_bytes = b""
         self.reading = False
@@ -234,7 +234,7 @@ def parse_events(
 __all__ = (
     "Event",
     "EventType",
-    ParserOptions.__name__,
+    "ParserOptions",
     TagEventData.__name__,
     detect_encoding.__name__,
 )

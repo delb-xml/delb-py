@@ -136,7 +136,7 @@ class Transformation(TransformationBase):
 
     options_class: Optional[type] = None
 
-    def __init__(self, options: Optional[NamedTuple] = None):
+    def __init__(self, options: Optional[NamedTuple] = None) -> None:
         self.root: TagNodeType
         if options is None and self.options_class is not None:
             options = self.options_class()
@@ -153,11 +153,11 @@ class Transformation(TransformationBase):
         self.__set_placeholder()
         return result
 
-    def __set_placeholder(self):
+    def __set_placeholder(self) -> None:
         self.root = TagNode("transformation-placeholder")
 
     @abstractmethod
-    def transform(self):
+    def transform(self) -> None:
         """
         This method needs to implement the transformation logic. When it is called,
         the instance has two attributes assigned from its call:
@@ -178,7 +178,7 @@ class TransformationSequence(TransformationBase):
     def __init__(
         self,
         *transformations: TransformationBase | type[TransformationBase],
-    ):
+    ) -> None:
         _transformations = []
         for transformation in transformations:
             if isinstance(transformation, type) and issubclass(

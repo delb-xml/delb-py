@@ -137,4 +137,4 @@ def tokenize(expression: str) -> Sequence[Token]:
     return result
 
 
-__all__ = (tokenize.__name__,)  # type: ignore
+__all__ = (tokenize.__name__,)

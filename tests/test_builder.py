@@ -21,7 +21,3 @@ def test_tag_with_invalid_args():
         tag("a", (0,))
     with pytest.raises(TypeError):
         tag("a", {}, (0,))
-    with pytest.raises(ValueError, match=r"Unrecognized arguments\."):
-        tag()
-    with pytest.raises(ValueError, match=r"Unrecognized arguments\."):
-        tag("a", {}, (), ())

@@ -74,7 +74,7 @@ from _delb.utils import _sort_nodes_in_document_order
 from _delb.typing import TagNodeType, XMLNodeType
 from _delb.xpath.ast import EvaluationContext
 from _delb.xpath import functions  # noqa: F401
-from _delb.xpath.parser import parse
+from _delb.xpath.parser import parse as parse  # noqa: I250  # re-export
 
 if TYPE_CHECKING:
     from typing import Any
@@ -91,10 +91,10 @@ class QueryResults(Sequence[XMLNodeType]):
     for better readable Python expressions.
     """
 
-    def __init__(self, results: Iterable[XMLNodeType]):
+    def __init__(self, results: Iterable[XMLNodeType]) -> None:
         self.__items: Final = tuple(results)
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Collection):
             raise TypeError
 
@@ -112,7 +112,7 @@ class QueryResults(Sequence[XMLNodeType]):
     def __len__(self) -> int:
         return len(self.__items)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str([repr(x) for x in self.__items])
 
     def as_list(self) -> list[XMLNodeType]:
@@ -193,9 +193,9 @@ def evaluate(
 
 
 __all__ = (
-    _css_to_xpath.__name__,  # type: ignore
+    _css_to_xpath.__name__,
     evaluate.__name__,
-    parse.__name__,  # type: ignore
+    parse.__name__,
     EvaluationContext.__name__,
     QueryResults.__name__,
 )

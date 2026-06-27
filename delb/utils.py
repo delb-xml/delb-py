@@ -50,15 +50,15 @@ class TreesComparisonResult:
         difference_kind: TreeDifferenceKind,
         lhn: XMLNodeType | None,
         rhn: XMLNodeType | None,
-    ):
+    ) -> None:
         self.difference_kind: Final = difference_kind
         self.lhn: Final[XMLNodeType | None] = lhn
         self.rhn: Final[XMLNodeType | None] = rhn
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.difference_kind is TreeDifferenceKind.None_
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.difference_kind is TreeDifferenceKind.None_:
             return "Trees are equal."
         elif self.difference_kind in (

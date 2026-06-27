@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import h2  # type: ignore
+    import h2
 except ImportError:  # pragma: no cover
     http2 = False
 else:
@@ -52,7 +52,7 @@ DEFAULT_CLIENT: Final = httpx.Client(follow_redirects=True, http2=http2)
 class HttpsStreamWrapper(IOBase):
     __slots__ = ("_generator", "_response")
 
-    def __init__(self, response: httpx.Response):
+    def __init__(self, response: httpx.Response) -> None:
         self._generator: Optional[Iterator[bytes]] = None
         self._response: Final = response
 

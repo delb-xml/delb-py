@@ -18,27 +18,26 @@ from __future__ import annotations
 import re
 import sys
 from collections import defaultdict, deque
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Optional
+from typing import TYPE_CHECKING, Any, Final, Optional, cast
 
 from _delb.typing import _DocumentNodeType, TagNodeType
 
 if TYPE_CHECKING:
-    from _delb.typing import Filter, XMLNodeType
+    from _delb.typing import Filter, T, _TranslateTable, Traverser, XMLNodeType
 
 
 _crunch_whitespace: Final = partial(re.compile(r"\s+").sub, " ")
 
 
 class _NodesSorter:
-    def __init__(self):
-        self.__node = None
-        self.__items: Final = defaultdict(_NodesSorter)
+    def __init__(self) -> None:
+        self.__node: TagNodeType | None = None
+        self.__items: Final[defaultdict[int, _NodesSorter]] = defaultdict(_NodesSorter)
 
-    def add(self, path: Sequence[int], node: TagNodeType):
-        assert isinstance(node, TagNodeType)
+    def add(self, path: Sequence[int], node: TagNodeType) -> None:
         if path:
             self.__items[path[0]].add(path[1:], node)
         else:
@@ -56,205 +55,199 @@ class _StringMixin:  # pragma: no cover
 
     __slots__ = ()
 
-    def __int__(self):
+    def __int__(self) -> int:
         return int(str(self))
 
-    def __float__(self):
+    def __float__(self) -> float:
         return float(str(self))
 
-    def __complex__(self):
+    def __complex__(self) -> complex:
         return complex(str(self))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, string):
-        return str(self) == string
-
-    def __lt__(self, string):
+    def __lt__(self, string: str) -> bool:
         return str(self) < string
 
-    def __le__(self, string):
-        return str(self) <= string
-
-    def __gt__(self, string):
+    def __gt__(self, string: str) -> bool:
         return str(self) > string
 
-    def __ge__(self, string):
+    def __ge__(self, string: str) -> bool:
         return str(self) >= string
 
-    def __contains__(self, char):
+    def __contains__(self, char: str) -> bool:
         return char in str(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(str(self))
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int | slice) -> str:
         return str(self)[index]
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> str:
         if isinstance(other, str):
             return str(self) + other
         return str(self) + str(other)
 
-    def __radd__(self, other):
+    def __radd__(self, other: Any) -> str:
         if isinstance(other, str):
             return other + str(self)
         return str(other) + str(self)
 
-    def __mul__(self, n):
+    def __mul__(self, n: int) -> str:
         return str(self) * n
 
     __rmul__ = __mul__
 
-    def __mod__(self, args):
+    def __mod__(self, args: Sequence[Any]) -> str:
         return str(self) % args
 
-    def __rmod__(self, template):
+    def __rmod__(self, template: str) -> str:
         return str(template) % self
 
-    def capitalize(self):
+    def capitalize(self) -> str:
         return str(self).capitalize()
 
-    def casefold(self):
+    def casefold(self) -> str:
         return str(self).casefold()
 
-    def center(self, width, *args):
-        return str(self).center(width, *args)
+    def center(self, width: int, fillchar: str = " ") -> str:
+        return str(self).center(width, fillchar)
 
-    def count(self, sub, start=0, end=sys.maxsize):
+    def count(self, sub: str, start: int = 0, end: int = sys.maxsize) -> int:
         return str(self).count(sub, start, end)
 
-    def removeprefix(self, prefix):
+    def removeprefix(self, prefix: str) -> str:
         return str(self).removeprefix(prefix)
 
-    def removesuffix(self, suffix):
+    def removesuffix(self, suffix: str) -> str:
         return str(self).removesuffix(suffix)
 
-    def encode(self, encoding="utf-8", errors="strict"):
+    def encode(self, encoding: str = "utf-8", errors: str = "strict") -> bytes:
         encoding = "utf-8" if encoding is None else encoding
         errors = "strict" if errors is None else errors
         return str(self).encode(encoding, errors)
 
-    def endswith(self, suffix, start=0, end=sys.maxsize):
+    def endswith(self, suffix: str, start: int = 0, end: int = sys.maxsize) -> bool:
         return str(self).endswith(suffix, start, end)
 
-    def expandtabs(self, tabsize=8):
+    def expandtabs(self, tabsize: int = 8) -> str:
         return str(self).expandtabs(tabsize)
 
-    def find(self, sub, start=0, end=sys.maxsize):
+    def find(self, sub: str, start: int = 0, end: int = sys.maxsize) -> int:
         return str(self).find(sub, start, end)
 
-    def format(self, *args, **kwds):
+    def format(self, *args: str, **kwds: str) -> str:
         return str(self).format(*args, **kwds)
 
-    def format_map(self, mapping):
+    def format_map(self, mapping: Mapping[str, Any]) -> str:
         return str(self).format_map(mapping)
 
-    def index(self, sub, start=0, end=sys.maxsize):
+    def index(self, sub: str, start: int = 0, end: int = sys.maxsize) -> int:
         return str(self).index(sub, start, end)
 
-    def isalpha(self):
+    def isalpha(self) -> bool:
         return str(self).isalpha()
 
-    def isalnum(self):
+    def isalnum(self) -> bool:
         return str(self).isalnum()
 
-    def isascii(self):
+    def isascii(self) -> bool:
         return str(self).isascii()
 
-    def isdecimal(self):
+    def isdecimal(self) -> bool:
         return str(self).isdecimal()
 
-    def isdigit(self):
+    def isdigit(self) -> bool:
         return str(self).isdigit()
 
-    def isidentifier(self):
+    def isidentifier(self) -> bool:
         return str(self).isidentifier()
 
-    def islower(self):
+    def islower(self) -> bool:
         return str(self).islower()
 
-    def isnumeric(self):
+    def isnumeric(self) -> bool:
         return str(self).isnumeric()
 
-    def isprintable(self):
+    def isprintable(self) -> bool:
         return str(self).isprintable()
 
-    def isspace(self):
+    def isspace(self) -> bool:
         return str(self).isspace()
 
-    def istitle(self):
+    def istitle(self) -> bool:
         return str(self).istitle()
 
-    def isupper(self):
+    def isupper(self) -> bool:
         return str(self).isupper()
 
-    def join(self, seq):
+    def join(self, seq: Iterable[str]) -> str:
         return str(self).join(seq)
 
-    def ljust(self, width, *args):
-        return str(self).ljust(width, *args)
+    def ljust(self, width: int, fillchar: str = "") -> str:
+        return str(self).ljust(width, fillchar)
 
-    def lower(self):
+    def lower(self) -> str:
         return str(self).lower()
 
-    def lstrip(self, chars=None):
+    def lstrip(self, chars: Optional[str] = None) -> str:
         return str(self).lstrip(chars)
 
-    def partition(self, sep):
+    def partition(self, sep: str) -> tuple[str, str, str]:
         return str(self).partition(sep)
 
-    def replace(self, old, new, maxsplit=-1):
-        return str(self).replace(old, new, maxsplit)
+    def replace(self, old: str, new: str, count: int = -1) -> str:
+        return str(self).replace(old, new, count)
 
-    def rfind(self, sub, start=0, end=sys.maxsize):
+    def rfind(self, sub: str, start: int = 0, end: int = sys.maxsize) -> int:
         return str(self).rfind(sub, start, end)
 
-    def rindex(self, sub, start=0, end=sys.maxsize):
+    def rindex(self, sub: str, start: int = 0, end: int = sys.maxsize) -> int:
         return str(self).rindex(sub, start, end)
 
-    def rjust(self, width, *args):
-        return str(self).rjust(width, *args)
+    def rjust(self, width: int, fillchar: str = " ") -> str:
+        return str(self).rjust(width, fillchar)
 
-    def rpartition(self, sep):
+    def rpartition(self, sep: str) -> tuple[str, str, str]:
         return str(self).rpartition(sep)
 
-    def rstrip(self, chars=None):
+    def rstrip(self, chars: Optional[str] = None) -> str:
         return str(self).rstrip(chars)
 
-    def split(self, sep=None, maxsplit=-1):
+    def split(self, sep: Optional[str] = None, maxsplit: int = -1) -> list[str]:
         return str(self).split(sep, maxsplit)
 
-    def rsplit(self, sep=None, maxsplit=-1):
+    def rsplit(self, sep: Optional[str] = None, maxsplit: int = -1) -> list[str]:
         return str(self).rsplit(sep, maxsplit)
 
-    def splitlines(self, keepends=False):
+    def splitlines(self, keepends: bool = False) -> list[str]:
         return str(self).splitlines(keepends)
 
-    def startswith(self, prefix, start=0, end=sys.maxsize):
+    def startswith(self, prefix: str, start: int = 0, end: int = sys.maxsize) -> bool:
         return str(self).startswith(prefix, start, end)
 
-    def strip(self, chars=None):
+    def strip(self, chars: Optional[str] = None) -> str:
         return str(self).strip(chars)
 
-    def swapcase(self):
+    def swapcase(self) -> str:
         return str(self).swapcase()
 
-    def title(self):
+    def title(self) -> str:
         return str(self).title()
 
-    def translate(self, *args):
-        return str(self).translate(*args)
+    def translate(self, table: _TranslateTable) -> str:
+        return str(self).translate(table)
 
-    def upper(self):
+    def upper(self) -> str:
         return str(self).upper()
 
-    def zfill(self, width):
+    def zfill(self, width: int) -> str:
         return str(self).zfill(width)
 
 
-def first(iterable: Iterable) -> Optional[Any]:
+def first(iterable: Iterable[T]) -> Optional[T]:
     """
     Returns the first item of the given :term:`iterable` or :obj:`None` if it's empty.
     Note that the first item is consumed when the iterable is an :term:`iterator`.
@@ -262,7 +255,7 @@ def first(iterable: Iterable) -> Optional[Any]:
     match iterable:
         case Iterator():
             try:
-                return next(iterable)
+                return next(cast("Iterator[T]", iterable))
             except StopIteration:
                 return None
         case Sequence():
@@ -271,7 +264,9 @@ def first(iterable: Iterable) -> Optional[Any]:
             raise TypeError
 
 
-def get_traverser(*, from_left=True, depth_first=True, from_top=True):
+def get_traverser(
+    *, from_left: bool = True, depth_first: bool = True, from_top: bool = True
+) -> Traverser:
     """
     Returns a function that can be used to traverse a (sub)tree with the given node as
     root.
@@ -300,7 +295,7 @@ def get_traverser(*, from_left=True, depth_first=True, from_top=True):
     return result
 
 
-def last(iterable: Iterable) -> Optional[Any]:
+def last(iterable: Iterable[T]) -> Optional[T]:
     """
     Returns the last item of the given :term:`iterable` or :obj:`None` if it's empty.
     Note that the whole :term:`iterator` is consumed when such is given.

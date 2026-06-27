@@ -35,23 +35,23 @@ class AmbiguousTreeError(DelbBaseException):
     tree where the target position can't be clearly determined.
     """
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
 class FailedDocumentLoading(DelbBaseException):
-    def __init__(self, source: Any, excuses: dict[Loader, str | Exception]):
+    def __init__(self, source: Any, excuses: dict[Loader, str | Exception]) -> None:
         self.source: Final = source
         self.excuses: Final = excuses
 
-    def __str__(self):  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return f"Couldn't load {self.source!r} with these loaders: {self.excuses}"
 
 
 class InvalidCodePath(DelbBaseException, RuntimeError):
     """Raised when a code path that is not expected to be executed is reached."""
 
-    def __init__(self):  # pragma: no cover
+    def __init__(self) -> None:  # pragma: no cover
         super().__init__(
             "An unintended path was taken through the code. Please report this bug."
         )
@@ -84,7 +84,7 @@ class ParsingValidityError(ParsingError):
 class XPathEvaluationError(DelbBaseException):
     """Raised when an XPath expression can't be properly evaluated."""
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
@@ -96,12 +96,12 @@ class XPathParsingError(DelbBaseException):
         expression: Optional[str] = None,
         position: Optional[int] = None,
         message: Optional[str] = None,
-    ):
+    ) -> None:
         self.expression = expression
         self.position = position
         self.message: Final = message
 
-    def __str__(self):
+    def __str__(self) -> str:
         expression = self.expression
         position = self.position
         assert expression is not None
@@ -128,7 +128,7 @@ class XPathParsingError(DelbBaseException):
 class XPathUnsupportedStandardFeature(XPathParsingError):
     """Raised when an unsupported XPath expression feature is recognized."""
 
-    def __init__(self, position: int, feature_description: str):
+    def __init__(self, position: int, feature_description: str) -> None:
         super().__init__(
             position=position,
             message=f"{feature_description} is not supported with intention. "

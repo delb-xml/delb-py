@@ -19,9 +19,9 @@ import inspect
 import operator
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from functools import cached_property, wraps
+from functools import cached_property
 from textwrap import indent
-from typing import TYPE_CHECKING, Any, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, NamedTuple, Never, Optional
 
 
 from _delb.exceptions import InvalidCodePath, XPathEvaluationError, XPathParsingError
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     from delb import Document
     from _delb.names import Namespaces
-    from _delb.typing import ParentNodeType, XMLNodeType
+    from _delb.typing import Filter, ParentNodeType, XMLNodeType
 
 
 xpath_functions: Final = _plugin_manager.xpath_functions
@@ -42,7 +42,7 @@ xpath_functions: Final = _plugin_manager.xpath_functions
 # helper
 
 
-def _invalid_method(self, *_, **__):
+def _invalid_method(self: object, *_: Any, **__: Any) -> Never:
     raise InvalidCodePath
 
 
@@ -60,7 +60,7 @@ class _DocumentNode(_DocumentNodeType):
 
     __slots__ = ("__root_node",)
 
-    def __init__(self, node: XMLNodeType):
+    def __init__(self, node: XMLNodeType) -> None:
         while node._parent is not None:
             node = node._parent
         self.__root_node: Final = node
@@ -106,7 +106,7 @@ class _DocumentNode(_DocumentNodeType):
         return (self.__root_node,)
 
     @_child_nodes.setter
-    def _child_nodes(self, value: Any):
+    def _child_nodes(self, value: Any) -> Never:
         raise InvalidCodePath
 
     @property
@@ -133,7 +133,7 @@ class _DocumentNode(_DocumentNodeType):
         yield self.__root_node
         yield from self.__root_node._iterate_descendants()
 
-    def iterate_children(self, *args) -> Iterator[XMLNodeType]:
+    def iterate_children(self, *filter: Filter) -> Iterator[XMLNodeType]:
         yield self.__root_node
 
     @property
@@ -149,24 +149,11 @@ class _DocumentNode(_DocumentNodeType):
         raise InvalidCodePath
 
 
-def ensure_prefix(func):
-    @wraps(func)
-    def wrapper(self, node, **kwargs):
-        prefix = self.prefix
-
-        if "context" in kwargs:
-            namespaces = kwargs["context"].namespaces
-        else:
-            namespaces = kwargs["namespaces"]
-
-        if prefix is not None and prefix not in namespaces:
-            raise XPathEvaluationError(
-                f"The namespace prefix `{prefix}` is unknown in the evaluation "
-                "context."
-            )
-        return func(self, node, **kwargs)
-
-    return wrapper
+def ensure_prefix(prefix: str | None, namespaces: Namespaces) -> None:
+    if prefix is not None and prefix not in namespaces:
+        raise XPathEvaluationError(
+            f"The namespace prefix `{prefix}` is unknown in the evaluation context."
+        )
 
 
 def nested_repr(obj: Any) -> str:  # pragma: no cover
@@ -211,12 +198,12 @@ class EvaluationContext(NamedTuple):
 class Node(ABC):
     __slots__: tuple[str, ...] = ()
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return type(self) is type(other) and all(
             getattr(self, x) == getattr(other, x) for x in self.__slots__
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{self.__class__.__qualname__}("
             f"{', '.join(f'{x}={getattr(self, x)!r}' for x in self.__slots__)})"
@@ -225,11 +212,13 @@ class Node(ABC):
 
 class EvaluationNode(Node):
     @abstractmethod
-    def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> bool:
+    def evaluate(
+        self, node: XMLNodeType, context: EvaluationContext
+    ) -> bool | Optional[str]:
         pass
 
     @property
-    def _derived_attributes(self):
+    def _derived_attributes(self) -> list[tuple[str, str, str]]:
         raise InvalidCodePath
 
     def _is_unambiguously_locatable(self) -> bool:
@@ -248,19 +237,19 @@ class NodeTestNode(Node):
 class Axis(Node):
     __slots__ = ("generator",)
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         generator = getattr(self, name.replace("-", "_"), None)
         if generator is None:
             raise XPathParsingError(message="Invalid axis specifier.")
         self.generator: Final = generator
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, Axis)
             and self.generator.__name__ == other.generator.__name__
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.generator.__name__})"
 
     def ancestor(self, node: XMLNodeType) -> Iterator[XMLNodeType]:
@@ -316,7 +305,9 @@ class Axis(Node):
 class LocationPath(Node):
     __slots__ = ("absolute", "location_steps", "parent_path")
 
-    def __init__(self, location_steps: Iterable[LocationStep], absolute: bool = False):
+    def __init__(
+        self, location_steps: Iterable[LocationStep], absolute: bool = False
+    ) -> None:
         location_steps = tuple(location_steps)
         self.parent_path: Final = (
             LocationPath(location_steps=location_steps[:-1], absolute=absolute)
@@ -326,7 +317,7 @@ class LocationPath(Node):
         self.location_steps: Final = location_steps
         self.absolute: Final = absolute
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return nested_repr(self)
 
     def evaluate(
@@ -367,7 +358,7 @@ class LocationStep(Node):
         axis: Axis,
         node_test: NodeTestNode,
         predicates: Sequence[EvaluationNode] = (),
-    ):
+    ) -> None:
         self.axis: Final = axis
         self.node_test: Final = node_test
         self.predicates: Final = tuple(predicates)
@@ -457,10 +448,10 @@ class XPathExpression(Node):
     # __dict__ is used by the cached_property getter
     __slots__ = ("location_paths", "__dict__")
 
-    def __init__(self, location_paths: list[LocationPath]):
+    def __init__(self, location_paths: list[LocationPath]) -> None:
         self.location_paths: Final = location_paths
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return nested_repr(self)
 
     def evaluate(
@@ -489,13 +480,13 @@ class XPathExpression(Node):
 class AnyNameTest(NodeTestNode):
     __slots__ = ("prefix",)
 
-    def __init__(self, prefix: Optional[str]):
+    def __init__(self, prefix: Optional[str]) -> None:
         self.prefix: Final = prefix
 
-    @ensure_prefix
     def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         if not isinstance(node, TagNodeType):
             return False
+        ensure_prefix(self.prefix, namespaces)
 
         if self.prefix:
             return node.namespace == namespaces[self.prefix]
@@ -506,14 +497,14 @@ class AnyNameTest(NodeTestNode):
 class NameMatchTest(NodeTestNode):
     __slots__ = ("local_name", "prefix")
 
-    def __init__(self, prefix: Optional[str], local_name: str):
+    def __init__(self, prefix: Optional[str], local_name: str) -> None:
         self.prefix: Final = prefix
         self.local_name: Final = local_name
 
-    @ensure_prefix
     def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
         if not isinstance(node, TagNodeType):
             return False
+        ensure_prefix(self.prefix, namespaces)
 
         # this intentionally deviates from the spec, which states that
         # "if the QName does not have a prefix, then the namespace URI is null".
@@ -554,7 +545,7 @@ class NameMatchTest(NodeTestNode):
 class NodeTypeTest(NodeTestNode):
     __slots__ = ("type",)
 
-    def __init__(self, type_: type):
+    def __init__(self, type_: type) -> None:
         self.type: Final = type_
 
     def evaluate(self, node: XMLNodeType, namespaces: Namespaces) -> bool:
@@ -564,7 +555,7 @@ class NodeTypeTest(NodeTestNode):
 class ProcessingInstructionTest(NodeTypeTest):
     __slots__ = ("target", "type")
 
-    def __init__(self, target: str):
+    def __init__(self, target: str) -> None:
         super().__init__(ProcessingInstructionNodeType)
         self.target: Final = target
 
@@ -581,7 +572,7 @@ class ProcessingInstructionTest(NodeTypeTest):
 class AnyValue(EvaluationNode):
     __slots__ = ("value",)
 
-    def __init__(self, value: Any):
+    def __init__(self, value: Any) -> None:
         self.value: Final = value
 
     def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Any:
@@ -591,14 +582,14 @@ class AnyValue(EvaluationNode):
 class AttributeValue(EvaluationNode):
     __slots__ = ("local_name", "prefix")
 
-    def __init__(self, prefix: Optional[str], name: str):
+    def __init__(self, prefix: Optional[str], name: str) -> None:
         self.prefix: Final = prefix
         self.local_name: Final = name
 
-    @ensure_prefix
     def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Optional[str]:
         if not isinstance(node, TagNodeType):
             return None
+        ensure_prefix(self.prefix, context.namespaces)
 
         if (
             attribute := node.attributes.get(
@@ -615,10 +606,10 @@ class BooleanOperator(EvaluationNode):
 
     def __init__(
         self,
-        operator: Callable,
+        operator: Callable[[Any, Any], bool],
         left: EvaluationNode,
         right: EvaluationNode,
-    ):
+    ) -> None:
         self.operator: Final = operator
         self.left: Final = left
         self.right: Final = right
@@ -674,7 +665,7 @@ class BooleanOperator(EvaluationNode):
 class Function(EvaluationNode):
     __slots__ = ("arguments", "function")
 
-    def __init__(self, name: str, arguments: Sequence[EvaluationNode]):
+    def __init__(self, name: str, arguments: Sequence[EvaluationNode]) -> None:
         function = xpath_functions.get(name)
         if function is None:
             raise XPathParsingError(message=f"Unknown function: `{name}`")
@@ -690,7 +681,7 @@ class Function(EvaluationNode):
         self.function: Final = function
         self.arguments: Final = tuple(arguments)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, Function)
             and self.function is other.function
@@ -706,14 +697,14 @@ class Function(EvaluationNode):
 class HasAttribute(EvaluationNode):
     __slots__ = ("local_name", "prefix")
 
-    def __init__(self, prefix: Optional[str], local_name: str):
+    def __init__(self, prefix: Optional[str], local_name: str) -> None:
         self.prefix: Final = prefix
         self.local_name: Final = local_name
 
-    @ensure_prefix
     def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> bool:
         if not isinstance(node, TagNodeType):
             return False
+        ensure_prefix(self.prefix, context.namespaces)
         return (
             node.attributes.get(
                 (context.namespaces.get(self.prefix or "", ""), self.local_name)

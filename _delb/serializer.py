@@ -139,7 +139,7 @@ class DefaultStringOptions:
         )
 
     @classmethod
-    def reset_defaults(cls):
+    def reset_defaults(cls) -> None:
         """Restores the factory settings."""
         cls.format_options = None
         cls.namespaces = None
@@ -188,15 +188,18 @@ class Serializer:
         self,
         writer: _SerializationWriter,
         *,
-        namespaces: Optional[NamespaceDeclarations] = None,
-    ):
-        self._namespaces: Final = (
-            Namespaces({}) if namespaces is None else Namespaces(namespaces)
-        )
+        namespaces: Optional[Namespaces | NamespaceDeclarations] = None,
+    ) -> None:
+        if namespaces is None:
+            _namespaces = Namespaces({})
+        else:
+            _namespaces = Namespaces(namespaces)
+
+        self._namespaces: Final = _namespaces
         self._prefixes: dict[str, str] = {}
         self.writer = writer
 
-    def _collect_prefixes(self, root: TagNodeType):
+    def _collect_prefixes(self, root: TagNodeType) -> None:
         if root.namespace not in self._namespaces.values():
             self._prefixes[root.namespace] = ""
 
@@ -236,7 +239,7 @@ class Serializer:
                     assert "" not in self._prefixes.values()
                     self._prefixes[namespace] = ""
 
-    def __redeclare_empty_prefix(self):
+    def __redeclare_empty_prefix(self) -> None:
         # a possibly collected declaration of an empty namespace needs to be mapped to
         # a prefix because an empty namespace needs to be serialized and such cannot be
         # mapped to a prefix in a declaration
@@ -256,11 +259,11 @@ class Serializer:
             )
         return data
 
-    def _handle_child_nodes(self, child_nodes: Siblings):
+    def _handle_child_nodes(self, child_nodes: Siblings) -> None:
         for child_node in child_nodes:
             self.serialize_node(child_node)
 
-    def _new_namespace_declaration(self, namespace: str):
+    def _new_namespace_declaration(self, namespace: str) -> None:
         for i in range(2**16):
             prefix = f"ns{i}:"
             if prefix not in self._prefixes.values():
@@ -269,11 +272,11 @@ class Serializer:
         else:  # pragma: no cover
             raise NotImplementedError("Just don't.")
 
-    def _serialize_attributes(self, attributes_data):
+    def _serialize_attributes(self, attributes_data: dict[str, str]) -> None:
         for key, value in attributes_data.items():
             self.writer(f" {key}={value}")
 
-    def serialize_node(self, node: XMLNodeType):
+    def serialize_node(self, node: XMLNodeType) -> None:
         match node:
             case CommentNodeType() | ProcessingInstructionNodeType():
                 self.writer(str(node))
@@ -286,7 +289,7 @@ class Serializer:
                 if node.content:
                     self.writer(node.content.translate(CCE_TABLE_FOR_TEXT))
 
-    def serialize_root(self, root: TagNodeType):
+    def serialize_root(self, root: TagNodeType) -> None:
         self._collect_prefixes(root)
         attributes_data = {}
         declarations = {p: "" if n is None else n for n, p in self._prefixes.items()}
@@ -306,7 +309,7 @@ class Serializer:
         self,
         node: TagNodeType,
         attributes_data: dict[str, str],
-    ):
+    ) -> None:
         prefixed_name = self._prefixes[node.namespace] + node.local_name
 
         self.writer(f"<{prefixed_name}")
@@ -328,13 +331,13 @@ class _LineFittingSerializer(Serializer):
         self,
         writer: _SerializationWriter,
         *,
-        namespaces: Optional[NamespaceDeclarations] = None,
-    ):
+        namespaces: Optional[Namespaces | NamespaceDeclarations] = None,
+    ) -> None:
         self.writer: _LengthTrackingWriter
         super().__init__(writer, namespaces=namespaces)
         self.space: Literal["default", "preserve"] = "default"
 
-    def serialize_node(self, node: XMLNodeType):
+    def serialize_node(self, node: XMLNodeType) -> None:
         if isinstance(node, TextNodeType):
             if node.content:
                 if self.space == "default":
@@ -377,7 +380,7 @@ class PrettySerializer(Serializer):
         format_options: FormatOptions,
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
-    ):
+    ) -> None:
         super().__init__(writer, namespaces=namespaces)
         self._align_attributes: Final = format_options.align_attributes
         self.indentation: Final = format_options.indentation
@@ -388,11 +391,11 @@ class PrettySerializer(Serializer):
         )
         self._unwritten_text_nodes: Final[list[TextNodeType]] = []
 
-    def _collect_prefixes(self, root: TagNodeType):
+    def _collect_prefixes(self, root: TagNodeType) -> None:
         super()._collect_prefixes(root)
         self._space_preserving_serializer._prefixes = self._prefixes
 
-    def _handle_child_nodes(self, child_nodes: Siblings):
+    def _handle_child_nodes(self, child_nodes: Siblings) -> None:
         # newline between an opening tag and its first child
         if self._whitespace_is_legit_before_node(child_nodes[0]):
             self.writer("\n")
@@ -410,7 +413,7 @@ class PrettySerializer(Serializer):
     def _normalize_text(self, text: str) -> str:
         return _crunch_whitespace(text).translate(CCE_TABLE_FOR_TEXT)
 
-    def _serialize_attributes(self, attributes_data: dict[str, str]):
+    def _serialize_attributes(self, attributes_data: dict[str, str]) -> None:
         if self._align_attributes and len(attributes_data) > 1:
             key_width = max(len(k) for k in attributes_data)
             for key, value in attributes_data.items():
@@ -424,7 +427,7 @@ class PrettySerializer(Serializer):
         else:
             super()._serialize_attributes(attributes_data)
 
-    def _serialize_child_nodes(self, child_nodes: Siblings):
+    def _serialize_child_nodes(self, child_nodes: Siblings) -> None:
         for node in child_nodes:
             if isinstance(node, TextNodeType):
                 if node.content:
@@ -435,7 +438,7 @@ class PrettySerializer(Serializer):
         if self._unwritten_text_nodes:
             self._serialize_text()
 
-    def serialize_node(self, node: XMLNodeType):
+    def serialize_node(self, node: XMLNodeType) -> None:
         if self._unwritten_text_nodes:
             self._serialize_text()
 
@@ -447,7 +450,7 @@ class PrettySerializer(Serializer):
         if self._whitespace_is_legit_after_node(node):
             self.writer("\n")
 
-    def serialize_root(self, root: TagNodeType):
+    def serialize_root(self, root: TagNodeType) -> None:
         self._serialization_root = root
         super().serialize_root(root)
         self._serialization_root = None
@@ -456,7 +459,7 @@ class PrettySerializer(Serializer):
         self,
         node: TagNodeType,
         attributes_data: dict[str, str],
-    ):
+    ) -> None:
         if node._get_normalize_space_directive() == "preserve":
             self._space_preserving_serializer._serialize_tag(
                 node=node,
@@ -468,7 +471,7 @@ class PrettySerializer(Serializer):
                 attributes_data=attributes_data,
             )
 
-    def _serialize_text(self):
+    def _serialize_text(self) -> None:
         nodes = self._unwritten_text_nodes
         content = self._normalize_text("".join(n.content for n in nodes))
 
@@ -540,7 +543,7 @@ class TextWrappingSerializer(PrettySerializer):
         format_options: FormatOptions,
         *,
         namespaces: Optional[NamespaceDeclarations] = None,
-    ):
+    ) -> None:
         if format_options.width < 1:
             raise ValueError("Invalid width option value.")
         self.writer: _LengthTrackingWriter
@@ -555,10 +558,10 @@ class TextWrappingSerializer(PrettySerializer):
         self._width: Final = format_options.width
 
     @property
-    def _available_space(self):
+    def _available_space(self) -> int:
         return max(0, self._width - self._line_offset)
 
-    def _collect_prefixes(self, root: TagNodeType):
+    def _collect_prefixes(self, root: TagNodeType) -> None:
         super()._collect_prefixes(root)
         self._line_fitting_serializer._prefixes = self._prefixes
 
@@ -667,7 +670,7 @@ class TextWrappingSerializer(PrettySerializer):
         length = len(content)
         return length if length <= up_to else None
 
-    def _serialize_appendable_node(self, node: XMLNodeType):
+    def _serialize_appendable_node(self, node: XMLNodeType) -> None:
         assert not isinstance(node, TextNodeType)
 
         if self.writer.offset == 0 and self.indentation:
@@ -685,7 +688,7 @@ class TextWrappingSerializer(PrettySerializer):
             case CommentNodeType() | ProcessingInstructionNodeType():
                 self.writer(str(node))
 
-    def serialize_node(self, node: XMLNodeType):
+    def serialize_node(self, node: XMLNodeType) -> None:
         if self._unwritten_text_nodes:
             self._serialize_text()
 
@@ -731,7 +734,7 @@ class TextWrappingSerializer(PrettySerializer):
         self,
         node: TagNodeType,
         attributes_data: dict[str, str],
-    ):
+    ) -> None:
         if node is not self._serialization_root and self._node_fits_remaining_line(
             node
         ):
@@ -739,7 +742,7 @@ class TextWrappingSerializer(PrettySerializer):
         else:
             super()._serialize_tag(node, attributes_data)
 
-    def _serialize_text(self):
+    def _serialize_text(self) -> None:
         nodes = self._unwritten_text_nodes
         content = self._normalize_text("".join(n.content for n in nodes))
         last_node = nodes[-1]
@@ -781,7 +784,7 @@ class TextWrappingSerializer(PrettySerializer):
 
         nodes.clear()
 
-    def _serialize_text_over_lines(self, content: str):
+    def _serialize_text_over_lines(self, content: str) -> None:
         lines: list[str] = []
         nodes = self._unwritten_text_nodes
 
@@ -841,7 +844,7 @@ class TextWrappingSerializer(PrettySerializer):
         if lines[-1] != "":
             self.writer(f"{prefix}{lines[-1]}")
 
-    def _consolidate_text_lines(self, lines: list[str]):
+    def _consolidate_text_lines(self, lines: list[str]) -> None:
         last_node = self._unwritten_text_nodes[-1]
         assert last_node._parent is not None
         if (
@@ -878,14 +881,14 @@ class TextWrappingSerializer(PrettySerializer):
 class _SerializationWriter(ABC):
     __slots__ = ("buffer",)
 
-    def __init__(self, buffer: TextIO):
+    def __init__(self, buffer: TextIO) -> None:
         self.buffer: Final = buffer
 
-    def __call__(self, data: str):
+    def __call__(self, data: str) -> None:
         self.buffer.write(data)
 
     @property
-    def result(self):
+    def result(self) -> str:
         if isinstance(self.buffer, StringIO):
             return self.buffer.getvalue()
         raise TypeError(  # pragma: no cover
@@ -896,12 +899,12 @@ class _SerializationWriter(ABC):
 class _LengthTrackingWriter(_SerializationWriter):
     __slots__ = ("offset", "preserve_space")
 
-    def __init__(self, buffer: TextIO):
+    def __init__(self, buffer: TextIO) -> None:
         super().__init__(buffer)
         self.offset = 0
         self.preserve_space = False
 
-    def __call__(self, data: str):
+    def __call__(self, data: str) -> None:
         if not self.preserve_space and self.offset == 0:
             data = data.lstrip("\n")
 
@@ -919,7 +922,7 @@ class _LengthTrackingWriter(_SerializationWriter):
 
 
 class _StringWriter(_SerializationWriter):
-    def __init__(self, newline: Optional[str] = None):
+    def __init__(self, newline: Optional[str] = None) -> None:
         super().__init__(StringIO(newline=newline))
 
 
@@ -929,7 +932,7 @@ class _TextBufferWriter(_SerializationWriter):
         buffer: TextIOWrapper,
         encoding: str = "utf-8",
         newline: Optional[str] = None,
-    ):
+    ) -> None:
         buffer.reconfigure(encoding=encoding, newline=newline)
         super().__init__(buffer)
 

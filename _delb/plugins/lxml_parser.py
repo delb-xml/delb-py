@@ -25,7 +25,7 @@ from _delb.parser import EventType, TagEventData
 from _delb.plugins import XMLEventParserInterface
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
     from _delb.parser import Event, ParserOptions
     from _delb.typing import _AttributesData, BinaryReader
@@ -36,7 +36,9 @@ class LxmlParser(XMLEventParserInterface):
 
     name = "lxml"
 
-    def __init__(self, options: ParserOptions, base_url: str | None, encoding: str):
+    def __init__(
+        self, options: ParserOptions, base_url: str | None, encoding: str
+    ) -> None:
         if encoding.endswith(("-be", "-le")):
             encoding = encoding[:-3]
 
@@ -67,7 +69,9 @@ class LxmlParser(XMLEventParserInterface):
         for event in self.parser.read_events():
             yield from self.handle_event(event)
 
-    def handle_element_preceding_text(self, element: etree._Element):
+    def handle_element_preceding_text(
+        self, element: etree._Element
+    ) -> Generator[Event]:
         if ((parent := element.getparent()) is not None) and (
             parent.index(element) == 0
         ):

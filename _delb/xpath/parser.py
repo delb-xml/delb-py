@@ -48,8 +48,7 @@ from _delb.xpath.ast import (
 from _delb.xpath.tokenizer import COMPLEMENTING_TOKEN_TYPES, TokenType, tokenize, Token
 
 if TYPE_CHECKING:
-    from typing import Final
-    from _delb.typing import TypeAlias
+    from typing import Final, TypeAlias
 
 
 TokenPattern: TypeAlias = Sequence[TokenType | None]
@@ -448,7 +447,7 @@ def parse(expression: str) -> XPathExpression:
         raise e
 
 
-def scan_for_double_colon(tokens: TokenTree):
+def scan_for_double_colon(tokens: TokenTree) -> None:
     for token in (t for t in tokens if isinstance(t, Token)):
         if token.type is TokenType.OTHER_OPS and token.string == "==":
             raise XPathParsingError(

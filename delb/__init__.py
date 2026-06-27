@@ -76,7 +76,7 @@ _plugin_manager.load_plugins()
 class _Logue(ABC):
     __slots__ = ("_siblings",)
 
-    def __init__(self, document: _DocumentNodeType):
+    def __init__(self, document: _DocumentNodeType) -> None:
         self._siblings: Final = document._child_nodes
 
     @overload
@@ -102,7 +102,7 @@ class _Logue(ABC):
     ) -> CommentNodeType | ProcessingInstructionNodeType:
         pass
 
-    def clear(self):
+    def clear(self) -> None:
         for node in self._siblings_slice:
             self._siblings.remove(node)
 
@@ -111,7 +111,7 @@ class _Logue(ABC):
         pass
 
     @abstractmethod
-    def insert(self, index: int, node: XMLNodeType):
+    def insert(self, index: int, node: XMLNodeType) -> XMLNodeType:
         pass
 
     def prepend(
@@ -120,7 +120,7 @@ class _Logue(ABC):
         self.insert(0, node)
         return node
 
-    def remove(self, node: CommentNodeType | ProcessingInstructionNodeType):
+    def remove(self, node: CommentNodeType | ProcessingInstructionNodeType) -> None:
         self._siblings.remove(node)
 
     @property
@@ -134,7 +134,7 @@ class _Logue(ABC):
     def _siblings_slice(self) -> list[XMLNodeType]:
         pass
 
-    def _validate_new_node(self, node: XMLNodeType):
+    def _validate_new_node(self, node: XMLNodeType) -> None:
         if not isinstance(node, (CommentNode, ProcessingInstructionNode)):
             raise TypeError
         if node._parent is not None:
@@ -158,9 +158,11 @@ class Epilogue(_Logue):
         else:
             return None
 
-    def insert(self, index: int, node: XMLNodeType):
+    # TODO either check index here or don't in Prologue
+    def insert(self, index: int, node: XMLNodeType) -> XMLNodeType:
         self._validate_new_node(node)
         self._siblings.insert(self._root_index + index + 1, node)
+        return node
 
     @property
     def _siblings_slice(self) -> list[XMLNodeType]:
@@ -178,11 +180,12 @@ class Prologue(_Logue):
     def index(self, node: XMLNodeType) -> int | None:
         return self._siblings.index(node)
 
-    def insert(self, index: int, node: XMLNodeType):
+    def insert(self, index: int, node: XMLNodeType) -> XMLNodeType:
         self._validate_new_node(node)
         if index > self._root_index:
             raise IndexError
         self._siblings.insert(index, node)
+        return node
 
     @property
     def _siblings_slice(self) -> list[XMLNodeType]:
@@ -190,7 +193,12 @@ class Prologue(_Logue):
 
 
 class DocumentMeta(type):
-    def __new__(mcls, name, base_classes, namespace):  # noqa: N804
+    def __new__(
+        mcls,  # noqa: N80
+        name: str,
+        base_classes: tuple[type, ...],
+        namespace: dict[str, Any],
+    ) -> type:
         extension_classes = tuple(_plugin_manager.document_mixins)
 
         if not base_classes:  # Document class is being constructed
@@ -261,13 +269,13 @@ class Document(metaclass=DocumentMeta):
 
     def __new__(
         cls,
-        source,
+        source: Any,
         /,
-        parser_options=None,
-        klass=None,
-        source_url=None,
-        **config_options,
-    ):
+        parser_options: Optional[ParserOptions] = None,
+        klass: Optional[type[Document]] = None,
+        source_url: Optional[str] = None,
+        **config_options: dict[str, Any],
+    ) -> Document:
         config = SimpleNamespace()
         if source_url is not None:
             config.source_url = source_url
@@ -304,8 +312,8 @@ class Document(metaclass=DocumentMeta):
         parser_options: Optional[ParserOptions] = None,
         klass: Optional[type[Document]] = None,
         source_url: Optional[str] = None,
-        **config,
-    ):
+        **config: dict[str, Any],
+    ) -> None:
         self.config: SimpleNamespace
         """
         Beside the ``parser_options``, this property contains the namespaced data that
@@ -325,8 +333,8 @@ class Document(metaclass=DocumentMeta):
         A list-like accessor to the nodes that follow the document's root node.
         """
 
-    def __init_subclass__(cls):
-        assert cls not in _plugin_manager.document_mixins
+    def __init_subclass__(cls) -> None:
+        assert cls not in _plugin_manager.document_mixins  # type: ignore
         _plugin_manager.document_subclasses.insert(0, cls)
 
     @classmethod
@@ -359,6 +367,7 @@ class Document(metaclass=DocumentMeta):
     def __str__(self) -> str:
         serializer = DefaultStringOptions._get_serializer()
         self.__serialize(serializer=serializer, encoding="utf-8")
+        assert isinstance(serializer.writer.result, str)
         return serializer.writer.result
 
     def clone(self) -> Document:
@@ -380,14 +389,14 @@ class Document(metaclass=DocumentMeta):
         """
         return self.root.css_select(expression, namespaces=namespaces)
 
-    def merge_text_nodes(self, deep: bool = True):
+    def merge_text_nodes(self, deep: bool = True) -> None:
         """
         This method proxies to the :meth:`delb.nodes.TagNode.merge_text_nodes` method of
         the document's :attr:`root <Document.root>` node.
         """
         self.root.merge_text_nodes(deep=deep)
 
-    def reduce_whitespace(self):
+    def reduce_whitespace(self) -> None:
         """
         Collapses and trims whitespace as described in this `TEI recommendation`_.
         Text in (sub-)trees with structured data should be trimmed further in
@@ -407,7 +416,7 @@ class Document(metaclass=DocumentMeta):
         return next(n for n in self.__node._child_nodes if isinstance(n, TagNode))
 
     @root.setter
-    def root(self, node: TagNodeType):
+    def root(self, node: TagNodeType) -> None:
         if not isinstance(node, TagNode):
             raise TypeError(
                 "The document root node must be a :class:`delb.nodes.TagNode` instance."
@@ -433,7 +442,7 @@ class Document(metaclass=DocumentMeta):
         format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
-    ):
+    ) -> None:
         """
         Saves the serialized document contents to a file. See :doc:`/api/serialization`
         for details.
@@ -462,7 +471,7 @@ class Document(metaclass=DocumentMeta):
         self,
         serializer: Serializer,
         encoding: str,
-    ):
+    ) -> None:
         possible_newline = "\n" if isinstance(serializer, PrettySerializer) else ""
 
         serializer.writer(
@@ -486,7 +495,7 @@ class Document(metaclass=DocumentMeta):
         format_options: Optional[FormatOptions] = None,
         namespaces: Optional[NamespaceDeclarations] = None,
         newline: None | str = None,
-    ):
+    ) -> None:
         """
         Writes the serialized document contents to a :term:`file-like object`. See
         :doc:`/api/serialization` for details.
