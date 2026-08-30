@@ -94,7 +94,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           cache: pip
-          python-version: "3.x"
+          python-version: ">=3.14"
       - uses: extractions/setup-crate@v2
         with:
           repo: casey/just@^1.58
