@@ -40,7 +40,7 @@ class LxmlParser(XMLEventParserInterface):
         self, options: ParserOptions, base_url: str | None, encoding: str
     ) -> None:
         if encoding.endswith(("-be", "-le")):
-            encoding = encoding[:-3]
+            encoding = encoding[:-3]  # pragma: nocover
 
         if options.load_referenced_resources:  # pragma: no cover
             warnings.warn(

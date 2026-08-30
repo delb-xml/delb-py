@@ -135,7 +135,7 @@ class PluginManager:
             import _delb.plugins.expat_parser  # noqa: F401
 
         for entrypoint in entry_points().select(group="delb"):
-            entrypoint.load()
+            entrypoint.load()  # pragma: nocover
 
     def register_loader(
         self, before: LoaderConstraint = None, after: LoaderConstraint = None

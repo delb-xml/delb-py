@@ -1516,8 +1516,6 @@ class TagNode(_ParentNode, TagNodeType):
             match root := last(self._iterate_ancestors(_include_document_node=True)):
                 case _DocumentNode():
                     node = root
-                case TagNode():
-                    node = _DocumentNode(None, (root,))
                 case None:
                     node = _DocumentNode(None, (self,))
         else:

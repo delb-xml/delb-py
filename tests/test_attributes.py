@@ -103,6 +103,7 @@ def test_attribute_object():
     assert attribute.namespace == ""
     assert attribute.universal_name == "ham"
     assert str(attribute) == attribute.value == "spam"
+    assert attribute != 0
 
     attribute.namespace = "kitchen.sink"
     assert attribute._attributes is attributes
@@ -168,6 +169,8 @@ def test_comparison():
     d = document.css_select("d").first
     e = document.css_select("p|e", namespaces={"p": "https://u.rl"}).first
 
+    assert a != 0
+
     assert a.attributes == a.attributes
     assert a.attributes != b.attributes
     assert a.attributes != c.attributes
@@ -215,6 +218,12 @@ def test_detach_sustains_attributes():
     assert node.attributes == attributes_copy
 
 
+def test_invalid_value():
+    node = TagNode("root")
+    with pytest.raises(TypeError):
+        node["attribute"] = 0
+
+
 def test_namespaced_attributes():
     root = parse_tree('<root xmlns="http://foo.org" b="c"/>')
     for key, attribute in root.attributes.items():
@@ -225,12 +234,21 @@ def test_namespaced_attributes():
         assert attribute.value == "c"
 
 
-def test_pop():
+def test_pop_and_reassign():
     attributes = TagNode("node", {"facs": "0001"}).attributes
-    assert attributes.pop("facs") == "0001"
+
+    facs = attributes.pop("facs")
+    assert isinstance(facs, Attribute)
+    assert facs.local_name == "facs"
+    assert facs.value == "0001"
+
     assert attributes.pop("facs", None) is None
     with pytest.raises(KeyError):
         attributes.pop("facs")
+
+    other_node = TagNode("other")
+    other_node.attributes["scaf"] = facs
+    assert facs._attributes is other_node.attributes
 
 
 def test_prefixed_source():

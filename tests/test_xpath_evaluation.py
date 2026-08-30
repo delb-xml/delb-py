@@ -1,7 +1,7 @@
 import pytest
 
 from _delb.xpath import evaluate
-from _delb.xpath.ast import Axis
+from _delb.xpath.ast import Axis, _DocumentNode
 from delb import parse_tree, Document
 from delb.filters import altered_default_filters, is_tag_node
 from delb.names import Namespaces
@@ -112,6 +112,14 @@ def test_custom_functions():
     result = document.xpath("//*[is-last() and lowercase(@foo)='bar']")
     assert result.size == 1
     assert result.first["foo"] == "BAR"
+
+
+def test_document_root_node(sample_document):
+    node = _DocumentNode(sample_document.root)
+    child_nodes = list(node.iterate_children())
+    print(child_nodes)
+    assert len(child_nodes) == 1
+    assert child_nodes[0].local_name == "doc"
 
 
 def test_evaluation_from_text_node():

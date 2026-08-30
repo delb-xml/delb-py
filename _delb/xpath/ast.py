@@ -61,7 +61,7 @@ class _DocumentNode(_DocumentNodeType):
     __slots__ = ("__root_node",)
 
     def __init__(self, node: XMLNodeType) -> None:
-        while node._parent is not None:
+        while isinstance(node._parent, TagNodeType):
             node = node._parent
         self.__root_node: Final = node
 
@@ -587,8 +587,7 @@ class AttributeValue(EvaluationNode):
         self.local_name: Final = name
 
     def evaluate(self, node: XMLNodeType, context: EvaluationContext) -> Optional[str]:
-        if not isinstance(node, TagNodeType):
-            return None
+        assert isinstance(node, TagNodeType)
         ensure_prefix(self.prefix, context.namespaces)
 
         if (

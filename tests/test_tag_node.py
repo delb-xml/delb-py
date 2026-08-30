@@ -298,6 +298,7 @@ def test_id_property(files_path):
     assert publisher.id == "DTACorpusPublisher"
 
     publisher.id = None
+    assert publisher.id is None
     assert (XML_NAMESPACE, "id") not in publisher.attributes
 
     publisher.id = "foo"
