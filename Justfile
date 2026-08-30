@@ -3,7 +3,7 @@ set lists := true # for which()
 
 black := which(["black"]) || "pipx run black"
 hatch := which(["hatch"]) || "pipx run hatch"
-version := f'{{hatch}} version'
+version := shell(hatch + " version")
 
 default: check
 
