@@ -39,7 +39,9 @@ jobs:
     needs: ["build"]
     runs-on: ubuntu-latest
     steps:
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-crate@v2
+        with:
+          repo: casey/just@^1.58
       - uses: actions/download-artifact@v8
         with:
           name: Packages
@@ -65,7 +67,9 @@ jobs:
         with:
           cache: pip
           python-version: ${{ matrix.python-version }}
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-crate@v2
+        with:
+          repo: casey/just@^1.58
       - uses: actions/download-artifact@v8
         with:
           name: Packages
@@ -91,7 +95,9 @@ jobs:
         with:
           cache: pip
           python-version: "3.x"
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-crate@v2
+        with:
+          repo: casey/just@^1.58
       - run: just ${{ matrix.target }}
 
 ...
