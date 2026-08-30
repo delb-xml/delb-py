@@ -13,6 +13,17 @@ Intentionally.
 
 .. NEVER USE NESTED LISTS IN THIS DOCUMENT!!
 
+0.6.1 (2026-08-30)
+------------------
+
+Fixes
+~~~~~
+
+- Properly exports all symbols in the `delb` package to let type checkers find
+  these.
+- Stricter type checking options lead so several related fixes and improvements.
+
+
 0.6 (2026-02-15)
 ----------------
 
