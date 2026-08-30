@@ -1,5 +1,7 @@
 [build-system]
-requires = ["hatchling"]
+# TODO remove version specifier when the mess mentioned here is tidied up
+# https://github.com/hynek/build-and-inspect-python-package/issues/160
+requires = ["hatchling<1.27"]
 build-backend = "hatchling.build"
 
 #
