@@ -76,7 +76,6 @@ show-docs: docs
     xdg-open docs/build/html/index.html
 
 # run all tests on normalized code
-[parallel]
 tests: lint mypy pytest doctest
 
 # run the testsuite against a wheel (installed from $WHEEL_PATH); intended to run on a CI platform
