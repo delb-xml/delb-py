@@ -46,7 +46,9 @@ jobs:
         with:
           cache: pip
           python-version: 3.x
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-crate@v2
+        with:
+          repo: casey/just@^1.58
       - run: just docs
       - run: pip install panflute pypandoc sphinx
       - run: >-
